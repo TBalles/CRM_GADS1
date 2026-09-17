@@ -2,12 +2,21 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Campo, CampoTextarea, CampoSelect } from "@/components/form";
+import {
+  Campo,
+  CampoMoney,
+  CampoSelect,
+  CampoTextarea,
+  CampoGrupo,
+  FormActions,
+  FormBanner,
+} from "@/components/form";
+import { useToast } from "@/components/ui/Toast";
+import { maskFromNumber, parseMoney } from "@/lib/money";
 import type { Tables } from "@/lib/supabase/types";
 
 type Oportunidad = Tables<"oportunidades">;
-
-type Opcion = { id: string; label: string };
+type Opcion = { id: string; label: string; color?: string | null };
 
 export default function OportunidadForm({
   oportunidad,
@@ -17,6 +26,7 @@ export default function OportunidadForm({
   etapas,
   perfiles,
   onSaved,
+  onCancel,
 }: {
   oportunidad?: Oportunidad;
   empresas: Opcion[];
@@ -25,6 +35,7 @@ export default function OportunidadForm({
   etapas: Opcion[];
   perfiles: Opcion[];
   onSaved: (oportunidad: Oportunidad) => void;
+  onCancel: () => void;
 }) {
   const [titulo, setTitulo] = useState(oportunidad?.titulo ?? "");
   const [empresaId, setEmpresaId] = useState(oportunidad?.empresa_id ?? "");
@@ -32,22 +43,31 @@ export default function OportunidadForm({
   const [productoId, setProductoId] = useState(oportunidad?.producto_id ?? "");
   const [responsableId, setResponsableId] = useState(oportunidad?.responsable_id ?? "");
   const [etapaId, setEtapaId] = useState(oportunidad?.etapa_id ?? etapas[0]?.id ?? "");
-  const [monto, setMonto] = useState(oportunidad?.monto != null ? String(oportunidad.monto) : "");
+  // Money is held as the masked string and parsed at submit (golden rule #4).
+  const [monto, setMonto] = useState(maskFromNumber(oportunidad?.monto));
   const [notas, setNotas] = useState(oportunidad?.notas ?? "");
+  const [tituloError, setTituloError] = useState<string | null>(null);
+  const [etapaError, setEtapaError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const { showToast } = useToast();
+
+  const toOptions = (list: Opcion[]) =>
+    list.map((o) => ({ value: o.id, label: o.label, color: o.color }));
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!titulo.trim() || !etapaId) {
-      setError("Completá el título y la etapa.");
-      return;
-    }
+    const missingTitulo = !titulo.trim();
+    const missingEtapa = !etapaId;
+    setTituloError(missingTitulo ? "El título es obligatorio." : null);
+    setEtapaError(missingEtapa ? "Elegí una etapa del embudo." : null);
+    if (missingTitulo || missingEtapa) return;
 
     setSaving(true);
     setError(null);
     const supabase = createClient();
 
+    const parsed = parseMoney(monto);
     const payload = {
       titulo: titulo.trim(),
       empresa_id: empresaId || null,
@@ -55,95 +75,111 @@ export default function OportunidadForm({
       producto_id: productoId || null,
       responsable_id: responsableId || null,
       etapa_id: etapaId,
-      monto: monto ? Number(monto) : null,
+      monto: monto.trim() ? parsed : null,
       notas: notas.trim() || null,
     };
 
     const { data, error: dbError } = oportunidad
-      ? await supabase.from("oportunidades").update(payload).eq("id", oportunidad.id).select().single()
+      ? await supabase
+          .from("oportunidades")
+          .update(payload)
+          .eq("id", oportunidad.id)
+          .select()
+          .single()
       : await supabase.from("oportunidades").insert(payload).select().single();
 
     setSaving(false);
 
     if (dbError || !data) {
-      setError("No se pudo guardar la oportunidad.");
+      setError("No se pudo guardar la oportunidad. Revisá los datos e intentá de nuevo.");
       return;
     }
 
+    showToast(oportunidad ? "Oportunidad actualizada." : "Oportunidad creada.", "success");
     onSaved(data);
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <Campo id="titulo" label="Título *" required value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+    <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+      {error && <FormBanner message={error} />}
 
-      <div className="grid grid-cols-2 gap-4">
+      <Campo
+        id="titulo"
+        label="Título"
+        required
+        autoFocus
+        placeholder="Provisión de arcos y redes"
+        value={titulo}
+        onChange={(v) => {
+          setTitulo(v);
+          if (tituloError) setTituloError(null);
+        }}
+        error={tituloError ?? undefined}
+      />
+
+      <CampoGrupo title="Estado comercial">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <CampoSelect
+            id="etapa_id"
+            label="Etapa"
+            required
+            value={etapaId}
+            onChange={(v) => {
+              setEtapaId(v);
+              if (etapaError) setEtapaError(null);
+            }}
+            options={toOptions(etapas)}
+            error={etapaError ?? undefined}
+          />
+          <CampoMoney id="monto" label="Monto estimado" value={monto} onChange={setMonto} />
+        </div>
+        <CampoSelect
+          id="responsable_id"
+          label="Responsable"
+          placeholder="Sin asignar"
+          value={responsableId}
+          onChange={setResponsableId}
+          options={toOptions(perfiles)}
+        />
+      </CampoGrupo>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <CampoSelect
           id="empresa_id"
           label="Empresa"
           placeholder="Sin empresa"
-          value={empresaId ?? ""}
-          onChange={(e) => setEmpresaId(e.target.value)}
-          options={empresas.map((o) => ({ value: o.id, label: o.label }))}
+          value={empresaId}
+          onChange={setEmpresaId}
+          options={toOptions(empresas)}
         />
         <CampoSelect
           id="contacto_id"
           label="Contacto"
           placeholder="Sin contacto"
-          value={contactoId ?? ""}
-          onChange={(e) => setContactoId(e.target.value)}
-          options={contactos.map((o) => ({ value: o.id, label: o.label }))}
+          value={contactoId}
+          onChange={setContactoId}
+          options={toOptions(contactos)}
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <CampoSelect
-          id="producto_id"
-          label="Producto / servicio"
-          placeholder="Sin producto"
-          value={productoId ?? ""}
-          onChange={(e) => setProductoId(e.target.value)}
-          options={productos.map((o) => ({ value: o.id, label: o.label }))}
-        />
-        <CampoSelect
-          id="responsable_id"
-          label="Responsable"
-          placeholder="Sin asignar"
-          value={responsableId ?? ""}
-          onChange={(e) => setResponsableId(e.target.value)}
-          options={perfiles.map((o) => ({ value: o.id, label: o.label }))}
-        />
-      </div>
+      <CampoSelect
+        id="producto_id"
+        label="Producto / servicio"
+        placeholder="Sin producto"
+        value={productoId}
+        onChange={setProductoId}
+        options={toOptions(productos)}
+      />
 
-      <div className="grid grid-cols-2 gap-4">
-        <CampoSelect
-          id="etapa_id"
-          label="Etapa *"
-          required
-          value={etapaId ?? ""}
-          onChange={(e) => setEtapaId(e.target.value)}
-          options={etapas.map((o) => ({ value: o.id, label: o.label }))}
-        />
-        <Campo id="monto" label="Monto estimado" type="number" value={monto} onChange={(e) => setMonto(e.target.value)} />
-      </div>
+      <CampoTextarea
+        id="notas"
+        label="Notas"
+        placeholder="Detalle del pedido, condiciones, seguimiento…"
+        value={notas}
+        onChange={setNotas}
+      />
 
-      <CampoTextarea id="notas" label="Notas" value={notas ?? ""} onChange={(e) => setNotas(e.target.value)} />
-
-      {error ? (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
-          {error}
-        </p>
-      ) : null}
-
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
-        >
-          {saving ? "Guardando…" : "Guardar"}
-        </button>
-      </div>
+      <FormActions saving={saving} onCancel={onCancel} />
     </form>
   );
 }
