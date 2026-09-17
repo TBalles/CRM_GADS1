@@ -81,32 +81,60 @@ protegiendo el acceso igual que si fuera server-side.
 ```
 src/
   app/
+    globals.css               Tokens del UI Kit (:root + .dark), @theme de Tailwind v4, keyframes
+    layout.tsx                Inter, anti-flash de dark mode, ToastProvider + TooltipHost
+    icon.svg                  Favicon (isotipo con el verde de marca horneado)
     login/                    Login (fuera del grupo protegido), Server Action en actions.ts
+      page.tsx                 Split-screen: panel de marca (cancha en SVG) + panel de form
+      LoginForm.tsx            Client: show/hide de contraseña, banner de error, useFormStatus
     auth/signout/route.ts     Logout (POST, borra la sesión)
     (app)/                    Grupo de rutas protegidas (layout valida sesión)
       layout.tsx               Arma el AppShell + guard de auth
-      dashboard/                Resumen con contadores
+      dashboard/                KPIs + distribución del embudo + rankings
+        page.tsx                 Server Component: cuenta y agrega oportunidades por etapa/empresa
+        charts.tsx               MagnitudeBars / ShareBar en CSS puro (sin librería de charts)
       empresas/                 Empresas desplegables con sus contactos anidados
         page.tsx                 Server Component: fetch de empresas + contactos
-        EmpresasList.tsx          Client: acordeón, estado local, abre los drawers
+        EmpresasList.tsx          Client: header+toolbar, búsqueda, acordeón, abre los drawers
         EmpresaForm.tsx           Form de alta/edición de empresa (usado dentro del Drawer)
         ContactoForm.tsx          Form de alta/edición de contacto (idem)
       oportunidades/             Embudo (kanban) + listado en una sola página
         page.tsx                 Server Component: fetch de oportunidades + catálogos
-        OportunidadesView.tsx     Client: kanban sin scroll horizontal, tabla, estado local
+        OportunidadesView.tsx     Client: embudo, tabla + cards mobile, filtros, EtapaBadge
         OportunidadForm.tsx       Form de alta/edición (usado dentro del Drawer)
   components/
-    AppShell.tsx                Topbar + menú hamburguesa (sidebar) + logout + ThemeToggle
+    ui/                        Primitivos del Sumar UI Kit — reusar, no reinventar
+      UIComponents.tsx          cn, useModalAnimation, useAnchoredPortal, Card, Button, Input,
+                                Textarea, FieldLabel, Badge, Table, Avatar, initials, SectionTitle
+      Select.tsx                Reemplazo portaled del <select> nativo (flip, buscador, a11y)
+      MoneyInput.tsx            Input de dinero con máscara es-AR
+      KpiCard.tsx               Tile de métrica canónico del dashboard
+      Loader.tsx                Spinner de marca (loading de página/lista)
+      Toast.tsx                 ToastProvider + useToast()
+      Tooltip.tsx               TooltipHost: convierte todo title= del DOM en un pill propio
+      EmptyState.tsx            Empty state canónico (dashed + ícono en círculo)
+      backdropClose.ts          Cierre de overlay a prueba de arrastre
+    AppShell.tsx                Sidebar colapsable desktop + header/drawer mobile + logout
+    Logo.tsx                    GoalMark: isotipo en currentColor (sidebar, login, loader)
+    ConfirmModal.tsx            Alert dialog centrado (lo usa el logout)
+    Drawer.tsx                   Panel lateral derecho para los formularios de alta/edición
+    RowActions.tsx               Menú "⋮" portaled que usan las filas de cada lista
     ThemeToggle.tsx              Toggle de modo oscuro (localStorage + prefers-color-scheme)
-    Drawer.tsx                   Panel lateral genérico para los formularios de alta/edición
-    KebabMenu.tsx                Menú de "⋮" (Editar) que usan las filas de cada lista
-    form.tsx                    <Campo>, <CampoTextarea>, <CampoSelect> reutilizables en forms
-  lib/supabase/
-    client.ts                  Cliente Supabase para Client Components (drawers, mutaciones)
-    server.ts                  Cliente Supabase para Server Components/Actions (usa cookies())
-    middleware.ts               Lógica de refresco de sesión + redirects, usada por proxy.ts
-    types.ts                    Tipos Database generados (tablas + relaciones para embeds tipados)
+    form.tsx                    <Campo>, <CampoTextarea>, <CampoSelect>, <CampoMoney>,
+                                <CampoGrupo>, <FormBanner>, <FormActions>
+  lib/
+    utils.ts                   cn() — merge de clases Tailwind
+    money.ts                   Máscara/parseo es-AR + formatters de display
+    money.check.ts             Self-check: node --test src/lib/money.check.ts
+    supabase/
+      client.ts                Cliente Supabase para Client Components (drawers, mutaciones)
+      server.ts                Cliente Supabase para Server Components/Actions (usa cookies())
+      middleware.ts             Lógica de refresco de sesión + redirects, usada por proxy.ts
+      types.ts                  Tipos Database generados (tablas + relaciones para embeds tipados)
   proxy.ts                      Proxy/middleware raíz de Next.js (protege todas las rutas salvo /login)
+docs/
+  DESIGN.md                     Sumar UI Kit canónico (vendoreado, READ-ONLY, no editar)
+  design-overrides.md           Dónde esta app se desvía del kit a propósito, y por qué
 supabase/
   migrations/
     0001_init_schema.sql        Tablas, índices, triggers, RLS
@@ -168,6 +196,28 @@ Nota para el futuro: el MCP de Vercel de esta sesión nunca pudo leer el proyect
 falta automatizar algo de Vercel de nuevo, probar primero si ese problema se repite antes de
 asumir que el proyecto no existe.
 
+## Diseño / UI
+
+Esta app usa el **Sumar UI Kit**, documentado en [`docs/DESIGN.md`](./docs/DESIGN.md). Antes de
+crear o modificar cualquier UI (componentes, modales, vistas, tablas, dashboards):
+
+- Leé `docs/DESIGN.md` y **reutilizá** los primitivos de `src/components/ui/` — no inventes
+  variantes nuevas de Button/Card/Drawer ni reimplementes dropdowns/selects.
+- Leé también [`docs/design-overrides.md`](./docs/design-overrides.md): **`DESIGN.md` manda
+  salvo lo listado ahí**. Si te desviás del kit por una razón nueva, agregá un bloque a ese
+  archivo (kit → esta app → dónde → por qué); nunca edites `DESIGN.md`.
+- Respetá los tokens: `primary` (negro) y los neutros son fijos; el color de marca vive en
+  `--brand` (`src/app/globals.css`). **No hardcodees colores de marca fuera de ese token** — la
+  única excepción documentada es `src/app/icon.svg`, que es estático y no puede leer CSS.
+- Seguí las recetas de composición de `DESIGN.md` (página estándar §4.4, drawer §4.3,
+  sidebar §4.5, dashboard §4.6) y las "Reglas de oro" (§15).
+- Notá en particular: **montos siempre por `MoneyInput` + `parseMoney`, nunca `type="number"`**
+  (regla #4); tablas responsive en dos bloques (`md:hidden` cards + `hidden md:block` tabla,
+  regla #9); tooltips poniendo `title="…"` (el `TooltipHost` global se encarga, regla #10).
+
+Como el stack es Tailwind v4 (no v3 como el kit), los tokens se declaran con `@theme inline` en
+`globals.css` en vez de `tailwind.config.js` — el detalle está en el override #2.
+
 ## Convenciones de código
 
 - Nombres de tablas, columnas, rutas y textos de UI **en español**, consistente con el dominio
@@ -192,4 +242,17 @@ asumir que el proyecto no existe.
 npm run dev      # servidor de desarrollo (http://localhost:3000)
 npm run build    # build de producción
 npm run lint     # eslint
+
+# Self-check de la máscara de dinero (sin framework, corre con el runner de Node)
+node --test src/lib/money.check.ts
 ```
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
