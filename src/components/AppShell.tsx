@@ -138,6 +138,27 @@ export default function AppShell({
     </div>
   );
 
+  /** Collapse / expand the rail. Always rendered at the top of the sidebar. */
+  const collapseButton = () => {
+    const label = collapsed ? "Expandir menú" : "Colapsar menú";
+    const Icon = collapsed ? PanelLeftOpen : PanelLeftClose;
+    return (
+      <button
+        type="button"
+        onClick={() => setCollapsed((v) => !v)}
+        title={label}
+        aria-label={label}
+        aria-expanded={!collapsed}
+        className={cn(
+          "rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
+          collapsed && "flex w-full justify-center",
+        )}
+      >
+        <Icon className="h-4 w-4" />
+      </button>
+    );
+  };
+
   const logoutButton = (isCollapsed?: boolean) => (
     <Button
       variant="ghost"
@@ -155,11 +176,11 @@ export default function AppShell({
   );
 
   return (
-    <div className="flex min-h-screen flex-1 bg-background text-foreground">
+    <div className="flex h-dvh overflow-hidden bg-background text-foreground">
       {/* ── Desktop sidebar ─────────────────────────────────────────── */}
       <aside
         className={cn(
-          "sticky top-0 z-20 hidden h-screen shrink-0 flex-col border-r bg-card transition-all duration-300 ease-in-out md:flex",
+          "z-20 hidden h-full shrink-0 flex-col border-r bg-card transition-all duration-300 ease-in-out md:flex",
           collapsed ? "w-16" : "w-64",
         )}
       >
@@ -170,33 +191,17 @@ export default function AppShell({
           )}
         >
           <Logo collapsed={collapsed} />
-          {!collapsed && (
-            <button
-              type="button"
-              onClick={() => setCollapsed(true)}
-              title="Colapsar menú"
-              aria-label="Colapsar menú"
-              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-            >
-              <PanelLeftClose className="h-4 w-4" />
-            </button>
-          )}
+          {!collapsed && collapseButton()}
         </div>
+
+        {/* Collapsed there is no room beside the logo, so the toggle gets its
+            own row directly under it — it stays at the top either way, and
+            outside the scroll area so it can never scroll out of reach. */}
+        {collapsed && <div className="shrink-0 border-b p-2">{collapseButton()}</div>}
 
         <div className="flex-1 overflow-y-auto p-3">{navList(undefined, collapsed)}</div>
 
         <div className="shrink-0 border-t p-3">
-          {collapsed && (
-            <button
-              type="button"
-              onClick={() => setCollapsed(false)}
-              title="Expandir menú"
-              aria-label="Expandir menú"
-              className="mb-1 flex w-full justify-center rounded-md px-0 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-            >
-              <PanelLeftOpen className="h-4 w-4" />
-            </button>
-          )}
           {userBlock(collapsed)}
           <div className="mt-1 space-y-1">
             <ThemeToggle collapsed={collapsed} />
@@ -262,7 +267,11 @@ export default function AppShell({
       )}
 
       {/* ── Content ─────────────────────────────────────────────────── */}
-      <main className="mt-16 min-w-0 flex-1 bg-secondary/30 p-3 md:mt-0 md:p-8">
+      {/* The scroll container. `pt` clears the fixed mobile header from inside
+          the scroll area — a margin would push the box past the shell, which is
+          overflow-hidden. `md:pt-8` is explicit because `md:p-8` alone does not
+          beat `pt-*` in Tailwind's output order. */}
+      <main className="min-w-0 flex-1 overflow-y-auto bg-secondary/30 p-3 pt-[4.75rem] md:p-8 md:pt-8">
         <div className="mx-auto w-full max-w-7xl">{children}</div>
       </main>
 

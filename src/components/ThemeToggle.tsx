@@ -33,28 +33,40 @@ export default function ThemeToggle({
     }
   }
 
-  const label = dark ? "Modo claro" : "Modo oscuro";
+  // The visible label names the theme you are IN; the tooltip names what the
+  // button DOES. Showing "Modo oscuro" while in light mode read as if that were
+  // the current state. The icon follows the label, so both describe the same
+  // thing. aria-label carries both and contains the visible text, so the
+  // accessible name still matches what is on screen (WCAG 2.5.3).
+  const state = dark ? "Modo oscuro" : "Modo claro";
+  const action = dark ? "Cambiar a modo claro" : "Cambiar a modo oscuro";
 
   return (
     <button
       type="button"
       onClick={toggle}
-      title={label}
-      aria-label={label}
+      title={action}
+      aria-label={dark === null ? action : `${state}. ${action}`}
+      aria-pressed={dark ?? false}
       className={cn(
         "group flex w-full items-center rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-all hover:bg-accent hover:text-accent-foreground",
         collapsed && "justify-center px-0",
         className,
       )}
     >
+      {/* Until mounted the real theme is unknown (it lives in the <html> class
+          the anti-flash script set), so render a placeholder instead of
+          guessing and flipping on the first commit. */}
       {dark === null ? (
         <span className="block h-4 w-4 shrink-0" />
       ) : dark ? (
-        <Sun className="h-4 w-4 shrink-0" />
-      ) : (
         <Moon className="h-4 w-4 shrink-0" />
+      ) : (
+        <Sun className="h-4 w-4 shrink-0" />
       )}
-      {!collapsed && <span className="ml-3 truncate">{label}</span>}
+      {!collapsed && (
+        <span className="ml-3 truncate">{dark === null ? "Tema" : state}</span>
+      )}
     </button>
   );
 }
