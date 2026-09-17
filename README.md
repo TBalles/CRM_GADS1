@@ -87,16 +87,10 @@ el usuario que creaste en Supabase.
    (`NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY`).
 4. **Deploy**. Vercel detecta Next.js automáticamente, no hace falta tocar el build command.
 
-Cada push a `main` debería generar un deploy nuevo automáticamente y esa URL de producción
-(`tu-proyecto.vercel.app`, siempre la misma — no la de cada deploy individual) queda siempre
-apuntando al último build exitoso.
+Cada push a `main` genera un deploy nuevo automáticamente, y esa URL de producción
+(siempre la misma — no la de cada deploy individual) queda apuntando al último build exitoso.
 
-> **Estado actual:** el proyecto `crm-gads1` ya está importado y linkeado al repo, pero el
-> dominio de producción está devolviendo `404 DEPLOYMENT_NOT_FOUND` — quedó pendiente de
-> diagnosticar. Ver la sección "Vercel" en [CLAUDE.md](./CLAUDE.md) para el detalle de qué se
-> probó y qué revisar la próxima vez (pestaña Deployments del proyecto, Production Branch en
-> Settings → Git, o un Redeploy manual). Mientras tanto, `npm run dev` en local funciona sin
-> problema contra la base de Supabase real.
+**Producción: [crmgads1.vercel.app](https://crmgads1.vercel.app)**
 
 ## Estructura del proyecto
 

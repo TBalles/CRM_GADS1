@@ -155,23 +155,18 @@ Authentication → Users).
 
 ## Vercel
 
-El repo está importado en Vercel (proyecto `crm-gads1`, team `tomasballesteros12-8080`,
-`vercel.com/tomasballesteros12-8080/crm-gads1`) y conectado al repo de GitHub
-`TBalles/CRM_GADS1`. Las env vars (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) ya
-están cargadas en Project Settings → Environment Variables.
+**Producción: [crmgads1.vercel.app](https://crmgads1.vercel.app)** — proyecto `crmgads1` (sin
+guion; los intentos previos con `crm-gads1` fueron un nombre distinto que quedó descartado),
+team `tomasballesteros12-8080`, conectado al repo de GitHub `TBalles/CRM_GADS1`: cada push a
+`main` dispara un build y deploy de producción automático. Las env vars
+(`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) ya están cargadas en Project
+Settings → Environment Variables. Verificado andando en producción (login + datos de Supabase +
+UI rediseñada) el 2026-09-17.
 
-**Pendiente / roto:** el dominio de producción (`crm-gads1.vercel.app` y
-`crm-gads1-tomasballesteros12-8080.vercel.app`) devuelve `404 DEPLOYMENT_NOT_FOUND` — el dominio
-existe pero no tiene ningún deployment asignado como producción, a pesar de que el repo está
-linkeado y hubo pushes a `main` después de conectarlo. No se llegó a diagnosticar la causa raíz
-en esta sesión (el MCP de Vercel tampoco pudo leer el proyecto vía API — `list_projects` devolvía
-`[]` mientras el proyecto se veía bien desde el dashboard — así que buena parte del troubleshooting
-tuvo que hacerse a mano desde ahí). Antes de asumir que el deploy funciona, entrar al dashboard →
-pestaña **Deployments** del proyecto y confirmar si hay algún build marcado como Production y en
-qué estado quedó; si no hay ninguno, puede hacer falta re-verificar el Production Branch en
-Settings → Git, o simplemente click en "Redeploy" sobre el último build. Mientras tanto, correr
-el proyecto en local (`npm run dev`) es el camino confiable para probarlo — la base de Supabase
-está viva y funciona igual.
+Nota para el futuro: el MCP de Vercel de esta sesión nunca pudo leer el proyecto vía API
+(`list_projects` devolvía `[]` con el proyecto andando perfecto desde el dashboard) — si hace
+falta automatizar algo de Vercel de nuevo, probar primero si ese problema se repite antes de
+asumir que el proyecto no existe.
 
 ## Convenciones de código
 
