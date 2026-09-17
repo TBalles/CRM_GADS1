@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import NavBar from "@/components/NavBar";
+import AppShell from "@/components/AppShell";
 
 export default async function AppLayout({
   children,
@@ -22,10 +22,5 @@ export default async function AppLayout({
     .eq("id", user.id)
     .maybeSingle();
 
-  return (
-    <div className="flex min-h-screen flex-1 flex-col bg-slate-50">
-      <NavBar nombre={perfil?.nombre ?? user.email ?? ""} />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
-    </div>
-  );
+  return <AppShell nombre={perfil?.nombre ?? user.email ?? ""}>{children}</AppShell>;
 }

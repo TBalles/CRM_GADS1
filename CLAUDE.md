@@ -25,10 +25,13 @@ Incluido:
   No hace falta un ABM propio todavía.
 - **Oportunidades**: alta y edición, relacionadas a una empresa y/o contacto, con responsable
   asignado (usuario del sistema) y producto/servicio seleccionado. Listado y detalle.
-- **Embudo comercial**: vista Kanban en `/embudo` con las oportunidades agrupadas por etapa.
-  Cambiar de etapa se hace con un `<select>` en cada tarjeta (no hay drag & drop) y el cambio se
-  persiste en la base al instante.
+- **Embudo comercial**: vista Kanban integrada arriba de `/oportunidades` con las oportunidades
+  agrupadas por etapa (sin scroll horizontal, se achica a grilla 3×2 en mobile). Cambiar de etapa
+  se hace con un `<select>` en cada tarjeta (no hay drag & drop) y el cambio se persiste en la
+  base al instante.
 - **Etapas**: precargadas por seed SQL, sin configuración desde la UI.
+- **Modo oscuro**: toggle manual (ícono sol/luna en la barra superior), respeta `prefers-color-scheme`
+  la primera vez y después queda guardado en `localStorage`.
 
 Explícitamente **fuera de alcance** en esta entrega (no agregar sin que el usuario lo pida):
 
@@ -43,9 +46,9 @@ Explícitamente **fuera de alcance** en esta entrega (no agregar sin que el usua
 ### Demo esperada
 
 1. Iniciar sesión.
-2. Registrar una empresa y un contacto.
-3. Crear una oportunidad.
-4. Visualizarla en el embudo (`/embudo`).
+2. Registrar una empresa (en `/empresas`) y, desplegándola, un contacto.
+3. Crear una oportunidad (en `/oportunidades`).
+4. Visualizarla en el embudo (arriba de la misma página).
 5. Cambiarla de etapa.
 6. Refrescar y comprobar que la información permanece guardada.
 
@@ -60,41 +63,59 @@ entre el equipo.
 - **Deploy**: Vercel (plan gratuito) para el frontend, Supabase (plan gratuito) para la base y el
   auth. Sin servidores propios que mantener.
 
-### Por qué Server Actions y no una API REST aparte
+### Por qué mutaciones client-side y no Server Actions para el CRUD
 
-Las mutaciones (crear/editar empresa, contacto, oportunidad, cambiar etapa) se hacen con Server
-Actions de Next.js (`"use server"`) que llaman directo al cliente de Supabase del lado servidor.
-Evita escribir y mantener endpoints `/api/*` para un CRUD simple. Si en el futuro se necesita una
-API pública (integraciones externas, app mobile, etc.) ahí sí conviene agregar route handlers.
+El login usa una Server Action (`src/app/login/actions.ts`) porque necesita escribir cookies de
+sesión del lado servidor. Pero el CRUD de empresas/contactos/oportunidades (crear, editar, cambiar
+etapa) se hace desde Client Components con el cliente de Supabase del navegador
+(`src/lib/supabase/client.ts`), no con Server Actions. Motivo: la UI usa paneles laterales
+(`Drawer`) para editar sin navegar a otra página, y `router.refresh()` después de una Server Action
+no siempre volvía a pintar la lista con los datos nuevos en este proyecto (a veces quedaba
+mostrando el estado viejo hasta un reload manual). La solución fue mover la escritura al cliente,
+pedir la fila guardada de vuelta con `.select().single()`, y mezclarla a mano en el estado local de
+React — así la UI se actualiza al instante sin depender del refresh del router. RLS sigue
+protegiendo el acceso igual que si fuera server-side.
 
 ## Estructura del proyecto
 
 ```
 src/
   app/
-    login/                    Login (fuera del grupo protegido)
+    login/                    Login (fuera del grupo protegido), Server Action en actions.ts
     auth/signout/route.ts     Logout (POST, borra la sesión)
     (app)/                    Grupo de rutas protegidas (layout valida sesión)
-      layout.tsx               Navbar + guard de auth
+      layout.tsx               Arma el AppShell + guard de auth
       dashboard/                Resumen con contadores
-      empresas/                 Listado, alta, detalle/edición
-      contactos/                Listado, alta, detalle/edición
-      oportunidades/            Listado, alta, detalle/edición
-      embudo/                   Kanban por etapa (EmbudoBoard.tsx es el client component)
+      empresas/                 Empresas desplegables con sus contactos anidados
+        page.tsx                 Server Component: fetch de empresas + contactos
+        EmpresasList.tsx          Client: acordeón, estado local, abre los drawers
+        EmpresaForm.tsx           Form de alta/edición de empresa (usado dentro del Drawer)
+        ContactoForm.tsx          Form de alta/edición de contacto (idem)
+      oportunidades/             Embudo (kanban) + listado en una sola página
+        page.tsx                 Server Component: fetch de oportunidades + catálogos
+        OportunidadesView.tsx     Client: kanban sin scroll horizontal, tabla, estado local
+        OportunidadForm.tsx       Form de alta/edición (usado dentro del Drawer)
   components/
-    NavBar.tsx                 Nav con links activos + logout
-    form.tsx                   <Campo>, <CampoTextarea>, <CampoSelect> reutilizables en forms
+    AppShell.tsx                Topbar + menú hamburguesa (sidebar) + logout + ThemeToggle
+    ThemeToggle.tsx              Toggle de modo oscuro (localStorage + prefers-color-scheme)
+    Drawer.tsx                   Panel lateral genérico para los formularios de alta/edición
+    KebabMenu.tsx                Menú de "⋮" (Editar) que usan las filas de cada lista
+    form.tsx                    <Campo>, <CampoTextarea>, <CampoSelect> reutilizables en forms
   lib/supabase/
-    client.ts                  Cliente Supabase para Client Components
+    client.ts                  Cliente Supabase para Client Components (drawers, mutaciones)
     server.ts                  Cliente Supabase para Server Components/Actions (usa cookies())
     middleware.ts               Lógica de refresco de sesión + redirects, usada por proxy.ts
-    types.ts                    Tipos Database a mano (tablas + relaciones para embeds tipados)
+    types.ts                    Tipos Database generados (tablas + relaciones para embeds tipados)
   proxy.ts                      Proxy/middleware raíz de Next.js (protege todas las rutas salvo /login)
 supabase/
   migrations/
     0001_init_schema.sql        Tablas, índices, triggers, RLS
     0002_seed_data.sql          Etapas y productos precargados
 ```
+
+No hay rutas separadas para "nueva empresa" o "detalle de oportunidad": todo alta/edición pasa
+por el `Drawer` desde la lista correspondiente. Tampoco hay una página de Contactos aparte — viven
+anidados dentro de cada empresa en `/empresas`.
 
 ### Modelo de datos (Postgres, esquema `public`)
 
@@ -131,6 +152,13 @@ Si en algún momento hace falta reconectar a otro proyecto o recrearlo desde cer
 documenta qué variables hacen falta y el [README](./README.md) tiene los pasos manuales
 (crear proyecto, correr las migraciones desde el SQL Editor, crear un usuario en
 Authentication → Users).
+
+## Vercel
+
+El repo está importado en Vercel (proyecto `crm-gads1`, team `tomasballesteros12-8080`) y
+conectado al repo de GitHub `TBalles/CRM_GADS1`: cada push a `main` dispara un build y deploy de
+producción automático. Las env vars (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
+ya están cargadas en Project Settings → Environment Variables para Production/Preview/Development.
 
 ## Convenciones de código
 

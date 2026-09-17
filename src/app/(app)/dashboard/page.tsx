@@ -13,36 +13,36 @@ export default async function DashboardPage() {
 
   const cards = [
     { label: "Empresas", value: empresas ?? 0, href: "/empresas" },
-    { label: "Contactos", value: contactos ?? 0, href: "/contactos" },
+    { label: "Contactos", value: contactos ?? 0, href: "/empresas" },
     { label: "Oportunidades", value: oportunidades ?? 0, href: "/oportunidades" },
   ];
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-slate-900">Inicio</h1>
-      <p className="mt-1 text-sm text-slate-500">Resumen general del CRM.</p>
+      <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Inicio</h1>
+      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Resumen general del CRM.</p>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {cards.map((card) => (
           <Link
-            key={card.href}
+            key={card.label}
             href={card.href}
-            className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-slate-300"
+            className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
           >
-            <p className="text-sm text-slate-500">{card.label}</p>
-            <p className="mt-2 text-3xl font-semibold text-slate-900">{card.value}</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{card.label}</p>
+            <p className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">{card.value}</p>
           </Link>
         ))}
       </div>
 
-      <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-medium text-slate-900">Próximos pasos</h2>
-        <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-slate-600">
+      <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <h2 className="text-lg font-medium text-slate-900 dark:text-slate-100">Próximos pasos</h2>
+        <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-slate-600 dark:text-slate-400">
           <li>Registrá una empresa y un contacto asociado.</li>
           <li>Creá una oportunidad y asignale un responsable y un producto.</li>
           <li>
             Visualizala en el{" "}
-            <Link href="/embudo" className="underline">
+            <Link href="/oportunidades" className="underline">
               embudo comercial
             </Link>{" "}
             y cambiala de etapa.
