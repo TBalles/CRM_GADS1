@@ -13,6 +13,7 @@ import {
   PanelLeftOpen,
   X,
 } from "lucide-react";
+import { APP_NAME } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 import { GoalMark } from "./Logo";
 import { Avatar, AvatarFallback, Button, initials } from "./ui/UIComponents";
@@ -70,7 +71,7 @@ function Logo({ collapsed }: { collapsed?: boolean }) {
       </span>
       {!collapsed && (
         <span className="min-w-0 leading-tight">
-          <span className="block truncate text-sm font-bold tracking-tight">CRM GADS1</span>
+          <span className="block truncate text-sm font-bold tracking-tight">{APP_NAME}</span>
           <span className="block truncate text-[10px] uppercase tracking-wider text-muted-foreground">
             Equipamiento deportivo
           </span>
@@ -222,7 +223,7 @@ export default function AppShell({
             <Menu className="h-6 w-6" />
           </button>
           <span className="truncate text-lg font-bold tracking-tight">
-            {current?.label ?? "CRM GADS1"}
+            {current?.label ?? APP_NAME}
           </span>
         </div>
         <Avatar className="h-8 w-8">

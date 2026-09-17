@@ -1,12 +1,12 @@
-# CRM GADS1 — Divergencias del Sumar UI Kit
+# Tuco & Nito — Divergencias del Sumar UI Kit
 
 `docs/DESIGN.md` es el **Sumar UI Kit canónico**, vendoreado acá como **referencia
 read-only**. No se edita: su valor es ser un espejo exacto del kit del estudio, así una app
 nueva que lo siga se ve indistinguible.
 
-Este archivo registra dónde **CRM GADS1 se desvía a propósito** del kit. Regla general:
+Este archivo registra dónde **Tuco & Nito se desvía a propósito** del kit. Regla general:
 al crear o modificar UI, **DESIGN.md manda salvo lo listado acá**. Cada override abajo tiene
-qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
+qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
 
 ---
 
@@ -14,7 +14,7 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
 
 - **Kit**: brand token = wine `#800020`; es el único parámetro por cliente
   (`docs/DESIGN.md` §1.4, §1.5).
-- **CRM GADS1**: verde cancha profundo `#0d6d4d` (`--brand: 160 78% 24%`). Es el ÚNICO color
+- **Tuco & Nito**: verde cancha profundo `#0d6d4d` (`--brand: 160 78% 24%`). Es el ÚNICO color
   de marca. En oscuro se aclara a `160 58% 46%` y su `--brand-foreground` se invierte a
   oscuro — el verde profundo desaparece sobre fondo oscuro, y texto blanco sobre el verde
   claro no daría contraste.
@@ -29,7 +29,7 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
 - **Kit**: `primary` = `#1a1a1a`, un negro **fijo** que no cambia entre clientes; el color de
   marca se reserva para logo, acentos, KPI destacado y charts. Es la regla de oro #3:
   *"`primary` (negro) y neutros no se tocan entre clientes"* (`docs/DESIGN.md` §1.4, §15).
-- **CRM GADS1**: `primary` **aliasea** `brand`, así el verde es el color principal de la
+- **Tuco & Nito**: `primary` **aliasea** `brand`, así el verde es el color principal de la
   interfaz y llega a botones, ítem de nav activo, links (`variant="link"`), tints
   `bg-primary/5` y focus rings con **un solo token**, sin overrides por componente:
   ```css
@@ -57,7 +57,7 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
 - **Kit**: `tailwind.config.js` con `darkMode: 'class'`, `theme.extend.colors`, y el sufijo
   `/ <alpha-value>` OBLIGATORIO en cada color para que anden los modificadores de opacidad
   (`bg-brand/10`) — regla de oro #14 (`docs/DESIGN.md` §1.2).
-- **CRM GADS1**: Tailwind v4, que no usa archivo de config. Los tokens se declaran en
+- **Tuco & Nito**: Tailwind v4, que no usa archivo de config. Los tokens se declaran en
   `@theme inline { --color-brand: hsl(var(--brand)); … }` dentro de `globals.css`, y el dark
   mode con `@custom-variant dark (&:where(.dark, .dark *))`.
   - **`<alpha-value>` se elimina a propósito**: era un requisito de v3. v4 implementa los
@@ -78,7 +78,7 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
 
 - **Kit**: Vite, `react-router-dom`, `index.html` con el `@import` de Inter, providers
   cableados en `App.tsx` (`docs/DESIGN.md` §0.3, §0.4).
-- **CRM GADS1**: Next 16 App Router.
+- **Tuco & Nito**: Next 16 App Router.
   - **Inter** se carga con `next/font/google` (`src/app/layout.tsx`) en vez del `@import` de
     Google Fonts: queda self-hosted, sin flash de la tipografía de fallback.
   - **Providers**: `ToastProvider` + `TooltipHost` se montan una sola vez en el layout raíz.
@@ -92,7 +92,7 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
 
 - **Kit**: los charts van con **Recharts**, única librería, envueltos en `Card` +
   `SectionTitle` (`docs/DESIGN.md` §4.6, §10).
-- **CRM GADS1**: el dashboard no usa ninguna librería de charts. Las dos formas que necesita
+- **Tuco & Nito**: el dashboard no usa ninguna librería de charts. Las dos formas que necesita
   se construyen con divs y flex en `src/app/(app)/dashboard/charts.tsx`:
   - **Magnitud** (oportunidades por etapa, empresas con más valor) → `MagnitudeBars`: barra
     horizontal ordenada, **hue único de marca**, con el valor como label directo. Nada de
@@ -114,7 +114,7 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
 
 - **Kit**: todos los primitivos viven en **un solo** `components/ui/UIComponents.tsx`, junto
   con `cn` y `useModalAnimation` (`docs/DESIGN.md` §2, §3).
-- **CRM GADS1**: los primitivos puros quedan en `src/components/ui/UIComponents.tsx`
+- **Tuco & Nito**: los primitivos puros quedan en `src/components/ui/UIComponents.tsx`
   **sin `"use client"`** (módulos compartidos, renderizan a los dos lados de la frontera RSC),
   y los hooks de overlay (`useModalAnimation`, `useAnchoredPortal`, `popoverPanelClass`) se
   mudaron a `src/components/ui/overlay.ts`, que **sí** es `"use client"`.
@@ -135,7 +135,7 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
 
 - **Kit**: `StatusBadge` mapea un estado canónico a un par `bg-{c}-100 text-{c}-700`
   (`docs/DESIGN.md` §3.11, regla de oro #7).
-- **CRM GADS1**: las etapas son **datos**, no un enum de código: nombre y color (hex) vienen
+- **Tuco & Nito**: las etapas son **datos**, no un enum de código: nombre y color (hex) vienen
   de la tabla `etapas` y el usuario puede cambiarlos por seed/SQL. No hay mapa canónico
   estado→color que `StatusBadge` pueda usar. `EtapaBadge`
   (`src/app/(app)/oportunidades/OportunidadesView.tsx`) construye el pill desde el hex de la
@@ -151,7 +151,7 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
 
 - **Kit**: todo formulario va en el **modal centrado** de §4.1; el drawer lateral (§4.3) es
   para drill-down read-only.
-- **CRM GADS1**: toda alta/edición (empresa, contacto, oportunidad) vive en el `Drawer`
+- **Tuco & Nito**: toda alta/edición (empresa, contacto, oportunidad) vive en el `Drawer`
   lateral derecho. El panel toma la estructura header / body scrolleable / footer del modal
   de §4.1 y la animación `drawer-enter-right` de §4.3; la barra de acción va pineada al pie
   del área de scroll con `FormActions` (§5.7), con negativos que cancelan el `p-5` del body.
@@ -164,7 +164,7 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
 - **Kit**: §8.4 describe el patrón de popover portaled y dice explícitamente
   *"extraé esto a un hook `useAnchoredPortal()` en vez de repetirlo"*, pero su propio código
   lo duplica en 5+ lugares.
-- **CRM GADS1**: el hook existe (`src/components/ui/UIComponents.tsx`) y lo comparten `Select`
+- **Tuco & Nito**: el hook existe (`src/components/ui/UIComponents.tsx`) y lo comparten `Select`
   y `RowActions`: medición del trigger, flip vertical, clamp horizontal, y cierre por
   mousedown afuera / scroll / Escape.
 - **Por qué**: es la prescripción del kit, cumplida.
@@ -173,7 +173,7 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
 
 - **Kit**: §8.2 define la escala saneada y aclara que el código real tiene `z-[9999]` y
   `zIndex: 999999` desprolijos.
-- **CRM GADS1**: se usa la escala de §8.2: nav `z-20`, header mobile `z-30`, drawer mobile
+- **Tuco & Nito**: se usa la escala de §8.2: nav `z-20`, header mobile `z-30`, drawer mobile
   `z-40`, drawer/overlay `z-50`, popovers portaled `z-90`, confirm `z-100`, toasts `z-130`,
   tooltip `z-140`. Ningún popover usa `zIndex: 999999`.
 
@@ -181,7 +181,7 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
 
 - **Kit**: regla de oro #24 pide `aria-invalid` / `role="alert"` en errores de campo y
   `aria-label` en botones-ícono, y avisa *"el código base no los tiene — no heredes esa deuda"*.
-- **CRM GADS1**: los campos de `src/components/form.tsx` emiten `aria-invalid` +
+- **Tuco & Nito**: los campos de `src/components/form.tsx` emiten `aria-invalid` +
   `aria-describedby` y el error va con `role="alert"`; todo botón-ícono lleva `aria-label`.
   El trigger del `Select` usa `role="combobox"` con `aria-controls` / `aria-expanded` sobre un
   panel `role="listbox"` con hijos `role="option"` y `aria-selected` — un `<button>` pelado no
@@ -190,4 +190,4 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
 ---
 
 > Si aparece una divergencia nueva respecto del kit, se agrega como un bloque más en este
-> archivo (misma estructura: kit → CRM GADS1 → dónde → por qué), no editando `docs/DESIGN.md`.
+> archivo (misma estructura: kit → Tuco & Nito → dónde → por qué), no editando `docs/DESIGN.md`.

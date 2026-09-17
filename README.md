@@ -1,4 +1,4 @@
-# CRM GADS1
+# Tuco & Nito
 
 CRM simple para proveedores y distribuidores de equipamiento deportivo (arcos, redes, conos,
 pecheras, pelotas, etc.) que venden a canchas, clubes, complejos deportivos y escuelas de fútbol.

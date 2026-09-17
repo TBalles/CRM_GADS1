@@ -1,4 +1,5 @@
 import { GoalMark } from "@/components/Logo";
+import { APP_NAME } from "@/lib/brand";
 import LoginForm from "./LoginForm";
 
 /**
@@ -57,7 +58,7 @@ export default async function LoginPage({
               <GoalMark className="h-6 w-6" />
             </span>
             <span className="leading-tight">
-              <span className="block text-base font-bold tracking-tight">CRM GADS1</span>
+              <span className="block text-base font-bold tracking-tight">{APP_NAME}</span>
               <span className="block text-[10px] uppercase tracking-[0.2em] text-white/50">
                 Equipamiento deportivo
               </span>
@@ -77,7 +78,7 @@ export default async function LoginPage({
           </div>
 
           <p className="text-xs font-medium uppercase tracking-wide text-white/40">
-            © {new Date().getFullYear()} CRM GADS1
+            © {new Date().getFullYear()} {APP_NAME}
           </p>
         </div>
       </div>
@@ -97,7 +98,7 @@ export default async function LoginPage({
           <LoginForm error={error} />
 
           <p className="mt-8 text-center text-xs font-medium tracking-wide text-muted-foreground/70">
-            CRM GADS1 · primera entrega
+            {APP_NAME} · primera entrega
           </p>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { APP_NAME } from "@/lib/brand";
 import { ToastProvider } from "@/components/ui/Toast";
 import { TooltipHost } from "@/components/ui/Tooltip";
 
@@ -13,7 +14,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "CRM GADS1",
+  title: APP_NAME,
   description: "CRM para proveedores y distribuidores de equipamiento deportivo",
 };
 
