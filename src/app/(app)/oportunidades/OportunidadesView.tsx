@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import {
   Building2,
   Handshake,
@@ -115,8 +115,12 @@ export default function OportunidadesView({
   perfiles: Opcion[];
 }) {
   const [items, setItems] = useState(oportunidades);
-  const [isPending, startTransition] = useTransition();
-  const [pendingId, setPendingId] = useState<string | null>(null);
+  // One entry per in-flight row, not a single shared id: with a scalar, starting
+  // a second stage change cleared the first row's busy state while its request
+  // was still going, re-enabling its Select and letting two concurrent updates
+  // race — last response to land wins in the DB, which is not necessarily the
+  // stage on screen, and neither request errors so nothing rolls back.
+  const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(new Set());
   const [query, setQuery] = useState("");
   const [etapaFilter, setEtapaFilter] = useState("");
   const { showToast } = useToast();
@@ -145,25 +149,34 @@ export default function OportunidadesView({
     setOpen(false);
   }
 
-  function handleChangeEtapa(oportunidadId: string, etapaId: string) {
+  async function handleChangeEtapa(oportunidadId: string, etapaId: string) {
     const previous = items.find((o) => o.id === oportunidadId)?.etapa_id;
+    // A row already in flight has its Select disabled, so this also rules out
+    // two concurrent writes to the same opportunity.
+    if (!previous || previous === etapaId || pendingIds.has(oportunidadId)) return;
+
     // Optimistic: move the card now, roll it back if the write fails.
     setItems((prev) => prev.map((o) => (o.id === oportunidadId ? { ...o, etapa_id: etapaId } : o)));
-    setPendingId(oportunidadId);
-    startTransition(async () => {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("oportunidades")
-        .update({ etapa_id: etapaId })
-        .eq("id", oportunidadId);
-      setPendingId(null);
-      if (error && previous) {
-        setItems((prev) =>
-          prev.map((o) => (o.id === oportunidadId ? { ...o, etapa_id: previous } : o)),
-        );
-        showToast("No se pudo cambiar la etapa.", "error");
-      }
+    setPendingIds((prev) => new Set(prev).add(oportunidadId));
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("oportunidades")
+      .update({ etapa_id: etapaId })
+      .eq("id", oportunidadId);
+
+    setPendingIds((prev) => {
+      const next = new Set(prev);
+      next.delete(oportunidadId);
+      return next;
     });
+
+    if (error) {
+      setItems((prev) =>
+        prev.map((o) => (o.id === oportunidadId ? { ...o, etapa_id: previous } : o)),
+      );
+      showToast("No se pudo cambiar la etapa.", "error");
+    }
   }
 
   function buildDisplayRow(raw: Oportunidad): OportunidadRow {
@@ -289,7 +302,7 @@ export default function OportunidadesView({
 
                 <div className="flex max-h-[26rem] min-h-[7rem] flex-1 flex-col gap-1.5 overflow-y-auto rounded-b-lg border bg-muted/30 p-1.5">
                   {etapaItems.map((o) => {
-                    const busy = isPending && pendingId === o.id;
+                    const busy = pendingIds.has(o.id);
                     return (
                       <div
                         key={o.id}

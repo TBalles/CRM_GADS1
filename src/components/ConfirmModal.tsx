@@ -31,6 +31,17 @@ export default function ConfirmModal({
   const { visible, overlayClass, modalClass } = useModalAnimation(isOpen);
   const [isProcessing, setIsProcessing] = React.useState(false);
 
+  // Escape closes, same as the Drawer — but never while the confirmed action
+  // is still running, or the dialog would vanish mid-flight.
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !isProcessing) onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [isOpen, isProcessing, onClose]);
+
   if (!visible) return null;
 
   const handleConfirm = async () => {

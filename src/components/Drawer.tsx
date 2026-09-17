@@ -4,6 +4,7 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { useModalAnimation } from "./ui/UIComponents";
+import { backdropClose } from "./ui/backdropClose";
 
 /**
  * Right-hand sliding panel (DESIGN.md §4.3) carrying the kit's modal
@@ -26,7 +27,6 @@ export default function Drawer({
   children: React.ReactNode;
 }) {
   const { visible, overlayClass, modalClass } = useModalAnimation(open);
-  const pressedOnBackdrop = React.useRef(false);
 
   React.useEffect(() => {
     if (!open) return;
@@ -44,13 +44,7 @@ export default function Drawer({
   return createPortal(
     <div
       className={`fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm ${overlayClass}`}
-      onMouseDown={(e) => {
-        pressedOnBackdrop.current = e.target === e.currentTarget;
-      }}
-      onClick={(e) => {
-        if (pressedOnBackdrop.current && e.target === e.currentTarget) onClose();
-        pressedOnBackdrop.current = false;
-      }}
+      {...backdropClose(onClose)}
     >
       <div
         role="dialog"

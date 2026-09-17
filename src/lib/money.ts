@@ -57,6 +57,24 @@ export function parseMoney(masked: string | number | null | undefined): number {
   return negative ? -Math.abs(n) : n;
 }
 
+/**
+ * Index in a masked string that sits just after its `count`-th digit.
+ *
+ * Lets a caret be anchored to a DIGIT COUNT instead of a character offset, so
+ * the separators the mask inserts or removes shift around the caret rather
+ * than dragging it to the end of the field. See MoneyInput.
+ */
+export function offsetAfterDigits(masked: string, count: number): number {
+  if (count <= 0) return 0;
+  let seen = 0;
+  let i = 0;
+  while (i < masked.length && seen < count) {
+    if (masked[i] >= "0" && masked[i] <= "9") seen++;
+    i++;
+  }
+  return i;
+}
+
 const nf0 = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
 
 /** Display formatter for amounts already stored as numbers. */
