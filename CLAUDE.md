@@ -114,22 +114,23 @@ supabase/
 Todas las tablas tienen RLS habilitado con una política única: cualquier usuario autenticado
 puede leer y escribir. No hay distinción de roles todavía — ver "fuera de alcance" arriba.
 
-## Supabase: qué falta configurar
+## Supabase
 
-El código ya asume una conexión a Supabase vía las env vars `NEXT_PUBLIC_SUPABASE_URL` y
-`NEXT_PUBLIC_SUPABASE_ANON_KEY` (ver `.env.example`). **No hay ningún proyecto de Supabase real
-conectado todavía** — hay que crear uno y cargar esos valores. Instrucciones completas en el
-[README](./README.md).
+Ya hay un proyecto de Supabase conectado y provisionado (organización `dgmoqhihtjjbetuedaad`,
+proyecto `pdseuwdifzywpdgawbrl`, región `us-west-2`). Se armó vía el MCP de Supabase:
 
-Resumen rápido:
+- Las migraciones `0001_init_schema.sql` y `0002_seed_data.sql` ya están aplicadas.
+- RLS habilitado en las 6 tablas, sin warnings de seguridad pendientes (`get_advisors`).
+- Hay un usuario habilitado para el login de la demo (`admin@crmgads1.com` — ver al usuario del
+  proyecto por la contraseña, se generó una vez y no queda guardada en el repo).
+- `.env.local` ya tiene `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` cargados
+  (archivo gitignoreado, no se commitea).
+- `src/lib/supabase/types.ts` está generado contra este proyecto real.
 
-1. Crear proyecto en [supabase.com](https://supabase.com) (gratis).
-2. Correr `supabase/migrations/0001_init_schema.sql` y luego `0002_seed_data.sql` en el SQL
-   Editor del proyecto.
-3. Crear al menos un usuario en Authentication → Users (email + password, "Auto Confirm User"
-   activado) — es el usuario para el login de la demo.
-4. Copiar Project URL y anon key desde Project Settings → API a `.env.local` (local) y a las
-   Environment Variables del proyecto en Vercel (producción).
+Si en algún momento hace falta reconectar a otro proyecto o recrearlo desde cero, `.env.example`
+documenta qué variables hacen falta y el [README](./README.md) tiene los pasos manuales
+(crear proyecto, correr las migraciones desde el SQL Editor, crear un usuario en
+Authentication → Users).
 
 ## Convenciones de código
 
@@ -141,11 +142,11 @@ Resumen rápido:
   `src/app/(app)/empresas/actions.ts` como referencia), no en un lugar centralizado.
 - Los formularios usan los componentes de `src/components/form.tsx` en vez de reinventar inputs
   estilizados en cada página.
-- Los tipos de la base (`src/lib/supabase/types.ts`) están escritos a mano, no generados con
-  `supabase gen types typescript` (no hay CLI vinculada a un proyecto real). Si se agrega o
-  modifica una tabla/columna en las migraciones SQL, hay que actualizar este archivo a mano en el
-  mismo cambio — si no, los embeds (`etapa:etapas(...)`, `empresa:empresas(...)`, etc.) pueden
-  perder el tipado correcto.
+- Los tipos de la base (`src/lib/supabase/types.ts`) están generados contra el proyecto real de
+  Supabase (`generate_typescript_types` del MCP de Supabase, equivalente a
+  `supabase gen types typescript`). Si se agrega o modifica una tabla/columna en las migraciones
+  SQL, hay que volver a generar este archivo en el mismo cambio — si no, los embeds
+  (`etapa:etapas(...)`, `empresa:empresas(...)`, etc.) pueden perder el tipado correcto.
 
 ## Comandos
 
