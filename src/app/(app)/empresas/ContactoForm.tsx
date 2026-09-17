@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Campo, CampoTextarea, CampoSelect } from "@/components/form";
+import { Campo, CampoSelect, CampoTextarea, FormActions, FormBanner } from "@/components/form";
+import { useToast } from "@/components/ui/Toast";
 import type { Tables } from "@/lib/supabase/types";
 
 type Contacto = Tables<"contactos">;
@@ -13,11 +14,13 @@ export default function ContactoForm({
   empresaId,
   empresas,
   onSaved,
+  onCancel,
 }: {
   contacto?: Contacto;
   empresaId?: string;
   empresas: Pick<Empresa, "id" | "nombre">[];
   onSaved: (contacto: Contacto) => void;
+  onCancel: () => void;
 }) {
   const [nombre, setNombre] = useState(contacto?.nombre ?? "");
   const [apellido, setApellido] = useState(contacto?.apellido ?? "");
@@ -26,16 +29,19 @@ export default function ContactoForm({
   const [email, setEmail] = useState(contacto?.email ?? "");
   const [telefono, setTelefono] = useState(contacto?.telefono ?? "");
   const [notas, setNotas] = useState(contacto?.notas ?? "");
+  const [nombreError, setNombreError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const { showToast } = useToast();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!nombre.trim()) {
-      setError("El nombre es obligatorio.");
+      setNombreError("El nombre es obligatorio.");
       return;
     }
 
+    setNombreError(null);
     setSaving(true);
     setError(null);
     const supabase = createClient();
@@ -57,49 +63,53 @@ export default function ContactoForm({
     setSaving(false);
 
     if (dbError || !data) {
-      setError("No se pudo guardar el contacto.");
+      setError("No se pudo guardar el contacto. Revisá los datos e intentá de nuevo.");
       return;
     }
 
+    showToast(contacto ? "Contacto actualizado." : "Contacto creado.", "success");
     onSaved(data);
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <Campo id="nombre" label="Nombre *" required value={nombre} onChange={(e) => setNombre(e.target.value)} />
-        <Campo id="apellido" label="Apellido" value={apellido ?? ""} onChange={(e) => setApellido(e.target.value)} />
+    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      {error && <FormBanner message={error} />}
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Campo
+          id="nombre"
+          label="Nombre"
+          required
+          autoFocus
+          value={nombre}
+          onChange={(v) => {
+            setNombre(v);
+            if (nombreError) setNombreError(null);
+          }}
+          error={nombreError ?? undefined}
+        />
+        <Campo id="apellido" label="Apellido" value={apellido} onChange={setApellido} />
       </div>
+
       <CampoSelect
         id="empresa_id"
         label="Empresa"
         placeholder="Sin empresa asociada"
-        value={empresaIdValue ?? ""}
-        onChange={(e) => setEmpresaIdValue(e.target.value)}
+        value={empresaIdValue}
+        onChange={setEmpresaIdValue}
         options={empresas.map((emp) => ({ value: emp.id, label: emp.nombre }))}
       />
-      <Campo id="cargo" label="Cargo" value={cargo ?? ""} onChange={(e) => setCargo(e.target.value)} />
-      <div className="grid grid-cols-2 gap-4">
-        <Campo id="email" label="Email" type="email" value={email ?? ""} onChange={(e) => setEmail(e.target.value)} />
-        <Campo id="telefono" label="Teléfono" value={telefono ?? ""} onChange={(e) => setTelefono(e.target.value)} />
-      </div>
-      <CampoTextarea id="notas" label="Notas" value={notas ?? ""} onChange={(e) => setNotas(e.target.value)} />
 
-      {error ? (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
-          {error}
-        </p>
-      ) : null}
+      <Campo id="cargo" label="Cargo" placeholder="Presidente, encargado de compras…" value={cargo} onChange={setCargo} />
 
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
-        >
-          {saving ? "Guardando…" : "Guardar"}
-        </button>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Campo id="email" label="Email" type="email" inputMode="email" value={email} onChange={setEmail} />
+        <Campo id="telefono" label="Teléfono" type="tel" inputMode="tel" value={telefono} onChange={setTelefono} />
       </div>
+
+      <CampoTextarea id="notas" label="Notas" value={notas} onChange={setNotas} />
+
+      <FormActions saving={saving} onCancel={onCancel} />
     </form>
   );
 }

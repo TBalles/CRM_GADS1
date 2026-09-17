@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Campo, CampoTextarea } from "@/components/form";
+import { Campo, CampoTextarea, FormActions, FormBanner } from "@/components/form";
+import { useToast } from "@/components/ui/Toast";
 import type { Tables } from "@/lib/supabase/types";
 
 type Empresa = Tables<"empresas">;
@@ -10,9 +11,11 @@ type Empresa = Tables<"empresas">;
 export default function EmpresaForm({
   empresa,
   onSaved,
+  onCancel,
 }: {
   empresa?: Empresa;
   onSaved: (empresa: Empresa) => void;
+  onCancel: () => void;
 }) {
   const [nombre, setNombre] = useState(empresa?.nombre ?? "");
   const [cuit, setCuit] = useState(empresa?.cuit ?? "");
@@ -20,16 +23,19 @@ export default function EmpresaForm({
   const [email, setEmail] = useState(empresa?.email ?? "");
   const [direccion, setDireccion] = useState(empresa?.direccion ?? "");
   const [notas, setNotas] = useState(empresa?.notas ?? "");
+  const [nombreError, setNombreError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const { showToast } = useToast();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!nombre.trim()) {
-      setError("El nombre es obligatorio.");
+      setNombreError("El nombre es obligatorio.");
       return;
     }
 
+    setNombreError(null);
     setSaving(true);
     setError(null);
     const supabase = createClient();
@@ -50,37 +56,42 @@ export default function EmpresaForm({
     setSaving(false);
 
     if (dbError || !data) {
-      setError("No se pudo guardar la empresa.");
+      setError("No se pudo guardar la empresa. Revisá los datos e intentá de nuevo.");
       return;
     }
 
+    showToast(empresa ? "Empresa actualizada." : "Empresa creada.", "success");
     onSaved(data);
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <Campo id="nombre" label="Nombre *" required value={nombre} onChange={(e) => setNombre(e.target.value)} />
-      <Campo id="cuit" label="CUIT" value={cuit ?? ""} onChange={(e) => setCuit(e.target.value)} />
-      <Campo id="telefono" label="Teléfono" value={telefono ?? ""} onChange={(e) => setTelefono(e.target.value)} />
-      <Campo id="email" label="Email" type="email" value={email ?? ""} onChange={(e) => setEmail(e.target.value)} />
-      <Campo id="direccion" label="Dirección" value={direccion ?? ""} onChange={(e) => setDireccion(e.target.value)} />
-      <CampoTextarea id="notas" label="Notas" value={notas ?? ""} onChange={(e) => setNotas(e.target.value)} />
+    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      {error && <FormBanner message={error} />}
 
-      {error ? (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
-          {error}
-        </p>
-      ) : null}
+      <Campo
+        id="nombre"
+        label="Nombre"
+        required
+        autoFocus
+        placeholder="Club Atlético…"
+        value={nombre}
+        onChange={(v) => {
+          setNombre(v);
+          if (nombreError) setNombreError(null);
+        }}
+        error={nombreError ?? undefined}
+      />
 
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
-        >
-          {saving ? "Guardando…" : "Guardar"}
-        </button>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Campo id="cuit" label="CUIT" inputMode="numeric" placeholder="30-12345678-9" value={cuit} onChange={setCuit} />
+        <Campo id="telefono" label="Teléfono" type="tel" inputMode="tel" placeholder="11 5555-5555" value={telefono} onChange={setTelefono} />
       </div>
+
+      <Campo id="email" label="Email" type="email" inputMode="email" placeholder="contacto@club.com" value={email} onChange={setEmail} />
+      <Campo id="direccion" label="Dirección" placeholder="Av. Siempre Viva 742" value={direccion} onChange={setDireccion} />
+      <CampoTextarea id="notas" label="Notas" placeholder="Contexto, historial, preferencias…" value={notas} onChange={setNotas} />
+
+      <FormActions saving={saving} onCancel={onCancel} />
     </form>
   );
 }
