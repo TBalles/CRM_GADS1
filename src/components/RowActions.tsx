@@ -3,7 +3,8 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { MoreVertical } from "lucide-react";
-import { cn, popoverPanelClass, useAnchoredPortal } from "./ui/UIComponents";
+import { cn } from "@/lib/utils";
+import { popoverPanelClass, useAnchoredPortal } from "./ui/overlay";
 
 export type RowAction = {
   label: string;

@@ -3,7 +3,8 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle, Loader2 } from "lucide-react";
-import { Button, useModalAnimation } from "./ui/UIComponents";
+import { Button } from "./ui/UIComponents";
+import { useModalAnimation } from "./ui/overlay";
 import { backdropClose } from "./ui/backdropClose";
 
 /** Centred alert dialog (DESIGN.md §4.2). Use `variant="danger"` to destroy. */

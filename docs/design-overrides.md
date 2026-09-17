@@ -82,7 +82,28 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
   una línea extra. Si aparecen series temporales o charts densos, traer Recharts y seguir
   §4.6 + el método `dataviz`.
 
-## 5. Pill de etapa tintada, no `StatusBadge` con fill sólido
+## 5. Primitivos y hooks en módulos separados, no un único `UIComponents.tsx`
+
+- **Kit**: todos los primitivos viven en **un solo** `components/ui/UIComponents.tsx`, junto
+  con `cn` y `useModalAnimation` (`docs/DESIGN.md` §2, §3).
+- **CRM GADS1**: los primitivos puros quedan en `src/components/ui/UIComponents.tsx`
+  **sin `"use client"`** (módulos compartidos, renderizan a los dos lados de la frontera RSC),
+  y los hooks de overlay (`useModalAnimation`, `useAnchoredPortal`, `popoverPanelClass`) se
+  mudaron a `src/components/ui/overlay.ts`, que **sí** es `"use client"`.
+- **Por qué**: el kit está escrito para Vite, donde no existe la frontera servidor/cliente.
+  Meter los hooks en el mismo archivo obliga a marcarlo `"use client"`, y eso convierte a
+  **cada primitivo del archivo** en client component. A partir de ahí, pasar un ícono como
+  prop desde un Server Component (`<SectionTitle icon={Layers}>` en el dashboard) cruza la
+  frontera y **tira runtime error**: un ícono de lucide es un objeto `forwardRef`
+  (`{$$typeof, render}`), no un objeto plano, y no es serializable.
+  Reproducido y verificado: con `"use client"` en ese archivo, una página de servidor que
+  pase `icon={...}` devuelve **HTTP 500**; sin él, **200**.
+- **Regla práctica**: si un componente de `ui/` necesita un hook, estado o un handler de
+  eventos, va en un módulo `"use client"` propio. Si es presentacional puro, se deja
+  compartido — no le agregues `"use client"` "por si acaso", porque es justamente lo que
+  rompe el paso de íconos desde el servidor.
+
+## 6. Pill de etapa tintada, no `StatusBadge` con fill sólido
 
 - **Kit**: `StatusBadge` mapea un estado canónico a un par `bg-{c}-100 text-{c}-700`
   (`docs/DESIGN.md` §3.11, regla de oro #7).
@@ -98,7 +119,7 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
   etapa, es legible en claro y oscuro, y reusa el mismo dot que ya muestran el `Select` y las
   columnas del embudo.
 
-## 6. Formularios en Drawer, no en modal centrado
+## 7. Formularios en Drawer, no en modal centrado
 
 - **Kit**: todo formulario va en el **modal centrado** de §4.1; el drawer lateral (§4.3) es
   para drill-down read-only.
@@ -110,7 +131,7 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
 - **Por qué**: decisión de producto previa al rediseño, documentada en `CLAUDE.md` — es la
   razón por la que el CRUD muta desde Client Components en vez de Server Actions. No se toca.
 
-## 7. `useAnchoredPortal` extraído — el kit lo prescribe y no lo hace
+## 8. `useAnchoredPortal` extraído — el kit lo prescribe y no lo hace
 
 - **Kit**: §8.4 describe el patrón de popover portaled y dice explícitamente
   *"extraé esto a un hook `useAnchoredPortal()` en vez de repetirlo"*, pero su propio código
@@ -120,7 +141,7 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
   mousedown afuera / scroll / Escape.
 - **Por qué**: es la prescripción del kit, cumplida.
 
-## 8. Escala de z-index saneada (la de §8.2, no los `z-[9999]`)
+## 9. Escala de z-index saneada (la de §8.2, no los `z-[9999]`)
 
 - **Kit**: §8.2 define la escala saneada y aclara que el código real tiene `z-[9999]` y
   `zIndex: 999999` desprolijos.
@@ -128,7 +149,7 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
   `z-40`, drawer/overlay `z-50`, popovers portaled `z-90`, confirm `z-100`, toasts `z-130`,
   tooltip `z-140`. Ningún popover usa `zIndex: 999999`.
 
-## 9. Accesibilidad — se cumple la regla #24 desde el arranque
+## 10. Accesibilidad — se cumple la regla #24 desde el arranque
 
 - **Kit**: regla de oro #24 pide `aria-invalid` / `role="alert"` en errores de campo y
   `aria-label` en botones-ícono, y avisa *"el código base no los tiene — no heredes esa deuda"*.

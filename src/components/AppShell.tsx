@@ -15,7 +15,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GoalMark } from "./Logo";
-import { Avatar, AvatarFallback, Button, initials, useModalAnimation } from "./ui/UIComponents";
+import { Avatar, AvatarFallback, Button, initials } from "./ui/UIComponents";
+import { useModalAnimation } from "./ui/overlay";
 import ConfirmModal from "./ConfirmModal";
 import ThemeToggle from "./ThemeToggle";
 
