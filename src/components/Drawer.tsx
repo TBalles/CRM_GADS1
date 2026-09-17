@@ -1,68 +1,90 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import * as React from "react";
+import { createPortal } from "react-dom";
+import { X } from "lucide-react";
+import { useModalAnimation } from "./ui/UIComponents";
 
+/**
+ * Right-hand sliding panel (DESIGN.md §4.3) carrying the kit's modal
+ * header / scrollable body / footer structure (§4.1). Every create-and-edit
+ * form in this app lives in one of these instead of navigating away.
+ */
 export default function Drawer({
   open,
   onClose,
   title,
+  subtitle,
+  icon: Icon,
   children,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
+  subtitle?: string;
+  icon?: React.ElementType;
   children: React.ReactNode;
 }) {
-  const [show, setShow] = useState(false);
+  const { visible, overlayClass, modalClass } = useModalAnimation(open);
+  const pressedOnBackdrop = React.useRef(false);
 
-  useEffect(() => {
-    if (!open) {
-      // Reset immediately so the next open animates in from closed again.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setShow(false);
-      return;
-    }
-    const id = requestAnimationFrame(() => setShow(true));
-    return () => cancelAnimationFrame(id);
-  }, [open]);
-
-  useEffect(() => {
+  React.useEffect(() => {
     if (!open) return;
-    function onKey(e: KeyboardEvent) {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
-    }
+    };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!visible) return null;
 
-  return (
-    <div className="fixed inset-0 z-40">
+  const drawerClass = modalClass === "modal-exit" ? "drawer-exit-right" : "drawer-enter-right";
+
+  return createPortal(
+    <div
+      className={`fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm ${overlayClass}`}
+      onMouseDown={(e) => {
+        pressedOnBackdrop.current = e.target === e.currentTarget;
+      }}
+      onClick={(e) => {
+        if (pressedOnBackdrop.current && e.target === e.currentTarget) onClose();
+        pressedOnBackdrop.current = false;
+      }}
+    >
       <div
-        className={`absolute inset-0 bg-black/30 transition-opacity ${show ? "opacity-100" : "opacity-0"}`}
-        onClick={onClose}
-      />
-      <div
-        className={`absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-xl transition-transform duration-200 dark:bg-slate-900 ${
-          show ? "translate-x-0" : "translate-x-full"
-        }`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className={`${drawerClass} relative flex h-full w-full max-w-lg flex-col border-l bg-background shadow-2xl`}
       >
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-800">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b bg-secondary/20 px-5 py-4">
+          <div className="flex min-w-0 items-center gap-3">
+            {Icon && (
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand/10">
+                <Icon className="h-4 w-4 text-brand" />
+              </div>
+            )}
+            <div className="min-w-0">
+              <h2 className="truncate text-base font-bold tracking-tight">{title}</h2>
+              {subtitle && <p className="truncate text-xs text-muted-foreground">{subtitle}</p>}
+            </div>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Cerrar"
-            className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+            aria-label="Cerrar panel"
+            className="shrink-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-secondary"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
-              <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-            </svg>
+            <X className="h-5 w-5" />
           </button>
         </div>
+
+        {/* Forms pin their own action bar to the bottom of this scroll area
+            with <FormActions>, so there's no separate footer slot. */}
         <div className="flex-1 overflow-y-auto p-5">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

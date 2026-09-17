@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
+import { ToastProvider } from "@/components/ui/Toast";
+import { TooltipHost } from "@/components/ui/Tooltip";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Inter is the kit's typeface (DESIGN.md §0.3), self-hosted by next/font so
+// there's no flash of a fallback face.
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -17,6 +17,8 @@ export const metadata: Metadata = {
   description: "CRM para proveedores y distribuidores de equipamiento deportivo",
 };
 
+// Applies the stored theme before the first paint, so dark mode never flashes
+// white on load.
 const themeInitScript = `
   try {
     var stored = localStorage.getItem("theme");
@@ -30,12 +32,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="es"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} h-full antialiased`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className="min-h-full flex flex-col bg-white dark:bg-slate-950">{children}</body>
+      <body className="min-h-full flex flex-col bg-background font-sans text-foreground selection:bg-brand/20">
+        <ToastProvider>
+          {children}
+          <TooltipHost />
+        </ToastProvider>
+      </body>
     </html>
   );
 }

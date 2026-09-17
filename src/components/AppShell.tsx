@@ -1,15 +1,83 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  Building2,
+  Handshake,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
+  X,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { GoalMark } from "./Logo";
+import { Avatar, AvatarFallback, Button, initials, useModalAnimation } from "./ui/UIComponents";
+import ConfirmModal from "./ConfirmModal";
 import ThemeToggle from "./ThemeToggle";
 
-const links = [
-  { href: "/dashboard", label: "Inicio" },
-  { href: "/empresas", label: "Empresas" },
-  { href: "/oportunidades", label: "Oportunidades" },
-];
+const NAV = [
+  { href: "/dashboard", label: "Inicio", icon: LayoutDashboard },
+  { href: "/empresas", label: "Empresas", icon: Building2 },
+  { href: "/oportunidades", label: "Oportunidades", icon: Handshake },
+] as const;
+
+function NavItem({
+  href,
+  label,
+  icon: Icon,
+  active,
+  collapsed,
+  onNavigate,
+}: {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  active: boolean;
+  collapsed?: boolean;
+  onNavigate?: () => void;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onNavigate}
+      title={collapsed ? label : undefined}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "group flex w-full items-center rounded-md px-3 py-2 text-sm font-medium transition-all",
+        active
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+        collapsed && "justify-center px-0",
+      )}
+    >
+      <Icon className="h-4 w-4 shrink-0" />
+      {!collapsed && <span className="ml-3 truncate">{label}</span>}
+    </Link>
+  );
+}
+
+/** Brand lockup: isotype tile + wordmark. */
+function Logo({ collapsed }: { collapsed?: boolean }) {
+  return (
+    <span className="flex min-w-0 items-center gap-2.5">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand text-brand-foreground shadow-sm">
+        <GoalMark className="h-[19px] w-[19px]" />
+      </span>
+      {!collapsed && (
+        <span className="min-w-0 leading-tight">
+          <span className="block truncate text-sm font-bold tracking-tight">CRM GADS1</span>
+          <span className="block truncate text-[10px] uppercase tracking-wider text-muted-foreground">
+            Equipamiento deportivo
+          </span>
+        </span>
+      )}
+    </span>
+  );
+}
 
 export default function AppShell({
   nombre,
@@ -18,84 +86,197 @@ export default function AppShell({
   nombre: string;
   children: React.ReactNode;
 }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [confirmLogout, setConfirmLogout] = useState(false);
+  const signoutRef = useRef<HTMLFormElement>(null);
+  const drawer = useModalAnimation(mobileOpen);
+
+  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  const current = NAV.find((n) => isActive(n.href));
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMobileOpen(false);
+  }, [pathname]);
+
+  const navList = (onNavigate?: () => void, isCollapsed?: boolean) => (
+    <nav className="flex flex-col gap-1">
+      {NAV.map((item) => (
+        <NavItem
+          key={item.href}
+          {...item}
+          active={isActive(item.href)}
+          collapsed={isCollapsed}
+          onNavigate={onNavigate}
+        />
+      ))}
+    </nav>
+  );
+
+  const userBlock = (isCollapsed?: boolean) => (
+    <div
+      className={cn(
+        "flex items-center gap-2.5 rounded-md px-2 py-2",
+        isCollapsed && "justify-center px-0",
+      )}
+    >
+      <Avatar className="h-8 w-8">
+        <AvatarFallback className="bg-brand/10 text-brand">{initials(nombre)}</AvatarFallback>
+      </Avatar>
+      {!isCollapsed && (
+        <span className="min-w-0 leading-tight">
+          <span className="block truncate text-xs font-semibold">{nombre}</span>
+          <span className="block text-[10px] uppercase tracking-wider text-muted-foreground">
+            Sesión activa
+          </span>
+        </span>
+      )}
+    </div>
+  );
+
+  const logoutButton = (isCollapsed?: boolean) => (
+    <Button
+      variant="ghost"
+      onClick={() => setConfirmLogout(true)}
+      title={isCollapsed ? "Cerrar sesión" : undefined}
+      aria-label="Cerrar sesión"
+      className={cn(
+        "w-full justify-start px-3 text-destructive hover:bg-destructive/10 hover:text-destructive",
+        isCollapsed && "justify-center px-0",
+      )}
+    >
+      <LogOut className="h-4 w-4 shrink-0" />
+      {!isCollapsed && <span className="ml-3">Cerrar sesión</span>}
+    </Button>
+  );
 
   return (
-    <div className="flex min-h-screen flex-1 flex-col bg-slate-50 dark:bg-slate-950">
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex items-center gap-3">
+    <div className="flex min-h-screen flex-1 bg-background text-foreground">
+      {/* ── Desktop sidebar ─────────────────────────────────────────── */}
+      <aside
+        className={cn(
+          "sticky top-0 z-20 hidden h-screen shrink-0 flex-col border-r bg-card transition-all duration-300 ease-in-out md:flex",
+          collapsed ? "w-16" : "w-64",
+        )}
+      >
+        <div
+          className={cn(
+            "flex h-16 shrink-0 items-center border-b px-3",
+            collapsed ? "justify-center" : "justify-between",
+          )}
+        >
+          <Logo collapsed={collapsed} />
+          {!collapsed && (
+            <button
+              type="button"
+              onClick={() => setCollapsed(true)}
+              title="Colapsar menú"
+              aria-label="Colapsar menú"
+              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-3">{navList(undefined, collapsed)}</div>
+
+        <div className="shrink-0 border-t p-3">
+          {collapsed && (
+            <button
+              type="button"
+              onClick={() => setCollapsed(false)}
+              title="Expandir menú"
+              aria-label="Expandir menú"
+              className="mb-1 flex w-full justify-center rounded-md px-0 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              <PanelLeftOpen className="h-4 w-4" />
+            </button>
+          )}
+          {userBlock(collapsed)}
+          <div className="mt-1 space-y-1">
+            <ThemeToggle collapsed={collapsed} />
+            {logoutButton(collapsed)}
+          </div>
+        </div>
+      </aside>
+
+      {/* ── Mobile header ───────────────────────────────────────────── */}
+      <header className="fixed left-0 right-0 top-0 z-30 flex h-16 items-center justify-between gap-3 border-b bg-background px-4 md:hidden">
+        <div className="flex min-w-0 items-center gap-3">
           <button
             type="button"
-            onClick={() => setSidebarOpen(true)}
+            onClick={() => setMobileOpen(true)}
             aria-label="Abrir menú"
-            className="rounded-md p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+            className="-ml-2 rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
-              <path
-                fillRule="evenodd"
-                d="M2 4.75A.75.75 0 0 1 2.75 4h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 4.75Zm0 5.25a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 10Zm0 5.25a.75.75 0 0 1 .75-.75h14.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75Z"
-                clipRule="evenodd"
-              />
-            </svg>
+            <Menu className="h-6 w-6" />
           </button>
-          <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">CRM GADS1</span>
+          <span className="truncate text-lg font-bold tracking-tight">
+            {current?.label ?? "CRM GADS1"}
+          </span>
         </div>
-        <div className="flex items-center gap-1">
-          <ThemeToggle />
-          <span className="hidden px-2 text-sm text-slate-500 sm:inline dark:text-slate-400">{nombre}</span>
-          <form action="/auth/signout" method="post">
-            <button
-              type="submit"
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-            >
-              Cerrar sesión
-            </button>
-          </form>
-        </div>
+        <Avatar className="h-8 w-8">
+          <AvatarFallback className="bg-brand/10 text-brand">{initials(nombre)}</AvatarFallback>
+        </Avatar>
       </header>
 
-      {sidebarOpen ? (
-        <div className="fixed inset-0 z-40">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setSidebarOpen(false)} />
-          <nav className="absolute left-0 top-0 flex h-full w-64 flex-col bg-white p-4 shadow-xl dark:bg-slate-900">
-            <div className="mb-4 flex items-center justify-between">
-              <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">Menú</span>
+      {/* ── Mobile drawer ───────────────────────────────────────────── */}
+      {drawer.visible && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          <div
+            className={`absolute inset-0 bg-black/60 backdrop-blur-sm ${drawer.overlayClass}`}
+            onClick={() => setMobileOpen(false)}
+          />
+          <div
+            className={cn(
+              "absolute left-0 top-0 flex h-full w-[280px] max-w-[85vw] flex-col border-r bg-card shadow-2xl",
+              drawer.modalClass === "modal-exit" ? "drawer-exit-left" : "drawer-enter-left",
+            )}
+          >
+            <div className="flex h-16 shrink-0 items-center justify-between border-b px-3">
+              <Logo />
               <button
                 type="button"
-                onClick={() => setSidebarOpen(false)}
+                onClick={() => setMobileOpen(false)}
                 aria-label="Cerrar menú"
-                className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+                className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
-                  <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-                </svg>
+                <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="flex flex-col gap-1">
-              {links.map((link) => {
-                const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setSidebarOpen(false)}
-                    className={`rounded-md px-3 py-2 text-sm font-medium ${
-                      active
-                        ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
-                        : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
-                );
-              })}
+            <div className="flex-1 overflow-y-auto p-3">{navList(() => setMobileOpen(false))}</div>
+            <div className="shrink-0 border-t p-3">
+              {userBlock()}
+              <div className="mt-1 space-y-1">
+                <ThemeToggle />
+                {logoutButton()}
+              </div>
             </div>
-          </nav>
+          </div>
         </div>
-      ) : null}
+      )}
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+      {/* ── Content ─────────────────────────────────────────────────── */}
+      <main className="mt-16 min-w-0 flex-1 bg-secondary/30 p-3 md:mt-0 md:p-8">
+        <div className="mx-auto w-full max-w-7xl">{children}</div>
+      </main>
+
+      {/* Logout goes through a confirm before the POST that clears the session. */}
+      <form ref={signoutRef} action="/auth/signout" method="post" className="hidden" />
+      <ConfirmModal
+        isOpen={confirmLogout}
+        onClose={() => setConfirmLogout(false)}
+        onConfirm={() => signoutRef.current?.requestSubmit()}
+        title="Cerrar sesión"
+        description="Vas a salir del CRM. Vas a tener que ingresar tus credenciales de nuevo para volver."
+        confirmText="Cerrar sesión"
+        variant="danger"
+        icon={<LogOut className="h-6 w-6" />}
+      />
     </div>
   );
 }
