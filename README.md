@@ -3,14 +3,16 @@
 CRM simple para proveedores y distribuidores de equipamiento deportivo (arcos, redes, conos,
 pecheras, pelotas, etc.) que venden a canchas, clubes, complejos deportivos y escuelas de fútbol.
 
-Primera entrega: login, alta/edición de empresas y contactos, alta/edición de oportunidades, y un
-embudo comercial (Kanban) donde se pueden mover de etapa. Ver [CLAUDE.md](./CLAUDE.md) para el
-detalle completo del alcance.
+Primera entrega: login, empresas desplegables con sus contactos anidados, alta/edición de
+oportunidades con un embudo comercial (Kanban, sin scroll horizontal) integrado en la misma
+pantalla, edición inline de cualquier fila desde un panel lateral, modo oscuro y menú hamburguesa.
+Ver [CLAUDE.md](./CLAUDE.md) para el detalle completo del alcance.
 
 ## Stack
 
-- [Next.js 16](https://nextjs.org/) (App Router, TypeScript, Server Actions)
-- [Tailwind CSS v4](https://tailwindcss.com/)
+- [Next.js 16](https://nextjs.org/) (App Router, TypeScript). El CRUD muta la base directo desde
+  el cliente con `@supabase/ssr`; Server Actions solo se usan para el login.
+- [Tailwind CSS v4](https://tailwindcss.com/), con modo oscuro por clase (`dark:`)
 - [Supabase](https://supabase.com/) (Postgres + Auth), plan gratuito
 - Hosting en [Vercel](https://vercel.com/), plan gratuito
 
@@ -85,7 +87,16 @@ el usuario que creaste en Supabase.
    (`NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY`).
 4. **Deploy**. Vercel detecta Next.js automáticamente, no hace falta tocar el build command.
 
-Cada push a `main` genera un deploy nuevo automáticamente.
+Cada push a `main` debería generar un deploy nuevo automáticamente y esa URL de producción
+(`tu-proyecto.vercel.app`, siempre la misma — no la de cada deploy individual) queda siempre
+apuntando al último build exitoso.
+
+> **Estado actual:** el proyecto `crm-gads1` ya está importado y linkeado al repo, pero el
+> dominio de producción está devolviendo `404 DEPLOYMENT_NOT_FOUND` — quedó pendiente de
+> diagnosticar. Ver la sección "Vercel" en [CLAUDE.md](./CLAUDE.md) para el detalle de qué se
+> probó y qué revisar la próxima vez (pestaña Deployments del proyecto, Production Branch en
+> Settings → Git, o un Redeploy manual). Mientras tanto, `npm run dev` en local funciona sin
+> problema contra la base de Supabase real.
 
 ## Estructura del proyecto
 

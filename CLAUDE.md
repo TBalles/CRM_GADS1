@@ -18,9 +18,9 @@ Incluido:
 
 - **Acceso**: login funcional con Supabase Auth. Alcanza con un único usuario habilitado (no se
   pide gestión de roles/permisos).
-- **Empresas y contactos**: alta y edición de empresas, alta y edición de contactos, listados y
-  detalle de ambos, relación contacto → empresa (un contacto pertenece opcionalmente a una
-  empresa).
+- **Empresas y contactos**: alta y edición de empresas en `/empresas`; cada empresa es
+  desplegable y muestra sus contactos anidados, con alta/edición de contacto ahí mismo (relación
+  contacto → empresa, opcional).
 - **Productos/servicios**: precargados por seed SQL (`supabase/migrations/0002_seed_data.sql`).
   No hace falta un ABM propio todavía.
 - **Oportunidades**: alta y edición, relacionadas a una empresa y/o contacto, con responsable
@@ -155,10 +155,23 @@ Authentication → Users).
 
 ## Vercel
 
-El repo está importado en Vercel (proyecto `crm-gads1`, team `tomasballesteros12-8080`) y
-conectado al repo de GitHub `TBalles/CRM_GADS1`: cada push a `main` dispara un build y deploy de
-producción automático. Las env vars (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
-ya están cargadas en Project Settings → Environment Variables para Production/Preview/Development.
+El repo está importado en Vercel (proyecto `crm-gads1`, team `tomasballesteros12-8080`,
+`vercel.com/tomasballesteros12-8080/crm-gads1`) y conectado al repo de GitHub
+`TBalles/CRM_GADS1`. Las env vars (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) ya
+están cargadas en Project Settings → Environment Variables.
+
+**Pendiente / roto:** el dominio de producción (`crm-gads1.vercel.app` y
+`crm-gads1-tomasballesteros12-8080.vercel.app`) devuelve `404 DEPLOYMENT_NOT_FOUND` — el dominio
+existe pero no tiene ningún deployment asignado como producción, a pesar de que el repo está
+linkeado y hubo pushes a `main` después de conectarlo. No se llegó a diagnosticar la causa raíz
+en esta sesión (el MCP de Vercel tampoco pudo leer el proyecto vía API — `list_projects` devolvía
+`[]` mientras el proyecto se veía bien desde el dashboard — así que buena parte del troubleshooting
+tuvo que hacerse a mano desde ahí). Antes de asumir que el deploy funciona, entrar al dashboard →
+pestaña **Deployments** del proyecto y confirmar si hay algún build marcado como Production y en
+qué estado quedó; si no hay ninguno, puede hacer falta re-verificar el Production Branch en
+Settings → Git, o simplemente click en "Redeploy" sobre el último build. Mientras tanto, correr
+el proyecto en local (`npm run dev`) es el camino confiable para probarlo — la base de Supabase
+está viva y funciona igual.
 
 ## Convenciones de código
 
@@ -166,8 +179,10 @@ ya están cargadas en Project Settings → Environment Variables para Production
   del negocio (empresas, contactos, oportunidades, embudo, etapas).
 - Identificadores de código (variables, funciones, tipos TS) en inglés/español mixto está bien,
   pero seguí el patrón ya usado en cada archivo en vez de mezclar convenciones nuevas.
-- Server Actions viven en un archivo `actions.ts` junto a las páginas que las usan (ver
-  `src/app/(app)/empresas/actions.ts` como referencia), no en un lugar centralizado.
+- El único Server Action del proyecto es el login (`src/app/login/actions.ts`), porque necesita
+  escribir la cookie de sesión. El resto del CRUD (empresas, contactos, oportunidades) muta la
+  base directo desde Client Components — ver "Por qué mutaciones client-side" más arriba antes de
+  agregar un Server Action nuevo para alguna de esas pantallas.
 - Los formularios usan los componentes de `src/components/form.tsx` en vez de reinventar inputs
   estilizados en cada página.
 - Los tipos de la base (`src/lib/supabase/types.ts`) están generados contra el proyecto real de
