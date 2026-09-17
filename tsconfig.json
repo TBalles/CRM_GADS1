@@ -6,6 +6,9 @@
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
+    // Lets the self-check files import with the .ts extension that Node's
+    // built-in type stripping requires (`node --test src/lib/money.check.ts`).
+    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
