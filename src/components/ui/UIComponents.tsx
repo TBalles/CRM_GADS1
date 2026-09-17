@@ -76,15 +76,15 @@ CardFooter.displayName = "CardFooter";
    ========================================================================== */
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | "brand";
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
   size?: "default" | "sm" | "lg" | "icon";
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "default", size = "default", ...props }, ref) => {
     const variants = {
+      // `primary` aliases the brand colour, so the default button IS the green one.
       default: "bg-primary text-primary-foreground hover:bg-primary/90",
-      brand: "bg-brand text-brand-foreground hover:bg-brand/90",
       destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
       outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
       secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
@@ -170,11 +170,10 @@ export const Badge = ({
   variant = "default",
   ...props
 }: React.HTMLAttributes<HTMLDivElement> & {
-  variant?: "default" | "secondary" | "destructive" | "outline" | "success" | "brand";
+  variant?: "default" | "secondary" | "destructive" | "outline" | "success";
 }) => {
   const variants = {
     default: "border-transparent bg-primary text-primary-foreground",
-    brand: "border-transparent bg-brand text-brand-foreground",
     secondary: "border-transparent bg-secondary text-secondary-foreground",
     destructive: "border-transparent bg-destructive text-destructive-foreground",
     outline: "text-foreground",

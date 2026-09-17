@@ -206,9 +206,14 @@ crear o modificar cualquier UI (componentes, modales, vistas, tablas, dashboards
 - Leé también [`docs/design-overrides.md`](./docs/design-overrides.md): **`DESIGN.md` manda
   salvo lo listado ahí**. Si te desviás del kit por una razón nueva, agregá un bloque a ese
   archivo (kit → esta app → dónde → por qué); nunca edites `DESIGN.md`.
-- Respetá los tokens: `primary` (negro) y los neutros son fijos; el color de marca vive en
-  `--brand` (`src/app/globals.css`). **No hardcodees colores de marca fuera de ese token** — la
-  única excepción documentada es `src/app/icon.svg`, que es estático y no puede leer CSS.
+- Respetá los tokens: el color de marca vive en `--brand` (`src/app/globals.css`) y en esta
+  app **`primary` y `ring` lo aliasean**, así que el verde es el color principal de la
+  interfaz — botones, nav activo, links y focus rings salen de ahí. Ojo que esto se desvía
+  del kit, que manda un `primary` negro fijo: ver el override #2.
+  **No hardcodees colores de marca fuera de esos tokens** — la única excepción documentada es
+  `src/app/icon.svg`, que es estático y no puede leer CSS.
+- Si cambiás un token de color, **verificá contraste** antes de shipear. Los actuales dan
+  6.34:1 (claro) y 7.25:1 (oscuro) para texto sobre `primary`; el piso es 4.5:1 (WCAG AA).
 - Seguí las recetas de composición de `DESIGN.md` (página estándar §4.4, drawer §4.3,
   sidebar §4.5, dashboard §4.6) y las "Reglas de oro" (§15).
 - Notá en particular: **montos siempre por `MoneyInput` + `parseMoney`, nunca `type="number"`**

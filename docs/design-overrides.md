@@ -24,7 +24,35 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
 - **Por qué**: el dominio es equipamiento para canchas de fútbol. El kit prevé el color de
   marca como el único parámetro por cliente.
 
-## 2. Tailwind v4, no v3 — los tokens viven en `@theme`, no en `tailwind.config.js`
+## 2. `primary` ES la marca — el verde es el color principal, no el negro
+
+- **Kit**: `primary` = `#1a1a1a`, un negro **fijo** que no cambia entre clientes; el color de
+  marca se reserva para logo, acentos, KPI destacado y charts. Es la regla de oro #3:
+  *"`primary` (negro) y neutros no se tocan entre clientes"* (`docs/DESIGN.md` §1.4, §15).
+- **CRM GADS1**: `primary` **aliasea** `brand`, así el verde es el color principal de la
+  interfaz y llega a botones, ítem de nav activo, links (`variant="link"`), tints
+  `bg-primary/5` y focus rings con **un solo token**, sin overrides por componente:
+  ```css
+  --brand: 160 78% 24%;
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-foreground);
+  --ring: var(--brand);
+  ```
+  El `var(--brand)` se lee **dentro del mismo bloque** (`:root` y `.dark` lo redeclaran cada
+  uno), así nunca se desfasan y rebrandear sigue siendo un valor por tema.
+- **Contraste verificado** (no asumido): texto sobre `primary` da **6.34:1** en claro y
+  **7.25:1** en oscuro → AA para texto normal en ambos, AAA en oscuro.
+- **Consecuencias**: las variantes `brand` de `Button` y `Badge` quedaron duplicadas de
+  `default` y se eliminaron. El thumb del scrollbar en hover pasó de `--ring` a
+  `--muted-foreground`, porque un scrollbar verde es ruido de marca, no identidad.
+- **Dónde vive**: `src/app/globals.css`.
+- **Por qué**: pedido de producto — "que el verde sea el color main". El kit separa
+  `primary` (controles) de `brand` (identidad) para que una app se vea igual entre clientes
+  cambiando un solo color; acá la decisión es que la identidad **sea** la interfaz. Los
+  tokens se mantienen separados igualmente para no romper el contrato del kit: si mañana se
+  quiere volver al negro, se borran las tres líneas del alias y listo.
+
+## 3. Tailwind v4, no v3 — los tokens viven en `@theme`, no en `tailwind.config.js`
 
 - **Kit**: `tailwind.config.js` con `darkMode: 'class'`, `theme.extend.colors`, y el sufijo
   `/ <alpha-value>` OBLIGATORIO en cada color para que anden los modificadores de opacidad
@@ -46,7 +74,7 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
   copiar el config literal sería un downgrade del stack para ganar nada: los tokens, las
   clases y los primitivos se transfieren tal cual.
 
-## 3. Next App Router, no Vite + React Router
+## 4. Next App Router, no Vite + React Router
 
 - **Kit**: Vite, `react-router-dom`, `index.html` con el `@import` de Inter, providers
   cableados en `App.tsx` (`docs/DESIGN.md` §0.3, §0.4).
@@ -60,7 +88,7 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
     `<link>`), en vez de un `<link rel="icon">` a mano.
 - **Dónde vive**: `src/app/layout.tsx`, `src/app/icon.svg`.
 
-## 4. Sin `recharts` — los charts del dashboard son CSS
+## 5. Sin `recharts` — los charts del dashboard son CSS
 
 - **Kit**: los charts van con **Recharts**, única librería, envueltos en `Card` +
   `SectionTitle` (`docs/DESIGN.md` §4.6, §10).
@@ -82,7 +110,7 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
   una línea extra. Si aparecen series temporales o charts densos, traer Recharts y seguir
   §4.6 + el método `dataviz`.
 
-## 5. Primitivos y hooks en módulos separados, no un único `UIComponents.tsx`
+## 6. Primitivos y hooks en módulos separados, no un único `UIComponents.tsx`
 
 - **Kit**: todos los primitivos viven en **un solo** `components/ui/UIComponents.tsx`, junto
   con `cn` y `useModalAnimation` (`docs/DESIGN.md` §2, §3).
@@ -103,7 +131,7 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
   compartido — no le agregues `"use client"` "por si acaso", porque es justamente lo que
   rompe el paso de íconos desde el servidor.
 
-## 6. Pill de etapa tintada, no `StatusBadge` con fill sólido
+## 7. Pill de etapa tintada, no `StatusBadge` con fill sólido
 
 - **Kit**: `StatusBadge` mapea un estado canónico a un par `bg-{c}-100 text-{c}-700`
   (`docs/DESIGN.md` §3.11, regla de oro #7).
@@ -119,7 +147,7 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
   etapa, es legible en claro y oscuro, y reusa el mismo dot que ya muestran el `Select` y las
   columnas del embudo.
 
-## 7. Formularios en Drawer, no en modal centrado
+## 8. Formularios en Drawer, no en modal centrado
 
 - **Kit**: todo formulario va en el **modal centrado** de §4.1; el drawer lateral (§4.3) es
   para drill-down read-only.
@@ -131,7 +159,7 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
 - **Por qué**: decisión de producto previa al rediseño, documentada en `CLAUDE.md` — es la
   razón por la que el CRUD muta desde Client Components en vez de Server Actions. No se toca.
 
-## 8. `useAnchoredPortal` extraído — el kit lo prescribe y no lo hace
+## 9. `useAnchoredPortal` extraído — el kit lo prescribe y no lo hace
 
 - **Kit**: §8.4 describe el patrón de popover portaled y dice explícitamente
   *"extraé esto a un hook `useAnchoredPortal()` en vez de repetirlo"*, pero su propio código
@@ -141,7 +169,7 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
   mousedown afuera / scroll / Escape.
 - **Por qué**: es la prescripción del kit, cumplida.
 
-## 9. Escala de z-index saneada (la de §8.2, no los `z-[9999]`)
+## 10. Escala de z-index saneada (la de §8.2, no los `z-[9999]`)
 
 - **Kit**: §8.2 define la escala saneada y aclara que el código real tiene `z-[9999]` y
   `zIndex: 999999` desprolijos.
@@ -149,7 +177,7 @@ qué dice el kit, qué hace CRM GADS1, dónde vive el cambio real y por qué.
   `z-40`, drawer/overlay `z-50`, popovers portaled `z-90`, confirm `z-100`, toasts `z-130`,
   tooltip `z-140`. Ningún popover usa `zIndex: 999999`.
 
-## 10. Accesibilidad — se cumple la regla #24 desde el arranque
+## 11. Accesibilidad — se cumple la regla #24 desde el arranque
 
 - **Kit**: regla de oro #24 pide `aria-invalid` / `role="alert"` en errores de campo y
   `aria-label` en botones-ícono, y avisa *"el código base no los tiene — no heredes esa deuda"*.

@@ -17,11 +17,6 @@
   --foreground: 240 10% 3.9%;
   --border: 240 6% 90%;
   --input: 240 6% 90%;
-  --ring: 240 5% 65%;
-
-  /* `primary` is the near-black default: buttons, active nav, focus, controls */
-  --primary: 0 0% 10%;
-  --primary-foreground: 0 0% 98%;
 
   --secondary: 240 5% 96%;
   --secondary-foreground: 240 6% 10%;
@@ -42,6 +37,17 @@
      whole app; nothing else hardcodes a brand colour. */
   --brand: 160 78% 24%;
   --brand-foreground: 0 0% 100%;
+
+  /* The kit keeps `primary` a fixed near-black and reserves the brand colour
+     for identity and accents. Here the brand IS the main colour, so primary
+     aliases it and the green reaches buttons, the active nav item, links and
+     focus rings through one token instead of per-component overrides.
+     `var(--brand)` is read inside this same block, so it never drifts and
+     rebranding is still a single value per theme. 6.34:1 against white — AA
+     for normal text. See docs/design-overrides.md. */
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-foreground);
+  --ring: var(--brand);
 }
 
 /* Dark palette built by ELEVATION, not a flat grey: background 8% → card 14%
@@ -53,11 +59,6 @@
   --foreground: 0 0% 95%;
   --border: 172 10% 24%;
   --input: 172 10% 24%;
-  --ring: 172 8% 45%;
-
-  /* primary flips to white so it stays the emphatic surface on dark */
-  --primary: 0 0% 98%;
-  --primary-foreground: 240 6% 10%;
 
   --secondary: 172 12% 16%;
   --secondary-foreground: 0 0% 95%;
@@ -76,6 +77,12 @@
      its foreground to dark so filled brand surfaces stay legible. */
   --brand: 160 58% 46%;
   --brand-foreground: 172 20% 8%;
+
+  /* Same aliasing as :root, redeclared here rather than inherited so the
+     block stays self-contained. 7.25:1 — AAA for normal text. */
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-foreground);
+  --ring: var(--brand);
 }
 
 @theme inline {
@@ -143,8 +150,10 @@ body {
   background: hsl(var(--border));
   border-radius: 3px;
 }
+/* Neutral on purpose: --ring now aliases the brand colour, and a green
+   scrollbar is brand noise rather than brand identity. */
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--ring));
+  background: hsl(var(--muted-foreground));
 }
 
 /* ── Modal / overlay animations (driven by useModalAnimation) ── */
