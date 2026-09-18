@@ -323,11 +323,18 @@ do $$ begin
 end $$;
 
 -- ══ SUPERADMIN: administra, NO ve datos comerciales de clientes ═══════════════
+-- El id se busca como postgres, ANTES de cambiar de rol: como authenticated la
+-- consulta correria con la sesion anterior y RLS esconderia al superadmin.
 reset role;
-set local role authenticated;
+do $$ begin
+  if not exists (select 1 from public.perfiles where es_superadmin and activo) then
+    raise exception 'FALLA: no hay ningun superadmin activo (revisar el email configurado en la 0004)';
+  end if;
+end $$;
 select set_config('request.jwt.claims',
-  json_build_object('sub', (select id from public.perfiles where es_superadmin limit 1), 'role', 'authenticated')::text,
+  json_build_object('sub', (select id from public.perfiles where es_superadmin and activo limit 1), 'role', 'authenticated')::text,
   true);
+set local role authenticated;
 
 do $$ begin
   if (select count(*) from public.organizaciones) < 3 then
