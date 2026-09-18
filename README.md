@@ -31,10 +31,28 @@ Ver [CLAUDE.md](./CLAUDE.md) para el detalle completo del alcance.
 3. Repetí el paso con
    [`supabase/migrations/0002_seed_data.sql`](./supabase/migrations/0002_seed_data.sql) (carga las
    etapas del embudo y el catálogo de productos).
+4. Repetí el paso con
+   [`supabase/migrations/0003_productos_ventas_alertas_bitacora.sql`](./supabase/migrations/0003_productos_ventas_alertas_bitacora.sql)
+   (agrega la vida útil a los productos, el historial de ventas, la bitácora de clientes y la
+   vista de alertas de recambio).
 
-Esto crea las tablas `empresas`, `contactos`, `productos`, `etapas`, `oportunidades` y `perfiles`,
-con Row Level Security habilitado (cualquier usuario autenticado puede leer y escribir — no hay
-roles todavía).
+Esto crea las tablas `empresas`, `contactos`, `productos`, `etapas`, `oportunidades`, `perfiles`,
+`ventas`, `venta_items`, `bitacora_entradas` y `alertas_enviadas`, más la vista
+`alertas_vida_util`, con Row Level Security habilitado (cualquier usuario autenticado puede leer y
+escribir — no hay roles todavía).
+
+> Las tres migraciones se corren **en orden**. La 0003 es puramente aditiva: no borra ni modifica
+> datos existentes, así que se puede aplicar sobre una base que ya está en uso.
+
+#### Después de correr la 0003: regenerar los tipos
+
+`src/lib/supabase/types.ts` tiene la sección de la 0003 escrita **a mano**, porque la migración no
+se había aplicado todavía cuando se escribió el código. Una vez que la corras, regeneralos contra
+el proyecto real para que la fuente de verdad vuelva a ser el generador:
+
+```bash
+npx supabase gen types typescript --project-id TU_PROJECT_ID > src/lib/supabase/types.ts
+```
 
 ### Crear el usuario para el login
 
@@ -70,14 +88,56 @@ NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=tu-anon-key
 ```
 
+### Variables de contacto (opcionales)
+
+Son los datos que muestra la landing pública. Si no las cargás, se ven valores de ejemplo: la
+aplicación funciona igual, pero el pie y la sección de contacto van a mostrar datos genéricos.
+Van en `.env.local` en desarrollo y en **Project Settings → Environment Variables** en Vercel.
+
+```
+CONTACTO_EMAIL=contacto@tudominio.com
+CONTACTO_WHATSAPP=+54 9 11 5555-5555
+CONTACTO_TELEFONO=11 5555-5555
+CONTACTO_DIRECCION=Florencio Varela 1903
+CONTACTO_CIUDAD=San Justo, Buenos Aires
+CONTACTO_INSTAGRAM=https://instagram.com/tucuenta
+CONTACTO_LINKEDIN=https://linkedin.com/company/tuempresa
+```
+
+No llevan el prefijo `NEXT_PUBLIC_` a propósito: la landing es un Server Component, así que estos
+valores se resuelven en el servidor y viajan ya renderizados en el HTML.
+
+### Envío de mails de alerta (opcional)
+
+La sección **Alertas** funciona sin configurar nada: al tocar "Mail" abre el cliente de correo del
+usuario con el mensaje ya escrito, y el envío queda registrado igual.
+
+Si querés que los mails salgan **desde el servidor**, sin abrir el cliente de correo, cargá estas
+dos variables. Con las dos presentes, la aplicación cambia de modo sola:
+
+```
+RESEND_API_KEY=re_xxxxxxxxxxxx
+ALERTAS_FROM_EMAIL=alertas@tudominio.com
+```
+
+La API key se saca de [resend.com](https://resend.com/) (tiene plan gratuito). El dominio del
+remitente hay que verificarlo ahí; mientras tanto se puede usar su dominio de pruebas.
+
+> **Sobre el Gmail de la marca:** una casilla de Gmail común **no sirve** como remitente
+> programático — Google dejó de aceptar contraseñas simples por SMTP y pide OAuth2 o una
+> contraseña de aplicación con 2FA, que además rompe el envío cada vez que cambia la clave. Un
+> proveedor transaccional (Resend, Postmark, SendGrid) es el camino correcto, y el que evita que
+> los mails caigan en spam por SPF/DKIM mal configurados. El Gmail de la marca sigue sirviendo
+> como dirección de contacto (`CONTACTO_EMAIL`), que es otra cosa.
+
 Después:
 
 ```bash
 npm run dev
 ```
 
-Abrí [http://localhost:3000](http://localhost:3000) — te redirige a `/login`. Iniciá sesión con
-el usuario que creaste en Supabase.
+Abrí [http://localhost:3000](http://localhost:3000) — vas a ver la **landing pública**. Desde
+"Ingresar" entrás al CRM con el usuario que creaste en Supabase.
 
 ## 3. Deploy a Vercel (gratis)
 

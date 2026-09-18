@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  BellRing,
+  Boxes,
   Building2,
   Handshake,
   LayoutDashboard,
@@ -11,6 +13,7 @@ import {
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
+  Receipt,
   X,
 } from "lucide-react";
 import { APP_NAME } from "@/lib/brand";
@@ -25,6 +28,9 @@ const NAV = [
   { href: "/dashboard", label: "Inicio", icon: LayoutDashboard },
   { href: "/empresas", label: "Empresas", icon: Building2 },
   { href: "/oportunidades", label: "Oportunidades", icon: Handshake },
+  { href: "/productos", label: "Productos", icon: Boxes },
+  { href: "/ventas", label: "Ventas", icon: Receipt },
+  { href: "/alertas", label: "Alertas", icon: BellRing },
 ] as const;
 
 function NavItem({
@@ -65,7 +71,7 @@ function NavItem({
 /** Brand lockup: isotype tile + wordmark. */
 function Logo({ collapsed }: { collapsed?: boolean }) {
   return (
-    <span className="flex min-w-0 items-center gap-2.5">
+    <Link href="/" title="Ir a la página de inicio" className="flex min-w-0 items-center gap-2.5">
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand text-brand-foreground shadow-sm">
         <GoalMark className="h-[19px] w-[19px]" />
       </span>
@@ -77,7 +83,7 @@ function Logo({ collapsed }: { collapsed?: boolean }) {
           </span>
         </span>
       )}
-    </span>
+    </Link>
   );
 }
 

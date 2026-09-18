@@ -2,7 +2,23 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "./types";
 
-const PUBLIC_PATHS = ["/login"];
+/**
+ * Rutas que se sirven sin sesion.
+ *
+ * `/` (la landing) NO puede estar en esta lista: el chequeo de abajo usa
+ * `startsWith`, y TODO pathname empieza con "/", asi que agregarlo abriria la
+ * app entera. Por eso la home se compara aparte, por igualdad exacta.
+ */
+const PUBLIC_PREFIXES = ["/login"];
+
+/**
+ * Rutas publicas que ademas NO rebotan a /dashboard cuando ya hay sesion: la
+ * landing tiene que poder verse estando logueado (el boton cambia a "Ir al
+ * CRM"), a diferencia de /login, donde quedarse logueado no tiene sentido.
+ */
+function esLanding(pathname: string) {
+  return pathname === "/";
+}
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -32,17 +48,17 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isPublicPath = PUBLIC_PATHS.some((path) =>
-    request.nextUrl.pathname.startsWith(path),
-  );
+  const { pathname } = request.nextUrl;
+  const isAuthPath = PUBLIC_PREFIXES.some((path) => pathname.startsWith(path));
+  const isPublic = isAuthPath || esLanding(pathname);
 
-  if (!user && !isPublicPath) {
+  if (!user && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  if (user && isPublicPath) {
+  if (user && isAuthPath) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);

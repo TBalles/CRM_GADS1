@@ -9,8 +9,9 @@ canchas de fútbol, clubes, complejos deportivos y escuelas de fútbol. Producto
 redes, conos, pecheras, pelotas y demás materiales para el funcionamiento y mantenimiento de una
 cancha.
 
-Esta es la **primera entrega**: una versión funcional mínima para registrar clientes y gestionar
-oportunidades comerciales de forma básica. No es el producto final.
+La **primera entrega** fue una versión funcional mínima para registrar clientes y gestionar
+oportunidades comerciales. La **segunda entrega** (esta) suma una landing pública, catálogo con
+vida útil, historial de ventas, alertas de recambio y bitácora de clientes.
 
 ## Alcance de esta entrega
 
@@ -21,8 +22,18 @@ Incluido:
 - **Empresas y contactos**: alta y edición de empresas en `/empresas`; cada empresa es
   desplegable y muestra sus contactos anidados, con alta/edición de contacto ahí mismo (relación
   contacto → empresa, opcional).
-- **Productos/servicios**: precargados por seed SQL (`supabase/migrations/0002_seed_data.sql`).
-  No hace falta un ABM propio todavía.
+- **Landing pública** en `/` (sin sesión): presentación, funcionalidades, cómo funciona,
+  nosotros, FAQ y contacto. Los datos de contacto salen de variables de entorno
+  (`src/lib/contacto.ts`). Si hay sesión, el botón cambia de "Ingresar" a "Ir al CRM".
+- **Productos**: ABM en `/productos` con **duración estimada de vida útil** (en meses). Ese dato
+  es el que alimenta las alertas. Un producto no se borra, se da de baja (`activo = false`): la FK
+  desde `venta_items` es `on delete restrict` para no romper el historial.
+- **Ventas**: historial de compras en `/ventas`, con cabecera + ítems. Cada ítem guarda su propia
+  fecha de entrega y una **copia** de la vida útil del catálogo al momento de vender.
+- **Alertas de recambio** en `/alertas`: equipos entregados que vencieron o vencen en los próximos
+  60 días, con mensaje prearmado para enviar por mail o WhatsApp. Se registra cada envío.
+- **Bitácora de clientes**: desde el menú "⋮" de cada empresa en `/empresas`. Llamadas, reuniones,
+  consultas, quejas y observaciones, con fecha, autor y contacto opcional.
 - **Oportunidades**: alta y edición, relacionadas a una empresa y/o contacto, con responsable
   asignado (usuario del sistema) y producto/servicio seleccionado. Listado y detalle.
 - **Embudo comercial**: vista Kanban integrada arriba de `/oportunidades` con las oportunidades
@@ -36,8 +47,10 @@ Incluido:
 Explícitamente **fuera de alcance** en esta entrega (no agregar sin que el usuario lo pida):
 
 - Gestión completa de roles y permisos.
-- Actividades e historial comercial (notas de seguimiento, llamadas, etc.).
 - Historial de cambios de etapa (auditoría/timeline).
+- Envío automático de alertas sin intervención humana (hoy el mensaje se arma solo, pero lo
+  confirma una persona — ver el FAQ de la landing para el porqué).
+- Edición o borrado de entradas de bitácora: es un log, se agrega y no se corrige el pasado.
 - Pantallas de configuración general.
 - Cierre completo de oportunidades (ganada/perdida como flujo especial, motivos de pérdida, etc.)
   — "Ganada" y "Perdida" existen solo como dos etapas más del embudo, sin lógica asociada.
@@ -98,6 +111,17 @@ src/
         EmpresasList.tsx          Client: header+toolbar, búsqueda, acordeón, abre los drawers
         EmpresaForm.tsx           Form de alta/edición de empresa (usado dentro del Drawer)
         ContactoForm.tsx          Form de alta/edición de contacto (idem)
+        BitacoraPanel.tsx         Bitácora de la empresa (lista + alta), dentro del Drawer
+      productos/                 ABM del catálogo con vida útil
+        page.tsx / ProductosList.tsx / ProductoForm.tsx
+      ventas/                    Historial de compras (cabecera + ítems)
+        page.tsx / VentasList.tsx / VentaForm.tsx
+      alertas/                   Recambios vencidos o por vencer
+        page.tsx                 Lee la vista alertas_vida_util
+        AlertasView.tsx          Client: KPIs, filtros, envío por mail/WhatsApp
+        actions.ts               Server Actions: envío por Resend (o mailto) + registro
+        plantillas.ts            Mensajes prearmados — funciones puras
+        plantillas.check.ts      Self-check: node --test "src/app/(app)/alertas/plantillas.check.ts"
       oportunidades/             Embudo (kanban) + listado en una sola página
         page.tsx                 Server Component: fetch de oportunidades + catálogos
         OportunidadesView.tsx     Client: embudo, tabla + cards mobile, filtros, EtapaBadge
@@ -124,6 +148,8 @@ src/
                                 <CampoGrupo>, <FormBanner>, <FormActions>
   lib/
     utils.ts                   cn() — merge de clases Tailwind
+    brand.ts                   APP_NAME — única fuente del nombre de la app
+    contacto.ts                Datos de contacto y remitente, leídos de variables de entorno
     money.ts                   Máscara/parseo es-AR + formatters de display
     money.check.ts             Self-check: node --test src/lib/money.check.ts
     supabase/
@@ -131,7 +157,7 @@ src/
       server.ts                Cliente Supabase para Server Components/Actions (usa cookies())
       middleware.ts             Lógica de refresco de sesión + redirects, usada por proxy.ts
       types.ts                  Tipos Database generados (tablas + relaciones para embeds tipados)
-  proxy.ts                      Proxy/middleware raíz de Next.js (protege todas las rutas salvo /login)
+  proxy.ts                      Proxy/middleware raíz de Next.js (protege todo salvo / y /login)
 docs/
   DESIGN.md                     Sumar UI Kit canónico (vendoreado, READ-ONLY, no editar)
   design-overrides.md           Dónde esta app se desvía del kit a propósito, y por qué
@@ -139,6 +165,8 @@ supabase/
   migrations/
     0001_init_schema.sql        Tablas, índices, triggers, RLS
     0002_seed_data.sql          Etapas y productos precargados
+    0003_productos_ventas_alertas_bitacora.sql
+                                Vida útil, ventas, bitácora, alertas enviadas y vista de alertas
 ```
 
 No hay rutas separadas para "nueva empresa" o "detalle de oportunidad": todo alta/edición pasa
@@ -153,12 +181,26 @@ anidados dentro de cada empresa en `/empresas`.
 - `empresas` — nombre, cuit, teléfono, email, dirección, notas.
 - `contactos` — nombre, apellido, email, teléfono, cargo, notas, `empresa_id` (FK opcional a
   `empresas`).
-- `productos` — nombre (único), descripción, precio, categoría, activo.
+- `productos` — nombre (único), descripción, precio, categoría, marca, activo,
+  `vida_util_meses` (null = sin seguimiento de recambio).
 - `etapas` — nombre, `orden` (único, define el orden de las columnas del embudo), color (hex,
   usado en la UI).
 - `oportunidades` — título, monto, notas, `empresa_id`, `contacto_id`, `producto_id` (todas FK
   opcionales), `responsable_id` (FK opcional a `perfiles`), `etapa_id` (FK obligatoria a
   `etapas`).
+
+- `ventas` — `empresa_id` (obligatoria), `contacto_id`, `oportunidad_id`, fecha, comprobante,
+  notas. Es un hecho consumado: distinto de `oportunidades`, que es el embudo.
+- `venta_items` — `venta_id`, `producto_id`, cantidad, precio_unitario, `fecha_entrega`,
+  `vida_util_meses`. Los dos últimos los completa un trigger si vienen vacíos: la vida útil se
+  **copia** del catálogo (snapshot) y no se lee por join, para que cambiar el catálogo no altere
+  lo que ya se le prometió a un cliente.
+- `bitacora_entradas` — `empresa_id`, `contacto_id`, tipo (CHECK: llamada, reunion, email,
+  whatsapp, consulta, queja, nota), título, detalle, `autor_id`, `ocurrido_en`.
+- `alertas_enviadas` — registro de cada aviso mandado (canal, destinatario, mensaje, autor).
+  **Solo se guarda lo enviado**: las alertas pendientes no se persisten.
+- `alertas_vida_util` (VISTA, `security_invoker = on`) — calcula en vivo qué ítems vencieron o
+  vencen en 60 días, con el último envío de cada uno. Sin cron: siempre dice la verdad de hoy.
 
 Todas las tablas tienen RLS habilitado con una política única: cualquier usuario autenticado
 puede leer y escribir. No hay distinción de roles todavía — ver "fuera de alcance" arriba.

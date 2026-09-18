@@ -75,41 +75,62 @@ CardFooter.displayName = "CardFooter";
    Button
    ========================================================================== */
 
+type ButtonVariant =
+  | "default"
+  | "destructive"
+  | "outline"
+  | "secondary"
+  | "ghost"
+  | "link";
+type ButtonSize = "default" | "sm" | "lg" | "icon";
+
+const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
+  // `primary` aliases the brand colour, so the default button IS the green one.
+  default: "bg-primary text-primary-foreground hover:bg-primary/90",
+  destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+  outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+  secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+  ghost: "hover:bg-accent hover:text-accent-foreground",
+  link: "text-primary underline-offset-4 hover:underline",
+};
+
+const BUTTON_SIZES: Record<ButtonSize, string> = {
+  default: "h-10 px-4 py-2",
+  sm: "h-9 rounded-md px-3",
+  lg: "h-11 rounded-md px-8",
+  icon: "h-10 w-10",
+};
+
+/**
+ * The button's classes, without the <button> element.
+ *
+ * For a link that has to LOOK like a button — a nav CTA, an `<a href>` — use
+ * this on the anchor instead of wrapping it in a <Button>. A <button> around
+ * an <a> is invalid HTML (interactive inside interactive) and screen readers
+ * announce the pair inconsistently. Same clothes, right element.
+ */
+export function buttonClass({
+  variant = "default",
+  size = "default",
+  className,
+}: { variant?: ButtonVariant; size?: ButtonSize; className?: string } = {}) {
+  return cn(
+    "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+    BUTTON_VARIANTS[variant],
+    BUTTON_SIZES[size],
+    className,
+  );
+}
+
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
-  size?: "default" | "sm" | "lg" | "icon";
+  variant?: ButtonVariant;
+  size?: ButtonSize;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "default", size = "default", ...props }, ref) => {
-    const variants = {
-      // `primary` aliases the brand colour, so the default button IS the green one.
-      default: "bg-primary text-primary-foreground hover:bg-primary/90",
-      destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-      outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-      secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-      ghost: "hover:bg-accent hover:text-accent-foreground",
-      link: "text-primary underline-offset-4 hover:underline",
-    };
-    const sizes = {
-      default: "h-10 px-4 py-2",
-      sm: "h-9 rounded-md px-3",
-      lg: "h-11 rounded-md px-8",
-      icon: "h-10 w-10",
-    };
-    return (
-      <button
-        ref={ref}
-        className={cn(
-          "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-          variants[variant],
-          sizes[size],
-          className,
-        )}
-        {...props}
-      />
-    );
-  },
+  ({ className, variant = "default", size = "default", ...props }, ref) => (
+    <button ref={ref} className={buttonClass({ variant, size, className })} {...props} />
+  ),
 );
 Button.displayName = "Button";
 

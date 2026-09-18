@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Mail,
   MapPin,
+  NotebookPen,
   Pencil,
   Phone,
   Plus,
@@ -20,16 +21,19 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { cn } from "@/lib/utils";
 import EmpresaForm from "./EmpresaForm";
 import ContactoForm from "./ContactoForm";
+import BitacoraPanel from "./BitacoraPanel";
 import type { Tables } from "@/lib/supabase/types";
 
 type Empresa = Tables<"empresas">;
 type Contacto = Tables<"contactos">;
+type Bitacora = Tables<"bitacora_entradas">;
 
 type DrawerState =
   | { type: "empresa"; mode: "create" }
   | { type: "empresa"; mode: "edit"; empresa: Empresa }
   | { type: "contacto"; mode: "create"; empresaId: string; empresaNombre: string }
-  | { type: "contacto"; mode: "edit"; contacto: Contacto };
+  | { type: "contacto"; mode: "edit"; contacto: Contacto }
+  | { type: "bitacora"; empresa: Empresa };
 
 /** One metadata line: icon + value, dropped entirely when there's no value. */
 function Meta({ icon: Icon, value }: { icon: React.ElementType; value: string | null }) {
@@ -45,12 +49,15 @@ function Meta({ icon: Icon, value }: { icon: React.ElementType; value: string | 
 export default function EmpresasList({
   empresas,
   contactos,
+  bitacora,
 }: {
   empresas: Empresa[];
   contactos: Contacto[];
+  bitacora: Bitacora[];
 }) {
   const [empresasState, setEmpresasState] = useState(empresas);
   const [contactosState, setContactosState] = useState(contactos);
+  const [bitacoraState, setBitacoraState] = useState(bitacora);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
@@ -107,13 +114,22 @@ export default function EmpresasList({
   }, [empresasState, contactosState, query]);
 
   const drawerTitle =
-    drawer?.type === "empresa"
-      ? drawer.mode === "edit"
-        ? "Editar empresa"
-        : "Nueva empresa"
-      : drawer?.mode === "edit"
-        ? "Editar contacto"
-        : "Nuevo contacto";
+    drawer?.type === "bitacora"
+      ? "Bitácora"
+      : drawer?.type === "empresa"
+        ? drawer.mode === "edit"
+          ? "Editar empresa"
+          : "Nueva empresa"
+        : drawer?.mode === "edit"
+          ? "Editar contacto"
+          : "Nuevo contacto";
+
+  const drawerIcon =
+    drawer?.type === "bitacora"
+      ? NotebookPen
+      : drawer?.type === "contacto"
+        ? UserRound
+        : Building2;
 
   return (
     <div className="flex w-full flex-col gap-4">
@@ -239,6 +255,11 @@ export default function EmpresasList({
                           onClick: () => openDrawer({ type: "empresa", mode: "edit", empresa }),
                         },
                         {
+                          label: "Bitácora",
+                          icon: NotebookPen,
+                          onClick: () => openDrawer({ type: "bitacora", empresa }),
+                        },
+                        {
                           label: "Agregar contacto",
                           icon: Plus,
                           onClick: () =>
@@ -345,9 +366,13 @@ export default function EmpresasList({
         onClose={closeDrawer}
         title={drawerTitle}
         subtitle={
-          drawer?.type === "contacto" && drawer.mode === "create" ? drawer.empresaNombre : undefined
+          drawer?.type === "bitacora"
+            ? drawer.empresa.nombre
+            : drawer?.type === "contacto" && drawer.mode === "create"
+              ? drawer.empresaNombre
+              : undefined
         }
-        icon={drawer?.type === "contacto" ? UserRound : Building2}
+        icon={drawerIcon}
       >
         {/* `key` remounts the form when the drawer is pointed at a different
             record, so its field state is seeded from the new props. */}
@@ -357,6 +382,14 @@ export default function EmpresasList({
             empresa={drawer.mode === "edit" ? drawer.empresa : undefined}
             onSaved={handleEmpresaSaved}
             onCancel={closeDrawer}
+          />
+        ) : drawer?.type === "bitacora" ? (
+          <BitacoraPanel
+            key={drawer.empresa.id}
+            empresaId={drawer.empresa.id}
+            entradas={bitacoraState.filter((b) => b.empresa_id === drawer.empresa.id)}
+            contactos={contactosState.filter((c) => c.empresa_id === drawer.empresa.id)}
+            onCreada={(entrada) => setBitacoraState((prev) => [entrada, ...prev])}
           />
         ) : drawer?.type === "contacto" ? (
           <ContactoForm

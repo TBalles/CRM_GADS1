@@ -2,6 +2,15 @@
 // proyecto real. Si se agrega o modifica una tabla/columna en
 // supabase/migrations/*.sql, hay que volver a generar este archivo en el
 // mismo cambio.
+//
+// EXCEPCION: los tipos de la migracion 0003 (productos.vida_util_meses,
+// ventas, venta_items, bitacora_entradas, alertas_enviadas y la vista
+// alertas_vida_util) estan escritos A MANO, siguiendo exactamente la forma que
+// genera la herramienta. Motivo: la migracion todavia no se corrio contra el
+// proyecto, asi que no hay de donde generarlos. Despues de aplicar
+// 0003_productos_ventas_alertas_bitacora.sql en Supabase, REGENERAR este
+// archivo y pisar esta seccion — el generador es la fuente de verdad, esto es
+// solo un puente para que el build compile mientras tanto.
 
 export type Json =
   | string
@@ -222,30 +231,267 @@ export type Database = {
           categoria: string | null
           descripcion: string | null
           id: string
+          marca: string | null
           nombre: string
           precio: number | null
+          vida_util_meses: number | null
         }
         Insert: {
           activo?: boolean
           categoria?: string | null
           descripcion?: string | null
           id?: string
+          marca?: string | null
           nombre: string
           precio?: number | null
+          vida_util_meses?: number | null
         }
         Update: {
           activo?: boolean
           categoria?: string | null
           descripcion?: string | null
           id?: string
+          marca?: string | null
           nombre?: string
           precio?: number | null
+          vida_util_meses?: number | null
         }
         Relationships: []
       }
+      ventas: {
+        Row: {
+          comprobante: string | null
+          contacto_id: string | null
+          created_at: string
+          empresa_id: string
+          fecha: string
+          id: string
+          notas: string | null
+          oportunidad_id: string | null
+        }
+        Insert: {
+          comprobante?: string | null
+          contacto_id?: string | null
+          created_at?: string
+          empresa_id: string
+          fecha?: string
+          id?: string
+          notas?: string | null
+          oportunidad_id?: string | null
+        }
+        Update: {
+          comprobante?: string | null
+          contacto_id?: string | null
+          created_at?: string
+          empresa_id?: string
+          fecha?: string
+          id?: string
+          notas?: string | null
+          oportunidad_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ventas_contacto_id_fkey"
+            columns: ["contacto_id"]
+            isOneToOne: false
+            referencedRelation: "contactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ventas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ventas_oportunidad_id_fkey"
+            columns: ["oportunidad_id"]
+            isOneToOne: false
+            referencedRelation: "oportunidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      venta_items: {
+        Row: {
+          cantidad: number
+          created_at: string
+          fecha_entrega: string | null
+          id: string
+          precio_unitario: number | null
+          producto_id: string
+          venta_id: string
+          vida_util_meses: number | null
+        }
+        Insert: {
+          cantidad?: number
+          created_at?: string
+          fecha_entrega?: string | null
+          id?: string
+          precio_unitario?: number | null
+          producto_id: string
+          venta_id: string
+          vida_util_meses?: number | null
+        }
+        Update: {
+          cantidad?: number
+          created_at?: string
+          fecha_entrega?: string | null
+          id?: string
+          precio_unitario?: number | null
+          producto_id?: string
+          venta_id?: string
+          vida_util_meses?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "venta_items_producto_id_fkey"
+            columns: ["producto_id"]
+            isOneToOne: false
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "venta_items_venta_id_fkey"
+            columns: ["venta_id"]
+            isOneToOne: false
+            referencedRelation: "ventas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bitacora_entradas: {
+        Row: {
+          autor_id: string | null
+          contacto_id: string | null
+          created_at: string
+          detalle: string | null
+          empresa_id: string
+          id: string
+          ocurrido_en: string
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          autor_id?: string | null
+          contacto_id?: string | null
+          created_at?: string
+          detalle?: string | null
+          empresa_id: string
+          id?: string
+          ocurrido_en?: string
+          tipo?: string
+          titulo: string
+        }
+        Update: {
+          autor_id?: string | null
+          contacto_id?: string | null
+          created_at?: string
+          detalle?: string | null
+          empresa_id?: string
+          id?: string
+          ocurrido_en?: string
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bitacora_entradas_autor_id_fkey"
+            columns: ["autor_id"]
+            isOneToOne: false
+            referencedRelation: "perfiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bitacora_entradas_contacto_id_fkey"
+            columns: ["contacto_id"]
+            isOneToOne: false
+            referencedRelation: "contactos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bitacora_entradas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alertas_enviadas: {
+        Row: {
+          canal: string
+          destinatario: string
+          enviado_at: string
+          enviado_por: string | null
+          id: string
+          mensaje: string | null
+          venta_item_id: string
+        }
+        Insert: {
+          canal: string
+          destinatario: string
+          enviado_at?: string
+          enviado_por?: string | null
+          id?: string
+          mensaje?: string | null
+          venta_item_id: string
+        }
+        Update: {
+          canal?: string
+          destinatario?: string
+          enviado_at?: string
+          enviado_por?: string | null
+          id?: string
+          mensaje?: string | null
+          venta_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alertas_enviadas_enviado_por_fkey"
+            columns: ["enviado_por"]
+            isOneToOne: false
+            referencedRelation: "perfiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alertas_enviadas_venta_item_id_fkey"
+            columns: ["venta_item_id"]
+            isOneToOne: false
+            referencedRelation: "venta_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
-      [_ in never]: never
+      alertas_vida_util: {
+        Row: {
+          cantidad: number | null
+          contacto_email: string | null
+          contacto_id: string | null
+          contacto_nombre: string | null
+          contacto_telefono: string | null
+          dias_restantes: number | null
+          empresa_email: string | null
+          empresa_id: string | null
+          empresa_nombre: string | null
+          empresa_telefono: string | null
+          estado: string | null
+          fecha_entrega: string | null
+          producto_id: string | null
+          producto_nombre: string | null
+          ultimo_canal: string | null
+          ultimo_envio: string | null
+          vence_el: string | null
+          venta_fecha: string | null
+          venta_id: string | null
+          venta_item_id: string | null
+          vida_util_meses: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
