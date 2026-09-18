@@ -224,6 +224,9 @@ export default async function LandingPage() {
     >
       {/* Cielo fijo detrás de toda la página. */}
       <ParticleField mode="stars" className="fixed inset-0 -z-10 h-dvh w-full" />
+      {/* Una figura deportiva por sección, armada con partículas: cada
+          <section data-forma> elige cuál va mientras cruza el centro. */}
+      <ParticleField mode="formas" className="fixed inset-0 -z-10 h-dvh w-full transition-opacity duration-700" />
       <BallCursor />
 
       {/* ── Header ──────────────────────────────────────────────────── */}
@@ -285,10 +288,12 @@ export default async function LandingPage() {
 
       <main className="pt-18">
         {/* ── Hero ────────────────────────────────────────────────────── */}
-        <section className="relative isolate flex min-h-[calc(100dvh-4.5rem)] items-center overflow-hidden">
-          {/* El arco armado con partículas. En mobile queda de fondo, tenue,
-              detrás del texto; en desktop ocupa la mitad derecha. */}
-          <ParticleField mode="logo" className="absolute inset-0 -z-10 h-full w-full opacity-35 lg:opacity-100" />
+        <section
+          data-forma="logo"
+          data-forma-x="0.72"
+          data-forma-op="1"
+          className="relative isolate flex min-h-[calc(100dvh-4.5rem)] items-center overflow-hidden"
+        >
           <Chispa className="left-[8%] top-[14%] text-xl" />
           <Chispa className="bottom-[22%] left-[46%] text-sm [animation-delay:1.2s]" />
           <Chispa className="right-[10%] top-[18%] hidden text-base [animation-delay:2s] lg:block" />
@@ -360,7 +365,7 @@ export default async function LandingPage() {
         </section>
 
         {/* ── La oportunidad ──────────────────────────────────────────── */}
-        <section className="relative px-5 py-32 md:py-44">
+        <section data-forma="pelota" data-forma-op="0.45" className="relative px-5 py-32 md:py-44">
           <Chispa className="left-[18%] top-[30%] text-2xl" />
           <Chispa className="right-[16%] bottom-[28%] text-lg [animation-delay:1.6s]" />
           <div className="reveal mx-auto max-w-4xl text-center">
@@ -377,7 +382,7 @@ export default async function LandingPage() {
         </section>
 
         {/* ── Qué hace ────────────────────────────────────────────────── */}
-        <section id="funcionalidades" className="relative scroll-mt-20 px-5 pb-28">
+        <section id="funcionalidades" data-forma="cono" data-forma-x="0.8" data-forma-y="0.36" data-forma-op="0.6" className="relative scroll-mt-20 px-5 pb-28">
           <div className="mx-auto max-w-6xl">
             <div className="reveal max-w-2xl">
               <Eyebrow>Qué hace</Eyebrow>
@@ -418,8 +423,12 @@ export default async function LandingPage() {
         </section>
 
         {/* ── Producto ────────────────────────────────────────────────── */}
-        <section id="producto" className="relative isolate scroll-mt-20 overflow-hidden px-5 py-28">
-          <ParticleField mode="halo" className="absolute inset-0 -z-10 h-full w-full opacity-80" />
+        <section
+          id="producto"
+          data-forma="rugby"
+          data-forma-op="0.55"
+          className="relative isolate scroll-mt-20 overflow-hidden px-5 py-28"
+        >
           <div className="mx-auto max-w-6xl">
             <div className="reveal max-w-3xl">
               <Eyebrow>Nuestro producto</Eyebrow>
@@ -437,7 +446,7 @@ export default async function LandingPage() {
         </section>
 
         {/* ── Cómo funciona ───────────────────────────────────────────── */}
-        <section id="como-funciona" className="steps-scope relative scroll-mt-20 overflow-hidden py-28">
+        <section id="como-funciona" data-forma="silbato" data-forma-x="0.8" data-forma-op="0.55" className="steps-scope relative scroll-mt-20 overflow-hidden py-28">
           {/* Palabra gigante de fondo, solo contorno. */}
           <span
             aria-hidden="true"
@@ -499,7 +508,7 @@ export default async function LandingPage() {
         </section>
 
         {/* ── Nosotros ────────────────────────────────────────────────── */}
-        <section id="nosotros" className="relative scroll-mt-20 px-5 py-28">
+        <section id="nosotros" data-forma="copa" data-forma-op="0.45" className="relative scroll-mt-20 px-5 py-28">
           <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-2 lg:items-center">
             <div className="reveal">
               <Eyebrow>Nosotros</Eyebrow>
@@ -559,7 +568,7 @@ export default async function LandingPage() {
         </section>
 
         {/* ── FAQ ─────────────────────────────────────────────────────── */}
-        <section id="faq" className="relative scroll-mt-20 px-5 py-28">
+        <section id="faq" data-forma="pelota" data-forma-op="0.35" className="relative scroll-mt-20 px-5 py-28">
           <div className="mx-auto max-w-3xl">
             <div className="reveal text-center">
               <Eyebrow center>FAQ</Eyebrow>
@@ -588,7 +597,7 @@ export default async function LandingPage() {
         </section>
 
         {/* ── Contacto ────────────────────────────────────────────────── */}
-        <section id="contacto" className="relative scroll-mt-20 px-5 pb-28 pt-12">
+        <section id="contacto" data-forma="logo" data-forma-op="0.3" className="relative scroll-mt-20 px-5 pb-28 pt-12">
           <div className="reveal relative mx-auto max-w-5xl overflow-hidden rounded-[2rem] border border-brand/30 bg-card/70 px-6 py-16 text-center backdrop-blur-sm md:px-16">
             <div
               aria-hidden="true"

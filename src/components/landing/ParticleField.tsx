@@ -4,46 +4,240 @@ import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Canvas de particulas de la landing. Tres modos:
+ * Canvas de particulas de la landing. Dos modos:
  *
- * - `logo`:  las particulas arman el isotipo (el arco) y vuelven a su lugar
- *            despues de que el mouse o una patada las desordenan.
- * - `halo`:  una nube circular, densa en el borde, detras de la vitrina de
- *            producto.
- * - `stars`: un cielo que sube despacio y titila, fijo detras de toda la pagina.
+ * - `formas`: UN solo campo fijo detras de la pagina que arma una figura por
+ *             seccion: el isotipo en el hero, despues un cono, una pelota, una
+ *             de rugby, una copa, un silbato. Cada <section data-forma="..."> dice
+ *             que figura va mientras cruza el centro de la pantalla; al cambiar,
+ *             las MISMAS particulas viajan y se rearman. El mouse las empuja y
+ *             la patada del cursor-pelota las desparrama.
+ * - `stars`:  un cielo que sube despacio y titila, fijo detras de toda la pagina.
  *
- * Es un canvas 2D con arrays tipados y sin librerias: con ~2.500 particulas
- * alcanza de sobra y no suma dependencias. Se pausa solo cuando sale de
- * pantalla o cuando la pestana no esta visible, y con `prefers-reduced-motion`
- * dibuja un solo cuadro quieto.
+ * Atributos de cada seccion (todos opcionales salvo data-forma):
+ *   data-forma="cono"      una clave de FORMAS
+ *   data-forma-x="0.75"    centro horizontal en desktop (0 = izquierda, 1 = derecha)
+ *   data-forma-y="0.4"     centro vertical en desktop (subirla si abajo hay tarjetas)
+ *   data-forma-op="0.5"    opacidad en desktop; baja donde la figura va detras de texto
+ * En mobile la figura va siempre centrada y tenue, detras del texto.
+ *
+ * Es un canvas 2D con arrays tipados y sin librerias: con ~2.800 particulas
+ * alcanza de sobra y no suma dependencias. Se pausa solo cuando la pestana no
+ * esta visible, y con `prefers-reduced-motion` dibuja cuadros quietos.
  */
 
-type Mode = "logo" | "halo" | "stars";
+type Mode = "formas" | "stars";
 
 /** Evento que dispara el cursor-pelota al hacer clic: empuja las particulas. */
 export const KICK_EVENT = "tn:kick";
 
+/* ── Figuras ────────────────────────────────────────────────────────────── */
+
+/** Colores: 0-2 verde de marca (fuerte → tenue), 3-4 blanco (fuerte → tenue). */
+const BUCKETS = 5;
+
+type Pesos = readonly (readonly [number, number])[];
+
 /**
- * Misma geometria que <GoalMark> (src/components/Logo.tsx), separada en sus
- * tres partes. Si el isotipo cambia, cambia aca tambien.
- *
- * Se muestrean POR SEPARADO a proposito: con el logo entero, la red y el marco
- * salian con la misma densidad y el mismo color, y el arco se leia como una
- * mancha cuadrada. Asi cada parte tiene su propia densidad y su color — marco
- * verde y denso, pelota blanca, red rala y tenue — y el ojo las separa.
+ * Cada figura se dibuja en SVG (viewBox 32×32) separada en partes que se
+ * muestrean POR SEPARADO: asi cada parte tiene su densidad y su color (contorno
+ * verde y denso, detalles blancos, relleno ralo) y el ojo las distingue. Con la
+ * figura entera todo salia igual de denso y se leia como una mancha.
  */
-const PARTES = {
-  marco:
-    '<g stroke-width="3" stroke-linecap="round"><path d="M6 8.5h20"/><path d="M6.5 9.5v14M25.5 9.5v14"/></g>',
-  pelota: '<circle cx="16" cy="19.5" r="4.5" fill="#fff" stroke="none"/>',
-  red: '<g stroke-width="0.7"><path d="M11.5 8.5v15M16 8.5v15M20.5 8.5v15"/><path d="M6 13.5h20M6 18.5h20"/></g>',
-} as const;
+type Parte = { svg: string; max: number; colores: Pesos; tam: readonly [number, number] };
+type Forma = { partes: Parte[]; ajusteY?: number };
+
+const FUERTE: Pesos = [[0, 0.62], [1, 0.26], [3, 0.12]];
+const BLANCO: Pesos = [[3, 0.78], [0, 0.22]];
+const MEDIO: Pesos = [[0, 0.3], [1, 0.45], [2, 0.25]];
+const TENUE: Pesos = [[1, 0.3], [2, 0.45], [4, 0.25]];
+const T_FUERTE = [1.3, 2.8] as const;
+const T_TENUE = [0.9, 1.8] as const;
+
+type P = readonly [number, number];
+const pt = (cx: number, cy: number, r: number, deg: number): P => {
+  const a = (deg * Math.PI) / 180;
+  return [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
+};
+const lista = (vs: readonly P[]) => vs.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(" ");
+const dist = (a: P, b: P) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+
+function pelota(): Forma {
+  // Vista de frente: pentagono central, cinco pentagonos cortados por el borde
+  // y las costuras que los unen.
+  const centro = Array.from({ length: 5 }, (_, k) => pt(16, 16, 3.8, -90 + 72 * k));
+  const externos = Array.from({ length: 5 }, (_, k) => {
+    const a = -54 + 72 * k;
+    const [x, y] = pt(16, 16, 10.4, a);
+    return Array.from({ length: 5 }, (_, j) => pt(x, y, 3.1, a + 180 + 72 * j));
+  });
+  let costuras = "";
+  centro.forEach((v, k) => {
+    const e = pt(16, 16, 6.9, -90 + 72 * k);
+    costuras += `<path d="M${lista([v])}L${lista([e])}"/>`;
+    for (const j of [k, (k + 4) % 5]) {
+      const cerca = externos[j].reduce((m, p) => (dist(p, e) < dist(m, e) ? p : m));
+      costuras += `<path d="M${lista([e])}L${lista([cerca])}"/>`;
+    }
+  });
+  return {
+    partes: [
+      { svg: '<circle cx="16" cy="16" r="12.4" stroke-width="1.5"/>', max: 1100, colores: FUERTE, tam: T_FUERTE },
+      {
+        svg:
+          '<defs><clipPath id="b"><circle cx="16" cy="16" r="12.4"/></clipPath></defs>' +
+          `<g clip-path="url(#b)" fill="#fff" stroke="none"><polygon points="${lista(centro)}"/>` +
+          externos.map((p) => `<polygon points="${lista(p)}"/>`).join("") +
+          "</g>",
+        max: 1000,
+        colores: BLANCO,
+        tam: T_FUERTE,
+      },
+      { svg: `<g stroke-width="0.6">${costuras}</g>`, max: 450, colores: TENUE, tam: T_TENUE },
+    ],
+  };
+}
+
+function cono(): Forma {
+  // Cuerpo en franjas verdes y blancas alternadas, sobre una base.
+  const xl = (y: number) => 13.2 - ((y - 5) * 5.4) / 19;
+  const franja = (y0: number, y1: number) =>
+    `<polygon points="${lista([[xl(y0), y0], [32 - xl(y0), y0], [32 - xl(y1), y1], [xl(y1), y1]])}"/>`;
+  return {
+    partes: [
+      {
+        svg: `<g fill="#fff" stroke="none">${franja(5, 10)}${franja(12.6, 16.4)}${franja(19, 24)}</g>`,
+        max: 1300,
+        colores: MEDIO,
+        tam: [1.1, 2.4],
+      },
+      {
+        svg: `<g fill="#fff" stroke="none">${franja(10, 12.6)}${franja(16.4, 19)}</g>`,
+        max: 650,
+        colores: BLANCO,
+        tam: T_FUERTE,
+      },
+      {
+        svg: '<rect x="5" y="24" width="22" height="2.6" rx="1" fill="#fff" stroke="none"/>',
+        max: 700,
+        colores: FUERTE,
+        tam: T_FUERTE,
+      },
+    ],
+  };
+}
+
+function rugby(): Forma {
+  const g = (sw: number, d: string) => `<g transform="rotate(-35 16 16)" stroke-width="${sw}">${d}</g>`;
+  const puntadas = [11.5, 13.5, 15.5, 17.5, 19.5].map((x) => `<path d="M${x} 14.7v2.6"/>`).join("");
+  return {
+    partes: [
+      { svg: g(1.5, '<ellipse cx="16" cy="16" rx="13" ry="7.6"/>'), max: 1300, colores: FUERTE, tam: T_FUERTE },
+      { svg: g(0.9, `<path d="M10.5 16H21.5"/>${puntadas}`), max: 700, colores: BLANCO, tam: T_FUERTE },
+      {
+        svg: g(0.6, '<path d="M3.2 16Q16 10.2 28.8 16M3.2 16Q16 21.8 28.8 16"/>'),
+        max: 500,
+        colores: TENUE,
+        tam: T_TENUE,
+      },
+    ],
+  };
+}
+
+function copa(): Forma {
+  const cuenco = "M9.5 5H22.5V10.5A6.5 6.5 0 0 1 9.5 10.5Z";
+  const estrella = Array.from({ length: 10 }, (_, k) => pt(16, 10, k % 2 ? 1 : 2.4, -90 + 36 * k));
+  return {
+    partes: [
+      {
+        svg:
+          '<g stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">' +
+          `<path d="${cuenco}"/><path d="M9.5 7H6.5A3 3 0 0 0 9.8 13"/><path d="M22.5 7H25.5A3 3 0 0 1 22.2 13"/>` +
+          '<path d="M16 17V21"/><path d="M12.5 21H19.5V25.5H12.5Z"/><path d="M10.5 27H21.5"/></g>',
+        max: 1400,
+        colores: FUERTE,
+        tam: T_FUERTE,
+      },
+      {
+        svg: `<polygon points="${lista(estrella)}" fill="#fff" stroke="none"/>`,
+        max: 350,
+        colores: BLANCO,
+        tam: T_FUERTE,
+      },
+      { svg: `<path d="${cuenco}" fill="#fff" stroke="none"/>`, max: 500, colores: TENUE, tam: T_TENUE },
+    ],
+  };
+}
+
+function silbato(): Forma {
+  return {
+    partes: [
+      {
+        svg: '<g stroke-width="1.5" stroke-linejoin="round"><path d="M17.5 12.5H27V17.5H20.2"/><circle cx="13" cy="18.5" r="7"/></g>',
+        max: 1400,
+        colores: FUERTE,
+        tam: T_FUERTE,
+      },
+      {
+        svg: '<circle cx="13" cy="18.5" r="2.6" fill="#fff" stroke="none"/>',
+        max: 450,
+        colores: BLANCO,
+        tam: T_FUERTE,
+      },
+      {
+        svg: '<g stroke-width="0.8"><circle cx="7.5" cy="11.5" r="1.8"/><path d="M6.2 10.2Q3 6 7 3.5"/></g>',
+        max: 350,
+        colores: TENUE,
+        tam: T_TENUE,
+      },
+    ],
+  };
+}
+
+/**
+ * El isotipo: misma geometria que <GoalMark> (src/components/Logo.tsx). Si el
+ * isotipo cambia, cambia aca tambien.
+ */
+const logo: Forma = {
+  ajusteY: 0.51, // el dibujo esta un poco corrido hacia abajo en su viewBox
+  partes: [
+    {
+      svg: '<g stroke-width="3" stroke-linecap="round"><path d="M6 8.5h20"/><path d="M6.5 9.5v14M25.5 9.5v14"/></g>',
+      max: 1300,
+      colores: FUERTE,
+      tam: T_FUERTE,
+    },
+    {
+      svg: '<circle cx="16" cy="19.5" r="4.5" fill="#fff" stroke="none"/>',
+      max: 650,
+      colores: BLANCO,
+      tam: [1.3, 2.7],
+    },
+    {
+      svg: '<g stroke-width="0.7"><path d="M11.5 8.5v15M16 8.5v15M20.5 8.5v15"/><path d="M6 13.5h20M6 18.5h20"/></g>',
+      max: 800,
+      colores: TENUE,
+      tam: T_TENUE,
+    },
+  ],
+};
+
+const FORMAS: Record<string, Forma> = {
+  logo,
+  pelota: pelota(),
+  cono: cono(),
+  rugby: rugby(),
+  copa: copa(),
+  silbato: silbato(),
+};
+
+/* ── Muestreo ───────────────────────────────────────────────────────────── */
 
 function svgDe(parte: string, size: number) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="${size}" height="${size}" fill="none" stroke="#fff">${parte}</svg>`;
 }
 
-/** Rasteriza una parte del isotipo y devuelve puntos donde hay tinta. */
+/** Rasteriza una parte y devuelve puntos donde hay tinta. */
 async function samplePart(parte: string, size: number, max: number): Promise<number[]> {
   const img = new Image();
   img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgDe(parte, size))}`;
@@ -77,12 +271,9 @@ async function samplePart(parte: string, size: number, max: number): Promise<num
   return out;
 }
 
-/** Colores: 0-2 verde de marca (fuerte → tenue), 3-4 blanco (fuerte → tenue). */
-const BUCKETS = 5;
-
 type Semilla = { tx: number; ty: number; c: number; s: number };
 
-function pick<T>(weights: readonly [T, number][]): T {
+function pick(weights: Pesos): number {
   let r = Math.random();
   for (const [v, w] of weights) {
     if ((r -= w) <= 0) return v;
@@ -95,90 +286,69 @@ function gauss() {
   return Math.sqrt(-2 * Math.log(Math.random() || 1e-9)) * Math.cos(2 * Math.PI * Math.random());
 }
 
-async function semillas(mode: Mode, w: number, h: number): Promise<Semilla[]> {
-  const out: Semilla[] = [];
+type Destino = { forma: string; x: number; y: number; op: number };
+
+async function semillasForma(d: Destino, w: number, h: number, n: number): Promise<Semilla[]> {
+  const forma = FORMAS[d.forma] ?? logo;
   const desktop = w >= 1024;
+  const size = Math.round(desktop ? Math.min(w * 0.4, h * 0.78, 580) : Math.min(w * 0.9, h * 0.55, 420));
+  const cx = desktop ? w * d.x : w / 2;
+  const cy = desktop ? h * d.y : h * 0.55;
+  const f = desktop ? 1 : 0.45;
+  const ox = cx - size / 2;
+  const oy = cy - size * (forma.ajusteY ?? 0.5);
 
-  if (mode === "logo") {
-    const size = Math.round(
-      desktop ? Math.min(w * 0.4, h * 0.8, 580) : Math.min(w * 0.9, h * 0.55, 420),
-    );
-    const cx = desktop ? w * 0.72 : w / 2;
-    const cy = desktop ? h / 2 : h * 0.58;
-    const f = desktop ? 1 : 0.5;
-    const [marco, pelota, red] = await Promise.all([
-      samplePart(PARTES.marco, size, Math.round(1300 * f)),
-      samplePart(PARTES.pelota, size, Math.round(650 * f)),
-      samplePart(PARTES.red, size, Math.round(800 * f)),
-    ]);
-    const ox = cx - size / 2;
-    const oy = cy - size * 0.51; // el dibujo esta un poco corrido hacia abajo en su viewBox
-
-    const agregar = (pts: number[], color: () => number, tam: () => number) => {
-      for (let i = 0; i < pts.length; i += 2) {
-        out.push({ tx: ox + pts[i], ty: oy + pts[i + 1], c: color(), s: tam() });
-      }
-    };
-    agregar(
-      marco,
-      () => pick([[0, 0.62], [1, 0.26], [3, 0.12]] as const),
-      () => 1.3 + Math.random() * 1.5,
-    );
-    agregar(
-      pelota,
-      () => pick([[3, 0.78], [0, 0.22]] as const),
-      () => 1.3 + Math.random() * 1.4,
-    );
-    agregar(
-      red,
-      () => pick([[1, 0.3], [2, 0.45], [4, 0.25]] as const),
-      () => 0.9 + Math.random() * 0.9,
-    );
-
-    // Polvo alrededor del arco: la textura de nube de la referencia. Poco y
-    // cerca, para que no le borre el contorno a la forma.
-    const dust = Math.round(out.length * 0.18);
-    for (let i = 0; i < dust; i++) {
+  const out: Semilla[] = [];
+  const muestras = await Promise.all(forma.partes.map((p) => samplePart(p.svg, size, Math.round(p.max * f))));
+  muestras.forEach((pts, k) => {
+    const { colores, tam } = forma.partes[k];
+    for (let i = 0; i < pts.length; i += 2) {
       out.push({
-        tx: cx + gauss() * size * 0.26,
-        ty: cy + gauss() * size * 0.2,
-        c: pick([[2, 0.6], [4, 0.4]] as const),
-        s: 0.7 + Math.random() * 1,
+        tx: ox + pts[i],
+        ty: oy + pts[i + 1],
+        c: pick(colores),
+        s: tam[0] + Math.random() * (tam[1] - tam[0]),
       });
     }
-    return out;
-  }
+  });
 
-  if (mode === "halo") {
-    const n = desktop ? 1600 : 700;
-    const r = Math.min(w, h) * (desktop ? 0.5 : 0.46);
-    const cx = w / 2;
-    const cy = h * 0.42;
-    for (let i = 0; i < n; i++) {
-      const a = Math.random() * Math.PI * 2;
-      // Exponente < 1: la mayoria cae cerca del borde, como una esfera vista de frente.
-      const rr = r * (0.3 + 0.7 * Math.pow(Math.random(), 0.3));
-      out.push({
-        tx: cx + Math.cos(a) * rr,
-        ty: cy + Math.sin(a) * rr,
-        c: pick([[0, 0.2], [1, 0.25], [2, 0.3], [3, 0.1], [4, 0.15]] as const),
-        s: 0.9 + Math.random() * 1.4,
-      });
-    }
-    return out;
-  }
-
-  const n = Math.round(Math.min(340, Math.max(90, (w * h) / 6500)));
-  for (let i = 0; i < n; i++) {
+  // Polvo alrededor: la textura de nube de la referencia. Poco y cerca, para
+  // que no le borre el contorno a la figura.
+  const dust = Math.round(out.length * 0.18);
+  for (let i = 0; i < dust; i++) {
     out.push({
-      tx: Math.random() * w,
-      ty: Math.random() * h,
-      c: pick([[1, 0.22], [3, 0.3], [4, 0.48]] as const),
-      s: 0.7 + Math.random() * 1.3,
+      tx: cx + gauss() * size * 0.26,
+      ty: cy + gauss() * size * 0.2,
+      c: pick([[2, 0.6], [4, 0.4]]),
+      s: 0.7 + Math.random() * 1,
     });
   }
-  return out;
+
+  // Siempre exactamente n: son las mismas particulas las que se rearman.
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = (Math.random() * (i + 1)) | 0;
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  if (out.length > n) out.length = n;
+  const base = out.length;
+  while (out.length < n && base) {
+    const s = out[(Math.random() * base) | 0];
+    out.push({ ...s, tx: s.tx + (Math.random() - 0.5) * 3, ty: s.ty + (Math.random() - 0.5) * 3 });
+  }
+  return out.sort((a, b) => a.c - b.c);
 }
+
+function semillasStars(w: number, h: number): Semilla[] {
+  const n = Math.round(Math.min(340, Math.max(90, (w * h) / 6500)));
+  return Array.from({ length: n }, () => ({
+    tx: Math.random() * w,
+    ty: Math.random() * h,
+    c: pick([[1, 0.22], [3, 0.3], [4, 0.48]]),
+    s: 0.7 + Math.random() * 1.3,
+  })).sort((a, b) => a.c - b.c);
+}
+
+/* ── Componente ─────────────────────────────────────────────────────────── */
 
 export default function ParticleField({ mode, className }: { mode: Mode; className?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -189,6 +359,7 @@ export default function ParticleField({ mode, className }: { mode: Mode; classNa
     if (!canvas || !ctx) return;
 
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const stars = mode === "stars";
 
     // El verde sale del token --glow de la landing: el color de marca vive en
     // un solo lugar (globals.css), no duplicado en JS.
@@ -212,64 +383,62 @@ export default function ParticleField({ mode, className }: { mode: Mode; classNa
     let ty = new Float32Array(0);
     let sz = new Float32Array(0);
     let ph = new Float32Array(0);
-    let col = new Uint8Array(0);
-    // Particulas ordenadas por color: se cambia fillStyle 5 veces por cuadro, no 2.500.
+    // Particulas ordenadas por color: se cambia fillStyle 5 veces por cuadro, no 2.800.
     let rangos: number[] = [];
 
     const mouse = { cx: -1e4, cy: -1e4 };
     let kick: { cx: number; cy: number } | null = null;
     let raf = 0;
-    let onScreen = true;
     let buildId = 0;
     let lastWidth = -1;
+    let destino: Destino = { forma: "logo", x: 0.72, y: 0.53, op: 1 };
 
-    async function build() {
-      const id = ++buildId;
-      const seeds = await semillas(mode, w, h);
-      if (id !== buildId) return; // hubo otro resize mientras se rasterizaba el logo
-
-      seeds.sort((a, b) => a.c - b.c);
-      const prevN = n;
+    /** Ajusta los arrays a `cant` particulas, conservando las posiciones que ya hay. */
+    function redimensionar(cant: number) {
+      if (cant === n) return;
       const px = x;
       const py = y;
+      x = new Float32Array(cant);
+      y = new Float32Array(cant);
+      vx = new Float32Array(cant);
+      vy = new Float32Array(cant);
+      tx = new Float32Array(cant);
+      ty = new Float32Array(cant);
+      sz = new Float32Array(cant);
+      ph = new Float32Array(cant);
+      for (let i = 0; i < cant; i++) {
+        ph[i] = Math.random() * Math.PI * 2;
+        // Primera carga: arrancan desparramadas y se arman solas.
+        x[i] = i < n ? px[i] : Math.random() * w;
+        y[i] = i < n ? py[i] : Math.random() * h;
+      }
+      n = cant;
+    }
 
-      n = seeds.length;
-      x = new Float32Array(n);
-      y = new Float32Array(n);
-      vx = new Float32Array(n);
-      vy = new Float32Array(n);
-      tx = new Float32Array(n);
-      ty = new Float32Array(n);
-      sz = new Float32Array(n);
-      ph = new Float32Array(n);
-      col = new Uint8Array(n);
+    /** Nuevos destinos: las particulas viajan solas desde donde estan. */
+    async function build() {
+      const id = ++buildId;
+      const cant = w >= 1024 ? 2800 : 1200;
+      const seeds = stars ? semillasStars(w, h) : await semillasForma(destino, w, h, cant);
+      if (id !== buildId) return; // cambio la forma o el tamaño mientras se rasterizaba
+
+      redimensionar(seeds.length);
       rangos = new Array(BUCKETS + 1).fill(n);
-
       for (let i = 0; i < n; i++) {
         const s = seeds[i];
         tx[i] = s.tx;
         ty[i] = s.ty;
         sz[i] = s.s;
-        col[i] = s.c;
-        ph[i] = Math.random() * Math.PI * 2;
         if (rangos[s.c] === n) rangos[s.c] = i;
-
-        if (reduce || mode === "stars") {
+        if (reduce || stars) {
           x[i] = s.tx;
           y[i] = s.ty;
-        } else if (i < prevN) {
-          // En un resize, cada particula viaja desde donde estaba.
-          x[i] = px[i];
-          y[i] = py[i];
-        } else {
-          // Primera carga: arrancan desparramadas y se arman solas.
-          x[i] = Math.random() * w;
-          y[i] = Math.random() * h;
         }
       }
       // Un color sin particulas hereda el inicio del siguiente.
       for (let b = BUCKETS - 1; b >= 0; b--) rangos[b] = Math.min(rangos[b], rangos[b + 1]);
 
+      if (!stars) canvas!.style.opacity = String(w >= 1024 ? destino.op : destino.op * 0.4);
       if (reduce) draw(0);
     }
 
@@ -282,9 +451,9 @@ export default function ParticleField({ mode, className }: { mode: Mode; classNa
       canvas!.height = Math.round(h * dpr);
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      // En mobile, la barra del navegador cambia el alto al scrollear. Para el
-      // cielo solo importa el ancho: rearmarlo en cada scroll lo haria parpadear.
-      if (mode === "stars" && w === lastWidth) {
+      // En mobile, la barra del navegador cambia el alto al scrollear. Solo
+      // importa el ancho: rearmar en cada scroll haria saltar las figuras.
+      if (w === lastWidth) {
         if (reduce) draw(0);
         return;
       }
@@ -296,7 +465,6 @@ export default function ParticleField({ mode, className }: { mode: Mode; classNa
       const rect = canvas!.getBoundingClientRect();
       const mx = mouse.cx - rect.left;
       const my = mouse.cy - rect.top;
-      const stars = mode === "stars";
       const R = stars ? 110 : 135;
       const R2 = R * R;
       const push = stars ? 1.4 : 3.4;
@@ -359,7 +527,7 @@ export default function ParticleField({ mode, className }: { mode: Mode; classNa
 
     function draw(t: number) {
       ctx!.clearRect(0, 0, w, h);
-      if (mode === "stars") {
+      if (stars) {
         // Titileo por particula: con ~300 estrellas el cambio de alfa es barato.
         for (let b = 0; b < BUCKETS; b++) {
           ctx!.fillStyle = styles[b];
@@ -382,14 +550,14 @@ export default function ParticleField({ mode, className }: { mode: Mode; classNa
 
     function loop(t: number) {
       raf = 0;
-      if (!onScreen || document.hidden) return;
+      if (document.hidden) return;
       step(t);
       draw(t);
       raf = requestAnimationFrame(loop);
     }
 
     function start() {
-      if (reduce || raf || !onScreen || document.hidden) return;
+      if (reduce || raf || document.hidden) return;
       raf = requestAnimationFrame(loop);
     }
 
@@ -414,14 +582,32 @@ export default function ParticleField({ mode, className }: { mode: Mode; classNa
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(resize, 150);
     });
-    const io = new IntersectionObserver(([entry]) => {
-      onScreen = entry.isIntersecting;
-      start();
-    });
+
+    // La seccion que cruza la franja central de la pantalla elige la figura.
+    const secciones = stars
+      ? null
+      : new IntersectionObserver(
+          (entries) => {
+            for (const e of entries) {
+              if (!e.isIntersecting) continue;
+              const el = e.target as HTMLElement;
+              const d: Destino = {
+                forma: el.dataset.forma ?? "logo",
+                x: Number(el.dataset.formaX ?? 0.5),
+                y: Number(el.dataset.formaY ?? 0.53),
+                op: Number(el.dataset.formaOp ?? 0.5),
+              };
+              if (d.forma === destino.forma && d.x === destino.x && d.y === destino.y && d.op === destino.op) continue;
+              destino = d;
+              void build();
+            }
+          },
+          { rootMargin: "-49% 0px -49% 0px" },
+        );
+    if (secciones) document.querySelectorAll("[data-forma]").forEach((el) => secciones.observe(el));
 
     resize();
     ro.observe(canvas);
-    io.observe(canvas);
     if (!reduce) {
       window.addEventListener("pointermove", onMove, { passive: true });
       window.addEventListener("pointerout", onOut);
@@ -435,7 +621,7 @@ export default function ParticleField({ mode, className }: { mode: Mode; classNa
       cancelAnimationFrame(raf);
       clearTimeout(resizeTimer);
       ro.disconnect();
-      io.disconnect();
+      secciones?.disconnect();
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerout", onOut);
       window.removeEventListener(KICK_EVENT, onKick);
