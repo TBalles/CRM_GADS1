@@ -86,7 +86,7 @@ export default async function LoginPage({
       {/* ── Form panel ──────────────────────────────────────────────── */}
       <div className="flex flex-1 flex-col items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-sm">
-          <span className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand text-brand-foreground shadow-lg shadow-brand/25 md:hidden">
+          <span className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-logo text-logo-foreground shadow-lg shadow-logo/25 md:hidden">
             <GoalMark className="h-7 w-7" />
           </span>
 

@@ -36,7 +36,7 @@ export const Loader: React.FC<LoaderProps> = ({ text, subtext, size = "md", clas
         <span className="absolute inset-[13%] rounded-full border-2 border-transparent border-t-brand animate-spin [animation-duration:900ms]" />
         {/* Burbuja con el isotipo */}
         <span className="absolute inset-[24%] flex items-center justify-center rounded-full bg-background shadow-sm">
-          <span className="flex h-[74%] w-[74%] items-center justify-center rounded-full bg-brand text-brand-foreground shadow-md">
+          <span className="flex h-[74%] w-[74%] items-center justify-center rounded-full bg-logo text-logo-foreground shadow-md">
             <GoalMark className={s.icon} />
           </span>
         </span>

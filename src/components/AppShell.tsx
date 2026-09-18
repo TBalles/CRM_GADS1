@@ -82,7 +82,7 @@ function NavItem({
 function Logo({ collapsed }: { collapsed?: boolean }) {
   return (
     <Link href="/" title="Ir a la página de inicio" className="flex min-w-0 items-center gap-2.5">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand text-brand-foreground shadow-sm">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-logo text-logo-foreground shadow-sm">
         <GoalMark className="h-[19px] w-[19px]" />
       </span>
       {!collapsed && (

@@ -22,7 +22,7 @@ export default function AuthCard({
   return (
     <div className="flex min-h-dvh items-center justify-center bg-secondary/30 p-6">
       <div className="w-full max-w-md rounded-2xl border bg-card p-8 shadow-xl sm:p-10">
-        <span className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand text-brand-foreground shadow-lg shadow-brand/25">
+        <span className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-logo text-logo-foreground shadow-lg shadow-logo/25">
           <GoalMark className="h-7 w-7" />
         </span>
         <h1 className="text-2xl font-bold tracking-tight">{titulo}</h1>

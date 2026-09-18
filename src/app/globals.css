@@ -96,6 +96,10 @@
   --color-primary-foreground: hsl(var(--primary-foreground));
   --color-brand: hsl(var(--brand));
   --color-brand-foreground: hsl(var(--brand-foreground));
+  /* The logo tile keeps the light-mode brand green in every theme: it is
+     identity, not UI. --brand lightens in dark mode for contrast. */
+  --color-logo: hsl(160 78% 24%);
+  --color-logo-foreground: hsl(0 0% 100%);
 
   --color-secondary: hsl(var(--secondary));
   --color-secondary-foreground: hsl(var(--secondary-foreground));
