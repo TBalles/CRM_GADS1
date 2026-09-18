@@ -4,8 +4,10 @@
  *
  * Drawn in `currentColor` so it inherits whatever it sits on (the brand tile
  * in the sidebar, white on the login panel). The standalone favicon version
- * with the brand tile baked in lives in `src/app/icon.svg`; keep the two in
- * sync if this mark changes.
+ * with the brand tile baked in lives in `src/app/icon.svg`, and the landing's
+ * particle hero rasterizes a copy split into frame / ball / net
+ * (`src/components/landing/ParticleField.tsx`). Keep all three in sync if this
+ * mark changes.
  */
 export function GoalMark({ className }: { className?: string }) {
   return (

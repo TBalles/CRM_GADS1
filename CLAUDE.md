@@ -138,6 +138,10 @@ src/
       Tooltip.tsx               TooltipHost: convierte todo title= del DOM en un pill propio
       EmptyState.tsx            Empty state canónico (dashed + ícono en círculo)
       backdropClose.ts          Cierre de overlay a prueba de arrastre
+    landing/                    Solo para la landing pública (ver design-overrides.md §12)
+      ParticleField.tsx         Canvas de partículas: isotipo, halo y cielo; reacciona al mouse
+      BallCursor.tsx            Cursor pelota de fútbol + spotlight de las cards
+      ProductShowcase.tsx       Ventanas simuladas del CRM (datos de ejemplo)
     AppShell.tsx                Sidebar colapsable desktop + header/drawer mobile + logout
     Logo.tsx                    GoalMark: isotipo en currentColor (sidebar, login, loader)
     ConfirmModal.tsx            Alert dialog centrado (lo usa el logout)

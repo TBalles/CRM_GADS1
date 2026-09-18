@@ -111,6 +111,8 @@
   --color-popover-foreground: hsl(var(--popover-foreground));
 
   --font-sans: var(--font-inter);
+  /* Solo la landing la carga (src/app/page.tsx). Ver design-overrides.md. */
+  --font-display: var(--font-varela), var(--font-inter);
 }
 
 /* Clamp the document to the viewport width: without this, one element that
@@ -280,5 +282,248 @@ body {
   }
   to {
     transform: scaleX(0);
+  }
+}
+
+/* ============================================================================
+   LANDING — siempre oscura, estetica de marketing
+   Ver docs/design-overrides.md §12. Nada de esto aplica dentro del CRM.
+   ========================================================================== */
+
+/* La raiz de la landing lleva `dark landing-root`. Estas variables pisan a las
+   de `.dark` (misma especificidad, esta regla va despues): casi negro con un
+   tinte verde, y la marca subida de luz para que brille sobre negro. `--primary`
+   y `--ring` siguen la marca solos, porque en `.dark` son var(--brand). */
+.landing-root {
+  --background: 165 18% 3%;
+  --foreground: 150 12% 96%;
+  --card: 165 14% 7%;
+  --card-foreground: 150 12% 96%;
+  --popover: 165 14% 8%;
+  --border: 165 10% 15%;
+  --input: 165 10% 15%;
+  --secondary: 165 12% 10%;
+  --accent: 165 12% 12%;
+  --muted-foreground: 160 6% 64%;
+  --brand: 156 74% 50%;
+  --brand-foreground: 165 30% 5%;
+  /* Verde de las particulas y los brillos: el canvas lo lee con getComputedStyle. */
+  --glow: 156 84% 58%;
+}
+
+/* Sin esto, el rebote del scroll en Mac muestra el fondo blanco del body. */
+body:has(.landing-root) {
+  background: hsl(165 18% 3%);
+}
+
+/* ── Cursor pelota ── */
+@media (pointer: fine) {
+  html.ball-cursor .landing-root,
+  html.ball-cursor .landing-root * {
+    cursor: none;
+  }
+}
+.ball-cursor-el {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms ease;
+  will-change: transform;
+  filter: drop-shadow(0 0 10px hsl(var(--glow) / 0.45));
+}
+.ball-cursor-el[data-visible="true"] {
+  opacity: 1;
+}
+.ball-cursor-scale {
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ball-cursor-scale[data-hover="true"] {
+  transform: scale(1.35);
+}
+.ball-cursor-scale[data-down="true"] {
+  transform: scale(0.8, 0.7);
+}
+
+/* ── Card con spotlight (BallCursor escribe --mx/--my) ── */
+.spot-card {
+  position: relative;
+  isolation: isolate;
+}
+.spot-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(
+    380px circle at var(--mx, 50%) var(--my, 0%),
+    hsl(var(--glow) / 0.12),
+    transparent 65%
+  );
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+.spot-card:hover::before {
+  opacity: 1;
+}
+
+/* ── Texto con brillo de marca ── */
+.text-glow {
+  text-shadow: 0 0 42px hsl(var(--glow) / 0.35);
+}
+
+/* ── Chispas ✦ ── */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.35; transform: scale(0.8) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.1) rotate(25deg); }
+}
+.twinkle {
+  animation: twinkle 3.2s ease-in-out infinite;
+}
+
+/* ── Cinta de equipamiento ── */
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
+.marquee-track {
+  animation: marquee 48s linear infinite;
+}
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+/* ── Indicador de scroll ── */
+@keyframes scroll-cue {
+  0% { transform: scaleY(0); transform-origin: top; }
+  50% { transform: scaleY(1); transform-origin: top; }
+  51% { transform: scaleY(1); transform-origin: bottom; }
+  100% { transform: scaleY(0); transform-origin: bottom; }
+}
+.scroll-cue {
+  animation: scroll-cue 2.2s ease-in-out infinite;
+}
+
+/* ── Ventanas de la vitrina ── */
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@media (min-width: 1024px) {
+  .float-a { animation: float-y 7s ease-in-out infinite; }
+  .float-b { animation: float-y 8s ease-in-out -2s infinite; }
+  .float-c { animation: float-y 6.5s ease-in-out -4s infinite; }
+  .float-d { animation: float-y 7.5s ease-in-out -1s infinite; }
+  .float-e { animation: float-y 8.5s ease-in-out -3s infinite; }
+  .float-f { animation: float-y 6s ease-in-out -5s infinite; }
+}
+@keyframes live-pulse {
+  0% { box-shadow: 0 0 0 0 hsl(var(--glow) / 0.6); }
+  100% { box-shadow: 0 0 0 7px hsl(var(--glow) / 0); }
+}
+.live-dot {
+  animation: live-pulse 1.8s ease-out infinite;
+}
+@keyframes typing {
+  0%, 60%, 100% { opacity: 0.25; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
+.typing-dot {
+  animation: typing 1.2s ease-in-out infinite;
+}
+
+/* ── Animaciones atadas al scroll: CSS puro, sin JS ──
+   Con soporte de `animation-timeline`, las cosas aparecen al entrar en
+   pantalla. Sin soporte (o con movimiento reducido) se ven quietas y
+   completas desde el principio: nada queda escondido esperando un JS que no
+   corre. */
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(32px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes bar-grow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+@keyframes line-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes ring-draw {
+  from { stroke-dasharray: 0 100; }
+}
+@keyframes grow-x {
+  from { transform: scaleX(0.12); }
+  to { transform: scaleX(1); }
+}
+.bar-grow {
+  transform-origin: bottom;
+}
+.line-draw {
+  stroke-dasharray: 1;
+}
+.steps-progress {
+  transform-origin: left;
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* Los rangos terminan TEMPRANO a proposito: la animacion queda atada a la
+       posicion del scroll, y si termina tarde, el usuario que frena a leer ve
+       el contenido a medio aparecer para siempre. */
+    .reveal {
+      animation: reveal-up linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 20%;
+    }
+    .bar-grow {
+      animation: bar-grow linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 25%;
+    }
+    .line-draw {
+      animation: line-draw linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 25%;
+    }
+    .ring-draw {
+      animation: ring-draw linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 25%;
+    }
+  }
+}
+
+/* Barra de progreso del carrusel de pasos, atada a su scroll horizontal. El
+   scroller y la barra son hermanos: `timeline-scope` en el ancestro comun hace
+   que la barra vea la linea de tiempo del scroller. */
+.steps-scope {
+  timeline-scope: --steps;
+}
+.steps-scroller {
+  scroll-timeline: --steps inline;
+}
+@supports (animation-timeline: scroll()) {
+  .steps-progress {
+    animation: grow-x linear both;
+    animation-timeline: --steps;
+  }
+}
+@supports not (animation-timeline: scroll()) {
+  .steps-progress-track {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .twinkle,
+  .marquee-track,
+  .scroll-cue,
+  .float-a, .float-b, .float-c, .float-d, .float-e, .float-f,
+  .live-dot,
+  .typing-dot {
+    animation: none;
   }
 }

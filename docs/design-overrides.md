@@ -187,6 +187,31 @@ qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
   panel `role="listbox"` con hijos `role="option"` y `aria-selected` — un `<button>` pelado no
   soporta `aria-invalid`.
 
+## 12. La landing pública tiene estética de marketing, no de aplicación
+
+- **Kit**: define la estética de una *aplicación*: Inter, fondo según el tema del usuario, cursor
+  del sistema, animaciones sobrias y funcionales.
+- **Tuco & Nito**: la landing (`/`, `src/app/page.tsx`) es una página de *marketing* y se aparta
+  a propósito, siguiendo la web del estudio (sumar.ai):
+  - **Siempre oscura**, sin importar el tema elegido: la raíz lleva `dark landing-root`, y
+    `.landing-root` en `globals.css` redefine los tokens (casi negro con tinte verde) y **sube la
+    luz del verde de marca** (`--brand: 156 74% 50%`) para que brille sobre negro. `--primary` y
+    `--ring` siguen solos, porque ya aliasean `--brand` (§2).
+  - **Tipografía de display** Varela Round (`font-display`) para titulares. Se carga solo en la
+    landing con `next/font`; el CRM sigue 100% en Inter.
+  - **Partículas en canvas** (`src/components/landing/ParticleField.tsx`): el isotipo armado con
+    partículas en el hero, un halo detrás de la vitrina de producto y un cielo fijo. El verde lo
+    lee del token `--glow`, no está duplicado en JS.
+  - **Cursor pelota** (`BallCursor.tsx`): solo con mouse, gira según la distancia recorrida y
+    "patea" las partículas al hacer clic. El cursor nativo se oculta recién cuando la pelota
+    monta, así que si el JS falla el usuario conserva el suyo.
+  - **Animaciones atadas al scroll** con `animation-timeline` en CSS puro. Sin soporte, o con
+    `prefers-reduced-motion`, el contenido se ve quieto y completo: nada queda escondido
+    esperando un JS.
+- **Dónde**: `src/app/page.tsx`, `src/components/landing/*`, bloque LANDING de `globals.css`.
+- **Por qué**: la landing tiene que *vender*, no ser eficiente de usar todos los días. Todo
+  vive detrás de `.landing-root`, así que el CRM no hereda nada de esto.
+
 ---
 
 > Si aparece una divergencia nueva respecto del kit, se agrega como un bloque más en este
