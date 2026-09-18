@@ -1,7 +1,9 @@
 "use server";
 
+import nodemailer from "nodemailer";
 import { createClient } from "@/lib/supabase/server";
-import { getRemitente } from "@/lib/contacto";
+import { getRemitente, type Remitente } from "@/lib/contacto";
+import { APP_NAME } from "@/lib/brand";
 import { asunto, cuerpo, cuerpoWhatsapp, desdeFila } from "./plantillas";
 
 /**
@@ -9,8 +11,9 @@ import { asunto, cuerpo, cuerpoWhatsapp, desdeFila } from "./plantillas";
  *
  * Hay DOS caminos y los dos son validos:
  *
- * 1. Con `RESEND_API_KEY` + `ALERTAS_FROM_EMAIL` cargadas, el mail sale del
- *    servidor y el usuario no ve un cliente de correo.
+ * 1. Con `SMTP_USER` + `SMTP_PASS` cargadas, el mail sale del servidor por
+ *    SMTP (hoy, la casilla de Gmail de la marca) y el usuario no ve un
+ *    cliente de correo.
  * 2. Sin esas variables, el navegador abre el cliente de correo del usuario
  *    con el mensaje ya escrito, y esta accion solo deja registrado el envio.
  *
@@ -24,8 +27,6 @@ import { asunto, cuerpo, cuerpoWhatsapp, desdeFila } from "./plantillas";
  * servidor, de la fila real de la base. El cliente no puede elegir a quien
  * escribirle ni que decirle.
  *
- * Se usa `fetch` contra la API de Resend en lugar de su SDK: es un POST con
- * un JSON, una dependencia menos que mantener.
  */
 
 export type ResultadoEnvio =
@@ -97,22 +98,12 @@ export async function enviarAlertaEmail({
 
   const datos = desdeFila(alerta);
   const mensaje = cuerpo(datos);
-  const { apiKey, from } = getRemitente();
-  const enviaServidor = Boolean(apiKey && from);
+  const remitente = getRemitente();
+  const enviaServidor = remitente !== null;
 
-  if (enviaServidor) {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ from, to: [destinatario], subject: asunto(datos), text: mensaje }),
-    });
-
-    if (!res.ok) {
-      return { ok: false, error: "El proveedor de mail rechazó el envío." };
-    }
+  if (remitente) {
+    const error = await enviarSmtp(remitente, destinatario, asunto(datos), mensaje);
+    if (error) return { ok: false, error };
   }
 
   const errorRegistro = await registrarEnvio(supabase, {
@@ -166,4 +157,43 @@ export async function registrarEnvioWhatsapp({
   }
 
   return { ok: true, modo: "enviado" };
+}
+
+/**
+ * Manda un mail por SMTP. Devuelve un mensaje para el usuario si falla, o null.
+ *
+ * El detalle tecnico va al log del servidor (Vercel → Logs), no a la pantalla:
+ * el usuario necesita saber QUE hacer, no el stack de nodemailer.
+ */
+async function enviarSmtp(
+  r: Remitente,
+  destinatario: string,
+  asuntoTexto: string,
+  texto: string,
+): Promise<string | null> {
+  const transport = nodemailer.createTransport({
+    host: r.host,
+    port: r.port,
+    // 465 es TLS directo; 587 arranca en claro y sube con STARTTLS.
+    secure: r.port === 465,
+    auth: { user: r.user, pass: r.pass },
+  });
+
+  try {
+    await transport.sendMail({
+      from: { name: APP_NAME, address: r.from },
+      to: destinatario,
+      subject: asuntoTexto,
+      text: texto,
+    });
+    return null;
+  } catch (e) {
+    const code = (e as { code?: string }).code;
+    console.error("[alertas] fallo el envio SMTP:", code, e);
+    // EAUTH es el error tipico de Gmail: se uso la contraseña de la cuenta en
+    // vez de una contraseña de aplicacion, o se revoco la de aplicacion.
+    return code === "EAUTH"
+      ? "La casilla rechazó el usuario o la contraseña de aplicación. Revisá SMTP_USER y SMTP_PASS."
+      : "El servidor de mail rechazó el envío. Probá de nuevo en un rato.";
+  }
 }

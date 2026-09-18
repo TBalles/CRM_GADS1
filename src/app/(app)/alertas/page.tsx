@@ -18,10 +18,6 @@ export default async function AlertasPage() {
     // Lo mas urgente primero: lo que hace mas tiempo que vencio.
     .order("dias_restantes", { ascending: true });
 
-  // Solo viaja el booleano al cliente, nunca la API key.
-  const { apiKey, from } = getRemitente();
-
-  return (
-    <AlertasView alertas={alertas ?? []} enviaDesdeServidor={Boolean(apiKey && from)} />
-  );
+  // Solo viaja el booleano al cliente, nunca las credenciales.
+  return <AlertasView alertas={alertas ?? []} enviaDesdeServidor={getRemitente() !== null} />;
 }

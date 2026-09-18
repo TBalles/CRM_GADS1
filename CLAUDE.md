@@ -119,7 +119,7 @@ src/
       alertas/                   Recambios vencidos o por vencer
         page.tsx                 Lee la vista alertas_vida_util
         AlertasView.tsx          Client: KPIs, filtros, envío por mail/WhatsApp
-        actions.ts               Server Actions: envío por Resend (o mailto) + registro
+        actions.ts               Server Actions: envío por SMTP/Gmail (o mailto) + registro
         plantillas.ts            Mensajes prearmados — funciones puras
         plantillas.check.ts      Self-check: node --test "src/app/(app)/alertas/plantillas.check.ts"
       oportunidades/             Embudo (kanban) + listado en una sola página

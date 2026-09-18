@@ -112,23 +112,37 @@ valores se resuelven en el servidor y viajan ya renderizados en el HTML.
 La sección **Alertas** funciona sin configurar nada: al tocar "Mail" abre el cliente de correo del
 usuario con el mensaje ya escrito, y el envío queda registrado igual.
 
-Si querés que los mails salgan **desde el servidor**, sin abrir el cliente de correo, cargá estas
-dos variables. Con las dos presentes, la aplicación cambia de modo sola:
+Para que los mails salgan **solos desde la casilla de la marca**, se configura por SMTP. Con
+`SMTP_USER` y `SMTP_PASS` cargadas, la aplicación cambia de modo sola:
 
 ```
-RESEND_API_KEY=re_xxxxxxxxxxxx
-ALERTAS_FROM_EMAIL=alertas@tudominio.com
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_USER=lacasilla@gmail.com
+SMTP_PASS=abcd efgh ijkl mnop
 ```
 
-La API key se saca de [resend.com](https://resend.com/) (tiene plan gratuito). El dominio del
-remitente hay que verificarlo ahí; mientras tanto se puede usar su dominio de pruebas.
+`SMTP_HOST` y `SMTP_PORT` tienen esos valores por defecto, así que con Gmail alcanza con las dos
+últimas. `ALERTAS_FROM_EMAIL` es opcional: si no está, se envía desde `SMTP_USER`.
 
-> **Sobre el Gmail de la marca:** una casilla de Gmail común **no sirve** como remitente
-> programático — Google dejó de aceptar contraseñas simples por SMTP y pide OAuth2 o una
-> contraseña de aplicación con 2FA, que además rompe el envío cada vez que cambia la clave. Un
-> proveedor transaccional (Resend, Postmark, SendGrid) es el camino correcto, y el que evita que
-> los mails caigan en spam por SPF/DKIM mal configurados. El Gmail de la marca sigue sirviendo
-> como dirección de contacto (`CONTACTO_EMAIL`), que es otra cosa.
+#### Con Gmail: contraseña de aplicación, NO la de la cuenta
+
+Google no acepta la contraseña de la cuenta por SMTP. Hace falta una **contraseña de aplicación**:
+
+1. Entrá a la cuenta de Gmail de la marca → [myaccount.google.com/security](https://myaccount.google.com/security)
+   y activá la **Verificación en dos pasos** (sin esto, el paso 2 no aparece).
+2. Entrá a [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords), creá una
+   con el nombre `Tuco & Nito CRM` y copiá los 16 caracteres que muestra (se ven una sola vez).
+3. Esos 16 caracteres van en `SMTP_PASS` (con o sin los espacios, da igual).
+
+Si cambian la contraseña de la cuenta, Google **revoca** las contraseñas de aplicación: hay que
+generar una nueva y actualizar `SMTP_PASS`. El síntoma es el aviso "La casilla rechazó el usuario
+o la contraseña de aplicación" en la pantalla de Alertas.
+
+> Gmail permite unos **500 mails por día** desde una cuenta común: de sobra para avisos de
+> recambio. Si algún día necesitan más volumen o un remitente con dominio propio
+> (`alertas@tucoynito.com.ar`), se pasa a un proveedor transaccional (Resend, Postmark,
+> SendGrid): todos exponen SMTP, así que se cambian estas variables y no el código.
 
 Después:
 
