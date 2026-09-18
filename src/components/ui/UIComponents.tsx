@@ -213,6 +213,69 @@ export const Badge = ({
 };
 
 /* ============================================================================
+   Pill
+   ========================================================================== */
+
+/**
+ * Colored pill for categorical values (categories, roles, types, states).
+ * Unlike Badge, which is one neutral grey, each value gets its own hue so a
+ * column of categories can be scanned by color.
+ */
+const TONOS = {
+  violeta: "bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300",
+  azul: "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300",
+  cian: "bg-cyan-100 text-cyan-800 dark:bg-cyan-500/15 dark:text-cyan-300",
+  verde: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
+  lima: "bg-lime-100 text-lime-800 dark:bg-lime-500/15 dark:text-lime-300",
+  ambar: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300",
+  naranja: "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300",
+  rosa: "bg-pink-100 text-pink-700 dark:bg-pink-500/15 dark:text-pink-300",
+  rojo: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300",
+  indigo: "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300",
+  gris: "bg-slate-100 text-slate-600 dark:bg-slate-500/15 dark:text-slate-300",
+} as const;
+
+export type Tono = keyof typeof TONOS;
+
+// Hues for free text. Red and grey stay out: they read as "error" and "off".
+const TONOS_AUTO: Tono[] = ["violeta", "azul", "cian", "verde", "lima", "ambar", "naranja", "rosa", "indigo"];
+
+/**
+ * Stable hue for a free-text value: the same text always gets the same color,
+ * with no per-value configuration. Case and accents are ignored so "Arcos" and
+ * "arcos" match.
+ * ponytail: 9 hues, so two different values can share one; if that bothers,
+ * store a color per category in the DB like etapas.color.
+ */
+export function tonoPara(texto: string): Tono {
+  const clave = texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+  let h = 0;
+  for (const c of clave) h = (h * 31 + c.charCodeAt(0)) | 0;
+  return TONOS_AUTO[Math.abs(h) % TONOS_AUTO.length];
+}
+
+export const Pill = ({
+  className,
+  tono,
+  children,
+  ...props
+}: React.HTMLAttributes<HTMLSpanElement> & {
+  /** Fixed hue. Without it, derived from the text of `children`. */
+  tono?: Tono;
+}) => (
+  <span
+    className={cn(
+      "inline-flex max-w-full items-center gap-1 truncate rounded-full px-2.5 py-0.5 text-xs font-semibold",
+      TONOS[tono ?? (typeof children === "string" ? tonoPara(children) : "gris")],
+      className,
+    )}
+    {...props}
+  >
+    {children}
+  </span>
+);
+
+/* ============================================================================
    Table
    ========================================================================== */
 

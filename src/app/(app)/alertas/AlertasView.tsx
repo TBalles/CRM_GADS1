@@ -12,7 +12,7 @@ import {
   Package,
   Search,
 } from "lucide-react";
-import { Badge, Button, Card, Input } from "@/components/ui/UIComponents";
+import { Badge, Button, Card, Input, Pill } from "@/components/ui/UIComponents";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { KpiCard } from "@/components/ui/KpiCard";
 import { useToast } from "@/components/ui/Toast";
@@ -234,11 +234,9 @@ export default function AlertasView({
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="truncate text-sm font-semibold">{a.producto_nombre}</p>
-                        <Badge variant={vencida ? "destructive" : "secondary"}>
-                          {vencida
-                            ? `Vencido hace ${Math.abs(dias)} d`
-                            : `Vence en ${dias} d`}
-                        </Badge>
+                        <Pill tono={vencida ? "rojo" : "ambar"}>
+                          {vencida ? `Vencido hace ${Math.abs(dias)} d` : `Vence en ${dias} d`}
+                        </Pill>
                         {a.cantidad != null && a.cantidad > 1 && (
                           <Badge variant="outline" className="tabular-nums">
                             ×{a.cantidad}

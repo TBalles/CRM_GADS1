@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Campo, CampoSelect, CampoTextarea, FormBanner } from "@/components/form";
-import { Badge, Button } from "@/components/ui/UIComponents";
+import { Button, Pill } from "@/components/ui/UIComponents";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
@@ -30,13 +30,13 @@ type Contacto = Tables<"contactos">;
  * restricción que el usuario no puede interpretar.
  */
 const TIPOS = [
-  { value: "llamada", label: "Llamada", icon: Phone },
-  { value: "reunion", label: "Reunión", icon: Users },
-  { value: "email", label: "Email", icon: Mail },
-  { value: "whatsapp", label: "WhatsApp", icon: MessageCircle },
-  { value: "consulta", label: "Consulta", icon: HelpCircle },
-  { value: "queja", label: "Queja", icon: AlertTriangle },
-  { value: "nota", label: "Nota", icon: NotebookPen },
+  { value: "llamada", label: "Llamada", icon: Phone, tono: "azul" },
+  { value: "reunion", label: "Reunión", icon: Users, tono: "violeta" },
+  { value: "email", label: "Email", icon: Mail, tono: "cian" },
+  { value: "whatsapp", label: "WhatsApp", icon: MessageCircle, tono: "verde" },
+  { value: "consulta", label: "Consulta", icon: HelpCircle, tono: "ambar" },
+  { value: "queja", label: "Queja", icon: AlertTriangle, tono: "rojo" },
+  { value: "nota", label: "Nota", icon: NotebookPen, tono: "gris" },
 ] as const;
 
 const TIPO_POR_VALUE = new Map(TIPOS.map((t) => [t.value, t]));
@@ -279,9 +279,7 @@ export default function BitacoraPanel({
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="text-sm font-semibold">{e.titulo}</p>
-                      <Badge variant={esQueja ? "destructive" : "secondary"}>
-                        {meta?.label ?? e.tipo}
-                      </Badge>
+                      <Pill tono={meta?.tono ?? "gris"}>{meta?.label ?? e.tipo}</Pill>
                     </div>
 
                     <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">

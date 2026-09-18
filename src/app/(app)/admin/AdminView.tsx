@@ -7,7 +7,7 @@ import Drawer from "@/components/Drawer";
 import RowActions from "@/components/RowActions";
 import ConfirmModal from "@/components/ConfirmModal";
 import { Campo, CampoGrupo, FormActions, FormBanner } from "@/components/form";
-import { Badge, Button, Card, Input } from "@/components/ui/UIComponents";
+import { Button, Card, Input, Pill } from "@/components/ui/UIComponents";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { OverlayCarga } from "@/components/ui/OverlayCarga";
@@ -223,9 +223,9 @@ export default function AdminView({ clientes, miOrgId }: { clientes: Cliente[]; 
                     {c.usuarios} {c.usuarios === 1 ? "usuario activo" : "usuarios activos"}
                   </p>
                 </div>
-                <Badge variant={c.activa ? "success" : "secondary"} className="shrink-0">
+                <Pill tono={c.activa ? "verde" : "gris"} className="shrink-0">
                   {c.activa ? "Activo" : "Suspendido"}
-                </Badge>
+                </Pill>
                 <RowActions
                   label={`Acciones de ${c.nombre}`}
                   items={[
@@ -250,7 +250,7 @@ export default function AdminView({ clientes, miOrgId }: { clientes: Cliente[]; 
                         {a.nombre} <span className="text-muted-foreground">· {a.email}</span>
                       </span>
                       {!a.activo ? (
-                        <Badge variant="secondary">De baja</Badge>
+                        <Pill tono="gris">De baja</Pill>
                       ) : a.pendiente ? (
                         <button
                           type="button"

@@ -6,10 +6,10 @@ import Drawer from "@/components/Drawer";
 import RowActions from "@/components/RowActions";
 import ConfirmModal from "@/components/ConfirmModal";
 import {
-  Badge,
   Button,
   Card,
   Input,
+  Pill,
   Table,
   TableBody,
   TableCell,
@@ -202,7 +202,9 @@ export default function ProductosList({
                         <span className="block text-xs text-muted-foreground">{p.marca}</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{p.categoria ?? "—"}</TableCell>
+                    <TableCell>
+                      {p.categoria ? <Pill>{p.categoria}</Pill> : <span className="text-muted-foreground/70">—</span>}
+                    </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {p.precio == null ? (
                         <span className="text-muted-foreground/70">—</span>
@@ -214,9 +216,7 @@ export default function ProductosList({
                       <VidaUtil meses={p.vida_util_meses} />
                     </TableCell>
                     <TableCell>
-                      <Badge variant={p.activo ? "success" : "secondary"}>
-                        {p.activo ? "Activo" : "De baja"}
-                      </Badge>
+                      <Pill tono={p.activo ? "verde" : "gris"}>{p.activo ? "Activo" : "De baja"}</Pill>
                     </TableCell>
                     <TableCell>
                       {puedeEditar && (
@@ -250,17 +250,16 @@ export default function ProductosList({
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold">{p.nombre}</p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {[p.marca, p.categoria].filter(Boolean).join(" · ") || "Sin categoría"}
-                    </p>
+                    {p.marca && <p className="truncate text-xs text-muted-foreground">{p.marca}</p>}
                     <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                      {p.categoria && <Pill>{p.categoria}</Pill>}
                       <VidaUtil meses={p.vida_util_meses} />
                       {p.precio != null && (
                         <span className="text-xs font-semibold tabular-nums">
                           {formatMoney(p.precio)}
                         </span>
                       )}
-                      {!p.activo && <Badge variant="secondary">De baja</Badge>}
+                      {!p.activo && <Pill tono="gris">De baja</Pill>}
                     </div>
                   </div>
                   {puedeEditar && (

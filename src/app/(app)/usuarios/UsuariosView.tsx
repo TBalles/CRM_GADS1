@@ -20,7 +20,7 @@ import Drawer from "@/components/Drawer";
 import RowActions, { type RowAction } from "@/components/RowActions";
 import ConfirmModal from "@/components/ConfirmModal";
 import { Campo, CampoSelect, FormActions, FormBanner } from "@/components/form";
-import { Avatar, AvatarFallback, Badge, Button, Card, Input, initials } from "@/components/ui/UIComponents";
+import { Avatar, AvatarFallback, Badge, Button, Card, Input, Pill, initials, tonoPara } from "@/components/ui/UIComponents";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { OverlayCarga } from "@/components/ui/OverlayCarga";
@@ -44,9 +44,9 @@ type Panel =
   | { tipo: "rol"; rol?: RolFila };
 
 function Estado({ u }: { u: UsuarioFila }) {
-  if (!u.activo) return <Badge variant="secondary">De baja</Badge>;
-  if (!u.activado_at) return <Badge variant="outline">Invitación pendiente</Badge>;
-  return <Badge variant="success">Activo</Badge>;
+  if (!u.activo) return <Pill tono="gris">De baja</Pill>;
+  if (!u.activado_at) return <Pill tono="ambar">Invitación pendiente</Pill>;
+  return <Pill tono="verde">Activo</Pill>;
 }
 
 /** Link de activación para compartir a mano cuando no hay SMTP configurado. */
@@ -189,9 +189,9 @@ function CambiarRolForm({
           <ul className="mt-2 flex flex-wrap gap-1.5">
             {PERMISOS.filter((p) => elegido.permisos.includes(p.clave)).map((p) => (
               <li key={p.clave}>
-                <Badge variant="secondary" className="font-normal">
+                <Pill tono={tonoPara(p.grupo)} className="font-medium">
                   {p.etiqueta}
-                </Badge>
+                </Pill>
               </li>
             ))}
           </ul>
@@ -378,10 +378,10 @@ export default function UsuariosView({
                       <p className="truncate text-xs text-muted-foreground">{u.email}</p>
                     </div>
                     <div className="hidden shrink-0 items-center gap-2 sm:flex">
-                      <Badge variant={rol?.es_admin ? "default" : "secondary"} className="gap-1">
+                      <Pill tono={rol ? (rol.es_admin ? "indigo" : tonoPara(rol.nombre)) : "gris"}>
                         {rol?.es_admin && <ShieldCheck className="h-3 w-3" />}
                         {rol?.nombre ?? "Sin rol"}
-                      </Badge>
+                      </Pill>
                       <Estado u={u} />
                     </div>
                     {acciones.length ? (
@@ -434,9 +434,9 @@ export default function UsuariosView({
                 <ul className="mt-3 flex flex-wrap gap-1.5">
                   {PERMISOS.filter((p) => r.permisos.includes(p.clave)).map((p) => (
                     <li key={p.clave}>
-                      <Badge variant="secondary" className="font-normal">
+                      <Pill tono={tonoPara(p.grupo)} className="font-medium">
                         {p.etiqueta}
-                      </Badge>
+                      </Pill>
                     </li>
                   ))}
                 </ul>
