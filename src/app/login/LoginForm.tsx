@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useFormStatus } from "react-dom";
-import { AlertCircle, ArrowRight, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
+import { AlertCircle, ArrowRight, Eye, EyeOff, Loader2, Lock, Mail, MailCheck } from "lucide-react";
 import { Button, Input } from "@/components/ui/UIComponents";
 import { login } from "./actions";
 
@@ -30,7 +31,15 @@ function SubmitButton() {
   );
 }
 
-export default function LoginForm({ error }: { error?: string }) {
+export default function LoginForm({
+  error,
+  aviso,
+  emailInicial,
+}: {
+  error?: string;
+  aviso?: string;
+  emailInicial?: string;
+}) {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
@@ -42,6 +51,17 @@ export default function LoginForm({ error }: { error?: string }) {
         >
           <AlertCircle className="h-4 w-4 shrink-0" />
           {error}
+        </div>
+      )}
+
+      {/* Aviso informativo (no es un error): p. ej. "te reenviamos la activación". */}
+      {aviso && (
+        <div
+          role="status"
+          className="flex items-start gap-2 rounded-r-md border-l-4 border-brand bg-brand/10 p-3 text-sm font-medium animate-in fade-in slide-in-from-top-2"
+        >
+          <MailCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
+          {aviso}
         </div>
       )}
 
@@ -57,7 +77,8 @@ export default function LoginForm({ error }: { error?: string }) {
             type="email"
             autoComplete="email"
             required
-            autoFocus
+            autoFocus={!emailInicial}
+            defaultValue={emailInicial}
             placeholder="vos@empresa.com"
             aria-invalid={Boolean(error)}
             className={fieldClass}
@@ -66,9 +87,17 @@ export default function LoginForm({ error }: { error?: string }) {
       </div>
 
       <div>
-        <label htmlFor="password" className={labelClass}>
-          Contraseña
-        </label>
+        <div className="flex items-baseline justify-between">
+          <label htmlFor="password" className={labelClass}>
+            Contraseña
+          </label>
+          <Link
+            href={emailInicial ? `/recuperar?email=${encodeURIComponent(emailInicial)}` : "/recuperar"}
+            className="rounded-sm text-xs font-medium text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </div>
         <div className="relative mt-1.5">
           <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -77,6 +106,7 @@ export default function LoginForm({ error }: { error?: string }) {
             type={showPassword ? "text" : "password"}
             autoComplete="current-password"
             required
+            autoFocus={Boolean(emailInicial)}
             placeholder="••••••••"
             aria-invalid={Boolean(error)}
             className={`${fieldClass} pr-11`}

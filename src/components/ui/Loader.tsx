@@ -8,14 +8,19 @@ interface LoaderProps {
 }
 
 const SIZES = {
-  sm: { ring: "h-14 w-14", bubble: "h-10 w-10", icon: "h-4 w-4", text: "text-xs" },
-  md: { ring: "h-[4.5rem] w-[4.5rem]", bubble: "h-14 w-14", icon: "h-6 w-6", text: "text-sm" },
-  lg: { ring: "h-24 w-24", bubble: "h-[4.5rem] w-[4.5rem]", icon: "h-9 w-9", text: "text-base" },
+  sm: { halo: "h-24 w-24", icon: "h-5 w-5", text: "text-sm" },
+  md: { halo: "h-32 w-32", icon: "h-7 w-7", text: "text-base" },
+  lg: { halo: "h-40 w-40", icon: "h-9 w-9", text: "text-lg" },
 } as const;
 
 /**
- * Brand spinner (halo + ring + isotype). The canonical loading state for a
- * page or list fetch; use an inline Loader2 for buttons (DESIGN.md §3.12).
+ * Loader de marca (DESIGN.md §3.12): halo, anillo con el arco girando, burbuja
+ * y el isotipo en blanco sobre el verde de marca. Es el estado de carga
+ * canonico de una pagina o lista; para botones se usa un Loader2 en linea
+ * (§3.2).
+ *
+ * Las capas se dimensionan con `inset-[%]` relativo al halo, asi las tres
+ * medidas guardan la misma proporcion sin repetir numeros por tamaño.
  */
 export const Loader: React.FC<LoaderProps> = ({ text, subtext, size = "md", className = "" }) => {
   const s = SIZES[size];
@@ -23,16 +28,20 @@ export const Loader: React.FC<LoaderProps> = ({ text, subtext, size = "md", clas
     <div
       className={`flex flex-col items-center justify-center text-center animate-in fade-in duration-500 ${className}`}
     >
-      <div className={`relative ${s.ring}`}>
-        <span className="absolute inset-0 rounded-full bg-brand/10 animate-ping" />
-        <span className="absolute inset-0 rounded-full border-2 border-brand/15 border-t-brand animate-spin" />
-        <div
-          className={`absolute inset-0 m-auto ${s.bubble} flex items-center justify-center rounded-full border border-brand/10 bg-background shadow-sm`}
-        >
-          <GoalMark className={`${s.icon} text-brand animate-pulse`} />
-        </div>
+      <div className={`relative ${s.halo}`} aria-hidden="true">
+        {/* Halo */}
+        <span className="absolute inset-0 rounded-full bg-brand/10" />
+        {/* Anillo: la pista fija y el arco que gira encima */}
+        <span className="absolute inset-[13%] rounded-full border-2 border-brand/15" />
+        <span className="absolute inset-[13%] rounded-full border-2 border-transparent border-t-brand animate-spin [animation-duration:900ms]" />
+        {/* Burbuja con el isotipo */}
+        <span className="absolute inset-[24%] flex items-center justify-center rounded-full bg-background shadow-sm">
+          <span className="flex h-[74%] w-[74%] items-center justify-center rounded-full bg-brand text-brand-foreground shadow-md">
+            <GoalMark className={s.icon} />
+          </span>
+        </span>
       </div>
-      {text && <p className={`mt-4 font-medium text-muted-foreground ${s.text}`}>{text}</p>}
+      {text && <p className={`mt-5 font-medium text-muted-foreground ${s.text}`}>{text}</p>}
       {subtext && <p className="mt-1 text-xs text-muted-foreground/70">{subtext}</p>}
     </div>
   );

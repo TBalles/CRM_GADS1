@@ -44,9 +44,18 @@ Incluido:
 - **Modo oscuro**: toggle manual (ícono sol/luna en la barra superior), respeta `prefers-color-scheme`
   la primera vez y después queda guardado en `localStorage`.
 
+- **Multitenant**: cada cliente es una `organizacion`; RLS aísla sus datos. Un **superadmin**
+  (nivel plataforma) da de alta clientes desde `/admin`, cada uno con su usuario Administrador. El
+  superadmin NO ve datos comerciales de los clientes.
+- **Roles con permisos** por cliente (`roles.permisos`), administrados en `/usuarios`. El catálogo
+  de permisos está en `src/lib/permisos.ts` y la base exige cada uno en las políticas RLS; la UI
+  solo esconde lo que el rol no puede usar.
+- **Cuentas**: invitación por mail, activación (definir contraseña), recuperación de contraseña y
+  reenvío automático de la activación si alguien intenta ingresar con una cuenta sin activar.
+  Todos los mails salen por nuestro SMTP (`src/lib/email/`), ninguno por Supabase.
+
 Explícitamente **fuera de alcance** en esta entrega (no agregar sin que el usuario lo pida):
 
-- Gestión completa de roles y permisos.
 - Historial de cambios de etapa (auditoría/timeline).
 - Envío automático de alertas sin intervención humana (hoy el mensaje se arma solo, pero lo
   confirma una persona — ver el FAQ de la landing para el porqué).
@@ -171,6 +180,10 @@ supabase/
     0002_seed_data.sql          Etapas y productos precargados
     0003_productos_ventas_alertas_bitacora.sql
                                 Vida útil, ventas, bitácora, alertas enviadas y vista de alertas
+    0004_multitenant.sql        Organizaciones, organizacion_id en todo, FKs compuestas, RLS por org
+    0005_roles_permisos.sql     Roles con permisos por organización y RLS por permiso
+  tests/
+    0005_permisos.sql           Prueba de aislamiento y permisos (corre en el SQL Editor, hace rollback)
 ```
 
 No hay rutas separadas para "nueva empresa" o "detalle de oportunidad": todo alta/edición pasa

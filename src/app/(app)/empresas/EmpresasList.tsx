@@ -50,10 +50,17 @@ export default function EmpresasList({
   empresas,
   contactos,
   bitacora,
+  puedeEditar,
+  puedeVerBitacora,
+  puedeEscribirBitacora,
 }: {
   empresas: Empresa[];
   contactos: Contacto[];
   bitacora: Bitacora[];
+  /** Permisos del rol. Solo UX: la base exige cada uno igual. */
+  puedeEditar: boolean;
+  puedeVerBitacora: boolean;
+  puedeEscribirBitacora: boolean;
 }) {
   const [empresasState, setEmpresasState] = useState(empresas);
   const [contactosState, setContactosState] = useState(contactos);
@@ -154,13 +161,15 @@ export default function EmpresasList({
               className="h-9 pl-8 text-sm"
             />
           </div>
-          <Button
-            onClick={() => openDrawer({ type: "empresa", mode: "create" })}
-            className="h-9 shrink-0 gap-1.5 px-3 text-sm"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Nueva empresa</span>
-          </Button>
+          {puedeEditar && (
+            <Button
+              onClick={() => openDrawer({ type: "empresa", mode: "create" })}
+              className="h-9 shrink-0 gap-1.5 px-3 text-sm"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Nueva empresa</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -171,9 +180,11 @@ export default function EmpresasList({
           text="Todavía no hay empresas registradas"
           hint="Cargá tu primer club, cancha o complejo deportivo para empezar."
           action={
-            <Button onClick={() => openDrawer({ type: "empresa", mode: "create" })} className="gap-2">
-              <Plus className="h-4 w-4" /> Nueva empresa
-            </Button>
+            puedeEditar ? (
+              <Button onClick={() => openDrawer({ type: "empresa", mode: "create" })} className="gap-2">
+                <Plus className="h-4 w-4" /> Nueva empresa
+              </Button>
+            ) : undefined
           }
         />
       ) : !filtered.length ? (
@@ -245,34 +256,48 @@ export default function EmpresasList({
                     {empresaContactos.length}
                   </Badge>
 
-                  <span onClick={(e) => e.stopPropagation()}>
-                    <RowActions
-                      label={`Acciones de ${empresa.nombre}`}
-                      items={[
-                        {
-                          label: "Editar empresa",
-                          icon: Pencil,
-                          onClick: () => openDrawer({ type: "empresa", mode: "edit", empresa }),
-                        },
-                        {
-                          label: "Bitácora",
-                          icon: NotebookPen,
-                          onClick: () => openDrawer({ type: "bitacora", empresa }),
-                        },
-                        {
-                          label: "Agregar contacto",
-                          icon: Plus,
-                          onClick: () =>
-                            openDrawer({
-                              type: "contacto",
-                              mode: "create",
-                              empresaId: empresa.id,
-                              empresaNombre: empresa.nombre,
-                            }),
-                        },
-                      ]}
-                    />
-                  </span>
+                  {(puedeEditar || puedeVerBitacora) && (
+                    <span onClick={(e) => e.stopPropagation()}>
+                      <RowActions
+                        label={`Acciones de ${empresa.nombre}`}
+                        items={[
+                          ...(puedeEditar
+                            ? [
+                                {
+                                  label: "Editar empresa",
+                                  icon: Pencil,
+                                  onClick: () => openDrawer({ type: "empresa", mode: "edit", empresa }),
+                                },
+                              ]
+                            : []),
+                          ...(puedeVerBitacora
+                            ? [
+                                {
+                                  label: "Bitácora",
+                                  icon: NotebookPen,
+                                  onClick: () => openDrawer({ type: "bitacora", empresa }),
+                                },
+                              ]
+                            : []),
+                          ...(puedeEditar
+                            ? [
+                                {
+                                  label: "Agregar contacto",
+                                  icon: Plus,
+                                  onClick: () =>
+                                    openDrawer({
+                                      type: "contacto",
+                                      mode: "create",
+                                      empresaId: empresa.id,
+                                      empresaNombre: empresa.nombre,
+                                    }),
+                                },
+                              ]
+                            : []),
+                        ]}
+                      />
+                    </span>
+                  )}
                 </div>
 
                 {/* Panel de contactos — acordeón por grid-template-rows (§9.6) */}
@@ -312,17 +337,19 @@ export default function EmpresasList({
                                     <Meta icon={Phone} value={c.telefono} />
                                   </div>
                                 </div>
-                                <RowActions
-                                  label={`Acciones de ${nombreCompleto}`}
-                                  items={[
-                                    {
-                                      label: "Editar contacto",
-                                      icon: Pencil,
-                                      onClick: () =>
-                                        openDrawer({ type: "contacto", mode: "edit", contacto: c }),
-                                    },
-                                  ]}
-                                />
+                                {puedeEditar && (
+                                  <RowActions
+                                    label={`Acciones de ${nombreCompleto}`}
+                                    items={[
+                                      {
+                                        label: "Editar contacto",
+                                        icon: Pencil,
+                                        onClick: () =>
+                                          openDrawer({ type: "contacto", mode: "edit", contacto: c }),
+                                      },
+                                    ]}
+                                  />
+                                )}
                               </li>
                             );
                           })}
@@ -336,6 +363,7 @@ export default function EmpresasList({
                         />
                       )}
 
+                      {puedeEditar && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -351,6 +379,7 @@ export default function EmpresasList({
                       >
                         <Plus className="h-3.5 w-3.5" /> Agregar contacto
                       </Button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -389,6 +418,7 @@ export default function EmpresasList({
             empresaId={drawer.empresa.id}
             entradas={bitacoraState.filter((b) => b.empresa_id === drawer.empresa.id)}
             contactos={contactosState.filter((c) => c.empresa_id === drawer.empresa.id)}
+            puedeEscribir={puedeEscribirBitacora}
             onCreada={(entrada) => setBitacoraState((prev) => [entrada, ...prev])}
           />
         ) : drawer?.type === "contacto" ? (

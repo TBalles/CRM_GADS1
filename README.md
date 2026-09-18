@@ -44,6 +44,27 @@ escribir — no hay roles todavía).
 > Las tres migraciones se corren **en orden**. La 0003 es puramente aditiva: no borra ni modifica
 > datos existentes, así que se puede aplicar sobre una base que ya está en uso.
 
+### Multitenant y roles (migraciones 0004 y 0005)
+
+Cada **cliente** del CRM es una organización con sus propios datos, aislados del resto por Row
+Level Security. Dentro de cada cliente, cada usuario tiene un **rol**, y el rol es un conjunto de
+**permisos**. Cada cliente arranca con Administrador, Ventas, Corporativo y Solo lectura, y su
+administrador puede crear otros.
+
+1. **0004** — antes de ejecutarla, cambiá el email de la línea marcada con `>>>` por el de la
+   cuenta que va a ser **superadmin** (tiene que existir en Authentication → Users). Todo lo
+   cargado hasta ese momento pasa a la organización "Tuco & Nito (demo)".
+2. **0005** — roles con permisos. Los `admin` pasan a **Administrador** y los `usuario` a
+   **Ventas**.
+3. **Verificación:** corré
+   [`supabase/tests/0005_permisos.sql`](./supabase/tests/0005_permisos.sql). Crea clientes y
+   usuarios de prueba, intenta cruzar datos entre clientes y saltarse los permisos, y **deshace
+   todo al final** (no deja nada en la base). Tiene que devolver una fila que dice `TODO OK`.
+
+Después, en **Authentication → Sign In / Providers → Email**, desactivá **"Allow new users to sign
+up"**: los usuarios los crean el superadmin y los administradores de cada cliente desde la app,
+nunca un registro público.
+
 #### Después de correr la 0003: regenerar los tipos
 
 `src/lib/supabase/types.ts` tiene la sección de la 0003 escrita **a mano**, porque la migración no
@@ -106,6 +127,31 @@ CONTACTO_LINKEDIN=https://linkedin.com/company/tuempresa
 
 No llevan el prefijo `NEXT_PUBLIC_` a propósito: la landing es un Server Component, así que estos
 valores se resuelven en el servidor y viajan ya renderizados en el HTML.
+
+### Service role key (obligatoria para usuarios y clientes)
+
+Crear usuarios, mandar invitaciones y recuperar contraseñas requiere la **service_role key** de
+Supabase (**Project Settings → API**). Se usa **solo en el servidor**:
+
+```
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+```
+
+**Nunca** con el prefijo `NEXT_PUBLIC_`: esa clave saltea toda la seguridad de la base, y con el
+prefijo terminaría en el JavaScript que baja cualquier navegador. El módulo que la usa
+(`src/lib/supabase/admin.ts`) tiene `import "server-only"`: si alguien lo importa desde un
+componente de cliente, el build falla.
+
+### Mails de cuenta
+
+Activación de usuarios, recuperación de contraseña y reenvío de la activación salen por el mismo
+SMTP que las alertas (ver abajo), con el diseño de la app. **Supabase no manda ningún mail**: los
+links se generan en el servidor y se envían con nuestra casilla, así no dependemos del cupo del
+mailer de Supabase (unos pocos mails por hora en el plan gratuito).
+
+Los links apuntan al dominio de `SITE_URL` si está cargada; si no, al que Vercel informa solo. No
+se arman con el dominio que viene en el pedido: eso permitiría que un atacante hiciera llegar un
+link legítimo de recuperación que apunte a su propio sitio.
 
 ### Envío de mails de alerta (opcional)
 

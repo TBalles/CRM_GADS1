@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getRemitente } from "@/lib/contacto";
+import { exigirPermiso } from "@/lib/sesion";
 import AlertasView from "./AlertasView";
 
 export const metadata = { title: "Alertas" };
@@ -11,6 +12,7 @@ export const metadata = { title: "Alertas" };
  * corriendo de fondo.
  */
 export default async function AlertasPage() {
+  const sesion = await exigirPermiso("alertas.ver");
   const supabase = await createClient();
   const { data: alertas } = await supabase
     .from("alertas_vida_util")
@@ -19,5 +21,11 @@ export default async function AlertasPage() {
     .order("dias_restantes", { ascending: true });
 
   // Solo viaja el booleano al cliente, nunca las credenciales.
-  return <AlertasView alertas={alertas ?? []} enviaDesdeServidor={getRemitente() !== null} />;
+  return (
+    <AlertasView
+      alertas={alertas ?? []}
+      enviaDesdeServidor={getRemitente() !== null}
+      puedeEnviar={sesion.puede("alertas.enviar")}
+    />
+  );
 }

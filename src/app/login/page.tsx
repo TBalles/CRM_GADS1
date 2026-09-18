@@ -40,9 +40,9 @@ function PitchMarkings() {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; aviso?: string; email?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, aviso, email } = await searchParams;
 
   return (
     <div className="flex min-h-screen flex-1 flex-col bg-background animate-in fade-in duration-500 md:flex-row">
@@ -95,10 +95,10 @@ export default async function LoginPage({
             Ingresá a tu cuenta para gestionar empresas, contactos y oportunidades.
           </p>
 
-          <LoginForm error={error} />
+          <LoginForm error={error} aviso={aviso} emailInicial={email} />
 
           <p className="mt-8 text-center text-xs font-medium tracking-wide text-muted-foreground/70">
-            {APP_NAME} · primera entrega
+            {APP_NAME}
           </p>
         </div>
       </div>

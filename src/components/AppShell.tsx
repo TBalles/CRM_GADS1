@@ -14,6 +14,8 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Receipt,
+  ShieldCheck,
+  UsersRound,
   X,
 } from "lucide-react";
 import { APP_NAME } from "@/lib/brand";
@@ -24,14 +26,22 @@ import { useModalAnimation } from "./ui/overlay";
 import ConfirmModal from "./ConfirmModal";
 import ThemeToggle from "./ThemeToggle";
 
+/**
+ * Cada seccion aparece solo si el rol tiene el permiso para verla. Es solo
+ * comodidad: la autorizacion real la hacen la base (RLS) y cada pagina y
+ * Server Action en el servidor. Ocultar un link no protege nada.
+ */
 const NAV = [
-  { href: "/dashboard", label: "Inicio", icon: LayoutDashboard },
-  { href: "/empresas", label: "Empresas", icon: Building2 },
-  { href: "/oportunidades", label: "Oportunidades", icon: Handshake },
-  { href: "/productos", label: "Productos", icon: Boxes },
-  { href: "/ventas", label: "Ventas", icon: Receipt },
-  { href: "/alertas", label: "Alertas", icon: BellRing },
+  { href: "/dashboard", label: "Inicio", icon: LayoutDashboard, permiso: "tablero.ver" },
+  { href: "/empresas", label: "Empresas", icon: Building2, permiso: "clientes.ver" },
+  { href: "/oportunidades", label: "Oportunidades", icon: Handshake, permiso: "oportunidades.ver" },
+  { href: "/productos", label: "Productos", icon: Boxes, permiso: "productos.ver" },
+  { href: "/ventas", label: "Ventas", icon: Receipt, permiso: "ventas.ver" },
+  { href: "/alertas", label: "Alertas", icon: BellRing, permiso: "alertas.ver" },
+  { href: "/usuarios", label: "Usuarios", icon: UsersRound, permiso: "usuarios.gestionar" },
 ] as const;
+
+const NAV_ADMIN = { href: "/admin", label: "Clientes", icon: ShieldCheck };
 
 function NavItem({
   href,
@@ -89,11 +99,23 @@ function Logo({ collapsed }: { collapsed?: boolean }) {
 
 export default function AppShell({
   nombre,
+  organizacion,
+  rol,
+  permisos,
+  esSuperadmin,
   children,
 }: {
   nombre: string;
+  organizacion: string | null;
+  rol: string | null;
+  permisos: string[];
+  esSuperadmin: boolean;
   children: React.ReactNode;
 }) {
+  const nav = [
+    ...NAV.filter((n) => permisos.includes(n.permiso)),
+    ...(esSuperadmin ? [NAV_ADMIN] : []),
+  ];
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -102,7 +124,7 @@ export default function AppShell({
   const drawer = useModalAnimation(mobileOpen);
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
-  const current = NAV.find((n) => isActive(n.href));
+  const current = nav.find((n) => isActive(n.href));
 
   // Close the mobile drawer whenever the route changes.
   useEffect(() => {
@@ -112,7 +134,7 @@ export default function AppShell({
 
   const navList = (onNavigate?: () => void, isCollapsed?: boolean) => (
     <nav className="flex flex-col gap-1">
-      {NAV.map((item) => (
+      {nav.map((item) => (
         <NavItem
           key={item.href}
           {...item}
@@ -137,8 +159,8 @@ export default function AppShell({
       {!isCollapsed && (
         <span className="min-w-0 leading-tight">
           <span className="block truncate text-xs font-semibold">{nombre}</span>
-          <span className="block text-[10px] uppercase tracking-wider text-muted-foreground">
-            Sesión activa
+          <span className="block truncate text-[10px] uppercase tracking-wider text-muted-foreground">
+            {[rol, organizacion].filter(Boolean).join(" · ") || (esSuperadmin ? "Superadmin" : "Sesión activa")}
           </span>
         </span>
       )}

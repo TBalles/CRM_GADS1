@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   CalendarDays,
@@ -14,6 +14,7 @@ import {
 import Drawer from "@/components/Drawer";
 import { Badge, Card, Button, Input } from "@/components/ui/UIComponents";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { OverlayCarga } from "@/components/ui/OverlayCarga";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import VentaForm from "./VentaForm";
@@ -38,7 +39,10 @@ export default function VentasList({
   empresas,
   contactos,
   productos,
+  puedeEditar,
 }: {
+  /** Sin `ventas.editar`: solo lectura. La base igual lo exige. */
+  puedeEditar: boolean;
   ventas: Venta[];
   items: VentaItem[];
   empresas: Empresa[];
@@ -49,6 +53,7 @@ export default function VentasList({
   const [query, setQuery] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [actualizando, startTransition] = useTransition();
 
   const empresaPorId = useMemo(
     () => new Map(empresas.map((e) => [e.id, e])),
@@ -96,11 +101,12 @@ export default function VentasList({
    */
   function handleSaved() {
     setOpen(false);
-    router.refresh();
+    startTransition(() => router.refresh());
   }
 
   return (
     <div className="flex w-full flex-col gap-4">
+      <OverlayCarga visible={actualizando} texto="Actualizando…" />
       <div className="flex shrink-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="hidden shrink-0 md:block">
           <h1 className="text-2xl font-bold tracking-tight">Ventas</h1>
@@ -120,10 +126,12 @@ export default function VentasList({
               className="h-9 pl-8 text-sm"
             />
           </div>
-          <Button onClick={() => setOpen(true)} className="h-9 shrink-0 gap-1.5 px-3 text-sm">
-            <Plus className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Nueva venta</span>
-          </Button>
+          {puedeEditar && (
+            <Button onClick={() => setOpen(true)} className="h-9 shrink-0 gap-1.5 px-3 text-sm">
+              <Plus className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Nueva venta</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -133,9 +141,11 @@ export default function VentasList({
           text="Todavía no hay ventas registradas"
           hint="Registrá tu primera entrega para empezar a seguir el recambio de esos equipos."
           action={
-            <Button onClick={() => setOpen(true)} className="gap-2">
-              <Plus className="h-4 w-4" /> Nueva venta
-            </Button>
+            puedeEditar ? (
+              <Button onClick={() => setOpen(true)} className="gap-2">
+                <Plus className="h-4 w-4" /> Nueva venta
+              </Button>
+            ) : undefined
           }
         />
       ) : !filtered.length ? (

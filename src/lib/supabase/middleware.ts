@@ -9,7 +9,14 @@ import type { Database } from "./types";
  * `startsWith`, y TODO pathname empieza con "/", asi que agregarlo abriria la
  * app entera. Por eso la home se compara aparte, por igualdad exacta.
  */
-const PUBLIC_PREFIXES = ["/login"];
+const PUBLIC_PREFIXES = ["/login", "/recuperar"];
+
+/**
+ * Publicas que NO rebotan a /dashboard con sesion: /auth/confirm canjea el
+ * token del mail, y si un admin prueba un link de invitacion en su propio
+ * navegador (ya logueado), rebotarlo impediria canjearlo.
+ */
+const PASSTHROUGH_PREFIXES = ["/auth/confirm"];
 
 /**
  * Rutas publicas que ademas NO rebotan a /dashboard cuando ya hay sesion: la
@@ -50,7 +57,8 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const isAuthPath = PUBLIC_PREFIXES.some((path) => pathname.startsWith(path));
-  const isPublic = isAuthPath || esLanding(pathname);
+  const isPublic =
+    isAuthPath || esLanding(pathname) || PASSTHROUGH_PREFIXES.some((p) => pathname.startsWith(p));
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();

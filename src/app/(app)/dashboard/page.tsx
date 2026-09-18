@@ -10,6 +10,7 @@ import {
   Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { exigirPermiso } from "@/lib/sesion";
 import { Card, CardContent, SectionTitle } from "@/components/ui/UIComponents";
 import { KpiCard } from "@/components/ui/KpiCard";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -17,6 +18,7 @@ import { formatMoney, formatMoneyCompact } from "@/lib/money";
 import { MagnitudeBars, ShareBar, type Row } from "./charts";
 
 export default async function DashboardPage() {
+  await exigirPermiso("tablero.ver");
   const supabase = await createClient();
 
   const [{ count: empresasCount }, { count: contactosCount }, { data: etapas }, { data: oportunidades }] =

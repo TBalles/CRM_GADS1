@@ -63,11 +63,14 @@ export default function BitacoraPanel({
   empresaId,
   entradas,
   contactos,
+  puedeEscribir,
   onCreada,
 }: {
   empresaId: string;
   entradas: Bitacora[];
   contactos: Contacto[];
+  /** Sin `bitacora.escribir`: se lee pero no se agregan entradas. */
+  puedeEscribir: boolean;
   onCreada: (entrada: Bitacora) => void;
 }) {
   const [creando, setCreando] = useState(false);
@@ -231,11 +234,11 @@ export default function BitacoraPanel({
             </Button>
           </div>
         </form>
-      ) : (
+      ) : puedeEscribir ? (
         <Button onClick={() => setCreando(true)} className="w-full gap-2">
           <Plus className="h-4 w-4" /> Nueva entrada
         </Button>
-      )}
+      ) : null}
 
       {!ordenadas.length ? (
         <EmptyState

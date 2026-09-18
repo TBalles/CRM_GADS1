@@ -50,7 +50,14 @@ function VidaUtil({ meses }: { meses: number | null }) {
   );
 }
 
-export default function ProductosList({ productos }: { productos: Producto[] }) {
+export default function ProductosList({
+  productos,
+  puedeEditar,
+}: {
+  productos: Producto[];
+  /** Sin `productos.editar`: solo lectura. La base igual lo exige. */
+  puedeEditar: boolean;
+}) {
   const [items, setItems] = useState(productos);
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<Producto | null>(null);
@@ -143,10 +150,12 @@ export default function ProductosList({ productos }: { productos: Producto[] }) 
               className="h-9 pl-8 text-sm"
             />
           </div>
-          <Button onClick={() => openDrawer(null)} className="h-9 shrink-0 gap-1.5 px-3 text-sm">
-            <Plus className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Nuevo producto</span>
-          </Button>
+          {puedeEditar && (
+            <Button onClick={() => openDrawer(null)} className="h-9 shrink-0 gap-1.5 px-3 text-sm">
+              <Plus className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Nuevo producto</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -156,9 +165,11 @@ export default function ProductosList({ productos }: { productos: Producto[] }) 
           text="Todavía no hay productos en el catálogo"
           hint="Cargá tu primer producto con su duración estimada para empezar a seguir recambios."
           action={
-            <Button onClick={() => openDrawer(null)} className="gap-2">
-              <Plus className="h-4 w-4" /> Nuevo producto
-            </Button>
+            puedeEditar ? (
+              <Button onClick={() => openDrawer(null)} className="gap-2">
+                <Plus className="h-4 w-4" /> Nuevo producto
+              </Button>
+            ) : undefined
           }
         />
       ) : !filtered.length ? (
@@ -208,6 +219,7 @@ export default function ProductosList({ productos }: { productos: Producto[] }) 
                       </Badge>
                     </TableCell>
                     <TableCell>
+                      {puedeEditar && (
                       <RowActions
                         label={`Acciones de ${p.nombre}`}
                         items={[
@@ -220,6 +232,7 @@ export default function ProductosList({ productos }: { productos: Producto[] }) 
                           },
                         ]}
                       />
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -250,6 +263,7 @@ export default function ProductosList({ productos }: { productos: Producto[] }) 
                       {!p.activo && <Badge variant="secondary">De baja</Badge>}
                     </div>
                   </div>
+                  {puedeEditar && (
                   <RowActions
                     label={`Acciones de ${p.nombre}`}
                     items={[
@@ -262,6 +276,7 @@ export default function ProductosList({ productos }: { productos: Producto[] }) 
                       },
                     ]}
                   />
+                  )}
                 </div>
               </Card>
             ))}

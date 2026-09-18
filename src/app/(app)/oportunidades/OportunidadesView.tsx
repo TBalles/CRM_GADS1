@@ -106,6 +106,7 @@ export default function OportunidadesView({
   contactos,
   productos,
   perfiles,
+  puedeEditar,
 }: {
   etapas: Etapa[];
   oportunidades: OportunidadRow[];
@@ -113,6 +114,8 @@ export default function OportunidadesView({
   contactos: Opcion[];
   productos: Opcion[];
   perfiles: Opcion[];
+  /** Sin `oportunidades.editar`: vista de solo lectura. La base igual lo exige. */
+  puedeEditar: boolean;
 }) {
   const [items, setItems] = useState(oportunidades);
   // One entry per in-flight row, not a single shared id: with a scalar, starting
@@ -141,6 +144,7 @@ export default function OportunidadesView({
   }));
 
   function openDrawer(next: Oportunidad | "new") {
+    if (!puedeEditar) return;
     setTarget(next);
     setOpen(true);
   }
@@ -253,10 +257,12 @@ export default function OportunidadesView({
               className="h-9"
             />
           </div>
-          <Button onClick={() => openDrawer("new")} className="h-9 shrink-0 gap-1.5 px-3 text-sm">
-            <Plus className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Nueva oportunidad</span>
-          </Button>
+          {puedeEditar && (
+            <Button onClick={() => openDrawer("new")} className="h-9 shrink-0 gap-1.5 px-3 text-sm">
+              <Plus className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Nueva oportunidad</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -322,14 +328,14 @@ export default function OportunidadesView({
                           </button>
                           {busy ? (
                             <Loader2 className="mt-0.5 h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" />
-                          ) : (
+                          ) : puedeEditar ? (
                             <RowActions
                               label={`Acciones de ${o.titulo}`}
                               items={[
                                 { label: "Editar", icon: Pencil, onClick: () => openDrawer(o) },
                               ]}
                             />
-                          )}
+                          ) : null}
                         </div>
 
                         <p className="mt-1 truncate text-[11px] text-muted-foreground">
@@ -354,7 +360,7 @@ export default function OportunidadesView({
                             value={o.etapa_id}
                             onChange={(v) => handleChangeEtapa(o.id, v)}
                             options={selectOptions}
-                            disabled={busy}
+                            disabled={busy || !puedeEditar}
                             searchable={false}
                             className="h-7 px-1.5 text-[11px]"
                           />
@@ -382,9 +388,11 @@ export default function OportunidadesView({
           text="Todavía no hay oportunidades registradas"
           hint="Creá tu primera oportunidad y seguila por el embudo."
           action={
-            <Button onClick={() => openDrawer("new")} className="gap-2">
-              <Plus className="h-4 w-4" /> Nueva oportunidad
-            </Button>
+            puedeEditar ? (
+              <Button onClick={() => openDrawer("new")} className="gap-2">
+                <Plus className="h-4 w-4" /> Nueva oportunidad
+              </Button>
+            ) : undefined
           }
         />
       ) : !filtered.length ? (
@@ -416,10 +424,12 @@ export default function OportunidadesView({
 
                   <div className="mt-2 flex items-center justify-between gap-2">
                     <EtapaBadge nombre={etapa?.nombre ?? "—"} color={etapa?.color} />
-                    <RowActions
-                      label={`Acciones de ${o.titulo}`}
-                      items={[{ label: "Editar", icon: Pencil, onClick: () => openDrawer(o) }]}
-                    />
+                    {puedeEditar && (
+                      <RowActions
+                        label={`Acciones de ${o.titulo}`}
+                        items={[{ label: "Editar", icon: Pencil, onClick: () => openDrawer(o) }]}
+                      />
+                  )}
                   </div>
 
                   <div className="mt-2 space-y-1 border-t pt-2 text-xs text-muted-foreground">
@@ -493,10 +503,12 @@ export default function OportunidadesView({
                         {formatMoney(o.monto ? Number(o.monto) : null)}
                       </TableCell>
                       <TableCell className="pl-0 pr-2 text-right">
-                        <RowActions
-                          label={`Acciones de ${o.titulo}`}
-                          items={[{ label: "Editar", icon: Pencil, onClick: () => openDrawer(o) }]}
-                        />
+                        {puedeEditar && (
+                          <RowActions
+                            label={`Acciones de ${o.titulo}`}
+                            items={[{ label: "Editar", icon: Pencil, onClick: () => openDrawer(o) }]}
+                          />
+                      )}
                       </TableCell>
                     </TableRow>
                   );

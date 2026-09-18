@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
+import { exigirPermiso } from "@/lib/sesion";
 import OportunidadesView from "./OportunidadesView";
 
 export default async function OportunidadesPage() {
+  const sesion = await exigirPermiso("oportunidades.ver");
   const supabase = await createClient();
 
   const [
@@ -33,6 +35,7 @@ export default async function OportunidadesPage() {
   // the search and stage filter, which need client state (DESIGN.md §4.4).
   return (
     <OportunidadesView
+      puedeEditar={sesion.puede("oportunidades.editar")}
       etapas={etapas ?? []}
       oportunidades={oportunidades ?? []}
       empresas={(empresas ?? []).map((e) => ({ id: e.id, label: e.nombre }))}

@@ -91,11 +91,11 @@ export function getRemitente(): Remitente | null {
  * para que nadie deploye la landing con nombres inventados de gente real.
  */
 export const EQUIPO = [
-  "Integrante 1",
-  "Integrante 2",
-  "Integrante 3",
-  "Integrante 4",
-  "Integrante 5",
+  "Rombolá, Facundo",
+  "Ballesteros, Tomás",
+  "Devalle, Felipe",
+  "Ortiz, Enzo",
+  "Munar, Matias",
 ] as const;
 
 export const CARRERA = "Ingeniería en Informática — 4.º año";

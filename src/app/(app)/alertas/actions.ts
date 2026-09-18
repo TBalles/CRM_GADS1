@@ -1,10 +1,10 @@
 "use server";
 
-import nodemailer from "nodemailer";
 import { createClient } from "@/lib/supabase/server";
-import { getRemitente, type Remitente } from "@/lib/contacto";
-import { APP_NAME } from "@/lib/brand";
-import { asunto, cuerpo, cuerpoWhatsapp, desdeFila } from "./plantillas";
+import { getRemitente } from "@/lib/contacto";
+import { getSesion } from "@/lib/sesion";
+import { enviarMail } from "@/lib/email/enviar";
+import { asunto, contenidoAlerta, cuerpo, cuerpoWhatsapp, desdeFila, linkWhatsapp } from "./plantillas";
 
 /**
  * Envio de una alerta de recambio.
@@ -41,15 +41,19 @@ export type ResultadoEnvio =
  * alerta vigente: no se puede disparar un aviso sobre un equipo que no vencio.
  */
 async function cargarAlerta(ventaItemId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   // `ok` es un discriminante EXPLICITO. Sin el, TS normaliza los literales de
   // retorno agregando `error?: undefined` a la rama exitosa, y un chequeo con
   // `"error" in x` deja de achicar el tipo en ninguna de las dos ramas.
-  if (!user) return { ok: false, error: "Sesión vencida. Volvé a ingresar." } as const;
+  const sesion = await getSesion();
+  if (!sesion) return { ok: false, error: "Sesión vencida. Volvé a ingresar." } as const;
+  // El permiso se chequea ANTES de mandar nada. El registro en
+  // alertas_enviadas tambien lo exige (RLS), pero el mail sale antes que ese
+  // insert: sin este chequeo, un rol sin permiso mandaria el mail igual.
+  if (!sesion.puede("alertas.enviar")) {
+    return { ok: false, error: "Tu rol no tiene permiso para enviar alertas." } as const;
+  }
+  const user = sesion.user;
+  const supabase = await createClient();
 
   const { data: alerta } = await supabase
     .from("alertas_vida_util")
@@ -102,8 +106,22 @@ export async function enviarAlertaEmail({
   const enviaServidor = remitente !== null;
 
   if (remitente) {
-    const error = await enviarSmtp(remitente, destinatario, asunto(datos), mensaje);
-    if (error) return { ok: false, error };
+    // Boton para que el cliente coordine por WhatsApp, solo si el numero de la
+    // marca esta configurado (si no, un wa.me al placeholder no llega a nadie).
+    const wa = process.env.CONTACTO_WHATSAPP;
+    const boton = wa
+      ? {
+          texto: "Coordinar por WhatsApp",
+          url: linkWhatsapp(wa, `Hola! Recibimos el aviso de recambio de ${datos.productoNombre}. Coordinemos la revisión.`),
+        }
+      : undefined;
+
+    const res = await enviarMail({
+      para: destinatario,
+      asunto: asunto(datos),
+      contenido: contenidoAlerta(datos, boton),
+    });
+    if (!res.ok) return { ok: false, error: res.error };
   }
 
   const errorRegistro = await registrarEnvio(supabase, {
@@ -157,43 +175,4 @@ export async function registrarEnvioWhatsapp({
   }
 
   return { ok: true, modo: "enviado" };
-}
-
-/**
- * Manda un mail por SMTP. Devuelve un mensaje para el usuario si falla, o null.
- *
- * El detalle tecnico va al log del servidor (Vercel → Logs), no a la pantalla:
- * el usuario necesita saber QUE hacer, no el stack de nodemailer.
- */
-async function enviarSmtp(
-  r: Remitente,
-  destinatario: string,
-  asuntoTexto: string,
-  texto: string,
-): Promise<string | null> {
-  const transport = nodemailer.createTransport({
-    host: r.host,
-    port: r.port,
-    // 465 es TLS directo; 587 arranca en claro y sube con STARTTLS.
-    secure: r.port === 465,
-    auth: { user: r.user, pass: r.pass },
-  });
-
-  try {
-    await transport.sendMail({
-      from: { name: APP_NAME, address: r.from },
-      to: destinatario,
-      subject: asuntoTexto,
-      text: texto,
-    });
-    return null;
-  } catch (e) {
-    const code = (e as { code?: string }).code;
-    console.error("[alertas] fallo el envio SMTP:", code, e);
-    // EAUTH es el error tipico de Gmail: se uso la contraseña de la cuenta en
-    // vez de una contraseña de aplicacion, o se revoco la de aplicacion.
-    return code === "EAUTH"
-      ? "La casilla rechazó el usuario o la contraseña de aplicación. Revisá SMTP_USER y SMTP_PASS."
-      : "El servidor de mail rechazó el envío. Probá de nuevo en un rato.";
-  }
 }

@@ -54,26 +54,43 @@ test("sin contacto, el saludo apunta al club", () => {
 });
 
 test("la frase de estado distingue vencido de por vencer", () => {
-  assert.equal(estadoEnPalabras(base), "cumple su vida útil estimada en 30 días");
+  const una = { ...base, cantidad: 1 };
+  assert.equal(estadoEnPalabras(una), "cumple su vida útil estimada en 30 días");
   assert.equal(
-    estadoEnPalabras({ ...base, diasRestantes: 1 }),
+    estadoEnPalabras({ ...una, diasRestantes: 1 }),
     "cumple su vida útil estimada en 1 día",
   );
-  assert.equal(estadoEnPalabras({ ...base, diasRestantes: 0 }), "cumple hoy su vida útil estimada");
+  assert.equal(estadoEnPalabras({ ...una, diasRestantes: 0 }), "cumple hoy su vida útil estimada");
   assert.equal(
-    estadoEnPalabras({ ...base, diasRestantes: -5 }),
+    estadoEnPalabras({ ...una, diasRestantes: -5 }),
     "superó su vida útil estimada hace 5 días",
   );
   // Pasados dos meses se cuenta en meses: "hace 240 días" no lo lee nadie.
   assert.equal(
-    estadoEnPalabras({ ...base, diasRestantes: -240 }),
+    estadoEnPalabras({ ...una, diasRestantes: -240 }),
     "superó su vida útil estimada hace 8 meses",
   );
 });
 
+test("el verbo concuerda en plural (el bug del primer mail de prueba)", () => {
+  // "las 2 unidades ... superó" salió así en el mail real.
+  assert.equal(
+    estadoEnPalabras({ ...base, diasRestantes: -12 }),
+    "superaron su vida útil estimada hace 12 días",
+  );
+  assert.equal(estadoEnPalabras(base), "cumplen su vida útil estimada en 30 días");
+  assert.equal(estadoEnPalabras({ ...base, diasRestantes: 0 }), "cumplen hoy su vida útil estimada");
+  assert.match(cuerpoWhatsapp(base), /recambiarlas\?/);
+  assert.match(cuerpoWhatsapp({ ...base, cantidad: 1 }), /recambiarla\?/);
+});
+
 test("sin fecha de vencimiento la frase no inventa un plazo", () => {
   const sinDatos = { ...base, venceEl: null, diasRestantes: null };
-  assert.equal(estadoEnPalabras(sinDatos), "está llegando al final de su vida útil");
+  assert.equal(estadoEnPalabras(sinDatos), "están llegando al final de su vida útil");
+  assert.equal(
+    estadoEnPalabras({ ...sinDatos, cantidad: 1 }),
+    "está llegando al final de su vida útil",
+  );
 });
 
 test("el cuerpo concuerda en número con la cantidad", () => {

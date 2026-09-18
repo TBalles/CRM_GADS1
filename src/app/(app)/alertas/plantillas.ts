@@ -3,6 +3,7 @@
 // plantillas.check.ts, y Node no lee los "paths" del tsconfig — un alias lo
 // rompe con ERR_MODULE_NOT_FOUND. El precio de poder probarlo sin bundler.
 import { APP_NAME } from "../../../lib/brand.ts";
+import type { ContenidoEmail } from "../../../lib/email/layout.ts";
 
 /**
  * Armado de los mensajes prearmados de recambio.
@@ -76,17 +77,27 @@ export function saludo({ contactoNombre, empresaNombre }: DatosAlerta): string {
  * La frase cambia segun si el equipo YA vencio o esta por vencer. Escribirle
  * "esta por cumplir su vida util" a alguien cuyo equipo vencio hace ocho meses
  * suena a que no miramos el dato antes de mandar.
+ *
+ * El verbo concuerda con la cantidad: "la unidad superó", "las 2 unidades
+ * superaron". Un mail a un cliente con la concordancia rota se ve automatico.
  */
-export function estadoEnPalabras({ venceEl, diasRestantes }: DatosAlerta): string {
-  if (diasRestantes == null || venceEl == null) return "está llegando al final de su vida útil";
+export function estadoEnPalabras({ venceEl, diasRestantes, cantidad }: DatosAlerta): string {
+  const plural = cantidad !== 1;
+  const v = (singular: string, pluralForma: string) => (plural ? pluralForma : singular);
+
+  if (diasRestantes == null || venceEl == null) {
+    return `${v("está", "están")} llegando al final de su vida útil`;
+  }
   if (diasRestantes < 0) {
     const dias = Math.abs(diasRestantes);
-    return dias >= 60
-      ? `superó su vida útil estimada hace ${Math.round(dias / 30)} meses`
-      : `superó su vida útil estimada hace ${dias} ${dias === 1 ? "día" : "días"}`;
+    const hace =
+      dias >= 60 ? `${Math.round(dias / 30)} meses` : `${dias} ${dias === 1 ? "día" : "días"}`;
+    return `${v("superó", "superaron")} su vida útil estimada hace ${hace}`;
   }
-  if (diasRestantes === 0) return "cumple hoy su vida útil estimada";
-  return `cumple su vida útil estimada en ${diasRestantes} ${diasRestantes === 1 ? "día" : "días"}`;
+  if (diasRestantes === 0) return `${v("cumple", "cumplen")} hoy su vida útil estimada`;
+  return `${v("cumple", "cumplen")} su vida útil estimada en ${diasRestantes} ${
+    diasRestantes === 1 ? "día" : "días"
+  }`;
 }
 
 export function asunto(datos: DatosAlerta): string {
@@ -121,8 +132,57 @@ export function cuerpoWhatsapp(datos: DatosAlerta): string {
     "",
     `Te escribimos de ${APP_NAME}. ${unidades.charAt(0).toUpperCase() + unidades.slice(1)} de ${productoNombre} que entregamos el ${formatFecha(fechaEntrega)} ${estadoEnPalabras(datos)}.`,
     "",
-    "¿Coordinamos una revisión para ver si conviene recambiarlas?",
+    `¿Coordinamos una revisión para ver si conviene ${cantidad === 1 ? "recambiarla" : "recambiarlas"}?`,
   ].join("\n");
+}
+
+/** "Vencido hace 12 días" / "Vence en 9 días", para la caja de detalle del mail. */
+export function estadoCorto({ diasRestantes }: DatosAlerta): string {
+  if (diasRestantes == null) return "Por vencer";
+  if (diasRestantes < 0) {
+    const d = Math.abs(diasRestantes);
+    return `Vencido hace ${d} ${d === 1 ? "día" : "días"}`;
+  }
+  if (diasRestantes === 0) return "Vence hoy";
+  return `Vence en ${diasRestantes} ${diasRestantes === 1 ? "día" : "días"}`;
+}
+
+/**
+ * Version HTML del mail de alerta, para renderEmail(). Mismo contenido que
+ * `cuerpo()` (que sigue siendo el texto del mailto), organizado en bloques:
+ * saludo, contexto, caja con el equipo y el estado, y el pedido.
+ */
+export function contenidoAlerta(
+  datos: DatosAlerta,
+  contacto?: { texto: string; url: string },
+): ContenidoEmail {
+  const { productoNombre, cantidad, fechaEntrega, empresaNombre, diasRestantes } = datos;
+  const vencido = diasRestantes != null && diasRestantes < 0;
+  const unidades = cantidad === 1 ? "La unidad" : `Las ${cantidad} unidades`;
+
+  return {
+    preheader: `${productoNombre}: ${estadoCorto(datos).toLowerCase()}. Te proponemos una revisión.`,
+    encabezado: vencido ? "Es momento de recambiar" : "Se acerca el recambio",
+    bajada: `${empresaNombre} · ${APP_NAME}`,
+    icono: "↻",
+    titulo: "Recambio sugerido",
+    saludo: saludo(datos),
+    parrafos: [
+      `${unidades} de ${productoNombre} que les entregamos el ${formatFecha(fechaEntrega)} ${estadoEnPalabras(datos)}.`,
+      `Si quieren, coordinamos una revisión sin cargo para ver en qué estado ${
+        cantidad === 1 ? "está" : "están"
+      } y, si hace falta, les pasamos presupuesto de recambio con la disponibilidad actual.`,
+    ],
+    detalle: [
+      { etiqueta: "Equipo", valor: productoNombre },
+      { etiqueta: "Cantidad", valor: String(cantidad) },
+      { etiqueta: "Entregado", valor: formatFecha(fechaEntrega) },
+      { etiqueta: "Estado", valor: estadoCorto(datos) },
+    ],
+    boton: contacto,
+    cierre: "¿Les sirve que los llamemos esta semana? Pueden responder directamente este mail.",
+    firma: `Equipo de ${APP_NAME}`,
+  };
 }
 
 /** wa.me no acepta espacios, guiones ni `+` en el número. */

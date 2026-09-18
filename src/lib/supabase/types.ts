@@ -3,12 +3,14 @@
 // supabase/migrations/*.sql, hay que volver a generar este archivo en el
 // mismo cambio.
 //
-// EXCEPCION: los tipos de la migracion 0003 (productos.vida_util_meses,
-// ventas, venta_items, bitacora_entradas, alertas_enviadas y la vista
-// alertas_vida_util) estan escritos A MANO, siguiendo exactamente la forma que
+// EXCEPCION: los tipos de las migraciones 0003 (productos.vida_util_meses,
+// ventas, venta_items, bitacora_entradas, alertas_enviadas, la vista
+// alertas_vida_util), 0004 (organizaciones, envios_auth, organizacion_id en
+// todas las tablas, columnas nuevas de perfiles) y 0005 (roles, rol_id)
+// estan escritos A MANO, siguiendo exactamente la forma que
 // genera la herramienta. Motivo: la migracion todavia no se corrio contra el
 // proyecto, asi que no hay de donde generarlos. Despues de aplicar
-// 0003_productos_ventas_alertas_bitacora.sql en Supabase, REGENERAR este
+// esas migraciones en Supabase, REGENERAR este
 // archivo y pisar esta seccion — el generador es la fuente de verdad, esto es
 // solo un puente para que el build compile mientras tanto.
 
@@ -28,8 +30,81 @@ export type Database = {
   }
   public: {
     Tables: {
+      roles: {
+        Row: {
+          created_at: string
+          descripcion: string | null
+          es_admin: boolean
+          id: string
+          nombre: string
+          organizacion_id: string
+          permisos: string[]
+        }
+        Insert: {
+          created_at?: string
+          descripcion?: string | null
+          es_admin?: boolean
+          id?: string
+          nombre: string
+          organizacion_id?: string
+          permisos?: string[]
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string | null
+          es_admin?: boolean
+          id?: string
+          nombre?: string
+          organizacion_id?: string
+          permisos?: string[]
+        }
+        Relationships: []
+      }
+      organizaciones: {
+        Row: {
+          activa: boolean
+          created_at: string
+          id: string
+          nombre: string
+        }
+        Insert: {
+          activa?: boolean
+          created_at?: string
+          id?: string
+          nombre: string
+        }
+        Update: {
+          activa?: boolean
+          created_at?: string
+          id?: string
+          nombre?: string
+        }
+        Relationships: []
+      }
+      envios_auth: {
+        Row: {
+          created_at: string
+          email: string
+          id: number
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: never
+          tipo: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: never
+          tipo?: string
+        }
+        Relationships: []
+      }
       contactos: {
         Row: {
+          organizacion_id: string
           apellido: string | null
           cargo: string | null
           created_at: string
@@ -41,6 +116,7 @@ export type Database = {
           telefono: string | null
         }
         Insert: {
+          organizacion_id?: string
           apellido?: string | null
           cargo?: string | null
           created_at?: string
@@ -52,6 +128,7 @@ export type Database = {
           telefono?: string | null
         }
         Update: {
+          organizacion_id?: string
           apellido?: string | null
           cargo?: string | null
           created_at?: string
@@ -74,6 +151,7 @@ export type Database = {
       }
       empresas: {
         Row: {
+          organizacion_id: string
           created_at: string
           cuit: string | null
           direccion: string | null
@@ -84,6 +162,7 @@ export type Database = {
           telefono: string | null
         }
         Insert: {
+          organizacion_id?: string
           created_at?: string
           cuit?: string | null
           direccion?: string | null
@@ -94,6 +173,7 @@ export type Database = {
           telefono?: string | null
         }
         Update: {
+          organizacion_id?: string
           created_at?: string
           cuit?: string | null
           direccion?: string | null
@@ -107,18 +187,21 @@ export type Database = {
       }
       etapas: {
         Row: {
+          organizacion_id: string
           color: string | null
           id: string
           nombre: string
           orden: number
         }
         Insert: {
+          organizacion_id?: string
           color?: string | null
           id?: string
           nombre: string
           orden: number
         }
         Update: {
+          organizacion_id?: string
           color?: string | null
           id?: string
           nombre?: string
@@ -128,6 +211,7 @@ export type Database = {
       }
       oportunidades: {
         Row: {
+          organizacion_id: string
           contacto_id: string | null
           created_at: string
           empresa_id: string | null
@@ -141,6 +225,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          organizacion_id?: string
           contacto_id?: string | null
           created_at?: string
           empresa_id?: string | null
@@ -154,6 +239,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          organizacion_id?: string
           contacto_id?: string | null
           created_at?: string
           empresa_id?: string | null
@@ -206,18 +292,33 @@ export type Database = {
       }
       perfiles: {
         Row: {
+          activado_at: string | null
+          activo: boolean
+          es_superadmin: boolean
+          organizacion_id: string | null
+          rol_id: string | null
           created_at: string
           email: string | null
           id: string
           nombre: string | null
         }
         Insert: {
+          activado_at?: string | null
+          activo?: boolean
+          es_superadmin?: boolean
+          organizacion_id?: string | null
+          rol_id?: string | null
           created_at?: string
           email?: string | null
           id: string
           nombre?: string | null
         }
         Update: {
+          activado_at?: string | null
+          activo?: boolean
+          es_superadmin?: boolean
+          organizacion_id?: string | null
+          rol_id?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -227,6 +328,7 @@ export type Database = {
       }
       productos: {
         Row: {
+          organizacion_id: string
           activo: boolean
           categoria: string | null
           descripcion: string | null
@@ -237,6 +339,7 @@ export type Database = {
           vida_util_meses: number | null
         }
         Insert: {
+          organizacion_id?: string
           activo?: boolean
           categoria?: string | null
           descripcion?: string | null
@@ -247,6 +350,7 @@ export type Database = {
           vida_util_meses?: number | null
         }
         Update: {
+          organizacion_id?: string
           activo?: boolean
           categoria?: string | null
           descripcion?: string | null
@@ -260,6 +364,7 @@ export type Database = {
       }
       ventas: {
         Row: {
+          organizacion_id: string
           comprobante: string | null
           contacto_id: string | null
           created_at: string
@@ -270,6 +375,7 @@ export type Database = {
           oportunidad_id: string | null
         }
         Insert: {
+          organizacion_id?: string
           comprobante?: string | null
           contacto_id?: string | null
           created_at?: string
@@ -280,6 +386,7 @@ export type Database = {
           oportunidad_id?: string | null
         }
         Update: {
+          organizacion_id?: string
           comprobante?: string | null
           contacto_id?: string | null
           created_at?: string
@@ -315,6 +422,7 @@ export type Database = {
       }
       venta_items: {
         Row: {
+          organizacion_id: string
           cantidad: number
           created_at: string
           fecha_entrega: string | null
@@ -325,6 +433,7 @@ export type Database = {
           vida_util_meses: number | null
         }
         Insert: {
+          organizacion_id?: string
           cantidad?: number
           created_at?: string
           fecha_entrega?: string | null
@@ -335,6 +444,7 @@ export type Database = {
           vida_util_meses?: number | null
         }
         Update: {
+          organizacion_id?: string
           cantidad?: number
           created_at?: string
           fecha_entrega?: string | null
@@ -363,6 +473,7 @@ export type Database = {
       }
       bitacora_entradas: {
         Row: {
+          organizacion_id: string
           autor_id: string | null
           contacto_id: string | null
           created_at: string
@@ -374,6 +485,7 @@ export type Database = {
           titulo: string
         }
         Insert: {
+          organizacion_id?: string
           autor_id?: string | null
           contacto_id?: string | null
           created_at?: string
@@ -385,6 +497,7 @@ export type Database = {
           titulo: string
         }
         Update: {
+          organizacion_id?: string
           autor_id?: string | null
           contacto_id?: string | null
           created_at?: string
@@ -421,6 +534,7 @@ export type Database = {
       }
       alertas_enviadas: {
         Row: {
+          organizacion_id: string
           canal: string
           destinatario: string
           enviado_at: string
@@ -430,6 +544,7 @@ export type Database = {
           venta_item_id: string
         }
         Insert: {
+          organizacion_id?: string
           canal: string
           destinatario: string
           enviado_at?: string
@@ -439,6 +554,7 @@ export type Database = {
           venta_item_id: string
         }
         Update: {
+          organizacion_id?: string
           canal?: string
           destinatario?: string
           enviado_at?: string
@@ -494,7 +610,10 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      es_superadmin: { Args: never; Returns: boolean }
+      org_actual: { Args: never; Returns: string }
+      registrar_envio_auth: { Args: { p_email: string; p_tipo: string }; Returns: boolean }
+      tiene_permiso: { Args: { p_permiso: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

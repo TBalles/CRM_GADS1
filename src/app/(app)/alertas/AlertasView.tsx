@@ -16,6 +16,7 @@ import { Badge, Button, Card, Input } from "@/components/ui/UIComponents";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { KpiCard } from "@/components/ui/KpiCard";
 import { useToast } from "@/components/ui/Toast";
+import { OverlayCarga } from "@/components/ui/OverlayCarga";
 import { cn } from "@/lib/utils";
 import { enviarAlertaEmail, registrarEnvioWhatsapp } from "./actions";
 import {
@@ -43,6 +44,7 @@ const FILTROS: { value: Filtro; label: string }[] = [
 export default function AlertasView({
   alertas,
   enviaDesdeServidor,
+  puedeEnviar,
 }: {
   alertas: Alerta[];
   /**
@@ -52,6 +54,8 @@ export default function AlertasView({
    * iniciada por el usuario y la bloquea.
    */
   enviaDesdeServidor: boolean;
+  /** Sin `alertas.enviar`: se ven las alertas pero no se mandan. */
+  puedeEnviar: boolean;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -144,6 +148,7 @@ export default function AlertasView({
 
   return (
     <div className="flex w-full flex-col gap-4">
+      <OverlayCarga visible={pendingId !== null} texto="Enviando…" />
       <div className="hidden md:block">
         <h1 className="text-2xl font-bold tracking-tight">Alertas de recambio</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -264,7 +269,7 @@ export default function AlertasView({
                     </div>
                   </div>
 
-                  <div className="flex shrink-0 gap-2">
+                  {puedeEnviar && <div className="flex shrink-0 gap-2">
                     <Button
                       size="sm"
                       variant="outline"
@@ -284,7 +289,7 @@ export default function AlertasView({
                       <MessageCircle className="h-3.5 w-3.5" />
                       WhatsApp
                     </Button>
-                  </div>
+                  </div>}
                 </div>
               </Card>
             );

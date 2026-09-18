@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
+import { exigirPermiso } from "@/lib/sesion";
 import VentasList from "./VentasList";
 
 export const metadata = { title: "Ventas" };
 
 export default async function VentasPage() {
+  const sesion = await exigirPermiso("ventas.ver");
   const supabase = await createClient();
 
   // Cabeceras e ítems se piden por separado y se cruzan en el cliente, en
@@ -20,6 +22,7 @@ export default async function VentasPage() {
 
   return (
     <VentasList
+      puedeEditar={sesion.puede("ventas.editar")}
       ventas={ventas ?? []}
       items={items ?? []}
       empresas={empresas ?? []}
