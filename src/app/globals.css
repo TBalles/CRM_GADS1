@@ -531,3 +531,16 @@ body:has(.landing-root) {
     animation: none;
   }
 }
+
+/* Tailwind v4 defaults a bare `border` to currentColor (near-black text), not
+   the v3 grey. Every border without an explicit color takes the theme token
+   instead; `border-*` color utilities still win (utilities layer > base). */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-border);
+  }
+}
