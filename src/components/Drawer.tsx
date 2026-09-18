@@ -75,8 +75,12 @@ export default function Drawer({
         </div>
 
         {/* Forms pin their own action bar to the bottom of this scroll area
-            with <FormActions>, so there's no separate footer slot. */}
-        <div className="flex-1 overflow-y-auto p-5">{children}</div>
+            with <FormActions>, so there's no separate footer slot. A direct
+            <form> child stretches to the full height so a short form still
+            gets its action bar at the bottom instead of floating mid-panel. */}
+        <div className="flex flex-1 flex-col overflow-y-auto p-5 [&>form]:flex [&>form]:flex-1 [&>form]:flex-col">
+          {children}
+        </div>
       </div>
     </div>,
     document.body,

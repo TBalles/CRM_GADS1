@@ -211,7 +211,7 @@ export function FormActions({
   submitLabel?: string;
 }) {
   return (
-    <div className="sticky -bottom-5 -mx-5 -mb-5 mt-6 flex flex-col-reverse gap-2 border-t bg-background/95 p-4 backdrop-blur-sm sm:flex-row sm:justify-end">
+    <div className="sticky -bottom-5 -mx-5 -mb-5 mt-auto flex flex-col-reverse gap-2 border-t bg-background/95 p-4 backdrop-blur-sm sm:flex-row sm:justify-end">
       <Button
         type="button"
         variant="outline"
