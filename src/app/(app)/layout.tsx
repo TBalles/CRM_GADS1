@@ -7,14 +7,15 @@ import { getSesion } from "@/lib/sesion";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const sesion = await getSesion();
   if (!sesion) redirect("/login");
+  // El superadmin opera la PLATAFORMA, no un CRM: tiene su propio panel.
+  if (sesion.esSuperadmin) redirect("/admin");
 
   // Sesion abierta pero sin permiso para operar: usuario dado de baja u
   // organizacion desactivada. La RLS igual le devolveria todo vacio; esto es
   // para que entienda POR QUE en vez de ver un CRM en blanco. No se puede
   // mandar a /login (el proxy lo rebotaria de vuelta, porque la sesion existe),
   // asi que se muestra el aviso con un boton para cerrarla.
-  // El superadmin puede no tener organizacion: entra igual, a su panel.
-  if (!sesion.puedeOperar && !sesion.esSuperadmin) {
+  if (!sesion.puedeOperar) {
     const motivo = !sesion.perfil?.activo
       ? "Tu usuario está desactivado."
       : "La cuenta de tu empresa está suspendida.";
@@ -42,7 +43,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       organizacion={sesion.organizacion?.nombre ?? null}
       rol={sesion.rol?.nombre ?? null}
       permisos={sesion.permisos}
-      esSuperadmin={sesion.esSuperadmin}
     >
       {children}
     </AppShell>

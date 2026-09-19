@@ -152,7 +152,7 @@ export default function AdminView({ clientes, miOrgId }: { clientes: Cliente[]; 
     <div className="flex w-full flex-col gap-4">
       <OverlayCarga visible={ocupado || refrescando} texto={ocupado ? "Guardando…" : "Actualizando…"} />
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="hidden md:block">
+        <div>
           <h1 className="text-2xl font-bold tracking-tight">Clientes</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Empresas que usan el CRM. Cada una ve solo sus propios datos.

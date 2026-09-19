@@ -45,8 +45,9 @@ Incluido:
   la primera vez y después queda guardado en `localStorage`.
 
 - **Multitenant**: cada cliente es una `organizacion`; RLS aísla sus datos. Un **superadmin**
-  (nivel plataforma) da de alta clientes desde `/admin`, cada uno con su usuario Administrador. El
-  superadmin NO ve datos comerciales de los clientes.
+  (nivel plataforma, sin organización) tiene su propia interfaz en `/admin` (`src/app/admin`,
+  fuera del CRM): da de alta clientes, cada uno con su usuario Administrador, y los suspende. El
+  layout del CRM lo redirige ahí; NO ve datos comerciales de ningún cliente.
 - **Roles con permisos** por cliente (`roles.permisos`), administrados en `/usuarios`. El catálogo
   de permisos está en `src/lib/permisos.ts` y la base exige cada uno en las políticas RLS; la UI
   solo esconde lo que el rol no puede usar.
@@ -182,6 +183,7 @@ supabase/
                                 Vida útil, ventas, bitácora, alertas enviadas y vista de alertas
     0004_multitenant.sql        Organizaciones, organizacion_id en todo, FKs compuestas, RLS por org
     0005_roles_permisos.sql     Roles con permisos por organización y RLS por permiso
+    0006_superadmin_sin_organizacion.sql  El superadmin sale de la org demo (solo plataforma)
   tests/
     0005_permisos.sql           Prueba de aislamiento y permisos (corre en el SQL Editor, hace rollback)
 ```

@@ -14,7 +14,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Receipt,
-  ShieldCheck,
   UsersRound,
   X,
 } from "lucide-react";
@@ -40,8 +39,6 @@ const NAV = [
   { href: "/alertas", label: "Alertas", icon: BellRing, permiso: "alertas.ver" },
   { href: "/usuarios", label: "Usuarios", icon: UsersRound, permiso: "usuarios.gestionar" },
 ] as const;
-
-const NAV_ADMIN = { href: "/admin", label: "Clientes", icon: ShieldCheck };
 
 function NavItem({
   href,
@@ -102,20 +99,15 @@ export default function AppShell({
   organizacion,
   rol,
   permisos,
-  esSuperadmin,
   children,
 }: {
   nombre: string;
   organizacion: string | null;
   rol: string | null;
   permisos: string[];
-  esSuperadmin: boolean;
   children: React.ReactNode;
 }) {
-  const nav = [
-    ...NAV.filter((n) => permisos.includes(n.permiso)),
-    ...(esSuperadmin ? [NAV_ADMIN] : []),
-  ];
+  const nav = NAV.filter((n) => permisos.includes(n.permiso));
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -160,7 +152,7 @@ export default function AppShell({
         <span className="min-w-0 leading-tight">
           <span className="block truncate text-xs font-semibold">{nombre}</span>
           <span className="block truncate text-[10px] uppercase tracking-wider text-muted-foreground">
-            {[rol, organizacion].filter(Boolean).join(" · ") || (esSuperadmin ? "Superadmin" : "Sesión activa")}
+            {[rol, organizacion].filter(Boolean).join(" · ") || "Sesión activa"}
           </span>
         </span>
       )}

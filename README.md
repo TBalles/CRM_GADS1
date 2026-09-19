@@ -44,7 +44,7 @@ escribir — no hay roles todavía).
 > Las tres migraciones se corren **en orden**. La 0003 es puramente aditiva: no borra ni modifica
 > datos existentes, así que se puede aplicar sobre una base que ya está en uso.
 
-### Multitenant y roles (migraciones 0004 y 0005)
+### Multitenant y roles (migraciones 0004 a 0006)
 
 Cada **cliente** del CRM es una organización con sus propios datos, aislados del resto por Row
 Level Security. Dentro de cada cliente, cada usuario tiene un **rol**, y el rol es un conjunto de
@@ -56,7 +56,10 @@ administrador puede crear otros.
    cargado hasta ese momento pasa a la organización "Tuco & Nito (demo)".
 2. **0005** — roles con permisos. Los `admin` pasan a **Administrador** y los `usuario` a
    **Ventas**.
-3. **Verificación:** corré
+3. **0006** — el superadmin deja de pertenecer a la organización demo. Entra solo al panel de
+   plataforma (`/admin`): da de alta clientes, les asigna administradores y los suspende, sin ver
+   datos comerciales de nadie.
+4. **Verificación:** corré
    [`supabase/tests/0005_permisos.sql`](./supabase/tests/0005_permisos.sql). Crea clientes y
    usuarios de prueba, intenta cruzar datos entre clientes y saltarse los permisos, y **deshace
    todo al final** (no deja nada en la base). Tiene que devolver una fila que dice `TODO OK`.
