@@ -124,6 +124,10 @@ export default function OportunidadesView({
   // race — last response to land wins in the DB, which is not necessarily the
   // stage on screen, and neither request errors so nothing rolls back.
   const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(new Set());
+  // Drag and drop between stages (native HTML5: no dependency). It does not
+  // work with touch; on mobile the stage is changed from the edit form.
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overEtapa, setOverEtapa] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [etapaFilter, setEtapaFilter] = useState("");
   const { showToast } = useToast();
@@ -155,7 +159,7 @@ export default function OportunidadesView({
 
   async function handleChangeEtapa(oportunidadId: string, etapaId: string) {
     const previous = items.find((o) => o.id === oportunidadId)?.etapa_id;
-    // A row already in flight has its Select disabled, so this also rules out
+    // A card already in flight is not draggable, and this guard also rules out
     // two concurrent writes to the same opportunity.
     if (!previous || previous === etapaId || pendingIds.has(oportunidadId)) return;
 
@@ -233,7 +237,7 @@ export default function OportunidadesView({
         <div className="hidden shrink-0 md:block">
           <h1 className="text-2xl font-bold tracking-tight">Oportunidades</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Embudo comercial y listado. Cambiá de etapa desde la tarjeta o editá cualquier fila.
+            Embudo comercial y listado. Arrastrá una tarjeta a otra etapa o editá cualquier fila.
           </p>
         </div>
 
@@ -306,15 +310,50 @@ export default function OportunidadesView({
                   </p>
                 </div>
 
-                <div className="flex max-h-[26rem] min-h-[7rem] flex-1 flex-col gap-1.5 overflow-y-auto rounded-b-lg border bg-muted/30 p-1.5">
+                <div
+                  onDragOver={(e) => {
+                    if (!dragId) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                    if (overEtapa !== etapa.id) setOverEtapa(etapa.id);
+                  }}
+                  onDragLeave={(e) => {
+                    // Leaving to a child card is not leaving the column.
+                    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOverEtapa(null);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const id = e.dataTransfer.getData("text/plain") || dragId;
+                    setDragId(null);
+                    setOverEtapa(null);
+                    if (id) handleChangeEtapa(id, etapa.id);
+                  }}
+                  className={cn(
+                    "flex max-h-[26rem] min-h-[7rem] flex-1 flex-col gap-1.5 overflow-y-auto rounded-b-lg border bg-muted/30 p-1.5 transition-colors",
+                    overEtapa === etapa.id && "bg-brand/10 ring-2 ring-inset ring-brand/40",
+                  )}
+                >
                   {etapaItems.map((o) => {
                     const busy = pendingIds.has(o.id);
+                    const arrastrable = puedeEditar && !busy;
                     return (
                       <div
                         key={o.id}
+                        draggable={arrastrable}
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData("text/plain", o.id);
+                          e.dataTransfer.effectAllowed = "move";
+                          setDragId(o.id);
+                        }}
+                        onDragEnd={() => {
+                          setDragId(null);
+                          setOverEtapa(null);
+                        }}
                         className={cn(
                           "rounded-lg border bg-card p-2 shadow-sm transition-all hover:border-brand/30 hover:shadow-md",
+                          arrastrable && "cursor-grab active:cursor-grabbing",
                           busy && "opacity-60",
+                          dragId === o.id && "opacity-40",
                         )}
                       >
                         <div className="flex items-start justify-between gap-1">
@@ -354,24 +393,13 @@ export default function OportunidadesView({
                             </Avatar>
                           )}
                         </div>
-
-                        <div className="mt-2">
-                          <Select
-                            value={o.etapa_id}
-                            onChange={(v) => handleChangeEtapa(o.id, v)}
-                            options={selectOptions}
-                            disabled={busy || !puedeEditar}
-                            searchable={false}
-                            className="h-7 px-1.5 text-[11px]"
-                          />
-                        </div>
                       </div>
                     );
                   })}
 
                   {!etapaItems.length && (
                     <p className="px-1 py-6 text-center text-[11px] text-muted-foreground/70">
-                      Sin oportunidades
+                      {dragId ? "Soltá acá" : "Sin oportunidades"}
                     </p>
                   )}
                 </div>
