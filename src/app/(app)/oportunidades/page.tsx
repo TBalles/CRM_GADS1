@@ -26,9 +26,11 @@ export default async function OportunidadesPage() {
       )
       .order("created_at", { ascending: false }),
     supabase.from("empresas").select("id, nombre").order("nombre"),
-    supabase.from("contactos").select("id, nombre, apellido").order("nombre"),
+    supabase.from("contactos").select("id, nombre, apellido, empresa_id").order("nombre"),
     supabase.from("productos").select("id, nombre").eq("activo", true).order("nombre"),
-    supabase.from("perfiles").select("id, nombre, email").order("nombre"),
+    // Only people who can actually take the deal: active, and never the
+    // platform superadmin (RLS already hides it once it has no organization).
+    supabase.from("perfiles").select("id, nombre, email").eq("activo", true).eq("es_superadmin", false).order("nombre"),
   ]);
 
   // The header and toolbar live inside the view: the title shares a row with
@@ -42,6 +44,8 @@ export default async function OportunidadesPage() {
       contactos={(contactos ?? []).map((c) => ({
         id: c.id,
         label: `${c.nombre} ${c.apellido ?? ""}`.trim(),
+        empresaId: c.empresa_id,
+        empresa: empresas?.find((e) => e.id === c.empresa_id)?.nombre ?? null,
       }))}
       productos={(productos ?? []).map((p) => ({ id: p.id, label: p.nombre }))}
       perfiles={(perfiles ?? []).map((p) => ({ id: p.id, label: p.nombre ?? p.email ?? p.id }))}

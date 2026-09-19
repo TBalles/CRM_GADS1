@@ -16,7 +16,14 @@ import { maskFromNumber, parseMoney } from "@/lib/money";
 import type { Tables } from "@/lib/supabase/types";
 
 type Oportunidad = Tables<"oportunidades">;
-type Opcion = { id: string; label: string; color?: string | null };
+type Opcion = {
+  id: string;
+  label: string;
+  color?: string | null;
+  /** Contacts only: the company they belong to. */
+  empresaId?: string | null;
+  empresa?: string | null;
+};
 
 export default function OportunidadForm({
   oportunidad,
@@ -54,6 +61,25 @@ export default function OportunidadForm({
 
   const toOptions = (list: Opcion[]) =>
     list.map((o) => ({ value: o.id, label: o.label, color: o.color }));
+
+  // With a company chosen, only its contacts. Without one, every contact says
+  // which company it belongs to.
+  const contactosVisibles = empresaId
+    ? contactos.filter((c) => c.empresaId === empresaId)
+    : contactos.map((c) => (c.empresa ? { ...c, label: `${c.label} · ${c.empresa}` } : c));
+
+  function elegirEmpresa(id: string) {
+    setEmpresaId(id);
+    // The chosen contact has to belong to the new company.
+    if (id && contactoId && contactos.find((c) => c.id === contactoId)?.empresaId !== id) setContactoId("");
+  }
+
+  function elegirContacto(id: string) {
+    setContactoId(id);
+    // Picking a contact first fills in its company.
+    const suEmpresa = contactos.find((c) => c.id === id)?.empresaId;
+    if (id && !empresaId && suEmpresa) setEmpresaId(suEmpresa);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -149,16 +175,16 @@ export default function OportunidadForm({
           label="Empresa"
           placeholder="Sin empresa"
           value={empresaId}
-          onChange={setEmpresaId}
+          onChange={elegirEmpresa}
           options={toOptions(empresas)}
         />
         <CampoSelect
           id="contacto_id"
           label="Contacto"
-          placeholder="Sin contacto"
+          placeholder={empresaId && !contactosVisibles.length ? "Esta empresa no tiene contactos" : "Sin contacto"}
           value={contactoId}
-          onChange={setContactoId}
-          options={toOptions(contactos)}
+          onChange={elegirContacto}
+          options={toOptions(contactosVisibles)}
         />
       </div>
 

@@ -41,7 +41,7 @@ import type { Tables } from "@/lib/supabase/types";
 
 type Etapa = Tables<"etapas">;
 type Oportunidad = Tables<"oportunidades">;
-type Opcion = { id: string; label: string; color?: string | null };
+type Opcion = { id: string; label: string; color?: string | null; empresaId?: string | null; empresa?: string | null };
 
 type OportunidadRow = Oportunidad & {
   empresa: { id: string; nombre: string } | null;
