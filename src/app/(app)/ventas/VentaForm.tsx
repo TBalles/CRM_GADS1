@@ -79,6 +79,18 @@ export default function VentaForm({
   const [saving, setSaving] = useState(false);
   const { showToast } = useToast();
 
+  /**
+   * Al cambiar la fecha de la venta, las entregas que todavia la espejan la
+   * siguen: la entrega arranca en la fecha de la venta, y si no acompañara,
+   * una venta cargada con fecha pasada o futura dejaria entregas con la fecha
+   * de hoy y la alerta de recambio caeria cuando no corresponde. Las que el
+   * usuario puso a mano no se tocan.
+   */
+  function cambiarFecha(nueva: string) {
+    setItems((prev) => prev.map((it) => (it.fechaEntrega === fecha ? { ...it, fechaEntrega: nueva } : it)));
+    setFecha(nueva);
+  }
+
   // Solo los productos activos entran en una venta nueva. Los de baja siguen
   // existiendo en el historial, pero no se ofrecen para vender otra vez.
   const opcionesProducto = useMemo(
@@ -247,7 +259,7 @@ export default function VentaForm({
           value={contactoId}
           onChange={setContactoId}
         />
-        <Campo id="fecha" label="Fecha" type="date" required value={fecha} onChange={setFecha} />
+        <Campo id="fecha" label="Fecha" type="date" required value={fecha} onChange={cambiarFecha} />
       </div>
 
       <Campo

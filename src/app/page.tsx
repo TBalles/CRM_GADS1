@@ -196,6 +196,18 @@ function Chispa({ className }: { className?: string }) {
   );
 }
 
+/**
+ * Ventana de redacción de Gmail, no `mailto:`. Un `mailto:` depende de que el
+ * visitante tenga una aplicación de correo asociada en su sistema; si no la
+ * tiene (lo normal en una PC con webmail), el navegador abre una pestaña en
+ * blanco y el contacto se pierde. La casilla de la marca es Gmail, así que
+ * este link abre el compose con destinatario y asunto ya cargados.
+ */
+function gmail(para: string, asunto: string) {
+  const q = new URLSearchParams({ view: "cm", fs: "1", to: para, su: asunto });
+  return `https://mail.google.com/mail/?${q.toString()}`;
+}
+
 const pillPrimario =
   "inline-flex h-12 items-center justify-center gap-2 rounded-full bg-brand px-7 text-sm font-bold text-brand-foreground shadow-[0_0_32px_-6px_hsl(var(--glow)/0.7)] transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-[0_0_44px_-4px_hsl(var(--glow)/0.85)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 const pillSecundario =
@@ -615,7 +627,9 @@ export default async function LandingPage() {
 
               <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
                 <a
-                  href={`mailto:${contacto.email}?subject=${encodeURIComponent(`Demo de ${APP_NAME}`)}`}
+                  href={gmail(contacto.email, `Demo de ${APP_NAME}`)}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className={pillPrimario}
                 >
                   <span aria-hidden="true">✦</span> Pedir una demo
@@ -627,7 +641,9 @@ export default async function LandingPage() {
 
               <div className="mt-12 grid grid-cols-1 gap-3 text-left sm:grid-cols-3">
                 <a
-                  href={`mailto:${contacto.email}`}
+                  href={gmail(contacto.email, `Consulta sobre ${APP_NAME}`)}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   data-spotlight
                   className="spot-card flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 transition-colors hover:border-brand/40"
                 >
