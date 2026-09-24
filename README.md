@@ -68,6 +68,14 @@ Después, en **Authentication → Sign In / Providers → Email**, desactivá **
 up"**: los usuarios los crean el superadmin y los administradores de cada cliente desde la app,
 nunca un registro público.
 
+### Datos de demostración
+
+[`supabase/seeds/demo_catedra.sql`](./supabase/seeds/demo_catedra.sql) crea un cliente completo
+("Cátedra UNLaM (demo)") con una cuenta por cada rol por defecto y datos en todos los módulos:
+clientes, contactos, bitácora, productos, oportunidades, ventas y alertas de vida útil. Las fechas
+se calculan contra `current_date`, así que las alertas quedan bien sin importar cuándo se ejecute.
+Es re-ejecutable y el archivo explica arriba cómo borrar la demo entera.
+
 #### Después de correr la 0003: regenerar los tipos
 
 `src/lib/supabase/types.ts` tiene la sección de la 0003 escrita **a mano**, porque la migración no
