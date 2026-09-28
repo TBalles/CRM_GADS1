@@ -225,7 +225,9 @@ export default function VentaForm({
     }
 
     setSaving(false);
-    showToast("Venta registrada.", "success");
+    // Solo se promete el recambio si algún ítem de verdad lo sigue.
+    const conRecambio = cargados.some((it) => productos.find((p) => p.id === it.productoId)?.vida_util_meses);
+    showToast(conRecambio ? "Venta registrada. Arrancó el reloj del recambio." : "Venta registrada.", "success");
     onSaved();
   }
 

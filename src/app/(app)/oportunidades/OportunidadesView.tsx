@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import {
   Building2,
   Handshake,
-  Inbox,
   Layers,
   Loader2,
   Package,
@@ -394,8 +393,8 @@ export default function OportunidadesView({
                   })}
 
                   {!etapaItems.length && (
-                    <p className="px-1 py-6 text-center text-[11px] text-muted-foreground/70">
-                      {dragId ? "Soltá acá" : "Sin oportunidades"}
+                    <p className="px-1 py-6 text-center text-[11px] text-muted-foreground">
+                      {dragId ? "Soltá acá" : "Nada en esta etapa"}
                     </p>
                   )}
                 </div>
@@ -408,9 +407,9 @@ export default function OportunidadesView({
       {/* LISTADO */}
       {!items.length ? (
         <EmptyState
-          icon={Handshake}
-          text="Todavía no hay oportunidades registradas"
-          hint="Creá tu primera oportunidad y seguila por el embudo."
+          escena="cancha"
+          text="El embudo está vacío"
+          hint="Cargá la primera consulta y seguila etapa por etapa, hasta el cierre."
           action={
             puedeEditar ? (
               <Button onClick={() => openDrawer("new")} className="gap-2">
@@ -421,9 +420,9 @@ export default function OportunidadesView({
         />
       ) : !filtered.length ? (
         <EmptyState
-          icon={Inbox}
-          text="Ninguna oportunidad coincide con el filtro"
-          hint="Ajustá la búsqueda o elegí otra etapa."
+          escena="afuera"
+          text="Nada en el embudo con ese filtro"
+          hint="Aflojá la búsqueda o mirá otra etapa."
         />
       ) : (
         <>

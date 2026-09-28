@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Boxes, Package, Pencil, Plus, Power, Search, Timer } from "lucide-react";
+import { Package, Pencil, Plus, Power, Search, Timer } from "lucide-react";
 import Drawer from "@/components/Drawer";
 import RowActions from "@/components/RowActions";
 import ConfirmModal from "@/components/ConfirmModal";
@@ -36,7 +36,7 @@ type Producto = Tables<"productos">;
  */
 function VidaUtil({ meses }: { meses: number | null }) {
   if (meses == null) {
-    return <span className="text-xs text-muted-foreground/70">Sin seguimiento</span>;
+    return <span className="text-xs text-muted-foreground">Sin seguimiento</span>;
   }
   const anios = meses / 12;
   const detalle =
@@ -134,7 +134,7 @@ export default function ProductosList({
       <PageHeader
         titulo="Productos"
         meta={query.trim() ? `${filtered.length} de ${items.length} productos` : `${items.length} productos · ${conSeguimiento} con vida útil`}
-        bajada="Catálogo de equipamiento. {conSeguimiento} de {items.length} tienen vida útil cargada y generan alertas de recambio."
+        bajada="Lo que vendés y cuánto dura. Los que tienen vida útil cargada son los que disparan las alertas de recambio."
       >
         <div className="relative min-w-[7rem] flex-1 sm:w-64 sm:flex-none">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -156,9 +156,9 @@ export default function ProductosList({
 
       {!items.length ? (
         <EmptyState
-          icon={Boxes}
-          text="Todavía no hay productos en el catálogo"
-          hint="Cargá tu primer producto con su duración estimada para empezar a seguir recambios."
+          escena="cancha"
+          text="El catálogo está vacío"
+          hint="Cargá lo que vendés —arcos, redes, conos— con su vida útil en meses. Ese número es el que después dispara los avisos."
           action={
             puedeEditar ? (
               <Button onClick={() => openDrawer(null)} className="gap-2">
@@ -169,9 +169,9 @@ export default function ProductosList({
         />
       ) : !filtered.length ? (
         <EmptyState
-          icon={Search}
-          text={`Sin resultados para "${query.trim()}"`}
-          hint="Probá con otro nombre, marca o categoría."
+          escena="afuera"
+          text={`«${query.trim()}» no está en el catálogo`}
+          hint="Probá por marca o por categoría: redes, arcos, pelotas…"
         />
       ) : (
         <>

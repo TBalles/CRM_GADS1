@@ -243,9 +243,8 @@ export default function BitacoraPanel({
       {!ordenadas.length ? (
         <EmptyState
           compact
-          icon={NotebookPen}
-          text="Sin entradas todavía"
-          hint="Asentá acá lo que se charló, lo que consultó o cualquier observación."
+          text="La bitácora está en blanco"
+          hint="Asentá lo que se charló, lo que consultó o la queja que tuvo. Así el historial no se va con quien atendió."
           className="py-10"
         />
       ) : (

@@ -132,9 +132,9 @@ export default function VentasList({
 
       {!ventas.length ? (
         <EmptyState
-          icon={Receipt}
-          text="Todavía no hay ventas registradas"
-          hint="Registrá tu primera entrega para empezar a seguir el recambio de esos equipos."
+          escena="cancha"
+          text="Todavía no hay entregas asentadas"
+          hint="Asentá la primera venta: la fecha de entrega arranca el reloj del recambio."
           action={
             puedeEditar ? (
               <Button onClick={() => setOpen(true)} className="gap-2">
@@ -145,9 +145,9 @@ export default function VentasList({
         />
       ) : !filtered.length ? (
         <EmptyState
-          icon={Search}
-          text={`Sin resultados para "${query.trim()}"`}
-          hint="Probá con otro cliente, comprobante o producto."
+          escena="afuera"
+          text={`Ninguna venta con «${query.trim()}»`}
+          hint="Probá por cliente, número de comprobante o producto."
         />
       ) : (
         <div className="space-y-2">

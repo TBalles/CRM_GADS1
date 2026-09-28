@@ -200,9 +200,17 @@ export default function AdminView({ clientes, miOrgId }: { clientes: Cliente[]; 
       )}
 
       {!clientes.length ? (
-        <EmptyState icon={Building2} text="Todavía no hay clientes" hint="Creá el primero con su administrador." />
+        <EmptyState
+          escena="cancha"
+          text="Todavía no hay clientes en la plataforma"
+          hint="Dá de alta el primero junto con su administrador."
+        />
       ) : !filtrados.length ? (
-        <EmptyState icon={Search} text="Sin resultados" hint="Probá con otro nombre o email." />
+        <EmptyState
+          escena="afuera"
+          text={`Ningún cliente con «${query.trim()}»`}
+          hint="Probá por nombre o por el mail de su administrador."
+        />
       ) : (
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {filtrados.map((c) => (

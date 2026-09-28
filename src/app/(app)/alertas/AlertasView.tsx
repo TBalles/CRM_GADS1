@@ -195,12 +195,16 @@ export default function AlertasView({
 
       {!alertas.length ? (
         <EmptyState
-          icon={CheckCircle2}
-          text="No hay recambios pendientes"
-          hint="Cuando un equipo entregado se acerque al final de su vida útil, va a aparecer acá con el mensaje listo para enviar."
+          escena="al-dia"
+          text="Todo el equipamiento está al día"
+          hint="Nada vencido ni por vencer en los próximos 60 días. Cuando un equipo se acerque al final de su vida útil, el aviso aparece acá, ya armado."
         />
       ) : !filtered.length ? (
-        <EmptyState icon={Search} text="Sin alertas con ese filtro" hint="Probá con otro criterio." />
+        <EmptyState
+          escena="afuera"
+          text="Ningún recambio con ese filtro"
+          hint="Volvé a «Todas» para ver la lista completa."
+        />
       ) : (
         <div className="space-y-2">
           {filtered.map((a) => {

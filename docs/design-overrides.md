@@ -212,6 +212,25 @@ qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
 - **Por qué**: la landing tiene que *vender*, no ser eficiente de usar todos los días. Todo
   vive detrás de `.landing-root`, así que el CRM no hereda nada de esto.
 
+## 13. Estados vacíos con escena de cancha, no ícono en un círculo
+
+- **Kit**: §9.3 define el empty state como borde punteado + ícono genérico en un círculo gris.
+- **Tuco & Nito**: el borde punteado se mantiene, pero en lugar del ícono va una **escena**
+  dibujada en SVG inline con el mismo lenguaje de línea que el login y el GoalMark. Son tres, una
+  por situación, para que no se vean iguales:
+  - `cancha` (primera vez): el área marcada y vacía, con la pelota en el punto penal.
+  - `afuera` (búsqueda o filtro sin coincidencias): la pelota se fue al lado del arco.
+  - `al-dia` (Alertas sin recambios pendientes): el arco con la red entera, en verde. Es la
+    única buena noticia del grupo y se ve como tal.
+  Los vacíos `compact` que viven **adentro** de otro objeto (contactos de una empresa, bitácora,
+  ranking del tablero) van **solo con texto**: una escena repetida en cada acordeón sería
+  decoración. El copy sigue la voz de la landing: concreto, rioplatense, del oficio.
+  El ícono sigue disponible para vacíos que no son del rubro (`/sin-permisos`).
+- **Dónde**: `src/components/ui/EmptyState.tsx` (prop `escena`).
+- **Por qué**: el vacío es donde un producto muestra personalidad, y donde una app generada es
+  más genérica. Las escenas son `aria-hidden`, sin animación, y el texto carga todo el sentido.
+  De paso, el hint dejó de usar `text-muted-foreground/70`, que quedaba por debajo de AA.
+
 ---
 
 > Si aparece una divergencia nueva respecto del kit, se agrega como un bloque más en este

@@ -183,9 +183,9 @@ export default function EmpresasList({
       {/* LISTA */}
       {!empresasState.length ? (
         <EmptyState
-          icon={Building2}
-          text="Todavía no hay empresas registradas"
-          hint="Cargá tu primer club, cancha o complejo deportivo para empezar."
+          escena="cancha"
+          text="La cartera está vacía"
+          hint="Cargá el primer club, cancha de fútbol 5 o escuela. Después, desplegándolo, sumale su gente."
           action={
             puedeEditar ? (
               <Button onClick={() => openDrawer({ type: "empresa", mode: "create" })} className="gap-2">
@@ -196,9 +196,9 @@ export default function EmpresasList({
         />
       ) : !filtered.length ? (
         <EmptyState
-          icon={Search}
-          text={`Sin resultados para "${query.trim()}"`}
-          hint="Probá con otro nombre, CUIT, email o contacto."
+          escena="afuera"
+          text={`Ninguna empresa con «${query.trim()}»`}
+          hint="Probá con el CUIT, el mail o el nombre de uno de sus contactos."
         />
       ) : (
         <div className="space-y-2">
@@ -248,8 +248,8 @@ export default function EmpresasList({
                       <Meta icon={Mail} value={empresa.email} />
                       <Meta icon={MapPin} value={empresa.direccion} />
                       {!empresa.telefono && !empresa.email && !empresa.direccion && (
-                        <span className="text-xs text-muted-foreground/70">
-                          Sin datos de contacto
+                        <span className="text-xs text-muted-foreground">
+                          Sin teléfono, mail ni dirección
                         </span>
                       )}
                     </div>
@@ -364,8 +364,8 @@ export default function EmpresasList({
                       ) : (
                         <EmptyState
                           compact
-                          icon={Users}
-                          text="Sin contactos asociados"
+                          text="Todavía no hay a quién escribirle"
+                          hint="Sumá quién compra en este cliente: nombre, mail y teléfono."
                           className="py-8"
                         />
                       )}

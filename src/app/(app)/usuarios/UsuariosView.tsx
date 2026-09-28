@@ -366,7 +366,7 @@ export default function UsuariosView({
           </div>
 
           {!filtrados.length ? (
-            <EmptyState icon={Search} text="Sin resultados" hint="Probá con otro nombre, email o rol." />
+            <EmptyState escena="afuera" text={`Nadie del equipo con «${query.trim()}»`} hint="Probá por mail o por rol." />
           ) : (
             <div className="space-y-2">
               {filtrados.map((u) => {

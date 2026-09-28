@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowUpRight, Building2, Handshake, Layers, Sparkles, Trophy, Users } from "lucide-react";
+import { ArrowUpRight, Building2, Filter, Handshake, Layers, Users } from "lucide-react";
+import { GoalMark } from "@/components/Logo";
 import { createClient } from "@/lib/supabase/server";
 import { exigirPermiso } from "@/lib/sesion";
 import { Card, CardContent, SectionTitle } from "@/components/ui/UIComponents";
@@ -100,7 +101,10 @@ export default async function DashboardPage() {
           tira compacta. Los tres links a Empresas, Contactos y Oportunidades
           siguen estando: ahora la metrica entera es el link. */}
       <header>
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+        {/* La raya es la línea de cal del eyebrow de la landing: la única
+            marca del rubro en el tablero, y a propósito una sola. */}
+        <p className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+          <span className="h-px w-6 bg-brand" aria-hidden="true" />
           Resumen comercial
         </p>
 
@@ -155,7 +159,7 @@ export default async function DashboardPage() {
         <ShareBar
           rows={porEtapa}
           total={items.length}
-          emptyText="Todavía no hay oportunidades para distribuir."
+          emptyText="El embudo está vacío: todavía no hay oportunidades para repartir."
         />
       </section>
 
@@ -165,10 +169,10 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         <Card className="lg:col-span-3">
           <CardContent className="p-5">
-            <SectionTitle icon={Trophy}>Oportunidades por etapa</SectionTitle>
+            <SectionTitle icon={Filter}>Oportunidades por etapa</SectionTitle>
             <MagnitudeBars
               rows={porEtapa}
-              emptyText="Todavía no hay oportunidades registradas."
+              emptyText="Cuando cargues la primera consulta, acá se ve en qué etapa está."
             />
           </CardContent>
         </Card>
@@ -181,9 +185,8 @@ export default async function DashboardPage() {
             ) : (
               <EmptyState
                 compact
-                icon={Building2}
-                text="Sin oportunidades asociadas a empresas"
-                hint="Creá una oportunidad y asignale una empresa para verla acá."
+                text="Ninguna oportunidad tiene cliente asignado"
+                hint="Asignale una empresa a una oportunidad y aparece acá, ordenada por lo que hay en juego."
               />
             )}
           </CardContent>
@@ -193,7 +196,7 @@ export default async function DashboardPage() {
       {/* Onboarding de la demo */}
       <Card className="border-brand/20 bg-brand/[0.04]">
         <CardContent className="p-5">
-          <SectionTitle icon={Sparkles}>Próximos pasos</SectionTitle>
+          <SectionTitle icon={GoalMark}>De la venta al recambio</SectionTitle>
           <ol className="space-y-2.5">
             {[
               <>
@@ -211,6 +214,10 @@ export default async function DashboardPage() {
                 , con responsable y producto asignados.
               </>,
               <>Visualizala en el embudo y cambiala de etapa desde la tarjeta.</>,
+              <>
+                Cuando se entrega, asentá la venta: la fecha de entrega arranca el reloj, y el aviso
+                de recambio se arma solo.
+              </>,
             ].map((text, i) => (
               <li key={i} className="flex items-start gap-3 text-sm text-muted-foreground">
                 <span className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand/10 text-[11px] font-bold text-brand">
