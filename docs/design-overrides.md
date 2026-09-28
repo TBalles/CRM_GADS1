@@ -264,6 +264,22 @@ qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
   decir de qué se trata. Contraste medido en el punto MÁS claro del césped: blanco 11.1:1,
   blanco/75 7.0:1, blanco/65 5.7:1, `--pitch-line` 6.3:1, `red-300` 5.8:1.
 
+## 15. Iconografía del rubro en lugar de `Package`
+
+- **Kit**: íconos de lucide para todo; un producto se representa con una caja genérica.
+- **Tuco & Nito**: el equipo mismo es el ícono. `src/components/Equipamiento.tsx` dibuja arco,
+  red, pelota, cono, pechera, banderín, escalera y valla con las métricas de lucide (grilla de 24,
+  trazo 2, puntas redondeadas), así conviven sin parecer prestados. `IconoEquipo` elige el ícono con
+  `tipoEquipo` (`src/lib/equipo.ts`, puro y con self-check `equipo.check.ts`): **el nombre primero**
+  (la vista de alertas no trae categoría, y "Red para arco" es una red), después la categoría,
+  después la caja. Aparece en Productos (con una barrita de vida útil relativa al catálogo), en cada
+  ítem de Ventas y apilado en la fila cerrada, en Alertas y en la tarjeta de recambios del tablero.
+- **Dónde**: `components/Equipamiento.tsx`, `lib/equipo.ts`, `productos/ProductosList.tsx`,
+  `ventas/VentasList.tsx`, `alertas/AlertasView.tsx`, `dashboard/page.tsx`.
+- **Por qué**: una caja dice "producto" en cualquier rubro; un arco dice este. Es siempre
+  decorativo (`aria-hidden`): el nombre del producto va impreso al lado, así que un ícono mal
+  adivinado no cuesta nada.
+
 ---
 
 > Si aparece una divergencia nueva respecto del kit, se agrega como un bloque más en este

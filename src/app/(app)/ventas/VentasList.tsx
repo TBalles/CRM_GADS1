@@ -15,6 +15,7 @@ import Drawer from "@/components/Drawer";
 import { Badge, Card, Button, Input, PageHeader } from "@/components/ui/UIComponents";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { OverlayCarga } from "@/components/ui/OverlayCarga";
+import { IconoEquipo } from "@/components/Equipamiento";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import VentaForm from "./VentaForm";
@@ -206,6 +207,24 @@ export default function VentasList({
                     </div>
                   </div>
 
+                  {/* Que se entrego, sin desplegar: los equipos de la venta
+                      apilados. Decorativo; el detalle abierto los nombra. */}
+                  {detalle.length > 0 && (
+                    <div aria-hidden="true" className="hidden shrink-0 -space-x-2 sm:flex">
+                      {detalle.slice(0, 3).map((it) => {
+                        const producto = productoPorId.get(it.producto_id);
+                        return (
+                          <IconoEquipo
+                            key={it.id}
+                            nombre={producto?.nombre}
+                            categoria={producto?.categoria}
+                            className="h-8 w-8 rounded-full border border-brand/25 bg-card ring-2 ring-card [&>svg]:h-4 [&>svg]:w-4"
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
+
                   <div className="shrink-0 text-right">
                     <p className="text-sm font-bold tabular-nums">{formatMoney(totalDe(venta.id))}</p>
                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -229,6 +248,7 @@ export default function VentasList({
                             key={it.id}
                             className="flex items-center gap-3 rounded-lg border bg-card p-2.5 shadow-sm"
                           >
+                            <IconoEquipo nombre={producto?.nombre} categoria={producto?.categoria} className="h-8 w-8" />
                             <div className="min-w-0 flex-1">
                               <p className="truncate text-sm font-medium">
                                 {producto?.nombre ?? "Producto eliminado"}

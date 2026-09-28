@@ -60,6 +60,16 @@ Measured contrast: muted text 5.08:1 (canvas) / 5.32:1 (card) light, 7.13 / 5.95
 - **Scoreboards**: the dashboard masthead (money in play as a 7xl mono figure) and the Alertas
   summary (three stadium-style figures) sit on the horizontal pitch.
 - Alertas: each alert draws the *recambio clock* (delivery → expiry, 60-day warning window in amber).
+- Dashboard, below the scoreboard: "Recambios que vienen" (only with `alertas.ver`) next to the
+  funnel, then top companies next to "De la venta al recambio" drawn as a play (numbered steps
+  joined by dashed chalk-line segments, the last one filled).
+
+## Iconography
+
+- lucide for UI actions and navigation.
+- **Equipment icons** (`IconoEquipo`, override §15) for anything that IS a product: catalogue rows,
+  sale items, alerts, the dashboard's recambios. Never the generic `Package` box where the product
+  is known. Same metrics as lucide (24 grid, stroke 2, round caps).
 - Forms live in the `Drawer`; tables are responsive in two blocks (`md:hidden` cards / `hidden md:block` table).
 
 ## Voice (from the landing)

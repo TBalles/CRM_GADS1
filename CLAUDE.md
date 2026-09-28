@@ -155,6 +155,7 @@ src/
     AppShell.tsx                Sidebar colapsable desktop + header/drawer mobile + logout
     Logo.tsx                    GoalMark: isotipo en currentColor (sidebar, login, loader)
     Cancha.tsx                  MarcasCancha: la cancha en SVG sobre la superficie .cesped
+    Equipamiento.tsx            Íconos del rubro (arco, red, pelota…) + IconoEquipo
     ConfirmModal.tsx            Alert dialog centrado (lo usa el logout)
     Drawer.tsx                   Panel lateral derecho para los formularios de alta/edición
     RowActions.tsx               Menú "⋮" portaled que usan las filas de cada lista
@@ -167,6 +168,8 @@ src/
     contacto.ts                Datos de contacto y remitente, leídos de variables de entorno
     money.ts                   Máscara/parseo es-AR + formatters de display
     money.check.ts             Self-check: node --test src/lib/money.check.ts
+    equipo.ts                  tipoEquipo(): qué equipo es un producto, para su ícono
+    equipo.check.ts            Self-check: node --test src/lib/equipo.check.ts
     supabase/
       client.ts                Cliente Supabase para Client Components (drawers, mutaciones)
       server.ts                Cliente Supabase para Server Components/Actions (usa cookies())
@@ -312,6 +315,9 @@ npm run lint     # eslint
 
 # Self-check de la máscara de dinero (sin framework, corre con el runner de Node)
 node --test src/lib/money.check.ts
+
+# Self-check del ícono de cada producto (nombre primero, después categoría)
+node --test src/lib/equipo.check.ts
 ```
 
 <!-- BEGIN:nextjs-agent-rules -->

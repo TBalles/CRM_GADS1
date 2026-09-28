@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Package, Pencil, Plus, Power, Search, Timer } from "lucide-react";
+import { Package, Pencil, Plus, Power, Search } from "lucide-react";
+import { IconoEquipo } from "@/components/Equipamiento";
 import Drawer from "@/components/Drawer";
 import RowActions from "@/components/RowActions";
 import ConfirmModal from "@/components/ConfirmModal";
@@ -33,8 +34,11 @@ type Producto = Tables<"productos">;
  * asi que se muestra como un dato propio y no escondida en la descripcion.
  * Sin cargar se ve distinto de "0 meses": uno es "no hace seguimiento", el
  * otro seria un dato invalido.
+ *
+ * La barrita es cuanto dura contra lo que MAS dura del catalogo: un arco de
+ * cinco años y una pelota de uno se distinguen sin leer el numero.
  */
-function VidaUtil({ meses }: { meses: number | null }) {
+function VidaUtil({ meses, max }: { meses: number | null; max: number }) {
   if (meses == null) {
     return <span className="text-xs text-muted-foreground">Sin seguimiento</span>;
   }
@@ -44,8 +48,13 @@ function VidaUtil({ meses }: { meses: number | null }) {
       ? `${anios} ${anios === 1 ? "año" : "años"}`
       : `${meses} ${meses === 1 ? "mes" : "meses"}`;
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium">
-      <Timer className="h-3.5 w-3.5 shrink-0 text-brand" />
+    <span className="inline-flex items-center gap-2 text-xs font-medium">
+      <span aria-hidden="true" className="relative h-1 w-10 overflow-hidden rounded-full bg-muted">
+        <span
+          className="absolute inset-y-0 left-0 rounded-full bg-brand"
+          style={{ width: `${max ? Math.min(100, (meses / max) * 100) : 0}%` }}
+        />
+      </span>
       <span className="tabular-nums">{detalle}</span>
     </span>
   );
@@ -128,6 +137,7 @@ export default function ProductosList({
   }, [items, query]);
 
   const conSeguimiento = items.filter((p) => p.vida_util_meses != null).length;
+  const maxVida = Math.max(0, ...items.map((p) => p.vida_util_meses ?? 0));
 
   return (
     <div className="flex w-full flex-col gap-4">
@@ -193,23 +203,28 @@ export default function ProductosList({
                 {filtered.map((p) => (
                   <TableRow key={p.id} className={cn(!p.activo && "opacity-55")}>
                     <TableCell>
-                      <span className="block font-medium">{p.nombre}</span>
-                      {p.marca && (
-                        <span className="block text-xs text-muted-foreground">{p.marca}</span>
-                      )}
+                      <div className="flex items-center gap-3">
+                        <IconoEquipo nombre={p.nombre} categoria={p.categoria} />
+                        <div className="min-w-0">
+                          <span className="block font-medium">{p.nombre}</span>
+                          {p.marca && (
+                            <span className="block text-xs text-muted-foreground">{p.marca}</span>
+                          )}
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      {p.categoria ? <Pill>{p.categoria}</Pill> : <span className="text-muted-foreground/70">—</span>}
+                      {p.categoria ? <Pill>{p.categoria}</Pill> : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {p.precio == null ? (
-                        <span className="text-muted-foreground/70">—</span>
+                        <span className="text-muted-foreground">—</span>
                       ) : (
                         formatMoney(p.precio)
                       )}
                     </TableCell>
                     <TableCell>
-                      <VidaUtil meses={p.vida_util_meses} />
+                      <VidaUtil meses={p.vida_util_meses} max={maxVida} />
                     </TableCell>
                     <TableCell>
                       <Pill tono={p.activo ? "verde" : "gris"}>{p.activo ? "Activo" : "De baja"}</Pill>
@@ -241,15 +256,13 @@ export default function ProductosList({
             {filtered.map((p) => (
               <Card key={p.id} className={cn("p-3", !p.activo && "opacity-55")}>
                 <div className="flex items-start gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand/10">
-                    <Package className="h-4 w-4 text-brand" />
-                  </span>
+                  <IconoEquipo nombre={p.nombre} categoria={p.categoria} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold">{p.nombre}</p>
                     {p.marca && <p className="truncate text-xs text-muted-foreground">{p.marca}</p>}
                     <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                       {p.categoria && <Pill>{p.categoria}</Pill>}
-                      <VidaUtil meses={p.vida_util_meses} />
+                      <VidaUtil meses={p.vida_util_meses} max={maxVida} />
                       {p.precio != null && (
                         <span className="text-xs font-semibold tabular-nums">
                           {formatMoney(p.precio)}

@@ -1,12 +1,14 @@
 import Link from "next/link";
-import { ArrowUpRight, Building2, Filter, Handshake, Layers, Users } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BellRing, Building2, Filter, Handshake, Layers, Users } from "lucide-react";
 import { GoalMark } from "@/components/Logo";
 import { MarcasCancha } from "@/components/Cancha";
+import { IconoEquipo } from "@/components/Equipamiento";
 import { createClient } from "@/lib/supabase/server";
 import { exigirPermiso } from "@/lib/sesion";
-import { Card, CardContent, SectionTitle } from "@/components/ui/UIComponents";
+import { Card, CardContent, Pill, SectionTitle } from "@/components/ui/UIComponents";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { formatMoney, formatMoneyCompact } from "@/lib/money";
+import { cn } from "@/lib/utils";
 import { MagnitudeBars, ShareBar, type Row } from "./charts";
 
 /**
@@ -42,18 +44,38 @@ function Metrica({
 }
 
 export default async function DashboardPage() {
-  await exigirPermiso("tablero.ver");
+  const sesion = await exigirPermiso("tablero.ver");
   const supabase = await createClient();
+  // Los recambios solo se muestran a quien puede ver Alertas. La vista igual
+  // lo filtra por RLS; esto evita pedirla y dibujar una tarjeta vacia.
+  const verRecambios = sesion.puede("alertas.ver");
 
-  const [{ count: empresasCount }, { count: contactosCount }, { data: etapas }, { data: oportunidades }] =
-    await Promise.all([
+  const [
+    { count: empresasCount },
+    { count: contactosCount },
+    { data: etapas },
+    { data: oportunidades },
+    { data: alertas, error: errorAlertas },
+  ] = await Promise.all([
       supabase.from("empresas").select("*", { count: "exact", head: true }),
       supabase.from("contactos").select("*", { count: "exact", head: true }),
       supabase.from("etapas").select("id, nombre, orden, color").order("orden"),
       supabase
         .from("oportunidades")
         .select("id, monto, etapa_id, empresa:empresas(id, nombre)"),
+      verRecambios
+        ? supabase
+            .from("alertas_vida_util")
+            .select("venta_item_id, producto_nombre, empresa_nombre, estado, dias_restantes")
+            .order("dias_restantes", { ascending: true })
+        : Promise.resolve({ data: null, error: null }),
     ]);
+
+  // Si la vista falla, la tarjeta no se dibuja: mostrar "Todo el equipamiento
+  // está al día" sobre un error sería afirmar algo que no sabemos.
+  const mostrarRecambios = verRecambios && !errorAlertas;
+  const recambios = alertas ?? [];
+  const vencidos = recambios.filter((a) => a.estado === "vencido").length;
 
   const items = oportunidades ?? [];
   const stages = etapas ?? [];
@@ -167,11 +189,68 @@ export default async function DashboardPage() {
         />
       </section>
 
-      {/* Dos rankings, en 3/2 y no en mitades. La asimetria dice cual de los
-          dos es el operativo (por etapa: donde esta trabado el embudo) y cual
-          es contexto. */}
+      {/* Primera fila: lo que hay que hacer HOY. Los recambios son la razon de
+          ser del producto y antes el tablero ni los nombraba. Al lado, donde
+          esta trabado el embudo. Asimetrico (2/3) a proposito. */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <Card className="lg:col-span-3">
+        {mostrarRecambios && (
+          <Card className="lg:col-span-2">
+            <CardContent className="p-5">
+              <SectionTitle
+                icon={BellRing}
+                right={
+                  <Link
+                    href="/alertas"
+                    className="inline-flex items-center gap-1 rounded-sm text-xs font-semibold text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    Ver alertas <ArrowRight className="h-3 w-3" />
+                  </Link>
+                }
+              >
+                Recambios que vienen
+              </SectionTitle>
+
+              {recambios.length ? (
+                <>
+                  <p className="-mt-1 mb-3 font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
+                    {vencidos} vencidos · {recambios.length - vencidos} por vencer
+                  </p>
+                  <ul className="space-y-2">
+                    {recambios.slice(0, 4).map((a) => {
+                      const vencido = a.estado === "vencido";
+                      const dias = a.dias_restantes ?? 0;
+                      return (
+                        <li key={a.venta_item_id} className="flex items-center gap-3">
+                          <IconoEquipo
+                            nombre={a.producto_nombre}
+                            tono={vencido ? "rojo" : "brand"}
+                            className="h-8 w-8"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">{a.producto_nombre}</p>
+                            <p className="truncate text-xs text-muted-foreground">{a.empresa_nombre}</p>
+                          </div>
+                          <Pill tono={vencido ? "rojo" : "ambar"}>
+                            {vencido ? `Hace ${Math.abs(dias)} d` : `En ${dias} d`}
+                          </Pill>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
+              ) : (
+                <EmptyState
+                  compact
+                  text="Todo el equipamiento está al día"
+                  hint="Nada vence en los próximos 60 días."
+                  className="py-8"
+                />
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        <Card className={mostrarRecambios ? "lg:col-span-3" : "lg:col-span-5"}>
           <CardContent className="p-5">
             <SectionTitle icon={Filter}>Oportunidades por etapa</SectionTitle>
             <MagnitudeBars
@@ -180,8 +259,10 @@ export default async function DashboardPage() {
             />
           </CardContent>
         </Card>
+      </div>
 
-        <Card className="lg:col-span-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        <Card className="lg:col-span-3">
           <CardContent className="p-5">
             <SectionTitle icon={Building2}>Empresas con más valor en juego</SectionTitle>
             {topEmpresas.length ? (
@@ -195,44 +276,63 @@ export default async function DashboardPage() {
             )}
           </CardContent>
         </Card>
-      </div>
 
-      {/* Onboarding de la demo */}
-      <Card className="border-brand/20 bg-brand/[0.04]">
-        <CardContent className="p-5">
-          <SectionTitle icon={GoalMark}>De la venta al recambio</SectionTitle>
-          <ol className="space-y-2.5">
-            {[
-              <>
-                Registrá una empresa en{" "}
-                <Link href="/empresas" className="font-medium text-brand hover:underline">
-                  Empresas
-                </Link>{" "}
-                y, desplegándola, cargale un contacto.
-              </>,
-              <>
-                Creá una oportunidad en{" "}
-                <Link href="/oportunidades" className="font-medium text-brand hover:underline">
-                  Oportunidades
-                </Link>
-                , con responsable y producto asignados.
-              </>,
-              <>Visualizala en el embudo y cambiala de etapa desde la tarjeta.</>,
-              <>
-                Cuando se entrega, asentá la venta: la fecha de entrega arranca el reloj, y el aviso
-                de recambio se arma solo.
-              </>,
-            ].map((text, i) => (
-              <li key={i} className="flex items-start gap-3 text-sm text-muted-foreground">
-                <span className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand/10 text-[11px] font-bold text-brand">
-                  {i + 1}
-                </span>
-                <span className="min-w-0">{text}</span>
-              </li>
-            ))}
-          </ol>
-        </CardContent>
-      </Card>
+        {/* La jugada: el ciclo del producto como un pizarron de tactica. Pasos
+            numerados como en la landing, unidos por una linea de cal punteada;
+            el ultimo, el recambio, es el que se marca. */}
+        <Card className="border-brand/20 bg-brand/[0.04] lg:col-span-2">
+          <CardContent className="p-5">
+            <SectionTitle icon={GoalMark}>De la venta al recambio</SectionTitle>
+            <ol className="space-y-4">
+              {[
+                <>
+                  Registrá una empresa en{" "}
+                  <Link href="/empresas" className="font-medium text-brand hover:underline">
+                    Empresas
+                  </Link>{" "}
+                  y, desplegándola, cargale un contacto.
+                </>,
+                <>
+                  Creá una oportunidad en{" "}
+                  <Link href="/oportunidades" className="font-medium text-brand hover:underline">
+                    Oportunidades
+                  </Link>
+                  , con responsable y producto asignados.
+                </>,
+                <>Visualizala en el embudo y cambiala de etapa desde la tarjeta.</>,
+                <>
+                  Cuando se entrega, asentá la venta: la fecha de entrega arranca el reloj, y el aviso
+                  de recambio se arma solo.
+                </>,
+              ].map((text, i, pasos) => {
+                const ultimo = i === pasos.length - 1;
+                return (
+                  <li key={i} className="relative flex items-start gap-3 text-sm text-muted-foreground">
+                    {/* Tramo de linea de cal hasta el paso siguiente (-bottom-4 =
+                        el space-y-4 de la lista); el ultimo no tiene: la jugada
+                        termina en el recambio. */}
+                    {!ultimo && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute -bottom-4 left-[0.8rem] top-[1.65rem] border-l-2 border-dashed border-brand/30"
+                      />
+                    )}
+                    <span
+                      className={cn(
+                        "flex h-[1.65rem] w-[1.65rem] shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-bold tabular-nums",
+                        ultimo ? "bg-brand text-brand-foreground" : "bg-card text-brand ring-2 ring-brand/30",
+                      )}
+                    >
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className={cn("min-w-0 pt-0.5", ultimo && "font-medium text-foreground")}>{text}</span>
+                  </li>
+                );
+              })}
+            </ol>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -7,12 +7,12 @@ import {
   CheckCircle2,
   Mail,
   MessageCircle,
-  Package,
   Search,
 } from "lucide-react";
 import { Badge, Button, Card, Input, PageHeader, Pill } from "@/components/ui/UIComponents";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MarcasCancha } from "@/components/Cancha";
+import { IconoEquipo } from "@/components/Equipamiento";
 import { useToast } from "@/components/ui/Toast";
 import { OverlayCarga } from "@/components/ui/OverlayCarga";
 import { cn } from "@/lib/utils";
@@ -295,16 +295,11 @@ export default function AlertasView({
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex min-w-0 gap-3">
-                    <span
-                      className={cn(
-                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
-                        vencida ? "bg-destructive/10" : "bg-brand/10",
-                      )}
-                    >
-                      <Package
-                        className={cn("h-5 w-5", vencida ? "text-destructive" : "text-brand")}
-                      />
-                    </span>
+                    <IconoEquipo
+                      nombre={a.producto_nombre}
+                      tono={vencida ? "rojo" : "brand"}
+                      className="h-10 w-10"
+                    />
 
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
