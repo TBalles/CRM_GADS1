@@ -314,6 +314,7 @@ export default function UsuariosView({
       <OverlayCarga visible={ocupado || refrescando} texto={ocupado ? "Guardando…" : "Actualizando…"} />
       <PageHeader
         titulo="Usuarios"
+        eyebrow="El equipo"
         meta={query.trim() ? `${filtrados.length} de ${usuarios.length} usuarios` : `${usuarios.length} usuarios con acceso`}
         bajada="Quién entra al CRM de tu empresa y qué puede hacer cada uno."
       >

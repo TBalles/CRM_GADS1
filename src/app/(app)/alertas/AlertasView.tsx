@@ -3,9 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-  BellRing,
   Building2,
-  CalendarClock,
   CheckCircle2,
   Mail,
   MessageCircle,
@@ -14,7 +12,7 @@ import {
 } from "lucide-react";
 import { Badge, Button, Card, Input, PageHeader, Pill } from "@/components/ui/UIComponents";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { KpiCard } from "@/components/ui/KpiCard";
+import { MarcasCancha } from "@/components/Cancha";
 import { useToast } from "@/components/ui/Toast";
 import { OverlayCarga } from "@/components/ui/OverlayCarga";
 import { cn } from "@/lib/utils";
@@ -40,6 +38,60 @@ const FILTROS: { value: Filtro; label: string }[] = [
   { value: "por_vencer", label: "Por vencer" },
   { value: "sin_avisar", label: "Sin avisar" },
 ];
+
+/**
+ * El reloj del recambio: la vida util del equipo como una linea que va de la
+ * entrega al vencimiento, con los ultimos 60 dias (la ventana de aviso)
+ * marcados en ambar y un punto donde esta hoy. Es la idea del producto
+ * dibujada con los datos de la fila.
+ *
+ * Usa `dias_restantes` de la vista y no `new Date()`: la cuenta la hace la
+ * base, asi que servidor y cliente dibujan lo mismo (sin desfasaje de
+ * hidratacion) y la barra nunca contradice a la pastilla "Vence en N d".
+ * Decorativa (`aria-hidden`): la linea de texto de arriba ya dice las fechas.
+ * Ancho FIJO, no relativo al texto de la tarjeta: asi las barras de distintas
+ * alertas se comparan entre si de un vistazo.
+ */
+function RelojRecambio({
+  entrega,
+  vence,
+  dias,
+  vencida,
+}: {
+  entrega: string | null;
+  vence: string | null;
+  dias: number;
+  vencida: boolean;
+}) {
+  if (!entrega || !vence) return null;
+  const total = (Date.parse(vence) - Date.parse(entrega)) / 86_400_000;
+  if (!(total > 0)) return null;
+  const hoy = Math.min(100, Math.max(0, ((total - dias) / total) * 100));
+  const aviso = Math.min(100, (60 / total) * 100);
+
+  return (
+    <div aria-hidden="true" className="mt-3 w-72 max-w-full sm:w-80">
+      <div className="relative h-1.5 rounded-full bg-muted">
+        <div className="absolute inset-y-0 right-0 rounded-r-full bg-amber-500/30" style={{ width: `${aviso}%` }} />
+        <div
+          className={cn("absolute inset-y-0 left-0 rounded-full", vencida ? "bg-destructive" : "bg-brand")}
+          style={{ width: `${hoy}%` }}
+        />
+        <span
+          className={cn(
+            "absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-card",
+            vencida ? "bg-destructive" : "bg-brand",
+          )}
+          style={{ left: `${hoy}%` }}
+        />
+      </div>
+      <div className="mt-1.5 flex justify-between font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+        <span>Entrega</span>
+        <span>Recambio</span>
+      </div>
+    </div>
+  );
+}
 
 export default function AlertasView({
   alertas,
@@ -151,15 +203,36 @@ export default function AlertasView({
       <OverlayCarga visible={pendingId !== null} texto="Enviando…" />
       <PageHeader
         titulo="Alertas de recambio"
+        eyebrow="Llegá antes que nadie"
         meta={`${vencidas} vencidas · ${porVencer} por vencer · ${sinAvisar} sin avisar`}
         bajada="Equipos entregados que cumplieron, o están por cumplir, su vida útil estimada. El mensaje ya viene armado: revisalo y mandalo."
       />
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <KpiCard icon={CalendarClock} label="Vencidas" value={String(vencidas)} />
-        <KpiCard icon={BellRing} label="Por vencer (60 días)" value={String(porVencer)} />
-        <KpiCard icon={CheckCircle2} label="Sin avisar" value={String(sinAvisar)} />
-      </div>
+      {/* EL MARCADOR. Antes eran tres KpiCards iguales, el patron que ya se
+          saco del tablero. Ahora es un tablero de estadio sobre la cancha: las
+          tres cifras que importan, grandes, con su color de estado. */}
+      <section
+        aria-label="Resumen de recambios"
+        className="cesped relative isolate overflow-hidden rounded-2xl shadow-lg [--cesped-angulo:90deg]"
+      >
+        <MarcasCancha orientacion="horizontal" className="-z-10 text-white/[0.07]" />
+        <dl className="grid grid-cols-3 divide-x divide-white/15">
+          {[
+            { label: "Vencidas", value: vencidas, tono: "text-red-300" },
+            { label: "Por vencer (60 días)", value: porVencer, tono: "text-amber-300" },
+            { label: "Sin avisar", value: sinAvisar, tono: "text-white" },
+          ].map(({ label, value, tono }) => (
+            <div key={label} className="flex flex-col-reverse items-center gap-2 px-2 py-5 text-center sm:py-6">
+              <dt className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/75 sm:text-[11px]">
+                {label}
+              </dt>
+              <dd className={cn("font-mono text-4xl font-bold tabular-nums leading-none sm:text-5xl", tono)}>
+                {value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </section>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filtrar alertas">
@@ -258,6 +331,13 @@ export default function AlertasView({
                         Entregado el {formatFecha(a.fecha_entrega)} · vida útil{" "}
                         {a.vida_util_meses} meses · vence {formatFecha(a.vence_el)}
                       </p>
+
+                      <RelojRecambio
+                        entrega={a.fecha_entrega}
+                        vence={a.vence_el}
+                        dias={dias}
+                        vencida={vencida}
+                      />
 
                       {a.ultimo_envio && (
                         <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-brand">

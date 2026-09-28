@@ -133,6 +133,7 @@ export default function ProductosList({
     <div className="flex w-full flex-col gap-4">
       <PageHeader
         titulo="Productos"
+        eyebrow="La base"
         meta={query.trim() ? `${filtered.length} de ${items.length} productos` : `${items.length} productos · ${conSeguimiento} con vida útil`}
         bajada="Lo que vendés y cuánto dura. Los que tienen vida útil cargada son los que disparan las alertas de recambio."
       >

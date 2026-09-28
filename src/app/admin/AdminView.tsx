@@ -153,6 +153,7 @@ export default function AdminView({ clientes, miOrgId }: { clientes: Cliente[]; 
       <OverlayCarga visible={ocupado || refrescando} texto={ocupado ? "Guardando…" : "Actualizando…"} />
       <PageHeader
         titulo="Clientes"
+        eyebrow="La plataforma"
         tituloEnMobile
         meta={query.trim() ? `${filtrados.length} de ${clientes.length} clientes` : `${clientes.length} clientes en la plataforma`}
         bajada="Empresas que usan el CRM. Cada una ve solo sus propios datos."

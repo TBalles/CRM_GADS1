@@ -197,8 +197,8 @@ qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
     `.landing-root` en `globals.css` redefine los tokens (casi negro con tinte verde) y **sube la
     luz del verde de marca** (`--brand: 156 74% 50%`) para que brille sobre negro. `--primary` y
     `--ring` siguen solos, porque ya aliasean `--brand` (§2).
-  - **Tipografía de display** Varela Round (`font-display`) para titulares. Se carga solo en la
-    landing con `next/font`; el CRM sigue 100% en Inter.
+  - **Tipografía de display** Varela Round (`font-display`) para titulares. Desde el §14 el CRM
+    también la usa en sus títulos; el cuerpo de la landing sigue en Inter y el del CRM en Jakarta.
   - **Partículas en canvas** (`src/components/landing/ParticleField.tsx`): el isotipo armado con
     partículas en el hero, un halo detrás de la vitrina de producto y un cielo fijo. El verde lo
     lee del token `--glow`, no está duplicado en JS.
@@ -230,6 +230,39 @@ qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
 - **Por qué**: el vacío es donde un producto muestra personalidad, y donde una app generada es
   más genérica. Las escenas son `aria-hidden`, sin animación, y el texto carga todo el sentido.
   De paso, el hint dejó de usar `text-muted-foreground/70`, que quedaba por debajo de AA.
+
+## 14. El CRM viste la cancha — sidebar, marcadores y títulos de la landing
+
+- **Kit**: sidebar `bg-card` neutro (§4.5), títulos de página en la sans del sistema, métricas en
+  `KpiCard` iguales (§4.6).
+- **Tuco & Nito**: el CRM toma el mundo visual de la landing para que se lea como el mismo
+  producto y no como una plantilla:
+  - **Superficie `.cesped`** (`globals.css`): el verde del login con franjas de corte de césped al
+    3% de blanco. Tokens propios `--pitch-light / --pitch / --pitch-dark / --pitch-line`, **iguales
+    en claro y oscuro** (como el tile del logo: es identidad, no UI). La usan el sidebar, el header
+    y el drawer mobile, el panel del login y los dos marcadores.
+  - **Marcas de cancha** (`src/components/Cancha.tsx`, `MarcasCancha`): la cancha completa en SVG,
+    vertical u horizontal, a 5–7% de blanco y `aria-hidden`. Es la que antes vivía solo en el login.
+  - **Sidebar sobre la cancha**: texto blanco, ítem activo con lavado blanco y la raya de cal en
+    `--pitch-line`, wordmark en Varela con el "&" en verde como en la landing. El anillo de foco del
+    kit (verde sobre fondo) desaparecía sobre verde: acá es `--pitch-line` con offset `--pitch`.
+    "Cerrar sesión" pasa a `red-300`: `--destructive` daba ~3.4:1 sobre la cancha.
+  - **Marcadores**: el encabezado del tablero y el resumen de Alertas se dibujan sobre la cancha
+    horizontal. Alertas deja las tres `KpiCard` iguales por un tablero de estadio (el componente
+    sigue existiendo, es del kit).
+  - **Varela Round en los títulos del CRM** (`PageHeader`, wordmark, estados vacíos, login). Tiene
+    un solo peso: los títulos pesan por tamaño, nunca con negrita sintética.
+  - **Eyebrow con línea de cal** en cada `PageHeader`, con los tags de la landing ("A quién le
+    vendés", "El embudo", "Arranca el reloj", "Llegá antes que nadie").
+  - **Reloj del recambio** en cada alerta: barra de la entrega al vencimiento con la ventana de 60
+    días en ámbar. Usa `dias_restantes` de la vista (no `new Date()`), así no desfasa la hidratación.
+- **Dónde**: `globals.css`, `layout.tsx`, `components/Cancha.tsx`, `AppShell.tsx`,
+  `UIComponents.tsx` (`PageHeader`), `dashboard/page.tsx`, `alertas/AlertasView.tsx`,
+  `login/page.tsx`, y el `eyebrow` de cada pantalla.
+- **Por qué**: después de dos pases de tokens y estructura la app seguía pudiendo ser el CRM de
+  cualquier rubro. Lo que ves siempre (el marco, los títulos, la primera cifra) es lo que tiene que
+  decir de qué se trata. Contraste medido en el punto MÁS claro del césped: blanco 11.1:1,
+  blanco/75 7.0:1, blanco/65 5.7:1, `--pitch-line` 6.3:1, `red-300` 5.8:1.
 
 ---
 

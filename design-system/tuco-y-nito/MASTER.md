@@ -32,16 +32,18 @@ has its own marketing aesthetic (override §12) and is the **source of the brand
 | `--muted-foreground` | `162 9% 40%` | `165 8% 62%` | Secondary text. **No opacity modifiers on text** — `/70` drops below AA |
 | `--border` | `156 14% 89%` | `168 10% 20%` | |
 | `--destructive` | `0 72% 51%` | `0 72% 56%` | |
+| `--pitch-light / --pitch / --pitch-dark` | `160 74% 14%` / `166 64% 11%` / `172 40% 6%` | same | The pitch surface (`.cesped`). Identity, not UI: identical in both themes |
+| `--pitch-line` | `156 74% 50%` | same | Accents ON the pitch only (active bar, "&", focus ring) |
 
 Measured contrast: muted text 5.08:1 (canvas) / 5.32:1 (card) light, 7.13 / 5.95 dark; text on
 `primary` 6.34:1 light. Floor: 4.5:1.
 
 ## Typography
 
-- **Plus Jakarta Sans** (`--font-sans`) — all CRM UI.
+- **Varela Round** (`font-display`) — screen titles, wordmark, empty-state headlines, login. One weight: titles weigh by size, never by synthetic bold.
+- **Plus Jakarta Sans** (`--font-sans`) — all other CRM UI.
 - **JetBrains Mono** (`--font-mono`) — figures only (money, counts, datelines). At display size
   use `tracking-[-0.055em]`.
-- Varela Round is **landing only**.
 
 ## Style
 
@@ -50,8 +52,14 @@ Measured contrast: muted text 5.08:1 (canvas) / 5.32:1 (card) light, 7.13 / 5.95
 
 ## Structure
 
-- Every screen opens with `PageHeader` (title · live mono dateline · bajada · toolbar).
-- Dashboard: one hero figure (money in play) + a `<dl>` strip of counts, not a row of equal KPI cards.
+- **The frame is the pitch**: sidebar, mobile header and mobile drawer sit on `.cesped` with the
+  full markings (`MarcasCancha`) at 5% white, in both themes. Text on it: white, white/75, white/65
+  at most faint. Focus ring on it: `--pitch-line` with a `--pitch` offset.
+- Every screen opens with `PageHeader`: eyebrow with a chalk line (a landing tag) · Varela title ·
+  live mono dateline · bajada · toolbar.
+- **Scoreboards**: the dashboard masthead (money in play as a 7xl mono figure) and the Alertas
+  summary (three stadium-style figures) sit on the horizontal pitch.
+- Alertas: each alert draws the *recambio clock* (delivery → expiry, 60-day warning window in amber).
 - Forms live in the `Drawer`; tables are responsive in two blocks (`md:hidden` cards / `hidden md:block` table).
 
 ## Voice (from the landing)
@@ -72,12 +80,14 @@ exist (alerts are prepared, a person sends them).
 ## Brand motifs — surgical
 
 Allowed, each with a job:
+- **Pitch surface + markings** (`.cesped`, `MarcasCancha`): the app frame and the two scoreboards. Nowhere else.
 - **GoalMark** (`src/components/Logo.tsx`): sidebar, loader, and the "De la venta al recambio" section icon.
-- **Chalk line** (`h-px w-6 bg-brand`) before an eyebrow — once, on the dashboard masthead.
+- **Chalk line** (`h-px w-6`) before every eyebrow.
+- **Step numbers** (`01`, `02`…) in mono on the funnel columns, as on the landing's steps.
 - **Pitch scenes** in empty states (`EmptyState escena="cancha|afuera|al-dia"`, override §13).
 
 Not allowed inside the CRM: the landing's ✦ sparkles, particles, glow, outline mega-words,
-pitch patterns as backgrounds, or a scene inside every nested/compact empty state.
+pitch surfaces behind tables or forms, or a scene inside every nested/compact empty state.
 **If in doubt, leave it out.**
 
 ## Empty states

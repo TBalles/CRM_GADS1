@@ -109,6 +109,7 @@ export default function VentasList({
       <OverlayCarga visible={actualizando} texto="Actualizando…" />
       <PageHeader
         titulo="Ventas"
+        eyebrow="Arranca el reloj"
         meta={query.trim() ? `${filtered.length} de ${ventas.length} ventas` : `${ventas.length} ventas registradas`}
         bajada="Historial de entregas. Es de acá que salen las alertas de recambio."
       >

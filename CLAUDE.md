@@ -105,7 +105,7 @@ protegiendo el acceso igual que si fuera server-side.
 src/
   app/
     globals.css               Tokens del UI Kit (:root + .dark), @theme de Tailwind v4, keyframes
-    layout.tsx                Inter, anti-flash de dark mode, ToastProvider + TooltipHost
+    layout.tsx                Fuentes (Jakarta, JetBrains Mono, Varela Round), anti-flash, Toast + Tooltip
     icon.svg                  Favicon (isotipo con el verde de marca horneado)
     login/                    Login (fuera del grupo protegido), Server Action en actions.ts
       page.tsx                 Split-screen: panel de marca (cancha en SVG) + panel de form
@@ -154,6 +154,7 @@ src/
       ProductShowcase.tsx       Ventanas simuladas del CRM (datos de ejemplo)
     AppShell.tsx                Sidebar colapsable desktop + header/drawer mobile + logout
     Logo.tsx                    GoalMark: isotipo en currentColor (sidebar, login, loader)
+    Cancha.tsx                  MarcasCancha: la cancha en SVG sobre la superficie .cesped
     ConfirmModal.tsx            Alert dialog centrado (lo usa el logout)
     Drawer.tsx                   Panel lateral derecho para los formularios de alta/edición
     RowActions.tsx               Menú "⋮" portaled que usan las filas de cada lista

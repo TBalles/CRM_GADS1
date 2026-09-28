@@ -1,41 +1,15 @@
 import { GoalMark } from "@/components/Logo";
+import { MarcasCancha } from "@/components/Cancha";
 import { APP_NAME } from "@/lib/brand";
 import LoginForm from "./LoginForm";
 
 /**
  * Split-screen auth layout (DESIGN.md §12.1). The kit's branding panel uses a
- * hero photo; there's no image asset in this repo, so the panel is a brand
- * gradient with the markings of a pitch drawn in SVG — same composition, no
- * asset to ship or load.
+ * hero photo; there's no image asset in this repo, so the panel is the pitch
+ * surface (`.cesped`) with its markings drawn in SVG — same composition, no
+ * asset to ship or load. The same surface dresses the CRM's sidebar, so the
+ * login is the first screen of the product and not a separate page.
  */
-function PitchMarkings() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 400 600"
-      preserveAspectRatio="xMidYMid slice"
-      className="absolute inset-0 h-full w-full text-white/[0.07]"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      {/* touchlines */}
-      <rect x="24" y="24" width="352" height="552" />
-      {/* halfway line + centre circle */}
-      <line x1="24" y1="300" x2="376" y2="300" />
-      <circle cx="200" cy="300" r="62" />
-      <circle cx="200" cy="300" r="3" fill="currentColor" />
-      {/* penalty areas */}
-      <rect x="94" y="24" width="212" height="96" />
-      <rect x="146" y="24" width="108" height="42" />
-      <rect x="94" y="480" width="212" height="96" />
-      <rect x="146" y="534" width="108" height="42" />
-      {/* penalty arcs */}
-      <path d="M150 120a52 52 0 0 0 100 0" />
-      <path d="M150 480a52 52 0 0 1 100 0" />
-    </svg>
-  );
-}
 
 export default async function LoginPage({
   searchParams,
@@ -47,9 +21,8 @@ export default async function LoginPage({
   return (
     <div className="flex min-h-screen flex-1 flex-col bg-background animate-in fade-in duration-500 md:flex-row">
       {/* ── Branding panel (desktop only) ───────────────────────────── */}
-      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden text-white md:flex lg:w-3/5">
-        <div className="absolute inset-0 z-0 bg-[linear-gradient(145deg,hsl(160_78%_18%),hsl(168_60%_10%)_55%,hsl(172_40%_6%))]" />
-        <PitchMarkings />
+      <div className="cesped relative hidden w-1/2 flex-col justify-between overflow-hidden md:flex lg:w-3/5">
+        <MarcasCancha className="text-white/[0.07]" />
         <div className="absolute inset-0 z-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
 
         <div className="relative z-10 flex h-full flex-col justify-between p-10 lg:p-12">
@@ -66,7 +39,7 @@ export default async function LoginPage({
           </div>
 
           <div>
-            <h1 className="mb-6 text-4xl font-extrabold leading-tight tracking-tight drop-shadow-lg lg:text-6xl">
+            <h1 className="mb-6 font-display text-4xl leading-[1.04] tracking-tight drop-shadow-lg lg:text-6xl">
               Cada cancha
               <br />
               es una oportunidad.
@@ -90,7 +63,7 @@ export default async function LoginPage({
             <GoalMark className="h-7 w-7" />
           </span>
 
-          <h2 className="text-3xl font-bold tracking-tight">Bienvenido</h2>
+          <h2 className="font-display text-3xl tracking-tight">Bienvenido</h2>
           <p className="mt-1.5 text-sm text-muted-foreground">
             Ingresá a tu cuenta para gestionar empresas, contactos y oportunidades.
           </p>

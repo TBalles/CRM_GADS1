@@ -70,6 +70,20 @@
   --primary: var(--brand);
   --primary-foreground: var(--brand-foreground);
   --ring: var(--brand);
+
+  /* ── CANCHA ────────────────────────────────────────────────────────────
+     The pitch surface: sidebar, dashboard scoreboard, alert scoreboard and the
+     login panel. Like the logo tile it is identity, not UI, so it is the SAME
+     in both themes (.dark does not redefine it) — a pitch is green at night
+     too. `--pitch-line` is the landing's bright green (its --brand), used only
+     for accents ON the pitch. Measured on the LIGHTEST point of the surface
+     (--pitch-light + a mowing stripe), the worst case: white 11.1:1, white/75
+     7.0:1, white/65 5.7:1, --pitch-line 6.3:1, red-300 5.8:1. Nothing fainter
+     than white/65 carries text on the pitch. */
+  --pitch-light: 160 74% 14%;
+  --pitch: 166 64% 11%;
+  --pitch-dark: 172 40% 6%;
+  --pitch-line: 156 74% 50%;
 }
 
 /* Dark palette built by ELEVATION, not a flat grey: background 8% → card 14%
@@ -127,6 +141,8 @@
      identity, not UI. --brand lightens in dark mode for contrast. */
   --color-logo: hsl(160 78% 24%);
   --color-logo-foreground: hsl(0 0% 100%);
+  --color-pitch: hsl(var(--pitch));
+  --color-pitch-line: hsl(var(--pitch-line));
 
   --color-secondary: hsl(var(--secondary));
   --color-secondary-foreground: hsl(var(--secondary-foreground));
@@ -149,7 +165,8 @@
      en tablas densas. La landing NO cambia: mas abajo vuelve a Inter dentro de
      .landing-root. */
   --font-sans: var(--font-jakarta), var(--font-inter);
-  /* Solo la landing la carga (src/app/page.tsx). Ver design-overrides.md. */
+  /* Varela Round: titulos de la landing y del CRM (layout.tsx). Ver
+     design-overrides.md §12 y §14. */
   --font-display: var(--font-varela), var(--font-jakarta), var(--font-inter);
   /* Solo para NUMEROS: importes, conteos, la cifra del encabezado. Ver el
      comentario en src/app/layout.tsx. */
@@ -193,6 +210,29 @@
    los titulos con font-display siguen ganando sobre esta regla. */
 .landing-root {
   font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Superficie de cancha: el verde del login con las franjas de corte del
+   cesped, como se ve un campo desde la tribuna. Las franjas van a 3% de
+   blanco: se perciben como textura, nunca compiten con el texto. La direccion
+   se elige con --cesped-angulo (180deg = franjas horizontales, para paneles
+   altos como el sidebar; 90deg = verticales, para paneles anchos). */
+/* En @layer components: una utilidad de Tailwind puesta junto a .cesped
+   (bg-*, text-*) le gana, en vez de ignorarse sin aviso. */
+@layer components {
+  .cesped {
+    color: hsl(0 0% 100%);
+    background-color: hsl(var(--pitch));
+    background-image:
+      repeating-linear-gradient(
+        /* default en el var() y no declarado aca: asi la utilidad
+           [--cesped-angulo:90deg] elige la direccion sin competir con esta regla */
+        var(--cesped-angulo, 180deg),
+        hsl(0 0% 100% / 0.03) 0 56px,
+        transparent 56px 112px
+      ),
+      linear-gradient(160deg, hsl(var(--pitch-light)), hsl(var(--pitch)) 55%, hsl(var(--pitch-dark)));
+  }
 }
 
 /* El movimiento es preferencia del usuario, no decoracion nuestra. */

@@ -124,7 +124,7 @@ export const EmptyState = ({
           </div>
         )
       )}
-      <p className="text-center text-sm font-semibold text-foreground">{text}</p>
+      <p className="text-center font-display text-lg text-foreground">{text}</p>
       {hint && <p className="mt-1 max-w-md text-center text-sm text-muted-foreground">{hint}</p>}
       {action && <div className="mt-5">{action}</div>}
     </div>

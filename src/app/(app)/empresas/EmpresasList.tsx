@@ -152,6 +152,7 @@ export default function EmpresasList({
       {/* HEADER + TOOLBAR (DESIGN.md §4.4) */}
       <PageHeader
         titulo="Empresas"
+        eyebrow="A quién le vendés"
         meta={
           query.trim()
             ? `${filtered.length} de ${empresasState.length} empresas`

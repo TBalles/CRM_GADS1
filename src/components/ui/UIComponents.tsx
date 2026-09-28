@@ -451,12 +451,19 @@ export const initials = (name: string) =>
  */
 export function PageHeader({
   titulo,
+  eyebrow,
   bajada,
   meta,
   tituloEnMobile,
   children,
 }: {
   titulo: string;
+  /**
+   * La frase del oficio sobre el titulo, con la linea de cal de la landing
+   * ("A quien le vendes", "Arranca el reloj"). Sale de los tags de la landing:
+   * dice para que sirve la pantalla en el idioma del rubro.
+   */
+  eyebrow?: string;
   bajada?: React.ReactNode;
   /** Cifras vivas de la pantalla, p. ej. "7 empresas · 10 contactos". */
   meta?: React.ReactNode;
@@ -472,7 +479,15 @@ export function PageHeader({
   return (
     <div className="flex shrink-0 flex-col gap-4 border-b pb-4 lg:flex-row lg:items-end lg:justify-between lg:gap-8">
       <div className={cn("min-w-0", tituloEnMobile ? "block" : "hidden md:block")}>
-        <h1 className="text-[1.75rem] font-extrabold leading-none tracking-[-0.02em]">{titulo}</h1>
+        {eyebrow && (
+          <p className="mb-3 flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.2em] text-brand">
+            <span className="h-px w-6 bg-brand" aria-hidden="true" />
+            {eyebrow}
+          </p>
+        )}
+        {/* Varela Round, la cara de la landing. Tiene un solo peso: el titulo
+            pesa por tamaño, no por negrita (una negrita sintetica la deforma). */}
+        <h1 className="font-display text-[2.25rem] leading-none tracking-[-0.01em]">{titulo}</h1>
         {meta != null && (
           <p className="mt-2.5 font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
             {meta}

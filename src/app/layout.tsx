@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import { Inter, JetBrains_Mono, Plus_Jakarta_Sans, Varela_Round } from "next/font/google";
 import "./globals.css";
 import { APP_NAME } from "@/lib/brand";
 import { ToastProvider } from "@/components/ui/Toast";
@@ -35,6 +35,18 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
+// The landing's display face, now also the CRM's: screen titles, the
+// wordmark, empty-state headlines. It is what made the landing and the app
+// read as two different products; sharing it makes them one. Display ONLY —
+// it has a single weight, so body text and tables stay in Jakarta. The landing
+// still declares its own copy (src/app/page.tsx); next/font dedupes the file.
+const varela = Varela_Round({
+  variable: "--font-varela",
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: APP_NAME,
   description: "CRM para proveedores y distribuidores de equipamiento deportivo",
@@ -55,7 +67,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="es"
       suppressHydrationWarning
-      className={`${inter.variable} ${jakarta.variable} ${mono.variable} h-full antialiased`}
+      className={`${inter.variable} ${jakarta.variable} ${mono.variable} ${varela.variable} h-full antialiased`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />

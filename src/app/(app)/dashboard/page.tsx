@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, Building2, Filter, Handshake, Layers, Users } from "lucide-react";
 import { GoalMark } from "@/components/Logo";
+import { MarcasCancha } from "@/components/Cancha";
 import { createClient } from "@/lib/supabase/server";
 import { exigirPermiso } from "@/lib/sesion";
 import { Card, CardContent, SectionTitle } from "@/components/ui/UIComponents";
@@ -28,14 +29,14 @@ function Metrica({
   return (
     <Link
       href={href}
-      className="group flex items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-background"
+      className="group flex items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pitch-line focus-visible:ring-offset-4 focus-visible:ring-offset-pitch"
     >
-      <Icon className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-brand" />
-      <dd className="font-mono text-xl font-bold tabular-nums leading-none">{value}</dd>
-      <dt className="text-sm text-muted-foreground transition-colors group-hover:text-foreground">
+      <Icon className="h-4 w-4 shrink-0 text-white/60 transition-colors group-hover:text-pitch-line" />
+      <dd className="font-mono text-xl font-bold tabular-nums leading-none text-white">{value}</dd>
+      <dt className="text-sm text-white/75 transition-colors group-hover:text-white">
         {label}
       </dt>
-      <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-brand opacity-0 transition-opacity group-hover:opacity-100" />
+      <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-pitch-line opacity-0 transition-opacity group-hover:opacity-100" />
     </Link>
   );
 }
@@ -100,11 +101,14 @@ export default async function DashboardPage() {
           manda, en grande y en monoespaciada, y el resto la acompaña en una
           tira compacta. Los tres links a Empresas, Contactos y Oportunidades
           siguen estando: ahora la metrica entera es el link. */}
-      <header>
-        {/* La raya es la línea de cal del eyebrow de la landing: la única
-            marca del rubro en el tablero, y a propósito una sola. */}
-        <p className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-          <span className="h-px w-6 bg-brand" aria-hidden="true" />
+      {/* EL MARCADOR. El encabezado se dibuja sobre la cancha (.cesped, la
+          misma superficie del sidebar y del login) con las marcas completas
+          atras: la plata en juego se lee como el resultado de un partido. Es
+          la pieza que dice de que rubro es este CRM antes de leer una palabra. */}
+      <header className="cesped relative isolate overflow-hidden rounded-2xl px-6 py-7 shadow-lg [--cesped-angulo:90deg] sm:px-8 sm:py-8">
+        <MarcasCancha orientacion="horizontal" className="-z-10 text-white/[0.07]" />
+        <p className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.18em] text-white/75">
+          <span className="h-px w-6 bg-pitch-line" aria-hidden="true" />
           Resumen comercial
         </p>
 
@@ -113,24 +117,24 @@ export default async function DashboardPage() {
               ancho para cada signo, asi que a tamaño de titular el espacio de
               "$5,4 M" mide un caracter entero y la cifra sale desparramada.
               -0.055em la vuelve a compactar sin perder la grilla de digitos. */}
-          <span className="font-mono text-[2.75rem] font-bold leading-none tracking-[-0.055em] sm:text-5xl lg:text-6xl">
+          <span className="font-mono text-[2.75rem] font-bold leading-none tracking-[-0.055em] text-white sm:text-6xl lg:text-7xl">
             {formatMoneyCompact(totalPipeline)}
           </span>
-          <span className="pb-1 text-sm font-medium text-muted-foreground">en juego</span>
+          <span className="pb-1 font-display text-lg text-pitch-line">en juego</span>
         </div>
 
-        <p className="mt-3 text-sm text-muted-foreground">
+        <p className="mt-3 text-sm text-white/75">
           <span className="font-mono tabular-nums">{formatMoney(totalPipeline)}</span> repartidos en{" "}
           <Link
             href="/oportunidades"
-            className="font-semibold text-foreground underline-offset-4 hover:text-brand hover:underline"
+            className="rounded-sm font-semibold text-white underline-offset-4 hover:text-pitch-line hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pitch-line"
           >
             {items.length} oportunidades
           </Link>{" "}
           abiertas.
         </p>
 
-        <dl className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-3 border-t pt-4 sm:gap-x-12">
+        <dl className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-white/15 pt-4 sm:gap-x-12">
           <Metrica href="/empresas" icon={Building2} label="Empresas" value={empresasCount ?? 0} />
           <Metrica href="/empresas" icon={Users} label="Contactos" value={contactosCount ?? 0} />
           <Metrica

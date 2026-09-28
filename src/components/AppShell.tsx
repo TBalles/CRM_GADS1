@@ -20,6 +20,7 @@ import {
 import { APP_NAME } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 import { GoalMark } from "./Logo";
+import { MarcasCancha } from "./Cancha";
 import { Avatar, AvatarFallback, Button, initials } from "./ui/UIComponents";
 import { useModalAnimation } from "./ui/overlay";
 import ConfirmModal from "./ConfirmModal";
@@ -39,6 +40,29 @@ const NAV = [
   { href: "/alertas", label: "Alertas", icon: BellRing, permiso: "alertas.ver" },
   { href: "/usuarios", label: "Usuarios", icon: UsersRound, permiso: "usuarios.gestionar" },
 ] as const;
+
+/**
+ * The shell is dressed as the pitch (`.cesped`, same surface as the login
+ * panel), in BOTH themes. The kit's focus ring is brand green with a
+ * background-coloured offset, which vanishes on green; on the pitch the ring
+ * is the bright line green with a pitch-coloured offset.
+ */
+const focoCancha =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pitch-line focus-visible:ring-offset-2 focus-visible:ring-offset-pitch";
+const togglePitch = cn("text-white/75 hover:bg-white/[0.07] hover:text-white", focoCancha);
+
+/** "Tuco & Nito" with the "&" in line green, as on the landing. */
+function Wordmark() {
+  const [antes, despues] = APP_NAME.split("&");
+  if (despues === undefined) return <>{APP_NAME}</>;
+  return (
+    <>
+      {antes}
+      <span className="text-pitch-line">&amp;</span>
+      {despues}
+    </>
+  );
+}
 
 function NavItem({
   href,
@@ -68,11 +92,13 @@ function NavItem({
         // recognisable tell of a generated dashboard. Now: a faint brand wash,
         // the icon in brand colour, and a 3px bar at the edge. Three quiet
         // signals instead of one shout -- and the state was never colour-only
-        // anyway, aria-current carries it.
+        // anyway, aria-current carries it. On the pitch the wash is white and
+        // the bar is a chalk line in line green.
         "group relative flex w-full items-center rounded-lg px-3 py-2 text-sm transition-colors",
+        focoCancha,
         active
-          ? "bg-brand/[0.09] font-semibold text-foreground"
-          : "font-medium text-muted-foreground hover:bg-accent/70 hover:text-foreground",
+          ? "bg-white/[0.1] font-semibold text-white"
+          : "font-medium text-white/75 hover:bg-white/[0.07] hover:text-white",
         collapsed && "justify-center px-0",
       )}
     >
@@ -80,7 +106,7 @@ function NavItem({
         <span
           aria-hidden="true"
           className={cn(
-            "absolute top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-brand",
+            "absolute top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-pitch-line",
             collapsed ? "left-1" : "left-0",
           )}
         />
@@ -88,7 +114,7 @@ function NavItem({
       <Icon
         className={cn(
           "h-4 w-4 shrink-0 transition-colors",
-          active ? "text-brand" : "text-muted-foreground group-hover:text-foreground",
+          active ? "text-pitch-line" : "text-white/60 group-hover:text-white",
         )}
       />
       {!collapsed && <span className="ml-3 truncate">{label}</span>}
@@ -99,14 +125,20 @@ function NavItem({
 /** Brand lockup: isotype tile + wordmark. */
 function Logo({ collapsed }: { collapsed?: boolean }) {
   return (
-    <Link href="/" title="Ir a la página de inicio" className="flex min-w-0 items-center gap-2.5">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-logo text-logo-foreground shadow-sm">
+    <Link
+      href="/"
+      title="Ir a la página de inicio"
+      className={cn("flex min-w-0 items-center gap-2.5 rounded-lg", focoCancha)}
+    >
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-white ring-1 ring-white/20">
         <GoalMark className="h-[19px] w-[19px]" />
       </span>
       {!collapsed && (
         <span className="min-w-0 leading-tight">
-          <span className="block truncate text-sm font-bold tracking-tight">{APP_NAME}</span>
-          <span className="block truncate text-[10px] uppercase tracking-wider text-muted-foreground">
+          <span className="block truncate font-display text-base tracking-tight">
+            <Wordmark />
+          </span>
+          <span className="block truncate text-[10px] uppercase tracking-wider text-white/65">
             Equipamiento deportivo
           </span>
         </span>
@@ -167,12 +199,12 @@ export default function AppShell({
       )}
     >
       <Avatar className="h-8 w-8">
-        <AvatarFallback className="bg-brand/10 text-brand">{initials(nombre)}</AvatarFallback>
+        <AvatarFallback className="bg-white/10 text-white ring-1 ring-white/15">{initials(nombre)}</AvatarFallback>
       </Avatar>
       {!isCollapsed && (
         <span className="min-w-0 leading-tight">
-          <span className="block truncate text-xs font-semibold">{nombre}</span>
-          <span className="block truncate text-[10px] uppercase tracking-wider text-muted-foreground">
+          <span className="block truncate text-xs font-semibold text-white">{nombre}</span>
+          <span className="block truncate text-[10px] uppercase tracking-wider text-white/65">
             {[rol, organizacion].filter(Boolean).join(" · ") || "Sesión activa"}
           </span>
         </span>
@@ -192,7 +224,8 @@ export default function AppShell({
         aria-label={label}
         aria-expanded={!collapsed}
         className={cn(
-          "rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
+          "rounded-md p-1.5 text-white/70 transition-colors hover:bg-white/10 hover:text-white",
+          focoCancha,
           collapsed && "flex w-full justify-center",
         )}
       >
@@ -208,7 +241,9 @@ export default function AppShell({
       title={isCollapsed ? "Cerrar sesión" : undefined}
       aria-label="Cerrar sesión"
       className={cn(
-        "w-full justify-start px-3 text-destructive hover:bg-destructive/10 hover:text-destructive",
+        // --destructive is ~3.4:1 on the pitch: a lighter red keeps AA.
+        "w-full justify-start px-3 text-red-300 hover:bg-red-400/15 hover:text-red-200",
+        focoCancha,
         isCollapsed && "justify-center px-0",
       )}
     >
@@ -220,15 +255,19 @@ export default function AppShell({
   return (
     <div className="flex h-dvh overflow-hidden bg-background text-foreground">
       {/* ── Desktop sidebar ─────────────────────────────────────────── */}
+      {/* The sidebar is the pitch: same surface as the login panel, with the
+          full markings under the nav at 5% white. In both themes — it is the
+          brand's permanent frame, and the content area keeps the user's theme. */}
       <aside
         className={cn(
-          "z-20 hidden h-full shrink-0 flex-col border-r bg-card transition-all duration-300 ease-in-out md:flex",
+          "cesped relative z-20 hidden h-full shrink-0 flex-col overflow-hidden border-r border-black/20 transition-all duration-300 ease-in-out md:flex",
           collapsed ? "w-16" : "w-64",
         )}
       >
+        <MarcasCancha className="text-white/[0.05]" />
         <div
           className={cn(
-            "flex h-16 shrink-0 items-center border-b px-3",
+            "relative flex h-16 shrink-0 items-center border-b border-white/10 px-3",
             collapsed ? "justify-center" : "justify-between",
           )}
         >
@@ -239,36 +278,36 @@ export default function AppShell({
         {/* Collapsed there is no room beside the logo, so the toggle gets its
             own row directly under it — it stays at the top either way, and
             outside the scroll area so it can never scroll out of reach. */}
-        {collapsed && <div className="shrink-0 border-b p-2">{collapseButton()}</div>}
+        {collapsed && <div className="relative shrink-0 border-b border-white/10 p-2">{collapseButton()}</div>}
 
-        <div className="flex-1 overflow-y-auto p-3">{navList(undefined, collapsed)}</div>
+        <div className="relative flex-1 overflow-y-auto p-3">{navList(undefined, collapsed)}</div>
 
-        <div className="shrink-0 border-t p-3">
+        <div className="relative shrink-0 border-t border-white/10 p-3">
           {userBlock(collapsed)}
           <div className="mt-1 space-y-1">
-            <ThemeToggle collapsed={collapsed} />
+            <ThemeToggle collapsed={collapsed} className={togglePitch} />
             {logoutButton(collapsed)}
           </div>
         </div>
       </aside>
 
       {/* ── Mobile header ───────────────────────────────────────────── */}
-      <header className="fixed left-0 right-0 top-0 z-30 flex h-16 items-center justify-between gap-3 border-b bg-card/90 px-4 backdrop-blur-sm md:hidden">
+      <header className="cesped fixed left-0 right-0 top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-black/20 px-4 [--cesped-angulo:90deg] md:hidden">
         <div className="flex min-w-0 items-center gap-3">
           <button
             type="button"
             onClick={() => setMobileOpen(true)}
             aria-label="Abrir menú"
-            className="-ml-2 rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            className={cn("-ml-2 rounded-md p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white", focoCancha)}
           >
             <Menu className="h-6 w-6" />
           </button>
-          <span className="truncate text-lg font-bold tracking-tight">
+          <span className="truncate font-display text-xl tracking-tight">
             {current?.label ?? APP_NAME}
           </span>
         </div>
         <Avatar className="h-8 w-8">
-          <AvatarFallback className="bg-brand/10 text-brand">{initials(nombre)}</AvatarFallback>
+          <AvatarFallback className="bg-white/10 text-white ring-1 ring-white/15">{initials(nombre)}</AvatarFallback>
         </Avatar>
       </header>
 
@@ -281,26 +320,27 @@ export default function AppShell({
           />
           <div
             className={cn(
-              "absolute left-0 top-0 flex h-full w-[280px] max-w-[85vw] flex-col border-r bg-card shadow-2xl",
+              "cesped absolute left-0 top-0 flex h-full w-[280px] max-w-[85vw] flex-col overflow-hidden border-r border-black/20 shadow-2xl",
               drawer.modalClass === "modal-exit" ? "drawer-exit-left" : "drawer-enter-left",
             )}
           >
-            <div className="flex h-16 shrink-0 items-center justify-between border-b px-3">
+            <MarcasCancha className="text-white/[0.05]" />
+            <div className="relative flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-3">
               <Logo />
               <button
                 type="button"
                 onClick={() => setMobileOpen(false)}
                 aria-label="Cerrar menú"
-                className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                className={cn("rounded-md p-1.5 text-white/80 transition-colors hover:bg-white/10 hover:text-white", focoCancha)}
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-3">{navList(() => setMobileOpen(false))}</div>
-            <div className="shrink-0 border-t p-3">
+            <div className="relative flex-1 overflow-y-auto p-3">{navList(() => setMobileOpen(false))}</div>
+            <div className="relative shrink-0 border-t border-white/10 p-3">
               {userBlock()}
               <div className="mt-1 space-y-1">
-                <ThemeToggle />
+                <ThemeToggle className={togglePitch} />
                 {logoutButton()}
               </div>
             </div>

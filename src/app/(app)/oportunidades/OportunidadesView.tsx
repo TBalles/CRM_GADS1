@@ -235,6 +235,7 @@ export default function OportunidadesView({
       {/* HEADER + TOOLBAR */}
       <PageHeader
         titulo="Oportunidades"
+        eyebrow="El embudo"
         meta={query.trim() || etapaFilter ? `${filtered.length} de ${items.length} oportunidades` : `${items.length} oportunidades abiertas`}
         bajada="Embudo comercial y listado. Arrastrá una tarjeta a otra etapa o editá cualquier fila."
       >
@@ -281,7 +282,7 @@ export default function OportunidadesView({
         </div>
 
         <div className="grid grid-cols-2 gap-2 p-5 pt-0 sm:grid-cols-3 lg:grid-cols-6 lg:gap-2.5">
-          {etapas.map((etapa) => {
+          {etapas.map((etapa, i) => {
             const etapaItems = filtered.filter((o) => o.etapa_id === etapa.id);
             const etapaTotal = etapaItems.reduce((acc, o) => acc + (Number(o.monto) || 0), 0);
             const color = etapa.color ?? FALLBACK_COLOR;
@@ -300,8 +301,14 @@ export default function OportunidadesView({
                       {etapaItems.length}
                     </span>
                   </div>
-                  <p className="mt-0.5 truncate text-[10px] tabular-nums text-muted-foreground">
-                    {etapaTotal ? formatMoneyCompact(etapaTotal) : "—"}
+                  <p className="mt-0.5 flex min-w-0 items-baseline gap-1.5 text-[10px] tabular-nums text-muted-foreground">
+                    {/* Numerada como los pasos de la landing: el embudo se lee
+                        como una jugada que avanza hacia el arco. En la linea
+                        del monto, que sobra, y no junto al nombre, que no. */}
+                    <span className="shrink-0 font-mono font-bold text-brand" aria-hidden="true">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className="truncate">{etapaTotal ? formatMoneyCompact(etapaTotal) : "—"}</span>
                   </p>
                 </div>
 
