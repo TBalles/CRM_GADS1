@@ -12,24 +12,46 @@
    ========================================================================== */
 
 :root {
-  /* Neutrals — fixed across clients */
-  --background: 0 0% 100%;
-  --foreground: 240 10% 3.9%;
-  --border: 240 6% 90%;
-  --input: 240 6% 90%;
+  /* ── Neutrals ──────────────────────────────────────────────────────────
+     Hue 158, saturation single-digit: a neutral that leans the SAME way the
+     brand does. The kit shipped hue 240 (the blue-grey of every stock
+     component library) while the brand is green and the dark theme is teal,
+     so light mode read as a template and dark mode as the real product.
 
-  --secondary: 240 5% 96%;
-  --secondary-foreground: 240 6% 10%;
-  --muted: 240 5% 96%;
-  --muted-foreground: 240 4% 46%;
-  --accent: 240 5% 96%;
-  --accent-foreground: 240 6% 10%;
-  --destructive: 0 84% 60%;
+     Light mode is built by ELEVATION, like the dark palette below, instead of
+     white-on-white: canvas 98% → card 100% → popover 100% + shadow. Before,
+     --background and --card were BOTH pure white, so a card only existed
+     because of its border, and every screen came out flat. The canvas being a
+     touch darker than the card is what lets a surface read as lifted. */
+  --background: 158 22% 97.6%;
+  --foreground: 165 22% 11%;
+  --border: 156 14% 89%;
+  --input: 156 15% 85%;
+
+  --secondary: 155 18% 95%;
+  --secondary-foreground: 165 20% 13%;
+  --muted: 155 18% 95%;
+  /* 40% instead of the kit's 46%. Measured in the browser: 5.08:1 on the
+     canvas and 5.32:1 on a card — AA for body text either way. */
+  --muted-foreground: 162 9% 40%;
+  --accent: 155 20% 93%;
+  --accent-foreground: 165 20% 13%;
+  --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 98%;
   --card: 0 0% 100%;
-  --card-foreground: 240 10% 4%;
+  --card-foreground: 165 22% 11%;
   --popover: 0 0% 100%;
-  --popover-foreground: 240 10% 4%;
+  --popover-foreground: 165 22% 11%;
+
+  /* Shadows are TINTED with the brand's hue, never neutral black. A pure
+     black shadow over a tinted canvas greys it out; a shadow that carries the
+     same hue as the surface under it reads as depth instead of dirt. */
+  --shadow-color: 165 30% 14%;
+
+  /* One radius, scaled. Every corner in the app derives from this line, so
+     the roundness of the product is a single decision and not a per-component
+     guess (the usual rounded-md here / rounded-lg there drift). */
+  --radius: 0.625rem;
 
   /* ── CLIENT BRAND COLOR ────────────────────────────────────────────────
      The only per-client parameter (DESIGN.md §1.5). Deep pitch green — the
@@ -55,17 +77,22 @@
    small deltas, so cards need a real +6pt step to lift off the canvas. The
    faint teal tint keeps it coherent with the brand. */
 .dark {
-  --background: 172 14% 8%;
-  --foreground: 0 0% 95%;
-  --border: 172 10% 24%;
-  --input: 172 10% 24%;
+  --background: 168 14% 8%;
+  --foreground: 150 8% 95%;
+  /* 20%, not 24%: on a 14% card a 24% border draws a visible grey rule around
+     every single box. A border should say "this surface ends here", not sketch
+     a wireframe over the whole screen. */
+  --border: 168 10% 20%;
+  --input: 168 10% 24%;
 
-  --secondary: 172 12% 16%;
-  --secondary-foreground: 0 0% 95%;
-  --muted: 172 12% 16%;
-  --muted-foreground: 172 8% 64%;
-  --accent: 172 12% 19%;
-  --accent-foreground: 0 0% 95%;
+  --secondary: 168 12% 16%;
+  --secondary-foreground: 150 8% 95%;
+  --muted: 168 12% 16%;
+  --muted-foreground: 165 8% 62%;
+  /* Nudged toward the brand hue so row hovers and ghost buttons read as the
+     product's own green-grey, matching what --accent does in light mode. */
+  --accent: 166 14% 19%;
+  --accent-foreground: 150 8% 95%;
   --destructive: 0 72% 56%;
   --destructive-foreground: 0 0% 98%;
   --card: 172 13% 14%;
@@ -114,9 +141,67 @@
   --color-popover: hsl(var(--popover));
   --color-popover-foreground: hsl(var(--popover-foreground));
 
-  --font-sans: var(--font-inter);
+  /* ── Tipografia ────────────────────────────────────────────────────────
+     Plus Jakarta Sans reemplaza a Inter como cara del CRM. Inter es la fuente
+     por defecto de medio internet: aunque este bien elegida, hace que un
+     producto se parezca a todos los demas. Jakarta tiene letras con caracter
+     propio (la a, la g, la y) y sigue siendo una grotesca de interfaz, legible
+     en tablas densas. La landing NO cambia: mas abajo vuelve a Inter dentro de
+     .landing-root. */
+  --font-sans: var(--font-jakarta), var(--font-inter);
   /* Solo la landing la carga (src/app/page.tsx). Ver design-overrides.md. */
-  --font-display: var(--font-varela), var(--font-inter);
+  --font-display: var(--font-varela), var(--font-jakarta), var(--font-inter);
+
+  /* ── Radios ────────────────────────────────────────────────────────────
+     Derivados de --radius, no elegidos de a uno. Asi la redondez del producto
+     es UNA decision y no el goteo habitual de rounded-md aca y rounded-lg
+     alla. */
+  --radius-sm: calc(var(--radius) - 0.25rem);
+  --radius-md: calc(var(--radius) - 0.125rem);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 0.25rem);
+  --radius-2xl: calc(var(--radius) + 0.625rem);
+
+  /* ── Elevacion ─────────────────────────────────────────────────────────
+     Reemplaza la escala de sombras de Tailwind, que es negro puro. Estas
+     llevan el tinte de --shadow-color, asi que sobre el lienzo verdoso
+     ensombrecen sin ensuciar. Cada nivel son DOS capas: uno de contacto, bien
+     corto, y uno difuso. Una sola capa es lo que hace que una sombra parezca
+     una mancha en vez de un objeto apoyado. */
+  --shadow-2xs: 0 1px 1px hsl(var(--shadow-color) / 0.04);
+  --shadow-xs: 0 1px 2px hsl(var(--shadow-color) / 0.05);
+  --shadow-sm: 0 1px 2px hsl(var(--shadow-color) / 0.05), 0 1px 3px hsl(var(--shadow-color) / 0.06);
+  --shadow-md: 0 1px 2px hsl(var(--shadow-color) / 0.05), 0 6px 14px -4px hsl(var(--shadow-color) / 0.10);
+  --shadow-lg: 0 2px 4px hsl(var(--shadow-color) / 0.05), 0 12px 28px -8px hsl(var(--shadow-color) / 0.16);
+  --shadow-xl: 0 4px 8px hsl(var(--shadow-color) / 0.06), 0 24px 48px -12px hsl(var(--shadow-color) / 0.20);
+
+  /* ── Movimiento ────────────────────────────────────────────────────────
+     Cambia el default de TODA utilidad transition-*. Tailwind trae 150ms con
+     la curva de Material, que es el ritmo que uno reconoce al instante en
+     cualquier plantilla. 200ms entra en la ventana de 200-300ms que pide el
+     estilo Soft UI Evolution, y la curva arranca rapido y frena largo: la
+     interfaz responde de inmediato y se acomoda sola. */
+  --default-transition-duration: 200ms;
+  --default-transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* La landing conserva Inter tal cual estaba. Es un subarbol con su propia
+   font-family, asi que gana sobre la del body sin tocar un solo archivo suyo;
+   los titulos con font-display siguen ganando sobre esta regla. */
+.landing-root {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* El movimiento es preferencia del usuario, no decoracion nuestra. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Clamp the document to the viewport width: without this, one element that
@@ -546,5 +631,17 @@ body:has(.landing-root) {
   ::backdrop,
   ::file-selector-button {
     border-color: var(--color-border);
+  }
+
+  /* Tailwind v4 dejo de poner `cursor: pointer` en los botones: su preflight
+     los alinea con el default del navegador, que es la flecha. Medido en
+     /empresas: 27 de 27 botones visibles salian con `cursor: default` mientras
+     los <a> si mostraban la manito. El resultado es una app donde la mitad de
+     lo clickeable no se siente clickeable, y no se nota leyendo el codigo
+     porque no hay ninguna clase equivocada: falta una que antes venia sola.
+     `:not(:disabled)` para que un boton deshabilitado no mienta. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
   }
 }

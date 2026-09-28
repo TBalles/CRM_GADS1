@@ -24,7 +24,15 @@ export const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDi
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("rounded-lg border bg-card text-card-foreground shadow-sm", className)}
+      className={cn(
+        // The border is at 70% so it reads as the EDGE of a lifted surface
+        // rather than a drawn rule. What separates the card from the canvas is
+        // now the elevation step (tinted canvas vs white card) plus a soft
+        // shadow; the border only seats that edge. Full-strength borders on
+        // every box are what turn a screen into a wireframe.
+        "rounded-xl border border-border/70 bg-card text-card-foreground shadow-sm",
+        className,
+      )}
       {...props}
     />
   ),
@@ -84,20 +92,37 @@ type ButtonVariant =
   | "link";
 type ButtonSize = "default" | "sm" | "lg" | "icon";
 
+/**
+ * A filled button is a physical object, not a coloured rectangle. Each solid
+ * variant carries a 1px inner highlight along its top edge (the light catching
+ * the bevel) and a shadow tinted with --shadow-color instead of black. That
+ * pairing is the whole difference between a surface that looks pressed out of
+ * the page and the flat swatch every component library ships by default.
+ */
+const LIFT =
+  "shadow-[0_1px_2px_hsl(var(--shadow-color)/0.20),inset_0_1px_0_hsl(0_0%_100%/0.15)] " +
+  "hover:shadow-[0_3px_10px_-3px_hsl(var(--shadow-color)/0.30),inset_0_1px_0_hsl(0_0%_100%/0.15)] " +
+  "active:shadow-[inset_0_1px_2px_hsl(var(--shadow-color)/0.22)]";
+
 const BUTTON_VARIANTS: Record<ButtonVariant, string> = {
   // `primary` aliases the brand colour, so the default button IS the green one.
-  default: "bg-primary text-primary-foreground hover:bg-primary/90",
-  destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-  outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-  secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+  default: `bg-primary text-primary-foreground hover:bg-primary/92 ${LIFT}`,
+  destructive: `bg-destructive text-destructive-foreground hover:bg-destructive/92 ${LIFT}`,
+  // Hairline shadow only: an outline button is a surface resting ON the page,
+  // not lifted off it, so it gets a seat and not a lift.
+  outline:
+    "border border-input bg-background shadow-[0_1px_2px_hsl(var(--shadow-color)/0.05)] hover:border-border hover:bg-accent hover:text-accent-foreground",
+  secondary:
+    "bg-secondary text-secondary-foreground shadow-[0_1px_2px_hsl(var(--shadow-color)/0.05)] hover:bg-secondary/80",
   ghost: "hover:bg-accent hover:text-accent-foreground",
   link: "text-primary underline-offset-4 hover:underline",
 };
 
+// Heights are untouched: they are the touch targets (44px rule lives here).
 const BUTTON_SIZES: Record<ButtonSize, string> = {
   default: "h-10 px-4 py-2",
-  sm: "h-9 rounded-md px-3",
-  lg: "h-11 rounded-md px-8",
+  sm: "h-9 px-3",
+  lg: "h-11 px-8",
   icon: "h-10 w-10",
 };
 
@@ -115,7 +140,11 @@ export function buttonClass({
   className,
 }: { variant?: ButtonVariant; size?: ButtonSize; className?: string } = {}) {
   return cn(
-    "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+    // `active:translate-y-px` is the one pixel that makes a button feel like a
+    // button: the press is acknowledged by the surface moving, before any
+    // network round-trip comes back. Transitions list their properties instead
+    // of `transition-colors` so the shadow and the press animate too.
+    "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-[background-color,border-color,box-shadow,color,transform] active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none",
     BUTTON_VARIANTS[variant],
     BUTTON_SIZES[size],
     className,
@@ -144,7 +173,13 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
       type={type}
       ref={ref}
       className={cn(
-        "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:focus-visible:ring-destructive/30",
+        // A field is a WELL, not a box: --background is a step darker than the
+        // card it sits on (in both themes), and the inset hairline pushes it
+        // further in. Focus replaces the stock ring-2 + ring-offset-2 — the
+        // detached double halo every shadcn app wears — with the border taking
+        // the brand colour and a 3px soft glow around it. Still a 3px
+        // indicator at 6.3:1, so WCAG 2.4.13 is satisfied, just not shouted.
+        "flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-[inset_0_1px_2px_hsl(var(--shadow-color)/0.05)] transition-[border-color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:shadow-[0_0_0_3px_hsl(var(--ring)/0.16)] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:focus-visible:shadow-[0_0_0_3px_hsl(var(--destructive)/0.18)]",
         className,
       )}
       {...props}
@@ -161,7 +196,8 @@ export const Textarea = React.forwardRef<
     ref={ref}
     rows={rows}
     className={cn(
-      "w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 placeholder:text-muted-foreground resize-none aria-invalid:border-destructive",
+      // Same well treatment as Input, so a form reads as one material.
+      "w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-[inset_0_1px_2px_hsl(var(--shadow-color)/0.05)] outline-none transition-[border-color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:shadow-[0_0_0_3px_hsl(var(--ring)/0.16)] aria-invalid:border-destructive",
       className,
     )}
     {...props}
@@ -265,7 +301,10 @@ export const Pill = ({
 }) => (
   <span
     className={cn(
-      "inline-flex max-w-full items-center gap-1 truncate rounded-full px-2.5 py-0.5 text-xs font-semibold",
+      // `ring-current/15` picks up whatever hue the tone set on the text, so a
+      // single line gives all eleven tones a matching edge. Without it a pill
+      // is a flat blob of colour; with it, it's a chip.
+      "inline-flex max-w-full items-center gap-1 truncate rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ring-current/15",
       TONOS[tono ?? (typeof children === "string" ? tonoPara(children) : "gris")],
       className,
     )}
@@ -292,7 +331,9 @@ export const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
+  // A tinted band, not just a rule: the header stops being "the first row" and
+  // becomes the label strip the rows hang from.
+  <thead ref={ref} className={cn("bg-muted/45 [&_tr]:border-b", className)} {...props} />
 ));
 TableHeader.displayName = "TableHeader";
 
@@ -308,7 +349,14 @@ export const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttribut
   ({ className, ...props }, ref) => (
     <tr
       ref={ref}
-      className={cn("border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted", className)}
+      // Row separators at 55%: strong enough to track a long row across, faint
+      // enough that fifty rows don't turn the table into a grid of lines. The
+      // hover tint carries the brand hue (--accent is brand-family now), so
+      // pointing at a row feels like part of the product, not a grey wash.
+      className={cn(
+        "border-b border-border/55 transition-colors hover:bg-accent/50 data-[state=selected]:bg-accent",
+        className,
+      )}
       {...props}
     />
   ),

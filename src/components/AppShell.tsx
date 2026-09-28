@@ -62,14 +62,35 @@ function NavItem({
       title={collapsed ? label : undefined}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "group flex w-full items-center rounded-md px-3 py-2 text-sm font-medium transition-all",
+        // The active item used to be a solid brand-filled block. A saturated
+        // slab in the sidebar is the loudest element on screen competing with
+        // the content it is supposed to introduce, and it is the single most
+        // recognisable tell of a generated dashboard. Now: a faint brand wash,
+        // the icon in brand colour, and a 3px bar at the edge. Three quiet
+        // signals instead of one shout -- and the state was never colour-only
+        // anyway, aria-current carries it.
+        "group relative flex w-full items-center rounded-lg px-3 py-2 text-sm transition-colors",
         active
-          ? "bg-primary text-primary-foreground shadow-sm"
-          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+          ? "bg-brand/[0.09] font-semibold text-foreground"
+          : "font-medium text-muted-foreground hover:bg-accent/70 hover:text-foreground",
         collapsed && "justify-center px-0",
       )}
     >
-      <Icon className="h-4 w-4 shrink-0" />
+      {active && (
+        <span
+          aria-hidden="true"
+          className={cn(
+            "absolute top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-brand",
+            collapsed ? "left-1" : "left-0",
+          )}
+        />
+      )}
+      <Icon
+        className={cn(
+          "h-4 w-4 shrink-0 transition-colors",
+          active ? "text-brand" : "text-muted-foreground group-hover:text-foreground",
+        )}
+      />
       {!collapsed && <span className="ml-3 truncate">{label}</span>}
     </Link>
   );
@@ -232,7 +253,7 @@ export default function AppShell({
       </aside>
 
       {/* ── Mobile header ───────────────────────────────────────────── */}
-      <header className="fixed left-0 right-0 top-0 z-30 flex h-16 items-center justify-between gap-3 border-b bg-background px-4 md:hidden">
+      <header className="fixed left-0 right-0 top-0 z-30 flex h-16 items-center justify-between gap-3 border-b bg-card/90 px-4 backdrop-blur-sm md:hidden">
         <div className="flex min-w-0 items-center gap-3">
           <button
             type="button"
@@ -292,7 +313,11 @@ export default function AppShell({
           the scroll area — a margin would push the box past the shell, which is
           overflow-hidden. `md:pt-8` is explicit because `md:p-8` alone does not
           beat `pt-*` in Tailwind's output order. */}
-      <main className="min-w-0 flex-1 overflow-y-auto bg-secondary/30 p-3 pt-[4.75rem] md:p-8 md:pt-8">
+      {/* `bg-background` is now the tinted canvas the whole elevation system
+          rests on, so the content area no longer needs `bg-secondary/30` to
+          fake a step away from white. Sidebar (card white) → canvas (tinted) →
+          cards (white, lifted) is one coherent ladder. */}
+      <main className="min-w-0 flex-1 overflow-y-auto bg-background p-3 pt-[4.75rem] md:p-8 md:pt-8">
         <div className="mx-auto w-full max-w-7xl">{children}</div>
       </main>
 
