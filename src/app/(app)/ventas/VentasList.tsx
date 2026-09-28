@@ -12,7 +12,7 @@ import {
   Timer,
 } from "lucide-react";
 import Drawer from "@/components/Drawer";
-import { Badge, Card, Button, Input } from "@/components/ui/UIComponents";
+import { Badge, Card, Button, Input, PageHeader } from "@/components/ui/UIComponents";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { OverlayCarga } from "@/components/ui/OverlayCarga";
 import { formatMoney } from "@/lib/money";
@@ -107,33 +107,28 @@ export default function VentasList({
   return (
     <div className="flex w-full flex-col gap-4">
       <OverlayCarga visible={actualizando} texto="Actualizando…" />
-      <div className="flex shrink-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="hidden shrink-0 md:block">
-          <h1 className="text-2xl font-bold tracking-tight">Ventas</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Historial de entregas. Es de acá que salen las alertas de recambio.
-          </p>
+      <PageHeader
+        titulo="Ventas"
+        meta={query.trim() ? `${filtered.length} de ${ventas.length} ventas` : `${ventas.length} ventas registradas`}
+        bajada="Historial de entregas. Es de acá que salen las alertas de recambio."
+      >
+        <div className="relative min-w-[7rem] flex-1 sm:w-64 sm:flex-none">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar cliente, comprobante o producto…"
+            aria-label="Buscar venta"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-9 pl-8 text-sm"
+          />
         </div>
-
-        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-          <div className="relative min-w-[7rem] flex-1 sm:w-64 sm:flex-none">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Buscar cliente, comprobante o producto…"
-              aria-label="Buscar venta"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="h-9 pl-8 text-sm"
-            />
-          </div>
-          {puedeEditar && (
-            <Button onClick={() => setOpen(true)} className="h-9 shrink-0 gap-1.5 px-3 text-sm">
-              <Plus className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Nueva venta</span>
-            </Button>
-          )}
-        </div>
-      </div>
+        {puedeEditar && (
+          <Button onClick={() => setOpen(true)} className="h-9 shrink-0 gap-1.5 px-3 text-sm">
+            <Plus className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Nueva venta</span>
+          </Button>
+        )}
+      </PageHeader>
 
       {!ventas.length ? (
         <EmptyState

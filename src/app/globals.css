@@ -151,6 +151,9 @@
   --font-sans: var(--font-jakarta), var(--font-inter);
   /* Solo la landing la carga (src/app/page.tsx). Ver design-overrides.md. */
   --font-display: var(--font-varela), var(--font-jakarta), var(--font-inter);
+  /* Solo para NUMEROS: importes, conteos, la cifra del encabezado. Ver el
+     comentario en src/app/layout.tsx. */
+  --font-mono: var(--font-jetbrains), ui-monospace, "Cascadia Mono", monospace;
 
   /* ── Radios ────────────────────────────────────────────────────────────
      Derivados de --radius, no elegidos de a uno. Asi la redondez del producto

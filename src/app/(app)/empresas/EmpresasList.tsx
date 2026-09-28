@@ -16,7 +16,16 @@ import {
 } from "lucide-react";
 import Drawer from "@/components/Drawer";
 import RowActions from "@/components/RowActions";
-import { Avatar, AvatarFallback, Badge, Button, Card, Input, initials } from "@/components/ui/UIComponents";
+import {
+  Avatar,
+  AvatarFallback,
+  Badge,
+  Button,
+  Card,
+  Input,
+  PageHeader,
+  initials,
+} from "@/components/ui/UIComponents";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { cn } from "@/lib/utils";
 import EmpresaForm from "./EmpresaForm";
@@ -141,37 +150,35 @@ export default function EmpresasList({
   return (
     <div className="flex w-full flex-col gap-4">
       {/* HEADER + TOOLBAR (DESIGN.md §4.4) */}
-      <div className="flex shrink-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="hidden shrink-0 md:block">
-          <h1 className="text-2xl font-bold tracking-tight">Empresas</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Clubes, canchas, complejos y escuelas de fútbol. Desplegá una empresa para ver sus
-            contactos.
-          </p>
+      <PageHeader
+        titulo="Empresas"
+        meta={
+          query.trim()
+            ? `${filtered.length} de ${empresasState.length} empresas`
+            : `${empresasState.length} empresas · ${contactosState.length} contactos`
+        }
+        bajada="Clubes, canchas, complejos y escuelas de fútbol. Desplegá una empresa para ver sus contactos."
+      >
+        <div className="relative min-w-[7rem] flex-1 sm:w-64 sm:flex-none">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar empresa o contacto…"
+            aria-label="Buscar empresa o contacto"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-9 pl-8 text-sm"
+          />
         </div>
-
-        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-          <div className="relative min-w-[7rem] flex-1 sm:w-64 sm:flex-none">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Buscar empresa o contacto…"
-              aria-label="Buscar empresa o contacto"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="h-9 pl-8 text-sm"
-            />
-          </div>
-          {puedeEditar && (
-            <Button
-              onClick={() => openDrawer({ type: "empresa", mode: "create" })}
-              className="h-9 shrink-0 gap-1.5 px-3 text-sm"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Nueva empresa</span>
-            </Button>
-          )}
-        </div>
-      </div>
+        {puedeEditar && (
+          <Button
+            onClick={() => openDrawer({ type: "empresa", mode: "create" })}
+            className="h-9 shrink-0 gap-1.5 px-3 text-sm"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Nueva empresa</span>
+          </Button>
+        )}
+      </PageHeader>
 
       {/* LISTA */}
       {!empresasState.length ? (

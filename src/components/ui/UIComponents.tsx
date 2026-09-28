@@ -426,6 +426,70 @@ export const initials = (name: string) =>
     .toUpperCase() || "?";
 
 /* ============================================================================
+   Page header
+   ========================================================================== */
+
+/**
+ * La cabecera de una pantalla del CRM.
+ *
+ * Antes cada modulo repetia el mismo bloque a mano: h1 de 2xl, bajada gris y
+ * la barra de acciones al costado. Ocho pantallas identicas es lo que hace que
+ * una aplicacion se sienta una plantilla -- no hay masthead, no hay jerarquia,
+ * todo arranca igual.
+ *
+ * Tres cambios sobre eso:
+ *   - El titulo pesa de verdad (extrabold, interletrado negativo, sin altura
+ *     de linea de sobra). Un titulo es un titulo, no un texto mas grande.
+ *   - `meta` es la linea que faltaba: las CIFRAS VIVAS de la pantalla, en
+ *     monoespaciada. No es decoracion, es informacion que hoy hay que contar a
+ *     mano mirando la lista.
+ *   - La regla de abajo separa el chrome del contenido, asi la pagina empieza
+ *     en algun lado en vez de ser una pila de cajas.
+ *
+ * En mobile el titulo no se muestra: el nombre del modulo ya vive en la barra
+ * superior, y repetirlo se come media pantalla.
+ */
+export function PageHeader({
+  titulo,
+  bajada,
+  meta,
+  tituloEnMobile,
+  children,
+}: {
+  titulo: string;
+  bajada?: React.ReactNode;
+  /** Cifras vivas de la pantalla, p. ej. "7 empresas · 10 contactos". */
+  meta?: React.ReactNode;
+  /**
+   * Mostrar el titulo tambien en mobile. Solo lo necesita el panel de
+   * plataforma (/admin), cuya barra superior no lleva el nombre de la
+   * pantalla; en el CRM lo lleva, y repetirlo se come media pantalla.
+   */
+  tituloEnMobile?: boolean;
+  /** Barra de herramientas: buscador, filtros y la accion principal. */
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="flex shrink-0 flex-col gap-4 border-b pb-4 lg:flex-row lg:items-end lg:justify-between lg:gap-8">
+      <div className={cn("min-w-0", tituloEnMobile ? "block" : "hidden md:block")}>
+        <h1 className="text-[1.75rem] font-extrabold leading-none tracking-[-0.02em]">{titulo}</h1>
+        {meta != null && (
+          <p className="mt-2.5 font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+            {meta}
+          </p>
+        )}
+        {bajada != null && (
+          <p className="mt-2 max-w-[68ch] text-sm text-muted-foreground">{bajada}</p>
+        )}
+      </div>
+      {children != null && (
+        <div className="flex flex-wrap items-center gap-2 lg:justify-end">{children}</div>
+      )}
+    </div>
+  );
+}
+
+/* ============================================================================
    Section title (DESIGN.md §4.6)
    ========================================================================== */
 

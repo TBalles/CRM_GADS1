@@ -9,6 +9,7 @@ import {
   Button,
   Card,
   Input,
+  PageHeader,
   Pill,
   Table,
   TableBody,
@@ -130,34 +131,28 @@ export default function ProductosList({
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <div className="flex shrink-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="hidden shrink-0 md:block">
-          <h1 className="text-2xl font-bold tracking-tight">Productos</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Catálogo de equipamiento. {conSeguimiento} de {items.length} tienen vida útil cargada y
-            generan alertas de recambio.
-          </p>
+      <PageHeader
+        titulo="Productos"
+        meta={query.trim() ? `${filtered.length} de ${items.length} productos` : `${items.length} productos · ${conSeguimiento} con vida útil`}
+        bajada="Catálogo de equipamiento. {conSeguimiento} de {items.length} tienen vida útil cargada y generan alertas de recambio."
+      >
+        <div className="relative min-w-[7rem] flex-1 sm:w-64 sm:flex-none">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar producto…"
+            aria-label="Buscar producto"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-9 pl-8 text-sm"
+          />
         </div>
-
-        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-          <div className="relative min-w-[7rem] flex-1 sm:w-64 sm:flex-none">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Buscar producto…"
-              aria-label="Buscar producto"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="h-9 pl-8 text-sm"
-            />
-          </div>
-          {puedeEditar && (
-            <Button onClick={() => openDrawer(null)} className="h-9 shrink-0 gap-1.5 px-3 text-sm">
-              <Plus className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Nuevo producto</span>
-            </Button>
-          )}
-        </div>
-      </div>
+        {puedeEditar && (
+          <Button onClick={() => openDrawer(null)} className="h-9 shrink-0 gap-1.5 px-3 text-sm">
+            <Plus className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Nuevo producto</span>
+          </Button>
+        )}
+      </PageHeader>
 
       {!items.length ? (
         <EmptyState

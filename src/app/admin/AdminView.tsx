@@ -7,7 +7,7 @@ import Drawer from "@/components/Drawer";
 import RowActions from "@/components/RowActions";
 import ConfirmModal from "@/components/ConfirmModal";
 import { Campo, CampoGrupo, FormActions, FormBanner } from "@/components/form";
-import { Button, Card, Input, Pill } from "@/components/ui/UIComponents";
+import { Button, Card, Input, PageHeader, Pill } from "@/components/ui/UIComponents";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { OverlayCarga } from "@/components/ui/OverlayCarga";
@@ -151,29 +151,26 @@ export default function AdminView({ clientes, miOrgId }: { clientes: Cliente[]; 
   return (
     <div className="flex w-full flex-col gap-4">
       <OverlayCarga visible={ocupado || refrescando} texto={ocupado ? "Guardando…" : "Actualizando…"} />
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Clientes</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Empresas que usan el CRM. Cada una ve solo sus propios datos.
-          </p>
+      <PageHeader
+        titulo="Clientes"
+        tituloEnMobile
+        meta={query.trim() ? `${filtrados.length} de ${clientes.length} clientes` : `${clientes.length} clientes en la plataforma`}
+        bajada="Empresas que usan el CRM. Cada una ve solo sus propios datos."
+      >
+        <div className="relative flex-1 sm:w-64 sm:flex-none">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar cliente o admin…"
+            aria-label="Buscar cliente"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-9 pl-8 text-sm"
+          />
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1 sm:w-64 sm:flex-none">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Buscar cliente o admin…"
-              aria-label="Buscar cliente"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="h-9 pl-8 text-sm"
-            />
-          </div>
-          <Button onClick={() => abrir({ tipo: "nuevo" })} className="h-9 shrink-0 gap-1.5 px-3 text-sm">
-            <Plus className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Nuevo cliente</span>
-          </Button>
-        </div>
-      </div>
+        <Button onClick={() => abrir({ tipo: "nuevo" })} className="h-9 shrink-0 gap-1.5 px-3 text-sm">
+          <Plus className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Nuevo cliente</span>
+        </Button>
+      </PageHeader>
 
       {linkManual && (
         <Card className="border-brand/40 p-4">

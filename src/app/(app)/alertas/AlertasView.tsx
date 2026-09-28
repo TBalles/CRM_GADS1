@@ -12,7 +12,7 @@ import {
   Package,
   Search,
 } from "lucide-react";
-import { Badge, Button, Card, Input, Pill } from "@/components/ui/UIComponents";
+import { Badge, Button, Card, Input, PageHeader, Pill } from "@/components/ui/UIComponents";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { KpiCard } from "@/components/ui/KpiCard";
 import { useToast } from "@/components/ui/Toast";
@@ -149,13 +149,11 @@ export default function AlertasView({
   return (
     <div className="flex w-full flex-col gap-4">
       <OverlayCarga visible={pendingId !== null} texto="Enviando…" />
-      <div className="hidden md:block">
-        <h1 className="text-2xl font-bold tracking-tight">Alertas de recambio</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Equipos entregados que cumplieron, o están por cumplir, su vida útil estimada. El mensaje
-          ya viene armado: revisalo y mandalo.
-        </p>
-      </div>
+      <PageHeader
+        titulo="Alertas de recambio"
+        meta={`${vencidas} vencidas · ${porVencer} por vencer · ${sinAvisar} sin avisar`}
+        bajada="Equipos entregados que cumplieron, o están por cumplir, su vida útil estimada. El mensaje ya viene armado: revisalo y mandalo."
+      />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <KpiCard icon={CalendarClock} label="Vencidas" value={String(vencidas)} />

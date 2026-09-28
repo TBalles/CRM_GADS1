@@ -22,6 +22,7 @@ import {
   Button,
   Card,
   Input,
+  PageHeader,
   SectionTitle,
   Table,
   TableBody,
@@ -233,42 +234,37 @@ export default function OportunidadesView({
   return (
     <div className="flex w-full flex-col gap-4">
       {/* HEADER + TOOLBAR */}
-      <div className="flex shrink-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="hidden shrink-0 md:block">
-          <h1 className="text-2xl font-bold tracking-tight">Oportunidades</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Embudo comercial y listado. Arrastrá una tarjeta a otra etapa o editá cualquier fila.
-          </p>
+      <PageHeader
+        titulo="Oportunidades"
+        meta={query.trim() || etapaFilter ? `${filtered.length} de ${items.length} oportunidades` : `${items.length} oportunidades abiertas`}
+        bajada="Embudo comercial y listado. Arrastrá una tarjeta a otra etapa o editá cualquier fila."
+      >
+        <div className="relative min-w-[7rem] flex-1 sm:w-60 sm:flex-none">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar oportunidad…"
+            aria-label="Buscar oportunidad"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-9 pl-8 text-sm"
+          />
         </div>
-
-        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-          <div className="relative min-w-[7rem] flex-1 sm:w-60 sm:flex-none">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Buscar oportunidad…"
-              aria-label="Buscar oportunidad"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="h-9 pl-8 text-sm"
-            />
-          </div>
-          <div className="w-full sm:w-44">
-            <Select
-              value={etapaFilter}
-              onChange={setEtapaFilter}
-              placeholder="Todas las etapas"
-              options={[{ value: "", label: "Todas las etapas" }, ...selectOptions]}
-              className="h-9"
-            />
-          </div>
-          {puedeEditar && (
-            <Button onClick={() => openDrawer("new")} className="h-9 shrink-0 gap-1.5 px-3 text-sm">
-              <Plus className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Nueva oportunidad</span>
-            </Button>
-          )}
+        <div className="w-full sm:w-44">
+          <Select
+            value={etapaFilter}
+            onChange={setEtapaFilter}
+            placeholder="Todas las etapas"
+            options={[{ value: "", label: "Todas las etapas" }, ...selectOptions]}
+            className="h-9"
+          />
         </div>
-      </div>
+        {puedeEditar && (
+          <Button onClick={() => openDrawer("new")} className="h-9 shrink-0 gap-1.5 px-3 text-sm">
+            <Plus className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Nueva oportunidad</span>
+          </Button>
+        )}
+      </PageHeader>
 
       {/* EMBUDO — sin scroll horizontal: 2 columnas en mobile, 6 en desktop */}
       <Card>

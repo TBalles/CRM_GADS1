@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Inter, JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { APP_NAME } from "@/lib/brand";
 import { ToastProvider } from "@/components/ui/Toast";
@@ -24,6 +24,17 @@ const jakarta = Plus_Jakarta_Sans({
   display: "swap",
 });
 
+// Numbers only -- amounts, counts, the headline figure. A CRM is a measuring
+// instrument, and a monospaced numeral set says so: digits sit on a fixed
+// grid, so a column of money reads as a scale instead of as prose. The skill's
+// dashboard pairing suggested Fira Code; JetBrains Mono is the same idea with
+// cleaner numerals and no programming ligatures we would never use.
+const mono = JetBrains_Mono({
+  variable: "--font-jetbrains",
+  subsets: ["latin"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: APP_NAME,
   description: "CRM para proveedores y distribuidores de equipamiento deportivo",
@@ -44,7 +55,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="es"
       suppressHydrationWarning
-      className={`${inter.variable} ${jakarta.variable} h-full antialiased`}
+      className={`${inter.variable} ${jakarta.variable} ${mono.variable} h-full antialiased`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
