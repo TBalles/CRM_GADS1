@@ -95,11 +95,14 @@ export default async function DashboardPage() {
   });
 
   // Ranking: the companies carrying the most pipeline value. Magnitude, so a
-  // single hue and top-6 to keep the list readable.
+  // single hue and top-6 to keep the list readable. Opportunities with no
+  // company stay out: "Sin empresa asignada" is not a client, and ranking it
+  // third among clients read as if it were. They still count in the masthead.
   const porEmpresa = new Map<string, { label: string; monto: number; count: number }>();
   for (const o of items) {
-    const key = o.empresa?.id ?? "__none__";
-    const label = o.empresa?.nombre ?? "Sin empresa asignada";
+    if (!o.empresa) continue;
+    const key = o.empresa.id;
+    const label = o.empresa.nombre;
     const prev = porEmpresa.get(key) ?? { label, monto: 0, count: 0 };
     porEmpresa.set(key, {
       label,
