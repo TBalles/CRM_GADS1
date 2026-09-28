@@ -22,6 +22,12 @@ export type Row = {
   value: number;
   /** Secondary figure shown next to the value (e.g. an amount). */
   detail?: string;
+  /**
+   * What the bar length measures, when it is not `value`. A ranking by money
+   * must draw money: bars sized by count under a list sorted by amount read as
+   * a contradiction ($1.9M with half a bar, $421k with a full one).
+   */
+  bar?: number;
   /** Categorical colour — used for the dot and for stacked segments only. */
   color?: string | null;
 };
@@ -36,7 +42,8 @@ export function MagnitudeBars({
   emptyText?: string;
   className?: string;
 }) {
-  const max = Math.max(...rows.map((r) => r.value), 0);
+  const medida = (r: Row) => r.bar ?? r.value;
+  const max = Math.max(...rows.map(medida), 0);
 
   if (!rows.length || max === 0) {
     return <p className="py-8 text-center text-sm text-muted-foreground">{emptyText}</p>;
@@ -56,17 +63,32 @@ export function MagnitudeBars({
               )}
               <span className="truncate text-xs font-medium">{r.label}</span>
             </span>
+            {/* The figure the bar measures is the bold one. */}
             <span className="flex shrink-0 items-baseline gap-2">
               {r.detail && (
-                <span className="text-[11px] tabular-nums text-muted-foreground">{r.detail}</span>
+                <span
+                  className={cn(
+                    "tabular-nums",
+                    r.bar != null ? "text-xs font-bold" : "text-[11px] text-muted-foreground",
+                  )}
+                >
+                  {r.detail}
+                </span>
               )}
-              <span className="text-xs font-bold tabular-nums">{r.value}</span>
+              <span
+                className={cn(
+                  "tabular-nums",
+                  r.bar != null ? "text-[11px] text-muted-foreground" : "text-xs font-bold",
+                )}
+              >
+                {r.value}
+              </span>
             </span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-muted">
             <div
               className="h-full rounded-full bg-brand transition-all duration-500"
-              style={{ width: `${Math.max((r.value / max) * 100, 2)}%` }}
+              style={{ width: `${Math.max((medida(r) / max) * 100, 2)}%` }}
             />
           </div>
         </div>

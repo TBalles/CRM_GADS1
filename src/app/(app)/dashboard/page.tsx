@@ -108,8 +108,8 @@ export default async function DashboardPage() {
     });
   }
   const topEmpresas: Row[] = [...porEmpresa.entries()]
-    .map(([key, v]) => ({ key, label: v.label, value: v.count, detail: formatMoneyCompact(v.monto), monto: v.monto }))
-    .sort((a, b) => b.monto - a.monto || b.value - a.value)
+    .map(([key, v]) => ({ key, label: v.label, value: v.count, detail: formatMoneyCompact(v.monto), bar: v.monto }))
+    .sort((a, b) => b.bar - a.bar || b.value - a.value)
     .slice(0, 6);
 
   return (
