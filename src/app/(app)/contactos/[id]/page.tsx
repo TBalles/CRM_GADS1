@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { exigirPermiso } from "@/lib/sesion";
 import { esUuid } from "@/lib/clientes";
+import { leerCuenta360 } from "@/lib/cuenta360";
+import { hoyAR } from "@/lib/oportunidades";
 import ContactoDetalle from "./ContactoDetalle";
 
 export const metadata = { title: "Contacto" };
@@ -19,33 +21,17 @@ export default async function ContactoPage({ params }: { params: Promise<{ id: s
   const puedeVerOportunidades = sesion.puede("oportunidades.ver");
   const puedeVerVentas = sesion.puede("ventas.ver");
   const puedeVerActividades = sesion.puede("bitacora.ver");
-  const nada = Promise.resolve({ data: null });
+  const puedeVerAvisos = sesion.puede("alertas.ver");
 
-  const [
-    { data: empresas },
-    { data: oportunidades },
-    { data: etapas },
-    { data: ventas },
-    { data: actividades },
-    { data: tipos },
-    { data: perfiles },
-    { data: origenes },
-  ] = await Promise.all([
+  const [{ data: empresas }, cuenta, { data: tipos }, { data: perfiles }, { data: origenes }] = await Promise.all([
     supabase.from("empresas").select("id, nombre, estado").order("nombre"),
-    puedeVerOportunidades
-      ? supabase
-          .from("oportunidades")
-          .select("id, titulo, monto, estado, etapa_id, empresa_id")
-          .eq("contacto_id", id)
-          .order("created_at", { ascending: false })
-      : nada,
-    puedeVerOportunidades ? supabase.from("etapas").select("id, nombre") : nada,
-    puedeVerVentas
-      ? supabase.from("ventas").select("id, fecha, comprobante").eq("contacto_id", id).order("fecha", { ascending: false })
-      : nada,
-    puedeVerActividades
-      ? supabase.from("bitacora_entradas").select("*").eq("contacto_id", id).order("ocurrido_en", { ascending: false })
-      : nada,
+    // F5: oportunidades (con su historial), ventas (con ítems y avisos) y actividades de este contacto, acotadas.
+    leerCuenta360(supabase, "contacto_id", id, {
+      oportunidades: puedeVerOportunidades,
+      ventas: puedeVerVentas,
+      actividades: puedeVerActividades,
+      avisos: puedeVerAvisos,
+    }),
     supabase.from("tipos_actividad").select("id, nombre, codigo, activo, orden").order("orden").order("nombre"),
     supabase.from("perfiles").select("id, nombre, email, activo").eq("es_superadmin", false).order("nombre"),
     supabase.from("origenes").select("id, nombre, activo").order("orden").order("nombre"),
@@ -55,24 +41,20 @@ export default async function ContactoPage({ params }: { params: Promise<{ id: s
   // la actividad no se cuelga de ella (la base la rechazaría).
   const empresaVisible = (empresas ?? []).find((e) => e.id === contacto.empresa_id) ?? null;
 
-  const idsVentas = (ventas ?? []).map((v) => v.id);
-  const { data: items } = idsVentas.length
-    ? await supabase.from("venta_items").select("venta_id, cantidad, precio_unitario").in("venta_id", idsVentas)
-    : { data: [] };
-  const totalPorVenta = new Map<string, number>();
-  for (const it of items ?? []) {
-    totalPorVenta.set(it.venta_id, (totalPorVenta.get(it.venta_id) ?? 0) + it.cantidad * Number(it.precio_unitario ?? 0));
-  }
-
   return (
     <ContactoDetalle
       contacto={contacto}
       empresa={empresaVisible}
       empresas={empresas ?? []}
-      oportunidades={oportunidades ?? []}
-      etapas={etapas ?? []}
-      ventas={(ventas ?? []).map((v) => ({ ...v, total: totalPorVenta.get(v.id) ?? 0 }))}
-      actividades={actividades ?? []}
+      oportunidades={cuenta.oportunidades}
+      etapas={cuenta.etapas}
+      ventas={cuenta.ventas}
+      actividades={cuenta.actividades}
+      cambios={cuenta.cambios}
+      avisos={cuenta.avisos}
+      truncado={cuenta.truncado}
+      primeraCompra={cuenta.primeraCompra}
+      hoy={hoyAR()}
       tipos={tipos ?? []}
       perfiles={(perfiles ?? []).map((p) => ({ id: p.id, nombre: p.nombre ?? p.email ?? "Usuario", activo: p.activo }))}
       origenes={origenes ?? []}
@@ -82,6 +64,7 @@ export default async function ContactoPage({ params }: { params: Promise<{ id: s
       puedeVerOportunidades={puedeVerOportunidades}
       puedeVerVentas={puedeVerVentas}
       puedeVerActividades={puedeVerActividades}
+      puedeVerAvisos={puedeVerAvisos}
       puedeEscribirActividad={sesion.puede("bitacora.escribir")}
     />
   );

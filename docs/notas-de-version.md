@@ -158,8 +158,9 @@ ser del mismo cliente (organización).
 - Toda empresa o contacto creado hoy desde la interfaz queda con estado `potencial`, porque el formulario
   no envía el campo.
 - Los contactos sin empresa (clientes individuales) se listan en `/contactos` desde F1b.
-- Las fichas de empresa y contacto existen desde F1b; la ficha 360 (indicadores, conversión) sigue
-  planificada en F5. El título de cada oportunidad en la ficha lleva al detalle (`/oportunidades/[id]`, F2).
+- Las fichas de empresa y contacto existen desde F1b y desde F5 son una **ficha 360**: "Resumen de la cuenta" e
+  "Historia de la cuenta" (ver [b.16](#b16-ficha-360-tablero-del-responsable-conversión-del-embudo-y-búsqueda-global-f5)).
+  El título de cada oportunidad en la ficha lleva al detalle (`/oportunidades/[id]`, F2).
 - **F3: implementado.** `/empresas` y `/contactos` buscan, filtran y paginan en el servidor (ver [b.14](#b14-búsqueda-filtros-y-paginación-en-el-servidor-f3)). La búsqueda de empresas alcanza razón social, CUIT, email, teléfono, dirección y los nombres, apellidos y mails de sus contactos; la de contactos, nombre y apellido (juntos o por separado), documento, email, teléfono, cargo y nombre de la empresa. Se agregan los filtros "tipo de cliente" (empresas) y "origen" (contactos).
 
 **Cómo probarlo.** Cuenta Vendedor del seed: `/empresas` muestra 4 de las 8 empresas (su cartera). Con
@@ -629,7 +630,7 @@ lista, sin interfaz · **P** Planificado.
 | Embudo comercial configurable | I (F1a, F2) | Etapas en `/configuracion`; el tablero genera sus columnas con las etapas abiertas configuradas |
 | Cambio de etapas con historial | I (F2) | `cambiar_etapa` con observación; el historial se ve en el detalle |
 | Registro de actividades realizadas | I (F1b, F2) | Catálogo de tipos, resultado, oportunidad y cliente individual; también desde el detalle de la oportunidad |
-| Historial comercial de empresas, contactos y oportunidades | I parcial + P | Empresa y contacto: actividades (F1b). Oportunidad: actividades y cambios de etapa unificados (F2). Historial integral del cliente: P (F5) |
+| Historial comercial de empresas, contactos y oportunidades | I parcial + P | Empresa y contacto: actividades (F1b). Oportunidad: actividades y cambios de etapa unificados (F2). Historial integral del cliente (actividades, etapas, ventas y avisos): I (F5, "Historia de la cuenta") |
 | Cierre de oportunidades ganadas o perdidas | I (F2) | `CierreModal`: fecha de cierre, motivo y observación; reabrir con permiso |
 | Registro de motivos de pérdida | I (F1a, F2) | Catálogo en `/configuracion`; el modal de pérdida lo exige |
 | Gestión de etapas, tipos de actividad, orígenes y motivos de pérdida | I (F1a) | `/configuracion` |
@@ -650,7 +651,7 @@ lista, sin interfaz · **P** Planificado.
 | Vendedor: cambia de etapa; registra actividades | I | Tablero, detalle y bitácora |
 | Vendedor: consulta el historial comercial | I | Actividades en las fichas y, en el detalle de la oportunidad, actividades y cambios de etapa (F2) |
 | Vendedor: marca ganadas o perdidas | I (F2) | Desde el menú de la tarjeta o el detalle |
-| Responsable comercial: consulta todo el equipo, supervisa abiertas, ve el embudo | I | Filtro por responsable en empresas, contactos y oportunidades (F3), solo con `clientes.ver_todos` |
+| Responsable comercial: consulta todo el equipo, supervisa abiertas, ve el embudo | I | Filtro por responsable en empresas, contactos y oportunidades (F3), solo con `clientes.ver_todos`; tablero comercial y conversión del embudo (F5) |
 | Responsable comercial: historial de cada negociación | I (F2) | Detalle de la oportunidad |
 | Responsable comercial: revisa ganadas y perdidas | I (F2) | Lista con filtro por estado, motivo y fecha de cierre |
 
@@ -729,7 +730,7 @@ luego F4 (licitaciones); nunca F0 a F3.
 | F2 | Oportunidades completas: detalle, cerrar ganada/perdida con modal de motivo, reabrir, reasignar, kanban dinámico con `cambiar_etapa`, línea de tiempo; actividades genéricas | 2026-10-18 | **Hecha** (`891d663`) |
 | F3 | Búsqueda, filtros y paginación en el servidor en todas las listas | 2026-10-22 | **Hecha** (`1ccb553`; la migración `0010` de índices está pendiente de aplicar) |
 | F4 | Rubro: recambio en un clic, parque instalado, ficha de canchas, licitaciones | 2026-10-28 | **Hecha** (sin commit todavía; la migración `0011` está pendiente de aplicar a mano y, hasta entonces, canchas, licitaciones y el botón de recambio no se muestran) |
-| F5 | Ficha 360, tablero del responsable, conversión del embudo, búsqueda global Ctrl+K | 2026-11-02 | Planificado |
+| F5 | Ficha 360, tablero del responsable, conversión del embudo, búsqueda global Ctrl+K | 2026-11-02 | **Hecha** (sin commit todavía; no necesita migración) |
 | F6 | Presupuesto imprimible; pruebas E2E con Playwright y CI en GitHub Actions | 2026-11-05 | Planificado |
 | F7 | IA opcional: aviso de recambio y resumen de cuenta | 2026-11-08 | Planificado |
 | F8 | Documentación (este conjunto, ya escrito) y manual de usuario en PDF | 2026-11-11 | En curso |
@@ -898,20 +899,22 @@ lectura (3).
 | `/auth/signout` | Con sesión | Cierra sesión (POST) |
 | `/dashboard` | `tablero.ver` | Tablero |
 | `/empresas` | `clientes.ver` | Lista de empresas con filtros y baja lógica |
-| `/empresas/[id]` | `clientes.ver` | Ficha de la empresa: datos, contactos, oportunidades, ventas, actividades |
+| `/empresas/[id]` | `clientes.ver` | Ficha 360 de la empresa: datos, resumen de la cuenta, contactos, oportunidades, ventas e historia (actividades, etapas, ventas, avisos) |
 | `/contactos` | `clientes.ver` | Lista de contactos (de empresa e individuales) |
-| `/contactos/[id]` | `clientes.ver` | Ficha del contacto |
+| `/contactos/[id]` | `clientes.ver` | Ficha 360 del contacto (resumen de la cuenta e historia) |
 | `/oportunidades` | `oportunidades.ver` | Tablero (columnas por etapa abierta) y lista con filtros |
 | `/oportunidades/[id]` | `oportunidades.ver` | Detalle: datos, acciones, línea de tiempo (actividades y cambios de etapa) y auditoría |
 | `/productos` | `productos.ver` | Catálogo |
 | `/ventas` | `ventas.ver` | Historial de ventas |
 | `/alertas` | `alertas.ver` | Recambios vencidos o por vencer |
+| `/tablero-comercial` | `clientes.ver_todos` y `oportunidades.ver` | Tablero del responsable: pipeline por responsable, oportunidades sin actividad (`?dias=7\|14\|30`), ganadas y perdidas del mes (`?mes=aaaa-mm`) y motivos de pérdida |
+| `/embudo` | `oportunidades.ver` y `clientes.ver_todos` | Conversión del embudo por etapa (`?desde=&hasta=&origen=`) |
 | `/usuarios` | `usuarios.gestionar` | Usuarios y roles del cliente |
 | `/configuracion` | `configuracion.gestionar` | Datos de la empresa y logo, etapas, tipos de actividad, orígenes y motivos de pérdida |
 | `/sin-permisos` | Con sesión | Destino cuando el rol no tiene secciones |
 | `/admin` | Superadmin | Panel de plataforma |
 
-Rutas planificadas, aún inexistentes: `/oportunidades/[id]/presupuesto`, `/tablero-comercial`.
+Ruta planificada, aún inexistente: `/oportunidades/[id]/presupuesto`. Sin el permiso, `/tablero-comercial` y `/embudo` llevan a la primera pantalla que el rol puede ver (`rutaInicial`). La búsqueda global (`Ctrl+K`) no es una ruta: es un diálogo del menú que llama a la Server Action `buscarGlobal`.
 
 ---
 
@@ -946,3 +949,63 @@ Rutas planificadas, aún inexistentes: `/oportunidades/[id]/presupuesto`, `/tabl
 dice (lo trata como comodín). Cambiar la fecha de apertura de una licitación ya ganada no se controla. El parque usa la fecha de Argentina y la vista de
 alertas el `current_date` de la base (UTC): entre las 21:00 y las 24:00 pueden diferir un día. Al pasar una licitación a directa
 se conserva su fila de datos.
+
+---
+
+## b.16 Ficha 360, tablero del responsable, conversión del embudo y búsqueda global (F5)
+
+| | |
+|---|---|
+| Estado | **Implementado (F5)**, sin commit todavía |
+| Migraciones | **Ninguna.** Todo se calcula con tablas que ya existen (`0001` a `0007`); no hace falta aplicar nada para que ande |
+| Qué se esconde sin la `0008` a `0011` | Nada de esto depende de ellas |
+
+| Pieza | Estado | Dónde |
+|---|---|---|
+| **Ficha 360** de empresa y de contacto: "Resumen de la cuenta" e "Historia de la cuenta" | Implementado | `src/components/Cuenta360.tsx`, `src/lib/timeline360.ts`, `src/lib/cuenta360.ts` |
+| **Tablero comercial** del responsable | Implementado | `/tablero-comercial`, `src/lib/tablero.ts` |
+| **Conversión del embudo** | Implementado | `/embudo`, `src/lib/embudo.ts` |
+| **Búsqueda global** (Ctrl/Cmd+K) | Implementado | `src/components/PaletaBusqueda.tsx`, Server Action `src/app/(app)/buscar/actions.ts`, `src/lib/paleta.ts` |
+| Menú: grupo **Equipo** | Implementado | `src/lib/navegacion.ts` (la lista única de pantallas y permisos, que usan el menú y la búsqueda) |
+
+- **Resumen de la cuenta.** Arriba de la ficha: primera compra (de toda la cuenta, aunque las ventas mostradas estén recortadas), total comprado, última compra,
+  oportunidades abiertas (cantidad y valor) y días desde el último contacto. Todo sale de las filas que la pantalla ya
+  tiene, sin estimaciones. El contacto se marca en ámbar con ícono y frase ("Hace 45 días: conviene retomar") desde los 31
+  días, y "la cuenta se enfrió" desde los 91; el color nunca va solo. Si el rol no ve la bitácora, no se afirma nada sobre
+  el contacto.
+- **Historia de la cuenta.** Una sola línea de tiempo, mes por mes (horario argentino), con actividades, altas de
+  oportunidades, cambios de etapa (con cierres y reaperturas), compras y avisos de recambio enviados. Chips
+  "Todo / Actividades / Etapas / Ventas / Avisos" (`aria-pressed`, con su cantidad) y "Ver 30 más". Reemplaza la columna
+  "Actividad" de las fichas (las actividades siguen estando, con el mismo dibujo y "Registrar"). Se trae como mucho lo más
+  reciente de cada tipo (200) y, si una cuenta pasa el tope, la pantalla lo dice.
+- **Tablero comercial** (`clientes.ver_todos` y `oportunidades.ver`). Valor en juego del equipo en el marcador; pipeline
+  por responsable (barra = valor, número = cantidad); **abiertas sin actividad** hace 7, 14 o 30 días (`?dias=`, con el
+  responsable, el cliente y de dónde sale la última actividad); **ganadas y perdidas del mes** (`?mes=aaaa-mm`, con
+  flechas) y **por qué se pierde** (ranking de motivos). Es una página de servidor: las lecturas llevan tope (1000) y se avisa
+  si lo tocan.
+- **Conversión del embudo** (`oportunidades.ver` y `clientes.ver_todos`). Por etapa abierta: cuántas oportunidades
+  entraron, cuántas avanzaron (y el porcentaje), la mediana de días en la etapa y cuántas siguen ahí; más la tasa de
+  éxito (ganadas ÷ cerradas) y el ciclo promedio hasta ganar y hasta perder. Se filtra por período de alta
+  (`?desde=&hasta=`) y por origen (`?origen=`). "Cómo se calcula" explica el método en pantalla.
+- **Búsqueda global.** `Ctrl+K` / `⌘K` (o el botón "Buscar…" del menú y el ícono de la barra superior en pantallas chicas)
+  abre un diálogo con campo de búsqueda y lista de resultados (patrón combobox + listbox): flechas, Enter, Escape, foco
+  atrapado y devuelto. Desde 2 letras y con 200 ms de espera busca empresas, contactos, oportunidades y productos (hasta 5
+  de cada uno), solo en lo que el rol puede ver. Con la caja vacía ofrece "Ir a …" las pantallas que el rol puede abrir.
+  En pantallas chicas es una hoja a todo el ancho.
+
+**Cómo probarlo.** Con el Administrador o el Responsable comercial del seed: `/tablero-comercial` y `/embudo`; la
+ficha de "Complejo Fútbol 5 La Tablada" y la de "Club Atlético San Justo" (esta tiene avisos de recambio enviados). El
+Vendedor no ve las dos pantallas del equipo en el menú y, si escribe la URL, vuelve a su primera pantalla; su `Ctrl+K`
+devuelve solo su cartera.
+
+**Límites conocidos.**
+
+1. Los cambios de etapa de la historia salen de `oportunidad_etapas_historial`; una oportunidad anterior a la `0007`
+   arranca en la etapa de ese momento (regla 3.4), y por eso su alta usa `created_at` y no el historial.
+2. La "Primera compra" es la primera venta cargada, no la fecha de alta de la empresa (esa sigue en los datos). Los topes de la historia son por tipo (200 actividades, compras, cambios de etapa y avisos; 100 oportunidades) y se avisan con su número real; el parque instalado lee todos los equipos de la empresa (hasta 1000).
+3. Las actividades del tablero se leen de los últimos 120 días (hasta 1000). Una oportunidad sin actividad en ese tramo (si la lectura se corta antes del umbral va aparte, como "No se pudo comprobar")
+   figura con "más de" o "antes del"; nunca se inventa una fecha.
+4. La conversión mide a la cohorte por fecha de alta y por el estado de hoy; una oportunidad que se reabrió cuenta con su
+   cierre vigente. No hay series en el tiempo ni comparación entre períodos.
+5. Los productos no tienen ficha: el resultado lleva a `/productos?q=<nombre>`.
+6. El navegador no puede abrir un resultado en una pestaña nueva con clic del medio (las filas del diálogo no son links).

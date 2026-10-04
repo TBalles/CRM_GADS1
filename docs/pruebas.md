@@ -8,7 +8,7 @@ pegan en el SQL Editor de Supabase.
 
 | Verificación | Resultado |
 |---|---|
-| `node --test "src/**/*.check.ts"` | **15 archivos, 116 pruebas, 116 pasan, 0 fallan** (con F4: se suman `esquema`, `licitaciones`, `parque`, `canchas` y `recambio`) |
+| `node --test "src/**/*.check.ts"` | **19 archivos, 167 pruebas, 167 pasan, 0 fallan** (con F4: se suman `esquema`, `licitaciones`, `parque`, `canchas` y `recambio`; con F5: `timeline360`, `tablero`, `embudo` y `paleta`) |
 | `npx tsc --noEmit` | Sin errores |
 | `npx eslint src --max-warnings=0` | Sin advertencias |
 | `npx next build` | No se ejecutó al escribir estas notas |
@@ -25,7 +25,7 @@ Contenido: [1. Resumen](#1-resumen) · [2. Self-checks](#2-self-checks-con-node-
 
 | Qué | Cómo se corre | Dónde | Qué prueba |
 |---|---|---|---|
-| Self-checks (15 archivos, 116 pruebas) | `node --test "src/**/*.check.ts"` | Terminal | Lógica pura: dinero, íconos, permisos, mails, mensajes, CUIT, sitio web, vocabulario de clientes, reglas de oportunidades, paginación y búsqueda por URL, errores de esquema faltante, licitaciones, parque instalado, equipamiento sugerido y recambio |
+| Self-checks (19 archivos, 167 pruebas) | `node --test "src/**/*.check.ts"` | Terminal | Lógica pura: dinero, íconos, permisos, mails, mensajes, CUIT, sitio web, vocabulario de clientes, reglas de oportunidades, paginación y búsqueda por URL, errores de esquema faltante, licitaciones, parque instalado, equipamiento sugerido, recambio, ficha 360, tablero del responsable, conversión del embudo y búsqueda global |
 | Tipos | `npx tsc --noEmit` | Terminal | Que todo el TypeScript compile |
 | Lint | `npx eslint src --max-warnings=0` | Terminal | Estilo y errores comunes, sin tolerar advertencias |
 | Build | `npx next build` | Terminal | Que la aplicación se construya (incluye el chequeo de `server-only`) |
@@ -57,6 +57,10 @@ node --test src/lib/email/layout.check.ts
 node --test "src/app/(app)/alertas/plantillas.check.ts"
 node --test src/lib/oportunidades.check.ts
 node --test src/lib/paginacion.check.ts
+node --test src/lib/timeline360.check.ts
+node --test src/lib/tablero.check.ts
+node --test src/lib/embudo.check.ts
+node --test src/lib/paleta.check.ts
 ```
 
 Requiere un Node que ejecute TypeScript directamente; se verificó con Node 24.14.1. *Pendiente de
@@ -72,6 +76,10 @@ confirmar:* la versión mínima de Node. Aparece una advertencia `MODULE_TYPELES
 | `src/lib/oportunidades.check.ts` | 17 | Qué etapas sirven para cada acción (columnas del tablero, cierre a ganada o perdida, reabrir); qué acciones se ofrecen según estado y permisos; validación del cierre (motivo al perder, fecha real no futura, razón al reabrir), probabilidad y fechas; los errores de la base (42501, 23514, 23503, P0001) en palabras; el cambio de resultado (ganada a perdida y al revés) pide razón y motivo, y no admite repetir la fecha del cierre anterior; la línea de tiempo mezcla actividades y cambios de etapa sin mutar y titula cada uno (alta, registro inicial, cierre, reapertura, cambio de resultado); la auditoría traduce campos e ids |
 | `src/lib/paginacion.check.ts` | 14 | **F3.** `filtroOr` hace la búsqueda **literal**: `%`, `_`, `\` y `*` no son comodines de quien escribe, y una coma, un paréntesis o una comilla no rompen el `.or()` de PostgREST (el check emula lo que PostgREST y `ILIKE` hacen con el valor); `leerPaginacion` y los `*Param` rechazan `page=-4`, `pageSize=5000`, un estado inventado o un uuid falso; rango, total de páginas, "Mostrando 21–40 de 134" y la ventana de números con "…"; `urlConParams` conserva los demás parámetros y no escribe los valores por defecto; `leerPagina` detecta la página fuera de rango (`PGRST103`) y propaga los errores de la base en vez de devolver una lista vacía |
 | `src/app/(app)/alertas/plantillas.check.ts` | 10 | Formato de fecha sin zonas horarias; saludo con nombre de pila o al club; la frase distingue vencido de por vencer; el verbo concuerda en plural; sin fecha de vencimiento no inventa plazo; el mensaje de WhatsApp es más corto que el del mail; los links de WhatsApp y `mailto` codifican bien |
+| `src/lib/timeline360.check.ts` | 14 | **F5.** La historia junta las cinco fuentes, ordenada de más reciente a más vieja y sin depender del orden de entrada; los empates se resuelven siempre igual; la fila inicial del historial no es un cambio (salvo que ya naciera cerrada); cierre, reapertura y cambio de resultado se titulan bien; el filtro por chip ("Etapas" incluye las altas) y sus cuentas; el agrupado por mes **argentino** (las 22:00 del 30/09 no pasan a octubre); "Ver más" por tramos; el resumen con cifras calculadas a mano (y la primera compra consultada aparte), sus umbrales de 30 y 90 días y los casos sin datos |
+| `src/lib/tablero.check.ts` | 15 | **F5.** `?dias=` y `?mes=` no confían en la URL; el rango del mes (también diciembre); `sinActividad`: el día del umbral ya cuenta, vale la actividad de la oportunidad, de su empresa o de su contacto, la que nunca tuvo se cuenta desde el alta y la más vieja que lo leído sale con "más de"; pipeline por responsable, cierres del mes y ranking de motivos con empates |
+| `src/lib/embudo.check.ts` | 12 | **F5.** Fixtures calculados a mano con cinco oportunidades: una normal, una que **se salta una etapa**, una que **vuelve atrás**, una **reabierta** y una trabada. Entraron, avanzaron, conversión, mediana de estadías terminadas y "hasta hoy" para las que siguen, tasa de éxito y ciclo; sin historial; el orden del historial no cambia el resultado; la cohorte por día argentino y por origen |
+| `src/lib/paleta.check.ts` | 10 | **F5.** Las rutas piden permisos que existen; el menú por rol (el Vendedor no ve las dos pantallas del equipo); en qué tablas se busca según el rol; la consulta se limpia y exige 2 caracteres; grupos en orden fijo con tope de 5; las acciones rápidas por rol, con la caja vacía y con texto; las flechas dan la vuelta; los ids de las opciones |
 
 `permisos.check.ts` lee `supabase/migrations/0007_entrega_final.sql`. **Si agregás un permiso, hay que
 tocarlo en `src/lib/permisos.ts` y en la migración que redefina el CHECK y los roles por defecto**, o este

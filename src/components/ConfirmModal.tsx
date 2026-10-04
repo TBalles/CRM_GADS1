@@ -37,7 +37,7 @@ export default function ConfirmModal({
   React.useEffect(() => {
     if (!isOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !isProcessing) onClose();
+      if (e.key === "Escape" && !e.defaultPrevented && !isProcessing) onClose();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);

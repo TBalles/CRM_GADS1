@@ -5,9 +5,13 @@ import { esUuid } from "@/lib/clientes";
 import { esErrorDeEsquema } from "@/lib/esquema";
 import { hoyAR } from "@/lib/oportunidades";
 import { agruparParque, type GrupoParque, type ItemParque } from "@/lib/parque";
+import { leerCuenta360 } from "@/lib/cuenta360";
 import EmpresaDetalle from "./EmpresaDetalle";
 
 export const metadata = { title: "Empresa" };
+
+/** Equipos entregados que se leen para el parque instalado (PostgREST corta en 1000 sin avisar). */
+const TOPE_PARQUE = 1000;
 
 export default async function EmpresaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -18,73 +22,57 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
   const puedeVerOportunidades = sesion.puede("oportunidades.ver");
   const puedeVerVentas = sesion.puede("ventas.ver");
   const puedeVerActividades = sesion.puede("bitacora.ver");
-  const nada = Promise.resolve({ data: null });
+  const puedeVerAvisos = sesion.puede("alertas.ver");
 
   // Un id que no existe y uno que la RLS esconde (la cartera de otro vendedor)
   // son lo mismo para esta pantalla: no hay ficha.
   const [
     { data: empresa },
     { data: contactos },
-    { data: oportunidades },
-    { data: etapas },
-    { data: ventas },
-    { data: actividades },
+    cuenta,
     { data: tipos },
     { data: perfiles },
     { data: origenes },
     canchasRes,
+    itemsRes,
   ] = await Promise.all([
     supabase.from("empresas").select("*").eq("id", id).maybeSingle(),
     supabase.from("contactos").select("*").eq("empresa_id", id).order("nombre"),
-    puedeVerOportunidades
-      ? supabase
-          .from("oportunidades")
-          .select("id, titulo, monto, estado, etapa_id")
-          .eq("empresa_id", id)
-          .order("created_at", { ascending: false })
-      : nada,
-    puedeVerOportunidades ? supabase.from("etapas").select("id, nombre, tipo, orden") : nada,
-    puedeVerVentas
-      ? supabase.from("ventas").select("id, fecha, comprobante").eq("empresa_id", id).order("fecha", { ascending: false })
-      : nada,
-    puedeVerActividades
-      ? supabase.from("bitacora_entradas").select("*").eq("empresa_id", id).order("ocurrido_en", { ascending: false })
-      : nada,
+    // F5: oportunidades (con su historial), ventas (con ítems y avisos) y actividades, acotadas.
+    leerCuenta360(supabase, "empresa_id", id, {
+      oportunidades: puedeVerOportunidades,
+      ventas: puedeVerVentas,
+      actividades: puedeVerActividades,
+      avisos: puedeVerAvisos,
+    }),
     supabase.from("tipos_actividad").select("id, nombre, codigo, activo, orden").order("orden").order("nombre"),
     supabase.from("perfiles").select("id, nombre, email, activo").eq("es_superadmin", false).order("nombre"),
     supabase.from("origenes").select("id, nombre, activo").order("orden").order("nombre"),
     // F4: la tabla es de la migracion 0011. Si todavia no esta aplicada, la seccion no se muestra.
     supabase.from("canchas").select("*").eq("empresa_id", id).order("nombre"),
+    // Parque instalado: TODO lo entregado a la empresa, no solo lo de las ventas que muestra la historia (que llevan tope).
+    puedeVerVentas
+      ? supabase
+          .from("venta_items")
+          .select("id, cantidad, fecha_entrega, vida_util_meses, producto:productos(nombre, categoria), ventas!inner(empresa_id)")
+          .eq("ventas.empresa_id", id)
+          .order("fecha_entrega", { ascending: false })
+          .limit(TOPE_PARQUE + 1)
+      : Promise.resolve({ data: null, error: null }),
   ]);
 
   if (!empresa) notFound();
 
-  // El total de cada venta es la suma de sus items. Dos consultas planas, como en /ventas.
-  const idsVentas = (ventas ?? []).map((v) => v.id);
-  const { data: items } = idsVentas.length
-    ? await supabase
-        .from("venta_items")
-        .select("id, venta_id, producto_id, cantidad, precio_unitario, fecha_entrega, vida_util_meses")
-        .in("venta_id", idsVentas)
-    : { data: [] };
-  const totalPorVenta = new Map<string, number>();
-  for (const it of items ?? []) {
-    totalPorVenta.set(it.venta_id, (totalPorVenta.get(it.venta_id) ?? 0) + it.cantidad * Number(it.precio_unitario ?? 0));
-  }
-
-
-  // Parque instalado: lo entregado a esta empresa, con la vida util que le queda a cada item (mismas ventas que arriba).
+  // Parque instalado: lo entregado a esta empresa, con la vida util que le queda a cada item.
+  if (itemsRes.error) throw new Error(`No se pudo leer el parque instalado: ${itemsRes.error.message}`);
+  const filasParque = itemsRes.data ?? [];
+  const parqueTruncado = filasParque.length > TOPE_PARQUE;
   let parque: GrupoParque[] | null = null;
   if (puedeVerVentas) {
-    const idsProductos = [...new Set((items ?? []).map((i) => i.producto_id))];
-    const { data: productos } = idsProductos.length
-      ? await supabase.from("productos").select("id, nombre, categoria").in("id", idsProductos)
-      : { data: [] };
-    const productoPorId = new Map((productos ?? []).map((p) => [p.id, p]));
-    const itemsParque: ItemParque[] = (items ?? []).map((i) => ({
+    const itemsParque: ItemParque[] = filasParque.slice(0, TOPE_PARQUE).map((i) => ({
       id: i.id,
-      producto: productoPorId.get(i.producto_id)?.nombre ?? "Producto sin nombre",
-      categoria: productoPorId.get(i.producto_id)?.categoria ?? null,
+      producto: i.producto?.nombre ?? "Producto sin nombre",
+      categoria: i.producto?.categoria ?? null,
       cantidad: i.cantidad,
       fechaEntrega: i.fecha_entrega,
       vidaUtilMeses: i.vida_util_meses,
@@ -100,10 +88,16 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
     <EmpresaDetalle
       empresa={empresa}
       contactos={contactos ?? []}
-      oportunidades={oportunidades ?? []}
-      etapas={etapas ?? []}
-      ventas={(ventas ?? []).map((v) => ({ ...v, total: totalPorVenta.get(v.id) ?? 0 }))}
-      actividades={actividades ?? []}
+      oportunidades={cuenta.oportunidades}
+      etapas={cuenta.etapas}
+      ventas={cuenta.ventas}
+      actividades={cuenta.actividades}
+      cambios={cuenta.cambios}
+      avisos={cuenta.avisos}
+      truncado={cuenta.truncado}
+      primeraCompra={cuenta.primeraCompra}
+      parqueTruncado={parqueTruncado}
+      hoy={hoyAR()}
       tipos={tipos ?? []}
       perfiles={(perfiles ?? []).map((p) => ({ id: p.id, nombre: p.nombre ?? p.email ?? "Usuario", activo: p.activo }))}
       origenes={origenes ?? []}
@@ -117,6 +111,7 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
       puedeVerOportunidades={puedeVerOportunidades}
       puedeVerVentas={puedeVerVentas}
       puedeVerActividades={puedeVerActividades}
+      puedeVerAvisos={puedeVerAvisos}
       puedeEscribirActividad={sesion.puede("bitacora.escribir")}
     />
   );

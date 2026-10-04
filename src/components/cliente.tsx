@@ -49,7 +49,7 @@ export function Seccion({
 }: {
   icon: React.ElementType;
   titulo: string;
-  cantidad?: number;
+  cantidad?: number | string;
   accion?: React.ReactNode;
   children: React.ReactNode;
 }) {

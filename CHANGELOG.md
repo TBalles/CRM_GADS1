@@ -16,6 +16,24 @@ Todo lo de esta sección ya está en `main`. Lo que no está es la interfaz de b
 
 ### Agregado
 
+- F5, pantallas del responsable y búsqueda (sin commit todavía; **no necesita migración**):
+  - **Ficha 360** en `/empresas/[id]` y `/contactos/[id]`: "Resumen de la cuenta" (primera compra de toda la cuenta, total comprado, última
+    compra, oportunidades abiertas y días desde el último contacto, con ámbar + ícono + frase, nunca solo color) e
+    "Historia de la cuenta": actividades, altas y cambios de etapa, compras y avisos de recambio enviados en una línea de
+    tiempo por mes (horario argentino), con chips de filtro (`aria-pressed`) y "Ver 30 más" sobre lo más reciente de cada tipo
+    (topes por tipo: 200, y 100 oportunidades; se avisan con su número real). Lógica pura en `src/lib/timeline360.ts` (14 pruebas) y lectura acotada en `src/lib/cuenta360.ts`.
+  - **Tablero comercial** (`/tablero-comercial`, `clientes.ver_todos` y `oportunidades.ver`): valor en juego del equipo,
+    pipeline por responsable, oportunidades abiertas sin actividad hace 7, 14 o 30 días (`?dias=`), ganadas y perdidas del mes
+    (`?mes=`) y ranking de motivos de pérdida. `src/lib/tablero.ts` (15 pruebas).
+  - **Conversión del embudo** (`/embudo`): por etapa, cuántas entraron, cuántas avanzaron, mediana de días (las que siguen
+    ahí, aparte y "hasta hoy"), tasa de éxito y ciclo; filtros `?desde=&hasta=&origen=` y "Cómo se calcula".
+    `src/lib/embudo.ts` (12 pruebas con fixtures a mano: salto de etapa, vuelta atrás y reapertura).
+  - **Búsqueda global** con `Ctrl/Cmd+K` y un botón "Buscar…" en el menú y en la barra superior: diálogo combobox +
+    listbox (flechas, Enter, Escape, foco atrapado y devuelto), desde 2 letras, 200 ms, resultados agrupados
+    (empresas, contactos, oportunidades, productos) y "Ir a …" con la caja vacía. Una Server Action con la sesión de la
+    persona (`src/app/(app)/buscar/actions.ts`); la RLS limita lo que aparece. `src/lib/paleta.ts` (10 pruebas).
+  - Menú lateral con el grupo **Equipo** (tablero comercial y conversión) y la lista única de pantallas y permisos en
+    `src/lib/navegacion.ts`.
 - F4, funciones del rubro (sin commit todavía; la migración `0011` está pendiente de aplicar a mano):
   - **Recambio en un clic**: cada alerta de `/alertas` ofrece "Crear oportunidad de recambio" (título, empresa,
     contacto, producto, valor = precio × cantidad, origen "Recambio por vida útil", primera etapa abierta,

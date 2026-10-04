@@ -308,7 +308,7 @@ function Contenido({
   // desplegable (el Select vive en un portal y su Escape es solo suyo).
   function alTeclear(e: React.KeyboardEvent<HTMLDivElement>) {
     alTabular(e);
-    if (e.key !== "Escape" || saving) return;
+    if (e.key !== "Escape" || e.defaultPrevented || saving) return;
     const destino = e.target as HTMLElement;
     if (!e.currentTarget.contains(destino) || destino.closest('[aria-expanded="true"]')) return;
     e.stopPropagation();

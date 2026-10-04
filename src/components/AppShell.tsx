@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -8,6 +8,8 @@ import {
   Boxes,
   Building2,
   Contact,
+  Funnel,
+  Gauge,
   Handshake,
   LayoutDashboard,
   LogOut,
@@ -15,35 +17,41 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Receipt,
+  Search,
   Settings,
   UsersRound,
   X,
 } from "lucide-react";
 import { APP_NAME } from "@/lib/brand";
+import { rutasVisibles, type Ruta } from "@/lib/navegacion";
 import { cn } from "@/lib/utils";
 import { GoalMark } from "./Logo";
 import { MarcasCancha } from "./Cancha";
 import { Avatar, AvatarFallback, Button, initials } from "./ui/UIComponents";
 import { useModalAnimation } from "./ui/overlay";
 import ConfirmModal from "./ConfirmModal";
+import PaletaBusqueda from "./PaletaBusqueda";
 import ThemeToggle from "./ThemeToggle";
 
 /**
- * Cada seccion aparece solo si el rol tiene el permiso para verla. Es solo
- * comodidad: la autorizacion real la hacen la base (RLS) y cada pagina y
- * Server Action en el servidor. Ocultar un link no protege nada.
+ * Cada seccion aparece solo si el rol tiene los permisos para verla (la lista y sus permisos
+ * viven en `src/lib/navegacion.ts`, la misma que usa la busqueda global). Es solo comodidad: la
+ * autorizacion real la hacen la base (RLS) y cada pagina y Server Action en el servidor. Ocultar
+ * un link no protege nada.
  */
-const NAV = [
-  { href: "/dashboard", label: "Inicio", icon: LayoutDashboard, permiso: "tablero.ver" },
-  { href: "/empresas", label: "Empresas", icon: Building2, permiso: "clientes.ver" },
-  { href: "/contactos", label: "Contactos", icon: Contact, permiso: "clientes.ver" },
-  { href: "/oportunidades", label: "Oportunidades", icon: Handshake, permiso: "oportunidades.ver" },
-  { href: "/productos", label: "Productos", icon: Boxes, permiso: "productos.ver" },
-  { href: "/ventas", label: "Ventas", icon: Receipt, permiso: "ventas.ver" },
-  { href: "/alertas", label: "Alertas", icon: BellRing, permiso: "alertas.ver" },
-  { href: "/usuarios", label: "Usuarios", icon: UsersRound, permiso: "usuarios.gestionar" },
-  { href: "/configuracion", label: "Configuración", icon: Settings, permiso: "configuracion.gestionar" },
-] as const;
+const ICONOS: Record<string, React.ElementType> = {
+  "/dashboard": LayoutDashboard,
+  "/empresas": Building2,
+  "/contactos": Contact,
+  "/oportunidades": Handshake,
+  "/productos": Boxes,
+  "/ventas": Receipt,
+  "/alertas": BellRing,
+  "/tablero-comercial": Gauge,
+  "/embudo": Funnel,
+  "/usuarios": UsersRound,
+  "/configuracion": Settings,
+};
 
 /**
  * The shell is dressed as the pitch (`.cesped`, same surface as the login
@@ -164,11 +172,19 @@ export default function AppShell({
   permisos: string[];
   children: React.ReactNode;
 }) {
-  const nav = NAV.filter((n) => permisos.includes(n.permiso));
+  const nav = rutasVisibles(permisos);
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
+  const [busqueda, setBusqueda] = useState(false);
+  // ⌘ en Mac, Ctrl en el resto. useSyncExternalStore evita el desfase de hidratacion (el servidor no sabe la plataforma).
+  const esMac = useSyncExternalStore(
+    () => () => {},
+    () => /Mac|iPhone|iPad/.test(navigator.platform),
+    () => false,
+  );
+  const idGrupoEquipo = useId();
   const signoutRef = useRef<HTMLFormElement>(null);
   const drawer = useModalAnimation(mobileOpen);
 
@@ -181,18 +197,92 @@ export default function AppShell({
     setMobileOpen(false);
   }, [pathname]);
 
-  const navList = (onNavigate?: () => void, isCollapsed?: boolean) => (
-    <nav className="flex flex-col gap-1">
-      {nav.map((item) => (
-        <NavItem
-          key={item.href}
-          {...item}
-          active={isActive(item.href)}
-          collapsed={isCollapsed}
-          onNavigate={onNavigate}
-        />
-      ))}
-    </nav>
+  // Ctrl/Cmd+K abre (o cierra) la busqueda global desde cualquier pantalla.
+  useEffect(() => {
+    const alTeclear = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        // Mantener apretado el atajo no abre y cierra en bucle.
+        if (e.repeat) return;
+        // Con un panel o un modal abierto (formulario, confirmacion, cierre de oportunidad) el atajo no se mete encima.
+        const otroModal = [...document.querySelectorAll('[aria-modal="true"]')].some((el) => !el.hasAttribute("data-paleta"));
+        if (otroModal) return;
+        setBusqueda((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", alTeclear);
+    return () => window.removeEventListener("keydown", alTeclear);
+  }, []);
+
+  const navList = (onNavigate?: () => void, isCollapsed?: boolean) => {
+    // El menu se dibuja dos veces (escritorio y cajon movil): cada uno con su id.
+    const idEquipo = `${idGrupoEquipo}-${onNavigate ? "movil" : "escritorio"}`;
+    const item = (r: Ruta) => (
+      <NavItem
+        key={r.href}
+        href={r.href}
+        label={r.label}
+        icon={ICONOS[r.href]}
+        active={isActive(r.href)}
+        collapsed={isCollapsed}
+        onNavigate={onNavigate}
+      />
+    );
+    const generales = nav.filter((r) => !r.grupo);
+    const equipo = nav.filter((r) => r.grupo === "Equipo");
+    // Las rutas del equipo van agrupadas, entre las generales y la administracion (usuarios y configuracion).
+    const antes = generales.filter((r) => r.href !== "/usuarios" && r.href !== "/configuracion");
+    const despues = generales.filter((r) => r.href === "/usuarios" || r.href === "/configuracion");
+    return (
+      <nav aria-label="Secciones" className="flex flex-col gap-1">
+        {antes.map(item)}
+        {equipo.length > 0 && (
+          <div
+            role="group"
+            aria-labelledby={isCollapsed ? undefined : idEquipo}
+            aria-label={isCollapsed ? "Equipo" : undefined}
+            className="flex flex-col gap-1"
+          >
+            {isCollapsed ? (
+              <div aria-hidden="true" className="mx-2 my-1 border-t border-white/15" />
+            ) : (
+              <p id={idEquipo} className="px-3 pb-0.5 pt-3 text-[10px] font-semibold uppercase tracking-wider text-white/65">
+                Equipo
+              </p>
+            )}
+            {equipo.map(item)}
+          </div>
+        )}
+        {despues.length > 0 && equipo.length > 0 && <div aria-hidden="true" className="mx-2 my-1 border-t border-white/10" />}
+        {despues.map(item)}
+      </nav>
+    );
+  };
+
+  /** El boton de la busqueda global. `data-paleta-disparador` deja al dialogo devolverle el foco al cerrar. */
+  const botonBusqueda = (isCollapsed?: boolean) => (
+    <button
+      type="button"
+      data-paleta-disparador=""
+      onClick={() => setBusqueda(true)}
+      aria-haspopup="dialog"
+      aria-keyshortcuts="Control+K Meta+K"
+      aria-label="Buscar"
+      title={isCollapsed ? `Buscar (${esMac ? "⌘" : "Ctrl"} K)` : undefined}
+      className={cn(
+        "flex w-full items-center rounded-lg border border-white/15 bg-white/[0.07] px-3 py-2 text-sm text-white/75 transition-colors hover:bg-white/[0.12] hover:text-white",
+        focoCancha,
+        isCollapsed && "justify-center px-0",
+      )}
+    >
+      <Search aria-hidden="true" className="h-4 w-4 shrink-0" />
+      {!isCollapsed && (
+        <>
+          <span className="ml-3 flex-1 text-left">Buscar…</span>
+          <kbd className="rounded border border-white/20 px-1.5 font-mono text-[10px] text-white/65">{esMac ? "⌘ K" : "Ctrl K"}</kbd>
+        </>
+      )}
+    </button>
   );
 
   const userBlock = (isCollapsed?: boolean) => (
@@ -284,6 +374,7 @@ export default function AppShell({
             outside the scroll area so it can never scroll out of reach. */}
         {collapsed && <div className="relative shrink-0 border-b border-white/10 p-2">{collapseButton()}</div>}
 
+        <div className="relative shrink-0 px-3 pt-3">{botonBusqueda(collapsed)}</div>
         <div className="relative flex-1 overflow-y-auto p-3">{navList(undefined, collapsed)}</div>
 
         <div className="relative shrink-0 border-t border-white/10 p-3">
@@ -310,9 +401,22 @@ export default function AppShell({
             {current?.label ?? APP_NAME}
           </span>
         </div>
-        <Avatar className="h-8 w-8">
-          <AvatarFallback className="bg-white/10 text-white ring-1 ring-white/15">{initials(nombre)}</AvatarFallback>
-        </Avatar>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            data-paleta-disparador=""
+            onClick={() => setBusqueda(true)}
+            aria-haspopup="dialog"
+            aria-keyshortcuts="Control+K Meta+K"
+            aria-label="Buscar"
+            className={cn("rounded-md p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white", focoCancha)}
+          >
+            <Search aria-hidden="true" className="h-5 w-5" />
+          </button>
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="bg-white/10 text-white ring-1 ring-white/15">{initials(nombre)}</AvatarFallback>
+          </Avatar>
+        </div>
       </header>
 
       {/* ── Mobile drawer ───────────────────────────────────────────── */}
@@ -364,6 +468,8 @@ export default function AppShell({
       <main className="min-w-0 flex-1 overflow-y-auto bg-background p-3 pt-[4.75rem] md:p-8 md:pt-8">
         <div className="mx-auto w-full max-w-7xl">{children}</div>
       </main>
+
+      <PaletaBusqueda abierta={busqueda} onCerrar={() => setBusqueda(false)} permisos={permisos} />
 
       {/* Logout goes through a confirm before the POST that clears the session. */}
       <form ref={signoutRef} action="/auth/signout" method="post" className="hidden" />

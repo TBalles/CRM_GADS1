@@ -64,6 +64,12 @@ Incluido:
   `etapa_id`. La lista (`?vista=lista`) busca, filtra y pagina **en el servidor** (F3) por estado (por defecto
   abiertas), etapa, responsable (con `clientes.ver_todos`), origen y texto; el tablero carga solo las abiertas
   (hasta 500, con aviso).
+- **Ficha 360 y pantallas del responsable (F5, sin migración)**: las fichas de empresa y contacto traen el "Resumen de
+  la cuenta" y la "Historia de la cuenta" (actividades, altas y cambios de etapa, compras y avisos de recambio en una línea de
+  tiempo por mes, `src/lib/timeline360.ts` y `src/lib/cuenta360.ts`). `/tablero-comercial` (pipeline por responsable,
+  oportunidades sin actividad, cierres del mes y motivos de pérdida) y `/embudo` (conversión por etapa, mediana de días,
+  tasa de éxito y ciclo) piden `clientes.ver_todos` y `oportunidades.ver`. `Ctrl/Cmd+K` abre la búsqueda global
+  (`PaletaBusqueda`, Server Action `buscarGlobal` con la sesión de la persona: la RLS limita lo que aparece).
 - **Listas en el servidor (F3)**: empresas, contactos, oportunidades (Lista), productos, ventas y usuarios
   piden solo la página que se ve. **La URL es el estado** (`?q=&page=&pageSize=&estado=...`); la página
   servidor lee `searchParams` (una Promise en Next 16), sanea cada parámetro con `src/lib/paginacion.ts` y
@@ -111,7 +117,7 @@ usa aún, salvo donde se aclara:
 sugerido en la ficha de empresa, licitaciones en oportunidades y "Crear oportunidad de recambio" en `/alertas`. Mientras la
 base no tenga la 0011 esas secciones se esconden (`src/lib/esquema.ts`); el parque anda igual.
 
-**Planificado** (F5 a F8, hasta 2026-11-11): ficha 360 y búsqueda global, presupuesto imprimible, E2E y CI, IA opcional y manual.
+**Planificado** (F6 a F8, hasta 2026-11-11): presupuesto imprimible, E2E y CI, IA opcional y manual.
 
 **Fuera de alcance según la consigna** (no agregar sin que el usuario lo pida): tareas, agenda,
 recordatorios, exportación, integraciones, API pública, importación, facturación, pagos,
@@ -194,6 +200,11 @@ src/
         [id]/CanchaForm.tsx       Form de alta/edición de cancha (Drawer)
       contactos/                Lista de contactos (de empresa e individuales) y su ficha
         page.tsx / ContactosList.tsx / ContactoForm.tsx / [id]/page.tsx / [id]/ContactoDetalle.tsx
+      tablero-comercial/         Tablero del responsable (F5): pipeline por responsable, sin actividad, cierres del mes, motivos
+        page.tsx                 Server Component: `?dias=7|14|30` y `?mes=aaaa-mm`; lecturas con tope y aviso
+      embudo/                    Conversión del embudo (F5): entraron, avanzaron, mediana de días, tasa de éxito y ciclo
+        page.tsx / EmbudoFiltros.tsx   Server Component + filtros por URL (`?desde=&hasta=&origen=`)
+      buscar/actions.ts          Server Action `buscarGlobal` de la búsqueda Ctrl+K (F5): con la sesión, la RLS manda
       productos/                 ABM del catálogo con vida útil
         page.tsx / ProductosList.tsx / ProductoForm.tsx
       ventas/                    Historial de compras (cabecera + ítems)
@@ -246,6 +257,8 @@ src/
     ThemeToggle.tsx              Toggle de modo oscuro (localStorage + prefers-color-scheme)
     ActividadForm.tsx           Alta reutilizable de actividad (empresa, contacto, luego oportunidad)
     ActividadesTimeline.tsx     Línea de tiempo de actividades, la más reciente arriba
+    Cuenta360.tsx               Ficha 360 (F5): ResumenCuentaCard y HistoriaCuenta (chips, meses, "Ver más")
+    PaletaBusqueda.tsx          Búsqueda global Ctrl/Cmd+K (F5): diálogo combobox + listbox, foco atrapado
     BajaCliente.tsx             BajaModal + useReactivar: baja lógica de empresas y contactos
     ClienteCampos.tsx           CampoResponsable (solo lectura sin clientes.asignar) y CampoOrigen
     cliente.tsx                 EstadoPill, Dato, Seccion, AvisoEstado, listas de oportunidades y ventas
@@ -266,6 +279,12 @@ src/
     paginacion.check.ts        Self-check: node --test src/lib/paginacion.check.ts
     oportunidades.ts           Etapas válidas por acción, validaciones, errores en palabras, línea de tiempo, auditoría
     oportunidades.check.ts     Self-check: node --test src/lib/oportunidades.check.ts
+    timeline360.ts             Ficha 360 (F5): línea de tiempo unificada, meses argentinos, resumen de la cuenta
+    cuenta360.ts               Ficha 360 (F5): lectura acotada (200 por tipo) de oportunidades, historial, ventas, avisos y actividades
+    tablero.ts                 Tablero del responsable (F5): sin actividad, pipeline por responsable, cierres del mes, motivos
+    embudo.ts                  Conversión del embudo (F5): entraron, avanzaron, mediana de estadías, tasa de éxito, ciclo
+    navegacion.ts              Pantallas del CRM y sus permisos: la lista única del menú y de las acciones de Ctrl+K
+    paleta.ts                  Búsqueda global (F5): grupos permitidos, consulta limpia, acciones rápidas, navegación con flechas
     cambiarEtapa.ts            Único camino del navegador para cambiar de etapa: la RPC `cambiar_etapa`
     money.ts                   Máscara/parseo es-AR + formatters de display
     money.check.ts             Self-check: node --test src/lib/money.check.ts
@@ -454,7 +473,7 @@ npx tsc --noEmit                     # tipos
 npx eslint src --max-warnings=0      # lint sin advertencias
 
 # Self-checks (sin framework, runner de Node): money, equipo, permisos, email/layout, alertas/plantillas, clientes, oportunidades...
-node --test "src/**/*.check.ts"      # 15 archivos, 116 pruebas
+node --test "src/**/*.check.ts"      # 19 archivos, 167 pruebas
 node --test src/lib/money.check.ts   # o uno solo
 ```
 

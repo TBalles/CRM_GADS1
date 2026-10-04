@@ -280,6 +280,19 @@ qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
   decorativo (`aria-hidden`): el nombre del producto va impreso al lado, así que un ícono mal
   adivinado no cuesta nada.
 
+## 16. Embudo en barras centradas y búsqueda global como diálogo (F5)
+
+- **Kit**: los charts van con Recharts (§4.6) y no define una paleta de comandos.
+- **Tuco & Nito**: `/embudo` dibuja el embudo con `div`s de ancho proporcional, centrados y de **un solo tono de marca**
+  (es una magnitud: cuántas oportunidades entraron a cada etapa), siempre con el número escrito al lado y el detalle en
+  texto (avanzaron, mediana, siguen ahí). Sigue el override §5 (nada de librería de charts). La búsqueda global
+  (`Ctrl/Cmd+K`) es un diálogo `role="dialog"` con el patrón combobox + listbox de ARIA (`aria-activedescendant`, foco
+  atrapado y devuelto al cerrar); en pantallas chicas es una hoja a todo el ancho y alto. El botón que la abre va en el
+  menú (la cancha) con su atajo escrito, y en la barra superior en mobile.
+- **Dónde**: `src/app/(app)/embudo/page.tsx`, `src/components/PaletaBusqueda.tsx`, `src/components/AppShell.tsx`.
+- **Por qué**: el embudo es una sola magnitud por etapa, no una proporción del total, y la búsqueda es el único atajo
+  de teclado global del CRM: tiene que ser accesible sin ratón y usable con el pulgar.
+
 ---
 
 > Si aparece una divergencia nueva respecto del kit, se agrega como un bloque más en este

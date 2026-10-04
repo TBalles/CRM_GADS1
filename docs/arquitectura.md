@@ -8,6 +8,7 @@ la aplicación.
 
 Contenido: [1. Componentes y capas](#1-componentes-y-capas) · [2. Flujo de un pedido](#2-flujo-de-un-pedido) ·
 [2.1 Listas paginadas en el servidor](#21-listas-paginadas-en-el-servidor-la-url-es-el-estado-f3) ·
+[2.2 Búsqueda global](#22-búsqueda-global-ctrlk-f5) ·
 [3. Sesión y protección de rutas](#3-sesión-y-protección-de-rutas) · [4. Multitenencia](#4-multitenencia) ·
 [5. Flujo de mails](#5-flujo-de-mails) · [6. Topología de despliegue](#6-topología-de-despliegue)
 
@@ -122,6 +123,7 @@ servidor. Detalle en la [decisión 0001](./decisiones/0001-mutaciones-desde-el-c
 | `src/app/(app)/usuarios/actions.ts` | `invitarUsuario`, `cambiarRol`, `cambiarActivo`, `reenviarInvitacion`, `guardarRol`, `borrarRol` | Los `perfiles` no tienen política de escritura: solo el servidor los toca |
 | `src/app/admin/actions.ts` | `crearCliente`, `agregarAdministrador`, `cambiarEstadoCliente`, `reenviarInvitacionAdmin` | Operaciones de plataforma |
 | `src/app/(app)/alertas/actions.ts` | `enviarAlertaEmail`, `registrarEnvioWhatsapp` | Envía por SMTP; deriva destinatario y texto de la base, no del navegador |
+| `src/app/(app)/buscar/actions.ts` | `buscarGlobal` | **Excepción a propósito** (ver 2.2): no usa secretos; consulta con la sesión de la persona y resuelve la búsqueda global en una sola ida |
 
 Cada Server Action empieza verificando la sesión y el permiso y valida el tipo y la forma de sus
 argumentos, porque llegan del navegador y pueden ser cualquier cosa.
@@ -177,6 +179,33 @@ Piezas reutilizables: `src/lib/paginacion.ts` (lógica pura), `src/components/Fi
 `src/components/Paginacion.tsx` (`nav` accesible con links `?page=N`, que funcionan sin JavaScript).
 Los índices que ayudan a estas consultas están en `supabase/migrations/0010_indices_busqueda.sql`
 (**pendiente de aplicar a mano en la base viva**; la app funciona igual sin ella).
+
+### 2.2 Búsqueda global (Ctrl+K, F5)
+
+```
+AppShell (cliente)  Ctrl/Cmd+K o el botón "Buscar…" ──► PaletaBusqueda (diálogo)
+                                                          │  desde 2 letras, 200 ms después de la última tecla
+                                                          ▼
+                                       Server Action buscarGlobal(texto)
+                                          │  getSesion() ─ valida tipo y limpia el texto ─ gruposPermitidos(permisos)
+                                          ▼
+                       empresas · contactos · oportunidades · productos   (con la sesión: la RLS decide qué hay)
+                                          │  filtroOr(...) por palabra, límite 5 por grupo
+                                          ▼
+                                    { ok, consulta, grupos }  ──► se dibuja; una respuesta vieja se descarta
+```
+
+- **Por qué una Server Action y no el cliente de navegador.** Son cuatro consultas por tecla pausada: una sola ida al
+  servidor, con el texto limpio y los permisos mirados una vez, en lugar de cuatro desde el navegador. No usa la clave de
+  servicio ni escribe nada: consulta con la sesión de la persona, así que **la RLS sigue siendo el único control de
+  acceso** (un Vendedor solo encuentra su cartera). Es una excepción acotada a "Server Actions solo para lo privilegiado".
+- **Nada se arma a mano.** El texto entra por `filtroOr` (`src/lib/paginacion.ts`), que escapa `%`, `_`, `\`, comas,
+  paréntesis y comillas; cada palabra (hasta 4) es un `.or()` y se encadenan con AND.
+- **Carreras.** Cada consulta nueva cancela la anterior (`cancelado` en el cleanup del efecto): lo que llega tarde se ignora.
+- **Una sola lista de pantallas.** `src/lib/navegacion.ts` define rutas y permisos y la usan el menú lateral y las
+  acciones rápidas ("Ir a …"); el self-check comprueba que todos los permisos existan en el catálogo.
+- **Ficha 360, tablero y conversión** no necesitan Server Actions: son páginas de servidor que leen con la sesión
+  (`src/lib/cuenta360.ts` para las fichas) y agregan en JS con tope, con la lógica en funciones puras.
 
 ---
 

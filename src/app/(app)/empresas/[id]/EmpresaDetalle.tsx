@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import Drawer from "@/components/Drawer";
 import ActividadForm from "@/components/ActividadForm";
-import ActividadesTimeline from "@/components/ActividadesTimeline";
+import { HistoriaCuenta, ResumenCuentaCard } from "@/components/Cuenta360";
 import { BajaModal, useReactivar } from "@/components/BajaCliente";
 import {
   AvisoEstado,
@@ -25,8 +25,6 @@ import {
   OportunidadesLista,
   Seccion,
   VentasLista,
-  type OportunidadFila,
-  type VentaFila,
 } from "@/components/cliente";
 import { AvisoMigracion } from "@/components/AvisoMigracion";
 import { ParqueInstalado } from "@/components/ParqueInstalado";
@@ -41,6 +39,8 @@ import {
   type PerfilOpcion,
 } from "@/lib/clientes";
 import type { GrupoParque } from "@/lib/parque";
+import { TOPES, type AvisoCuenta, type CambioEtapaFila, type Cuenta360, type EtapaCuenta, type OportunidadCuenta, type VentaCuenta } from "@/lib/cuenta360";
+import { resumenCuenta } from "@/lib/timeline360";
 import ContactoForm from "../../contactos/ContactoForm";
 import EmpresaForm from "../EmpresaForm";
 import CanchasSeccion from "./CanchasSeccion";
@@ -64,6 +64,12 @@ export default function EmpresaDetalle({
   etapas,
   ventas,
   actividades: actividadesIniciales,
+  cambios,
+  avisos,
+  truncado,
+  primeraCompra,
+  parqueTruncado,
+  hoy,
   tipos,
   perfiles,
   origenes,
@@ -77,14 +83,25 @@ export default function EmpresaDetalle({
   puedeVerOportunidades,
   puedeVerVentas,
   puedeVerActividades,
+  puedeVerAvisos,
   puedeEscribirActividad,
 }: {
   empresa: Empresa;
   contactos: Contacto[];
-  oportunidades: OportunidadFila[];
-  etapas: Pick<Tables<"etapas">, "id" | "nombre" | "tipo" | "orden">[];
-  ventas: VentaFila[];
+  oportunidades: OportunidadCuenta[];
+  etapas: EtapaCuenta[];
+  ventas: VentaCuenta[];
   actividades: Actividad[];
+  /** F5: cambios de etapa de las oportunidades de la cuenta, avisos de recambio enviados y si algo pasó el tope. */
+  cambios: CambioEtapaFila[];
+  avisos: AvisoCuenta[];
+  truncado: Cuenta360["truncado"];
+  /** Fecha de la primera compra de toda la cuenta (aunque las ventas que se muestran estén recortadas). */
+  primeraCompra: string | null;
+  /** El parque instalado se leyó con tope y la empresa tiene más equipos de los que se ven. */
+  parqueTruncado: boolean;
+  /** Hoy en horario argentino (`aaaa-mm-dd`), calculado en el servidor para que no se desfase al hidratar. */
+  hoy: string;
   tipos: Tipo[];
   perfiles: PerfilOpcion[];
   origenes: OrigenOpcion[];
@@ -102,6 +119,7 @@ export default function EmpresaDetalle({
   puedeVerOportunidades: boolean;
   puedeVerVentas: boolean;
   puedeVerActividades: boolean;
+  puedeVerAvisos: boolean;
   puedeEscribirActividad: boolean;
 }) {
   const reactivar = useReactivar("empresa");
@@ -119,6 +137,28 @@ export default function EmpresaDetalle({
     setOpen(true);
   }
 
+  const resumen = useMemo(
+    () =>
+      resumenCuenta({
+        ventas,
+        oportunidades,
+        actividades: puedeVerActividades ? actividades : null,
+        hoy,
+        primeraCompra,
+      }),
+    [ventas, oportunidades, actividades, puedeVerActividades, hoy, primeraCompra],
+  );
+
+  const verHistoria = useMemo(
+    () => ({
+      actividades: puedeVerActividades,
+      etapas: puedeVerOportunidades,
+      ventas: puedeVerVentas,
+      avisos: puedeVerAvisos && puedeVerVentas,
+    }),
+    [puedeVerActividades, puedeVerOportunidades, puedeVerVentas, puedeVerAvisos],
+  );
+
   const perfilPorId = useMemo(() => new Map(perfiles.map((p) => [p.id, p.nombre])), [perfiles]);
   const origen = origenes.find((o) => o.id === empresa.origen_id)?.nombre;
   const responsable = empresa.responsable_id ? perfilPorId.get(empresa.responsable_id) : null;
@@ -133,7 +173,6 @@ export default function EmpresaDetalle({
   const oportunidadesOpciones = oportunidades
     .filter((o) => o.estado === "abierta")
     .map((o) => ({ id: o.id, label: o.titulo }));
-  const oportunidadesNombres = oportunidades.map((o) => ({ id: o.id, label: o.titulo }));
 
   function contactoGuardado(saved: Contacto) {
     // Si el contacto se mudó de empresa (o quedó sin ella), deja de estar en esta ficha.
@@ -265,6 +304,15 @@ export default function EmpresaDetalle({
         </dl>
       </Card>
 
+      {/* RESUMEN (F5): lo que la cuenta lleva comprado y hace cuánto no se habla */}
+      {(puedeVerVentas || puedeVerOportunidades || puedeVerActividades) && (
+        <ResumenCuentaCard
+          resumen={resumen}
+          mostrar={{ ventas: puedeVerVentas, oportunidades: puedeVerOportunidades, contacto: puedeVerActividades }}
+          truncado={truncado}
+        />
+      )}
+
       {/* RUBRO (F4): las canchas del cliente y lo que ya tiene instalado */}
       <AvisoMigracion visible={mostrarAvisoMigracion} que="la ficha de canchas y el equipamiento sugerido" />
       {(canchas || parque) && (
@@ -281,7 +329,16 @@ export default function EmpresaDetalle({
               puedeCrearOportunidad={puedeCrearOportunidad && puedeVerOportunidades}
             />
           )}
-          {parque && <ParqueInstalado grupos={parque} />}
+          {parque && (
+            <div className="flex min-w-0 flex-col gap-2">
+              <ParqueInstalado grupos={parque} />
+              {parqueTruncado && (
+                <p className="rounded-md bg-secondary p-2.5 text-xs text-muted-foreground">
+                  Se leyeron los 1000 equipos entregados más recientes: el parque puede estar incompleto.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -341,44 +398,44 @@ export default function EmpresaDetalle({
           </Seccion>
 
           {puedeVerOportunidades && (
-            <Seccion icon={Handshake} titulo="Oportunidades" cantidad={oportunidades.length}>
+            <Seccion icon={Handshake} titulo="Oportunidades" cantidad={truncado.oportunidades ? `${oportunidades.length}+` : oportunidades.length}>
               <OportunidadesLista oportunidades={oportunidades} etapas={etapas} />
+              {truncado.oportunidades && (
+                <p className="mt-3 text-xs text-muted-foreground">Se muestran las {TOPES.oportunidades} más recientes.</p>
+              )}
             </Seccion>
           )}
 
           {puedeVerVentas && (
-            <Seccion icon={Receipt} titulo="Ventas" cantidad={ventas.length}>
+            <Seccion icon={Receipt} titulo="Ventas" cantidad={truncado.ventas ? `${ventas.length}+` : ventas.length}>
               <VentasLista ventas={ventas} />
+              {truncado.ventas && <p className="mt-3 text-xs text-muted-foreground">Se muestran las {TOPES.ventas} más recientes.</p>}
             </Seccion>
           )}
         </div>
 
-        {/* ACTIVIDAD */}
-        {puedeVerActividades && (
-          <Seccion
-            icon={NotebookPen}
-            titulo="Actividad"
-            cantidad={actividades.length}
+        {/* HISTORIA (F5): actividades, etapas, ventas y avisos en una sola línea de tiempo */}
+        {(puedeVerActividades || puedeVerOportunidades || puedeVerVentas || puedeVerAvisos) && (
+          <HistoriaCuenta
+            actividades={actividades}
+            cambios={cambios}
+            oportunidades={oportunidades}
+            ventas={ventas}
+            avisos={avisos}
+            etapas={etapas}
+            tipos={tipos}
+            perfiles={perfiles}
+            contactos={contactosNombres}
+            ver={verHistoria}
+            truncado={truncado}
             accion={
-              puedeEscribirActividad ? (
+              puedeEscribirActividad && puedeVerActividades ? (
                 <Button variant="outline" size="sm" className="gap-1.5" onClick={() => abrir({ tipo: "actividad" })}>
                   <Plus aria-hidden="true" className="h-3.5 w-3.5" /> Registrar
                 </Button>
               ) : undefined
             }
-          >
-            <ActividadesTimeline
-              actividades={actividades}
-              tipos={tipos}
-              perfiles={perfiles}
-              contactos={contactosNombres}
-              oportunidades={oportunidadesNombres}
-              vacio={{
-                texto: "Todavía no hay actividad registrada",
-                pista: "Asentá la llamada, la visita a la cancha o el reclamo. Así el historial no se va con quien atendió.",
-              }}
-            />
-          </Seccion>
+          />
         )}
       </div>
 
