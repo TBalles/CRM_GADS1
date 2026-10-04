@@ -1,5 +1,5 @@
 /*
- * CRM 2.0 — design tokens (esqueleto de la Etapa 0).
+ * CRM 2.0 — design tokens (Etapa 1). Fuente de verdad: design-system/crm-2/MASTER.md.
  *
  * Contrato de aislamiento (design-system/crm-2/README.md):
  *  - Lo importan SOLO `(app)/layout.tsx` y `admin/layout.tsx`. Nunca el layout raíz: la landing no lo descarga.
@@ -7,8 +7,14 @@
  *    (`--background`, `--radius`, `--primary`…) se redefine: los tokens nuevos son `--crm-*`.
  *  - Sin at-rules globales (@theme, @layer, @property, @import, @font-face, @keyframes sueltos). Las animaciones
  *    son `@keyframes crm-*`, usadas solo bajo [data-crm]. `npm run guard:frozen` lo verifica.
- *  - Los valores de abajo son PLACEHOLDERS: los reales llegan en la Etapa 1 (MASTER.md).
- *    Hoy nada los usa, así que no cambian ninguna pantalla.
+ *
+ * Cómo se consumen: SOLO con utilidades de Tailwind v4 que leen la variable (`bg-(--crm-panel)`,
+ * `text-(--crm-text)`, `border-(--crm-border)`, `rounded-(--crm-radius)`, `z-(--crm-z-popover)`…), desde los
+ * primitivos de `src/components/crm/`. Este archivo no tiene clases de componentes: solo tokens y keyframes.
+ *
+ * Los pares de contraste de estos valores los verifica `src/lib/contrasteCrm.check.ts` (npm test): si cambiás un
+ * color, corré `npm test`. Los valores son colores completos (`hsl(...)`), no tripletes, para que Tailwind los use
+ * tal cual.
  */
 
 /* El wrapper no genera caja: layout, scroll, sticky, h-dvh y @media print quedan como estaban. Sí hereda
@@ -20,27 +26,143 @@
   --crm-font-sans: var(--font-crm-sans), ui-sans-serif, system-ui, sans-serif;
   --crm-font-mono: var(--font-crm-mono), ui-monospace, monospace;
 
+  /* Radios: 4 controles, 6 paneles y capas flotantes. Círculo solo en avatares y puntos. */
+  --crm-radius-sm: 4px;
   --crm-radius: 6px;
 
-  --crm-surface: #ffffff;
-  --crm-surface-raised: #f8f9fa;
-  --crm-text: #14181f;
-  --crm-text-muted: #5b6471;
-  --crm-border: #e1e5ea;
-  --crm-accent: #0f7b5c;
+  /* Superficies (claro) */
+  --crm-canvas: hsl(150 12% 97%);
+  --crm-panel: hsl(0 0% 100%);
+  --crm-panel-2: hsl(150 10% 95%);
+  /* Estados tonales: se leen en monitores reales (hover 6 %, activo 10 %); el estado que importa lleva además una
+     barra de acento de 2 px (fila seleccionada, item activo de teclado), que es la que cumple 3:1. */
+  --crm-hover: color-mix(in srgb, hsl(160 20% 10%) 6%, transparent);
+  --crm-pressed: color-mix(in srgb, hsl(160 20% 10%) 10%, transparent);
+  --crm-skeleton: hsl(150 8% 91%);
+  --crm-scrim: hsl(165 25% 6% / 0.4);
+
+  /* Bordes: hairline decorativo (divisores, paneles) y borde de control (inputs, checkbox: >= 3:1). */
+  --crm-border: hsl(150 10% 88%);
+  --crm-border-strong: hsl(160 6% 52%);
+
+  /* Texto */
+  --crm-text: hsl(160 20% 10%);
+  --crm-text-2: hsl(160 8% 34%);
+  --crm-text-disabled: hsl(160 6% 62%);
+
+  /* Acento (verde de marca): primario, activo, seleccionado y foco. Nada más. */
+  --crm-accent: hsl(160 78% 24%);
+  --crm-accent-hover: hsl(160 80% 19%);
+  --crm-on-accent: hsl(0 0% 100%);
+  --crm-accent-text: hsl(160 78% 23%);
+  --crm-selected: color-mix(in srgb, hsl(160 78% 24%) 10%, transparent);
+  --crm-focus: hsl(160 78% 28%);
+
+  /* Semánticos: texto sólido AA sobre su tinte al 8 %, siempre con ícono o palabra. */
+  --crm-success: hsl(145 63% 25%);
+  --crm-success-tint: color-mix(in srgb, hsl(145 63% 25%) 8%, transparent);
+  --crm-warning: hsl(30 90% 29%);
+  --crm-warning-tint: color-mix(in srgb, hsl(30 90% 29%) 8%, transparent);
+  --crm-danger: hsl(0 70% 40%);
+  --crm-danger-hover: hsl(0 72% 34%);
+  --crm-danger-tint: color-mix(in srgb, hsl(0 70% 40%) 8%, transparent);
+  --crm-on-danger: hsl(0 0% 100%);
+  --crm-info: hsl(210 75% 36%);
+  --crm-info-tint: color-mix(in srgb, hsl(210 75% 36%) 8%, transparent);
+
+  /* Capa invertida (tooltip) */
+  --crm-inverse: hsl(165 18% 14%);
+  --crm-on-inverse: hsl(150 8% 96%);
+
+  /* Elevación: una sola sombra, solo en capas flotantes (popover, menú, drawer, diálogo, toast). */
+  --crm-shadow-float: 0 8px 24px -6px hsl(165 30% 8% / 0.18), 0 2px 6px -2px hsl(165 30% 8% / 0.1);
+
+  /* Capas. El wrapper es `display: contents`, así que todo overlay declara su z-index explícito. */
+  --crm-z-sticky: 10;
+  --crm-z-rail: 30;
+  --crm-z-drawer: 50;
+  --crm-z-dialog: 60;
+  --crm-z-popover: 70;
+  --crm-z-toast: 80;
+  --crm-z-tooltip: 90;
+
+  /* Movimiento */
+  --crm-dur-fast: 120ms;
+  --crm-dur: 160ms;
+  --crm-dur-slow: 200ms;
+  --crm-ease: cubic-bezier(0.2, 0, 0, 1);
 }
 
 .dark [data-crm] {
-  --crm-surface: #12161c;
-  --crm-surface-raised: #1a1f27;
-  --crm-text: #e8ecf1;
-  --crm-text-muted: #9aa4b2;
-  --crm-border: #2a313b;
-  --crm-accent: #3ecf9e;
+  --crm-canvas: hsl(165 12% 8%);
+  --crm-panel: hsl(165 11% 11%);
+  --crm-panel-2: hsl(165 10% 14%);
+  --crm-hover: color-mix(in srgb, hsl(150 8% 94%) 7%, transparent);
+  --crm-pressed: color-mix(in srgb, hsl(150 8% 94%) 11%, transparent);
+  --crm-skeleton: hsl(165 8% 18%);
+  --crm-scrim: hsl(165 30% 2% / 0.6);
+
+  --crm-border: hsl(165 8% 20%);
+  --crm-border-strong: hsl(165 6% 44%);
+
+  --crm-text: hsl(150 8% 94%);
+  --crm-text-2: hsl(165 8% 68%);
+  --crm-text-disabled: hsl(165 5% 40%);
+
+  --crm-accent: hsl(160 58% 46%);
+  --crm-accent-hover: hsl(160 58% 54%);
+  --crm-on-accent: hsl(165 40% 7%);
+  --crm-accent-text: hsl(158 55% 58%);
+  --crm-selected: color-mix(in srgb, hsl(160 58% 46%) 14%, transparent);
+  --crm-focus: hsl(158 60% 52%);
+
+  --crm-success: hsl(145 50% 60%);
+  --crm-success-tint: color-mix(in srgb, hsl(145 50% 60%) 8%, transparent);
+  --crm-warning: hsl(38 85% 62%);
+  --crm-warning-tint: color-mix(in srgb, hsl(38 85% 62%) 8%, transparent);
+  --crm-danger: hsl(0 80% 72%);
+  --crm-danger-hover: hsl(0 80% 78%);
+  --crm-danger-tint: color-mix(in srgb, hsl(0 80% 72%) 8%, transparent);
+  --crm-on-danger: hsl(0 40% 8%);
+  --crm-info: hsl(210 80% 74%);
+  --crm-info-tint: color-mix(in srgb, hsl(210 80% 74%) 8%, transparent);
+
+  --crm-inverse: hsl(150 8% 92%);
+  --crm-on-inverse: hsl(165 18% 10%);
+
+  --crm-shadow-float: 0 8px 24px -6px hsl(0 0% 0% / 0.5), 0 2px 6px -2px hsl(0 0% 0% / 0.4);
 }
 
-/* Raíz de portales (overlays de CRM 2.0). Vive DENTRO del wrapper para heredar los --crm-*. Vacía hoy.
+/* Raíz de portales (overlays de CRM 2.0). Vive DENTRO del wrapper para heredar los --crm-*.
    `display: contents`: no ocupa lugar en el flex del body; lo portalizado va con `position: fixed`. */
 [data-crm] > #crm-portal {
   display: contents;
+}
+
+/* Animaciones de entrada de las capas flotantes. Se usan desde Tailwind (`animate-[crm-fade_…]`) y se apagan con
+   `motion-reduce:animate-none`. Las referencian solo primitivos de components/crm, que viven bajo [data-crm]. */
+@keyframes crm-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes crm-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes crm-slide-in-right {
+  from {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+}
+
+@keyframes crm-pulse {
+  50% {
+    opacity: 0.55;
+  }
 }

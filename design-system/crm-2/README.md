@@ -46,6 +46,29 @@ los siguen usando). Dejar de usarlos en `AppShell` está bien; borrarlos de `glo
    `--font-crm-mono` en el wrapper. La landing no las descarga. Hoy `preload: false`; pasar a `true` al aplicarlas.
 8. Los route groups `(legacy)` / `(crm2)` llegan en la Etapa 2.
 
+## Sistema de diseño y primitivos (Etapa 1)
+
+La fuente de verdad visual es **[`MASTER.md`](./MASTER.md)** (tokens, tipografía, densidad, estados, specs de componentes,
+contratos de accesibilidad y la definición de terminado de una pantalla migrada).
+
+- **Tokens:** `--crm-*` en `src/app/(app)/crm.css` (claro y `.dark`). Se consumen **solo** con utilidades de Tailwind v4 que leen
+  la variable (`bg-(--crm-panel)`, `z-(--crm-z-popover)`…); crm.css no tiene clases de componentes (MASTER §2 explica por qué).
+- **Primitivos:** `src/components/crm/`, un archivo por familia (`Button`, `Field`, `Select`, `Menu`, `Popover`, `Tooltip`, `Tabs`,
+  `Status`, `Panel`, `Feedback`, `Drawer`, `Dialog`, `Toast`, `Pagination`, `DataTable`), más `cx.ts` (clases compartidas),
+  `portal.tsx` (`CrmPortal` → `#crm-portal`), `overlay.ts` (pila de capas, foco modal, anclaje) y `teclado.ts` (lógica pura de
+  teclado). Se importan por archivo (`@/components/crm/Button`), sin barril.
+- **Server-safe:** `Button`, `Field`, `Status`, `Panel`, `Feedback`, `DataTable` y `cx.ts` no tienen `"use client"` ni hooks: se
+  pueden usar desde server components. Los hooks viven en `overlay.ts` (cliente), como `ui/overlay.ts` frente a `UIComponents.tsx`.
+- **Sumar un primitivo:** archivo nuevo en `components/crm/`; solo tokens (ningún color, radio, sombra ni z-index literal);
+  todo lo flotante por `CrmPortal` con `UI_ROOT`, `position: fixed` y su `--crm-z-*`; Escape/clic afuera con `useLayer`; nunca
+  `title=` (el TooltipHost legacy lo reescribe y rompe la hidratación); spec en MASTER §10; si suma un par de color, agregarlo a
+  `PARES` en `src/lib/contrasteCrm.ts` (`npm test` lo mide); una muestra en el laboratorio.
+- **Laboratorio:** `/crm-lab` (solo `next dev`; en producción da 404; no enlazado). Muestra cada primitivo en sus estados, en claro
+  y oscuro. Es el **único** consumidor de `components/crm` en esta etapa y se borra antes de lanzar la 2.0.
+- **Fuentes:** `CrmRoot` sigue con `preload: false` a propósito: en esta etapa Plex solo se aplica en el laboratorio y con
+  `preload: true` cada pantalla legacy del CRM precarga 4 archivos que no usa (Chrome avisa "preloaded but not used"). Pasa a
+  `true` cuando el shell de la Etapa 2 aplique Plex en todo el CRM.
+
 ### Cómo es el wrapper
 
 ```tsx
