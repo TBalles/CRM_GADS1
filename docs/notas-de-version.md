@@ -138,7 +138,7 @@ administrador verificado; en el login público ese link se descarta a propósito
 - **Baja lógica, sin borrar:** "Dar de baja" (`estado = 'inactivo'`, con confirmación) y "Reactivar"
   (vuelve a `potencial`). La interfaz no ofrece borrar empresas ni contactos.
 - Si el cliente está en `no_contactar`, la ficha y el formulario de actividad muestran un aviso (no
-  bloquean). No se avisa al crear oportunidades o ventas: esas pantallas llegan en F2.
+  bloquean). El formulario de oportunidad también avisa (F2); el de ventas todavía no.
 
 **Qué agregó la base (migración 0007); la interfaz la usa desde F1b.**
 
@@ -159,7 +159,7 @@ ser del mismo cliente (organización).
   no envía el campo.
 - Los contactos sin empresa (clientes individuales) se listan en `/contactos` desde F1b.
 - Las fichas de empresa y contacto existen desde F1b; la ficha 360 (indicadores, conversión) sigue
-  planificada en F5. El título de cada oportunidad en la ficha es texto: el detalle llega en F2.
+  planificada en F5. El título de cada oportunidad en la ficha lleva al detalle (`/oportunidades/[id]`, F2).
 - Las listas siguen filtrando en el navegador sobre todo lo que devuelve la base (F3 las pasa al servidor).
 
 **Cómo probarlo.** Cuenta Vendedor del seed: `/empresas` muestra 4 de las 8 empresas (su cartera). Con
@@ -257,15 +257,15 @@ son CSS puro, sin librería (ver [decisión 0007](./decisiones/0007-graficos-en-
 **Correcciones de esta versión.** El ranking de empresas mide la barra por monto y no por cantidad
 (`5e6a95c`) y excluye oportunidades sin empresa (`dd50fe7`).
 
-**Límite conocido.** El tablero suma **todas** las oportunidades, también las ganadas y perdidas, y el
-texto dice "abiertas". La consulta no filtra por `estado` porque la interfaz es anterior a la 0007.
-Se corrige junto con F2.
+**Estado de las cifras.** "En juego", las oportunidades abiertas y el ranking de empresas cuentan solo las
+abiertas (filtran por `estado`); el embudo de abajo sí muestra cada etapa con todo lo que tiene, cerradas
+incluidas.
 
 ### b.7 Bitácora de clientes
 
 | Aspecto | Detalle |
 |---|---|
-| Estado | **Implementado (F1b)** desde las fichas de empresa y de contacto: tipo de catálogo, fecha y hora, descripción, resultado, vínculo a oportunidad y cliente individual. El alta desde la ficha de la oportunidad llega en F2 |
+| Estado | **Implementado (F1b)** desde las fichas de empresa y de contacto: tipo de catálogo, fecha y hora, descripción, resultado, vínculo a oportunidad y cliente individual. Desde F2 también se registra desde el detalle de la oportunidad |
 | Dónde | `src/components/ActividadForm.tsx` (alta reutilizable) y `src/components/ActividadesTimeline.tsx` (línea de tiempo); tabla `bitacora_entradas`. `BitacoraPanel.tsx` se eliminó |
 | Commits | `a72f794`; base: `a5c0135` |
 
@@ -293,42 +293,72 @@ colgar una actividad en el cliente de otro usando su propia oportunidad.
 
 | Aspecto | Detalle |
 |---|---|
-| Estado | Alta, edición, embudo con arrastre y listado: **implementado**. Estado, cierre, motivo, historial, auditoría, origen, probabilidad y tipo: **base lista, sin interfaz** |
-| Dónde | `src/app/(app)/oportunidades/` (`OportunidadesView.tsx`, `OportunidadForm.tsx`) |
-| Commits | `65d5b4a`, `9aa5e7d`, `95f5273`, `7e8f775` (arrastre), `de6b9cd`; base: `a5c0135` |
+| Estado | **Implementado (F2)**: alta y edición completas, tablero dinámico, lista con filtros, detalle, cierre ganada/perdida con motivo, reapertura, reasignación, historial de etapas y auditoría |
+| Dónde | `src/app/(app)/oportunidades/` (`OportunidadesView.tsx`, `OportunidadForm.tsx`, `datos.ts`, `[id]/`), `src/components/CierreModal.tsx`, `src/components/oportunidades.tsx`, `src/lib/oportunidades.ts`, `src/lib/cambiarEtapa.ts` |
+| Commits | `65d5b4a`, `9aa5e7d`, `95f5273`, `7e8f775` (arrastre), `de6b9cd`; base: `a5c0135`; F2 sin commit todavía |
 
-**Qué hace hoy.**
+**Qué hace.**
 
-- Alta y edición con título, empresa y/o contacto, producto, responsable, etapa, monto y notas.
-- **Embudo en columnas por etapa**, arriba del listado, con **arrastre entre etapas** (HTML5 nativo, sin
-  dependencia). El cambio se guarda al instante; si falla, la tarjeta vuelve y aparece un aviso. Cada
-  tarjeta en vuelo está bloqueada para evitar escrituras concurrentes (`95f5273`). El arrastre no
-  funciona con touch: en el móvil la etapa se cambia desde el formulario de edición.
-- Listado con búsqueda y filtro por etapa; tabla en escritorio y tarjetas en móvil.
-- En el formulario, el contacto se acota a la empresa elegida (`de6b9cd`) y el responsable no incluye a
-  usuarios inactivos ni al superadmin.
+- **Formulario** (Drawer): título, empresa o contacto (uno de los dos es obligatorio), producto, valor
+  estimado, probabilidad (entero de 0 a 100, opcional), fecha estimada de cierre, origen (catálogo),
+  responsable y observaciones. El responsable se elige solo con `oportunidades.asignar`; sin ese permiso
+  se ve de solo lectura y el alta queda a nombre de quien la crea. En el alta la etapa es una de las
+  abiertas; en la edición la etapa se muestra pero se cambia desde "Cambiar etapa" (así cada cambio deja
+  su observación). **Estado, fecha real de cierre y motivo de pérdida no se editan a mano**: los fija la
+  base al cambiar de etapa o cerrar. Un cliente "No contactar" muestra un aviso, no bloquea.
+- **Tablero**: una columna por **etapa abierta** del cliente, en el orden de `/configuracion`, con scroll
+  horizontal e imán en pantallas chicas. Solo oportunidades abiertas. Arrastrar una tarjeta llama a la RPC
+  `cambiar_etapa` (nunca un `update`); el movimiento es optimista y, si la base lo rechaza, la tarjeta
+  vuelve y un aviso dice por qué. Las etapas de cierre no son columnas: se cierra desde el menú de la
+  tarjeta ("Marcar ganada" / "Marcar perdida"). "Cambiar etapa" del menú es también la alternativa en el
+  móvil, donde el arrastre no anda, y permite dejar una observación.
+- **Lista** (conmutador Tablero | Lista): filtros por estado (por defecto Abiertas), etapa, responsable
+  (solo con `clientes.ver_todos`), origen y búsqueda. Las cerradas muestran el estado con texto, la fecha
+  de cierre y, si es perdida, el motivo. Los filtros corren en el navegador sobre lo ya cargado; la
+  paginación y la búsqueda en el servidor son F3.
+- **Cierre** (`CierreModal`): "Marcar ganada" (fecha de cierre, por defecto hoy y nunca futura;
+  observación opcional), "Marcar perdida" (motivo del catálogo obligatorio, fecha, observación),
+  "Reabrir" (con `oportunidades.reabrir`; vuelve a una etapa abierta a elección y pide la razón) y "Cambiar
+  etapa". Si hay varias etapas del tipo ganada o perdida se elige una; si hay una sola, se usa esa.
+- **Detalle** `/oportunidades/[id]`: cabecera (título, estado, etapa, valor, insignia de licitación),
+  acciones (Registrar actividad, Cambiar etapa, Marcar ganada/perdida, Reabrir, Cambiar resultado, Reasignar,
+  Editar según permisos), datos con links a la empresa y al contacto, **línea de tiempo unificada** (actividades y
+  cambios de etapa con etapa anterior a nueva, usuario y observación, lo último arriba) y, si existe, la
+  sección **"Cambios después del cierre"** con la auditoría (campo, antes y después). 404 si el id no
+  existe o la RLS lo esconde (la oportunidad de otro Vendedor).
+- Las fichas de empresa y de contacto enlazan cada oportunidad a su detalle.
 
-**Qué hace la base desde la 0007.** El estado de la oportunidad (`abierta`, `ganada`, `perdida`) sale del
-**tipo de la etapa**; cerrar exige fecha real y, si es perdida, motivo; reabrir exige permiso; cada cambio
-de etapa queda en `oportunidad_etapas_historial`; editar una cerrada queda en `oportunidad_auditoria`;
-las oportunidades no se pueden borrar. Detalle en [c](#c-la-base-de-datos-de-la-entrega-final-migración-0007).
+**Reglas que la interfaz cumple y la base sigue exigiendo.**
 
-**Lo que hay que saber de la interfaz actual frente a esas reglas.**
-
-| Acción en pantalla | Resultado hoy |
+| Acción en pantalla | Resultado |
 |---|---|
-| Arrastrar a una etapa abierta | Funciona; se escribe una fila en el historial |
-| Arrastrar a "Entregado" (ganada) | Funciona; queda ganada con fecha de cierre = hoy |
-| Arrastrar a "Perdida" | **Falla** (la perdida exige motivo y el arrastre no lo pide): la tarjeta vuelve y aparece "No se pudo cambiar la etapa." La interfaz para pedir el motivo es F2 |
-| Sacar del cierre a una etapa abierta sin `oportunidades.reabrir` | Falla con el mismo aviso |
-| Un Vendedor asigna la oportunidad a otra persona | Falla con "No se pudo guardar la oportunidad" |
-| Editar una oportunidad cerrada | Funciona y queda auditado |
+| Arrastrar o mover a otra etapa abierta | Por `cambiar_etapa`; fila en el historial con el usuario |
+| Marcar ganada | Estado y fecha de cierre los fija el trigger; la fecha elegida en el modal viaja a la RPC |
+| Marcar perdida sin motivo | El modal no deja enviar ("Elegí el motivo de pérdida."); si llegara a la base, el trigger lo rechaza y la interfaz traduce el mensaje |
+| Reabrir sin `oportunidades.reabrir` | El botón no se ofrece; por RPC la base responde 42501 y la interfaz lo traduce |
+| Un Vendedor reasigna | El botón y el selector no se ofrecen; la base rechaza el cambio de responsable |
+| Un rol con `oportunidades.asignar` sin `clientes.ver_todos` | No se puede armar: el catálogo de permisos exige `clientes.ver_todos` para asignar |
+| Editar una oportunidad cerrada | Se puede y queda auditado; el formulario lo avisa |
 
-El embudo reparte las columnas con `lg:grid-cols-6`: está pensado para las seis etapas por defecto y no
-para un embudo configurable (F2).
+**Cambiar el resultado.** Una cerrada con `oportunidades.reabrir` ofrece "Cambiar resultado" (ganada a
+perdida y al revés) sin reabrirla: etapas del cierre contrario, motivo si va a perdida, fecha del nuevo cierre y
+razón obligatoria. El modal rechaza repetir la fecha del cierre anterior (salvo que sea hoy), porque el trigger
+la tomaría por "sin fecha" y la reemplazaría en silencio por la de hoy. En la línea de tiempo se lee
+"Cambio de resultado"; las filas que escribió la 0007 al activar el historial se leen "Registro inicial".
 
-**Cómo verlo.** Cuenta Administrador: arrastrá una tarjeta de "Negociación" a "Entregado" y refrescá. Para
-ver el historial hay que mirar la tabla (SQL Editor): `oportunidad_etapas_historial`.
+**Migración 0009 (pendiente de aplicar a mano, junto con la 0008).** La base no imponía tres reglas que la
+interfaz sí: fecha de cierre no futura (con fecha de Argentina), fecha por defecto de Argentina y empresa o
+contacto obligatorio. La `0009_reglas_oportunidades.sql` las agrega (ver
+[reglas de negocio](./reglas-de-negocio.md), 2.16 a 2.18) y la interfaz traduce esos errores y mantiene sus
+propias validaciones. Mientras no se aplique, la base viva sigue aceptando una fecha de cierre futura y una
+oportunidad sin cliente por la API.
+
+**Otros límites conocidos.** La tabla de licitaciones y sus reglas son F4: hoy `licitacion` es solo una insignia. Las reaperturas también quedan en
+"Cambios después del cierre", porque la base audita todo cambio de una oportunidad que estaba cerrada.
+
+**Cómo verlo.** Cuenta Administrador: en `/oportunidades` arrastrá una tarjeta de "Negociación" a
+"Presupuesto enviado", abrí su menú y elegí "Marcar perdida" con un motivo; entrá a su detalle, reabrila y
+mirá el historial. Con la cuenta Vendedor comprobá que no ve "Reabrir" ni "Reasignar".
 
 ### b.9 Usuarios, roles y permisos
 
@@ -464,10 +494,10 @@ poder ensayarla dentro de una transacción con el test.
 | Catálogos `origenes`, `motivos_perdida`, `tipos_actividad`, etapas con tipo | **Implementado** en `/configuracion` (F1a) | — |
 | Datos del proveedor y logo | **Implementado** en `/configuracion` (F1a) | — |
 | Estado, responsable, origen, tipo de cliente en empresas y contactos | **Implementado** (F1b) | — |
-| Estado, cierre, motivo, origen, probabilidad en oportunidades | Base lista, sin interfaz | F2 (2026-10-18) |
-| Historial de etapas y auditoría | Base lista; se escribe en cada arrastre | Mostrarlo: F2 |
-| `cambiar_etapa()` | Base lista; la interfaz todavía actualiza `etapa_id` directo | F2 |
-| Actividades con tipo de catálogo, resultado y oportunidad | **Implementado** en las fichas de empresa y contacto (F1b); falta ofrecerlo desde la oportunidad | F2 |
+| Estado, cierre, motivo, origen, probabilidad en oportunidades | **Implementado** (F2) | — |
+| Historial de etapas y auditoría | **Implementado** (F2): línea de tiempo y "Cambios después del cierre" en el detalle | — |
+| `cambiar_etapa()` | **Implementado** (F2): tablero, detalle y modal de cierre la usan; ninguna pantalla actualiza `etapa_id` directo | — |
+| Actividades con tipo de catálogo, resultado y oportunidad | **Implementado** en las fichas de empresa y contacto (F1b); también desde el detalle de la oportunidad (F2) | — |
 | Cartera propia por responsable | **Implementado** (la base filtra; la pantalla muestra lo que la base devuelve) | — |
 | Roles Vendedor y Responsable comercial | **Implementado** | — |
 
@@ -492,21 +522,20 @@ Lo que cualquier persona del equipo, o quien evalúe el trabajo, tiene que saber
 | 3 | Lo que no tiene responsable | Queda visible solo para quienes tienen `clientes.ver_todos` hasta que un administrador lo asigne. Hoy no hay pantalla para asignar empresas ni contactos | Sección 7 |
 | 4 | Roles propios de cada cliente | Los que ya veían clientes reciben `clientes.ver_todos` para no perder visibilidad. Si un administrador se lo quita después, volver a correr la migración no se lo devuelve | Sección 1 |
 | 5 | **Las oportunidades no se borran** | No hay política de borrado para nadie, ni el administrador. Se marcan perdidas. El historial las referencia sin cascada | Sección 12, sección 9 |
-| 6 | **Perdida exige motivo** | Una oportunidad no puede quedar perdida sin `motivo_perdida_id`. Arrastrar una tarjeta a "Perdida" falla hasta que F2 agregue el modal de motivo | Trigger `oportunidades_reglas` |
+| 6 | **Perdida exige motivo** | Una oportunidad no puede quedar perdida sin `motivo_perdida_id`. Desde F2 la interfaz pide el motivo en el modal de cierre | Trigger `oportunidades_reglas` |
 | 7 | **Ganada exige fecha real** | Si no viene, el trigger pone hoy | Ídem |
 | 8 | **Reabrir exige permiso** | Pasar una oportunidad cerrada a una etapa abierta (o cambiar su resultado) requiere `oportunidades.reabrir`. Sin usuario (scripts, `service_role`) no se exige | Ídem |
 | 9 | Asignar exige permiso | Crear una empresa, contacto u oportunidad para otra persona, o reasignarla, requiere `clientes.asignar` / `oportunidades.asignar`. Lo propio se asigna solo | Triggers `validar_responsable` |
 | 10 | Editar una oportunidad cerrada se audita | Cada modificación queda en `oportunidad_auditoria` con `{campo: {antes, despues}}` | Trigger `oportunidades_auditar_cerrada` |
-| 11 | Cada cambio de etapa se registra | También el alta (etapa anterior nula). Hoy no se ve en pantalla | Trigger `oportunidades_registrar_etapa` |
+| 11 | Cada cambio de etapa se registra | También el alta (etapa anterior nula). Se ve en el detalle de la oportunidad (F2) | Trigger `oportunidades_registrar_etapa` |
 | 12 | Etapas con vocabulario del rubro | Consulta recibida, Relevamiento de cancha, Presupuesto enviado, Negociación, Entregado (ganada), Perdida. Renombradas en el lugar; solo las que conservaban el nombre por defecto | Sección 3 |
 | 13 | Contactos con actividades no se borran | La clave foránea pasó de `set null` a `no action`. La baja es por estado | Sección 10 |
 | 14 | Actividades | El autor es siempre quien escribe; el tipo viejo `consulta` se traduce a "Otro" | `bitacora_defaults` |
 | 15 | Organización protegida | El administrador de un cliente no puede cambiar el nombre ni el estado (`activa`) de su organización | `organizaciones_proteger_plataforma` |
 | 16 | Orden de despliegue | Aplicar la migración y desplegar enseguida | [deploy](./deploy.md) |
 
-**Hoy desde la interfaz: qué sigue igual.** Cualquier pantalla de la segunda entrega sigue andando con la
-base nueva (altas de empresas, contactos, oportunidades, bitácora y movimiento de tarjetas por
-`etapa_id`), excepto los casos de la tabla de [b.8](#b8-oportunidades-y-embudo).
+**Hoy desde la interfaz: qué sigue igual.** Las pantallas respetan las reglas nuevas de la base
+(desde F2 las oportunidades cambian de etapa por `cambiar_etapa`; ver [b.8](#b8-oportunidades-y-embudo)).
 
 ---
 
@@ -530,10 +559,10 @@ lista, sin interfaz · **P** Planificado.
 | Productos o servicios | I | ABM completo en `/productos` |
 | Crear y modificar oportunidades; empresa o contacto; responsable; producto | I | `OportunidadForm.tsx` |
 | Listado de oportunidades | I | `OportunidadesView.tsx` |
-| Detalle de oportunidad | I parcial | Panel de edición; sin página de detalle (F2) |
+| Detalle de oportunidad | I (F2) | `/oportunidades/[id]` |
 | Embudo: oportunidades agrupadas por etapa | I | Columnas por etapa |
 | Cambiar de etapa | I | Arrastre entre columnas |
-| Conservar los cambios en la base | I | Escritura directa a `oportunidades.etapa_id` |
+| Conservar los cambios en la base | I | RPC `cambiar_etapa` (F2) |
 
 ### e.2 Entrega final (12/11)
 
@@ -545,13 +574,13 @@ lista, sin interfaz · **P** Planificado.
 | Gestión completa de empresas y contactos | I parcial + B | Alta y edición básicas: I. Estado, responsable, origen, industria, sitio web, documento: B (F1) |
 | Gestión de productos o servicios | I | `/productos`. No distingue producto de servicio |
 | Asignación de responsables comerciales | I parcial + B | Oportunidades: I (formulario). Empresas y contactos: B (se asignan al creador; sin pantalla para elegir o reasignar) |
-| Gestión completa de oportunidades | I parcial + B | Alta y edición: I. Estado, fechas, origen, motivo, probabilidad, tipo: B. Detalle: P (F2) |
-| Embudo comercial configurable | B | Etapas con tipo y políticas de escritura en la base; sin pantalla (F1); columnas fijas en 6 |
-| Cambio de etapas con historial | B | Cada cambio se registra; no se muestra (F2) |
-| Registro de actividades realizadas | I parcial + B | Bitácora por empresa con 7 tipos: I. Catálogo de 12 tipos, resultado, oportunidad, cliente individual: B (F2) |
-| Historial comercial de empresas, contactos y oportunidades | I parcial + P | Bitácora de empresa: I. Línea de tiempo de contacto, oportunidad y empresa unificada: P (F2 y F5) |
-| Cierre de oportunidades ganadas o perdidas | B | Reglas en la base. Arrastrar a Entregado cierra como ganada; perdida exige el modal de F2 |
-| Registro de motivos de pérdida | B | Catálogo y regla en la base; sin pantalla |
+| Gestión completa de oportunidades | I (F2) | Alta, edición, estado, fechas, origen, motivo, probabilidad, detalle. El tipo licitación es solo una insignia hasta F4 |
+| Embudo comercial configurable | I (F1a, F2) | Etapas en `/configuracion`; el tablero genera sus columnas con las etapas abiertas configuradas |
+| Cambio de etapas con historial | I (F2) | `cambiar_etapa` con observación; el historial se ve en el detalle |
+| Registro de actividades realizadas | I (F1b, F2) | Catálogo de tipos, resultado, oportunidad y cliente individual; también desde el detalle de la oportunidad |
+| Historial comercial de empresas, contactos y oportunidades | I parcial + P | Empresa y contacto: actividades (F1b). Oportunidad: actividades y cambios de etapa unificados (F2). Historial integral del cliente: P (F5) |
+| Cierre de oportunidades ganadas o perdidas | I (F2) | `CierreModal`: fecha de cierre, motivo y observación; reabrir con permiso |
+| Registro de motivos de pérdida | I (F1a, F2) | Catálogo en `/configuracion`; el modal de pérdida lo exige |
 | Gestión de etapas, tipos de actividad, orígenes y motivos de pérdida | I (F1a) | `/configuracion` |
 | Búsqueda, filtros y paginación | I parcial + P | Búsqueda en pantalla (sobre lo ya cargado) y filtros de etapa y de alertas: I. Búsqueda en servidor, filtros por responsable, estado y origen, y paginación: P (F3) |
 | Adaptación real a la industria | I + B + P | Vida útil, snapshot, alertas de recambio, ventas por entrega: I. Embudo, orígenes, motivos y tipos del rubro, `tipo_cliente`: B. Canchas, parque instalado, licitaciones: P (F4) |
@@ -564,15 +593,15 @@ lista, sin interfaz · **P** Planificado.
 | Administrador: crea y modifica usuarios, asigna roles | I | `/usuarios` |
 | Administrador: configura etapas, tipos de actividad, motivos y orígenes | I (F1a) | `/configuracion`, con `configuracion.gestionar` |
 | Administrador: accede a toda la información | I | Rol con todos los permisos |
-| Administrador y Responsable comercial: asignan y reasignan oportunidades | I | Formulario de oportunidad |
+| Administrador y Responsable comercial: asignan y reasignan oportunidades | I | Formulario y "Reasignar" en el detalle (F2) |
 | Administrador y Responsable comercial: asignan y reasignan contactos | B | Sin pantalla |
 | Vendedor: registra empresas y contactos; consulta los asignados; crea y actualiza oportunidades | I | Cartera propia aplicada por la base |
-| Vendedor: cambia de etapa; registra actividades | I | Arrastre y bitácora |
-| Vendedor: consulta el historial comercial | I parcial | Actividades en la ficha de empresa y de contacto; el historial de etapas, en F2 |
-| Vendedor: marca ganadas o perdidas | I parcial + B | Ganada por arrastre a Entregado; perdida con motivo: B |
+| Vendedor: cambia de etapa; registra actividades | I | Tablero, detalle y bitácora |
+| Vendedor: consulta el historial comercial | I | Actividades en las fichas y, en el detalle de la oportunidad, actividades y cambios de etapa (F2) |
+| Vendedor: marca ganadas o perdidas | I (F2) | Desde el menú de la tarjeta o el detalle |
 | Responsable comercial: consulta todo el equipo, supervisa abiertas, ve el embudo | I | Sin filtros por responsable en pantalla (F3) |
-| Responsable comercial: historial de cada negociación | B | Se registra; sin pantalla (F2) |
-| Responsable comercial: revisa ganadas y perdidas | I parcial | Aparecen como columnas del embudo; sin filtro por estado |
+| Responsable comercial: historial de cada negociación | I (F2) | Detalle de la oportunidad |
+| Responsable comercial: revisa ganadas y perdidas | I (F2) | Lista con filtro por estado, motivo y fecha de cierre |
 
 ### e.4 Módulos principales
 
@@ -583,15 +612,15 @@ lista, sin interfaz · **P** Planificado.
 | Estados potencial, cliente, inactivo, no contactar | I (F1b) | Pill con texto en listas y fichas; CHECK en la base |
 | Baja lógica | I (F1b) | "Dar de baja" y "Reactivar" con confirmación; sin borrado en la interfaz. Con la 0008 aplicada la base tampoco deja borrar; ver [f](#f-seguridad-de-esta-versión) |
 | Separación contacto / oportunidad | I | Entidades distintas |
-| Módulo 2, datos mínimos de oportunidad | I (título, empresa/contacto, responsable, producto, valor, etapa, observaciones) · B (probabilidad, fechas de cierre, origen, estado, motivo) | |
-| Estados abierta, ganada, perdida | B | Derivados del tipo de la etapa |
-| Vistas: lista, individual, tablero; filtros por responsable, etapa, estado y origen | Lista y tablero I; filtro por etapa I; individual y demás filtros P | F2 y F3 |
-| Cambio de etapa desde el detalle o el tablero | Tablero I; detalle P | F2 |
-| Reglas del cambio de etapa (ocho condiciones) | B | Triggers y CHECK; probadas en `0007_reglas.sql` |
+| Módulo 2, datos mínimos de oportunidad | I (F2: título, empresa/contacto, responsable, producto, valor, etapa, probabilidad, fechas, origen, estado, motivo, observaciones) | |
+| Estados abierta, ganada, perdida | I (F2) | Derivados del tipo de la etapa; Pill con texto |
+| Vistas: lista, individual, tablero; filtros por responsable, etapa, estado y origen | I (F2): lista, tablero e individual; filtros en el navegador | Filtros en el servidor y paginación: F3 |
+| Cambio de etapa desde el detalle o el tablero | I (F2) | |
+| Reglas del cambio de etapa (ocho condiciones) | I (F2) | Triggers y CHECK; probadas en `0007_reglas.sql`; la interfaz las pide y traduce los errores |
 | Módulo 3, tipos mínimos de actividad (9) | B (12 sembrados); la pantalla usa 7 tipos propios | F2 |
 | Módulo 3, datos mínimos de la actividad | I (F1b: tipo de catálogo, fecha y hora, usuario, empresa o contacto, descripción, resultado, oportunidad opcional) | |
-| Historial cronológico en contacto, empresa y oportunidad | Empresa y contacto I (F1b); oportunidad P | F2 |
-| Historial de etapas (oportunidad, anterior, nueva, fecha, usuario, observación) | B | `oportunidad_etapas_historial` |
+| Historial cronológico en contacto, empresa y oportunidad | I (F1b, F2) | |
+| Historial de etapas (oportunidad, anterior, nueva, fecha, usuario, observación) | I (F2) | `oportunidad_etapas_historial`, visible en el detalle |
 
 ### e.5 Lo construido que la consigna lista como fuera de alcance
 
@@ -646,7 +675,7 @@ luego F4 (licitaciones); nunca F0 a F3.
 |---|---|---|---|
 | F0 | Migración `0007_entrega_final.sql` | 2026-10-08 | **Hecha** (aplicada el 2026-10-04) |
 | F1 | `/configuracion` (datos de la empresa y logo, etapas, tipos de actividad, orígenes, motivos de pérdida) y empresas/contactos completos (estado, responsable, origen, tipo de cliente; `/contactos`; detalles) | 2026-10-13 | **Hecha** (F1a `/configuracion`, F1b empresas y contactos) |
-| F2 | Oportunidades completas: detalle, cerrar ganada/perdida con modal de motivo, reabrir, reasignar, kanban dinámico con `cambiar_etapa`, línea de tiempo; actividades genéricas | 2026-10-18 | Planificado |
+| F2 | Oportunidades completas: detalle, cerrar ganada/perdida con modal de motivo, reabrir, reasignar, kanban dinámico con `cambiar_etapa`, línea de tiempo; actividades genéricas | 2026-10-18 | **Hecha** (sin commit todavía) |
 | F3 | Búsqueda, filtros y paginación en el servidor en todas las listas | 2026-10-22 | Planificado |
 | F4 | Rubro: recambio en un clic, parque instalado, ficha de canchas, licitaciones | 2026-10-28 | Planificado |
 | F5 | Ficha 360, tablero del responsable, conversión del embudo, búsqueda global Ctrl+K | 2026-11-02 | Planificado |
@@ -792,7 +821,7 @@ las dependencias que se agregan solas al guardar un rol.
 | `bitacora.escribir` | Bitácora | Agregar actividades | `bitacora.ver` | sí | sí | sí | no |
 | `oportunidades.ver` | Oportunidades | Ver el embudo | `clientes.ver`, `productos.ver` | sí | sí | sí | no |
 | `oportunidades.editar` | Oportunidades | Crear, editar, mover de etapa y cerrar | `oportunidades.ver` | sí | sí | sí | no |
-| `oportunidades.asignar` | Oportunidades | Elegir o cambiar el responsable | `oportunidades.editar` | sí | no | sí | no |
+| `oportunidades.asignar` | Oportunidades | Elegir o cambiar el responsable | `oportunidades.editar`, `clientes.ver_todos` | sí | no | sí | no |
 | `oportunidades.reabrir` | Oportunidades | Reabrir una cerrada o cambiar su resultado | `oportunidades.editar` | sí | no | sí | no |
 | `productos.ver` | Productos | Ver el catálogo | | sí | sí | sí | sí |
 | `productos.editar` | Productos | Alta, edición y baja de productos | `productos.ver` | sí | no | no | no |
@@ -821,7 +850,8 @@ lectura (3).
 | `/empresas/[id]` | `clientes.ver` | Ficha de la empresa: datos, contactos, oportunidades, ventas, actividades |
 | `/contactos` | `clientes.ver` | Lista de contactos (de empresa e individuales) |
 | `/contactos/[id]` | `clientes.ver` | Ficha del contacto |
-| `/oportunidades` | `oportunidades.ver` | Embudo y listado |
+| `/oportunidades` | `oportunidades.ver` | Tablero (columnas por etapa abierta) y lista con filtros |
+| `/oportunidades/[id]` | `oportunidades.ver` | Detalle: datos, acciones, línea de tiempo (actividades y cambios de etapa) y auditoría |
 | `/productos` | `productos.ver` | Catálogo |
 | `/ventas` | `ventas.ver` | Historial de ventas |
 | `/alertas` | `alertas.ver` | Recambios vencidos o por vencer |
@@ -830,4 +860,4 @@ lectura (3).
 | `/sin-permisos` | Con sesión | Destino cuando el rol no tiene secciones |
 | `/admin` | Superadmin | Panel de plataforma |
 
-Rutas planificadas, aún inexistentes: `/oportunidades/[id]`, `/oportunidades/[id]/presupuesto`, `/tablero-comercial`.
+Rutas planificadas, aún inexistentes: `/oportunidades/[id]/presupuesto`, `/tablero-comercial`.

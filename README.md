@@ -34,7 +34,8 @@ Producción: [crmgads1.vercel.app](https://crmgads1.vercel.app). Entrega final: 
 - **Alertas de recambio**: equipos vencidos o por vencer en 60 días, con mensaje armado para mail o WhatsApp
   y registro de cada envío.
 - **Bitácora por cliente** (llamadas, reuniones, consultas, quejas, notas).
-- **Oportunidades y embudo comercial** con arrastre de tarjetas entre etapas, responsable y producto.
+- **Oportunidades y embudo comercial**: tablero por etapa (arrastre de tarjetas), lista con filtros, detalle con
+  historial de etapas y actividades, cierre ganada/perdida con motivo, reapertura y reasignación.
 - **Tablero** con la cifra en juego, distribución del embudo, rankings y los recambios que vienen.
 - **Usuarios, roles y permisos**: 19 permisos y cuatro roles por defecto (Administrador, Vendedor,
   Responsable comercial, Solo lectura). Un Vendedor ve solo su cartera.
@@ -44,17 +45,13 @@ Producción: [crmgads1.vercel.app](https://crmgads1.vercel.app). Entrega final: 
 
 ### Base lista, sin interfaz (migración 0007)
 
-Estado, responsable y origen en empresas y contactos; estado, fechas de cierre, motivo de pérdida,
-probabilidad y tipo en oportunidades; catálogos configurables (orígenes, motivos de pérdida, tipos de
-actividad, etapas con tipo); reglas del embudo en la base (ganada con fecha, perdida con motivo, reabrir con
-permiso); historial de cambios de etapa y auditoría de oportunidades cerradas; actividades con tipo de
-catálogo y resultado; datos fiscales del proveedor y logo. Detalle en
+Reglas del embudo en la base (ganada con fecha, perdida con motivo, reabrir con permiso), cuya interfaz
+llegó en F2, y todo lo que la 0007 agregó y las fases F1 y F2 ya muestran. Detalle en
 [docs/notas-de-version.md](./docs/notas-de-version.md).
 
 ### Planificado
 
-`/configuracion`, detalle de empresas, contactos y oportunidades, cierre de oportunidades desde la
-interfaz, búsqueda y paginación en el servidor, funciones del rubro (ficha de canchas, parque instalado,
+Búsqueda y paginación en el servidor, funciones del rubro (ficha de canchas, parque instalado,
 licitaciones), presupuesto imprimible, pruebas E2E con CI, IA opcional y manual de usuario en PDF.
 
 ## Stack
@@ -181,7 +178,7 @@ src/
   lib/                  sesion, permisos, cuentas, email, supabase (3 clientes), money, equipo
   proxy.ts              Refresca la sesión y exige login
 supabase/
-  migrations/           0001 a 0007 (se aplican en orden)
+  migrations/           0001 a 0009 (se aplican en orden; la 0008 y la 0009 faltan en la base viva)
   tests/                Pruebas SQL con rollback
   seeds/                demo_catedra.sql
 docs/                   Documentación (ver abajo)

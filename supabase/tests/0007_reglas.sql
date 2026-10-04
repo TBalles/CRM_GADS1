@@ -547,8 +547,9 @@ select pg_temp.debe_fallar(
   '42501', 'El nombre y el estado de la organización los administra la plataforma.',
   'el admin del cliente pudo renombrar su organizacion');
 select pg_temp.debe_fallar(
-  $q$insert into public.oportunidades (titulo, etapa_id, responsable_id)
-     values ('para B', (select id from public.etapas where orden = 1), 'b7b7b7b7-1111-0000-0000-000000000001')$q$,
+  $q$insert into public.oportunidades (titulo, etapa_id, responsable_id, empresa_id)
+     values ('para B', (select id from public.etapas where orden = 1), 'b7b7b7b7-1111-0000-0000-000000000001',
+             'a7a7a7a7-2222-0000-0000-000000000001')$q$,
   '23514', 'El responsable tiene que ser un usuario de la misma organización.',
   'una oportunidad de A quedo asignada a un usuario de B');
 

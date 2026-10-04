@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Ban, Handshake, Receipt } from "lucide-react";
 import { Card, Pill, SectionTitle } from "@/components/ui/UIComponents";
+import { EstadoOportunidadPill } from "@/components/oportunidades";
 import { estadoInfo, formatFecha } from "@/lib/clientes";
 import { formatMoney } from "@/lib/money";
 import type { Tables } from "@/lib/supabase/types";
@@ -113,18 +114,9 @@ export function AvisoEstado({
   );
 }
 
-const ESTADO_OPORTUNIDAD = {
-  abierta: { label: "Abierta", tono: "azul" },
-  ganada: { label: "Ganada", tono: "verde" },
-  perdida: { label: "Perdida", tono: "rojo" },
-} as const;
-
 export type OportunidadFila = Pick<Tables<"oportunidades">, "id" | "titulo" | "monto" | "estado" | "etapa_id">;
 
-/**
- * Oportunidades de un cliente. El titulo es texto, no link: el detalle de la
- * oportunidad llega en la fase siguiente (F2).
- */
+/** Oportunidades de un cliente. Cada titulo lleva al detalle de la oportunidad. */
 export function OportunidadesLista({
   oportunidades,
   etapas,
@@ -147,13 +139,14 @@ export function OportunidadesLista({
   return (
     <ul className="divide-y divide-border">
       {oportunidades.map((o) => {
-        const est = ESTADO_OPORTUNIDAD[o.estado as keyof typeof ESTADO_OPORTUNIDAD] ?? ESTADO_OPORTUNIDAD.abierta;
         return (
           <li key={o.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2.5 first:pt-0 last:pb-0">
             <div className="min-w-0">
               <p className="flex items-center gap-2 text-sm font-medium">
                 <Handshake aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                <span className="truncate">{o.titulo}</span>
+                <Link href={`/oportunidades/${o.id}`} className="truncate rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background hover:text-brand">
+                  {o.titulo}
+                </Link>
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">{nombreEtapa.get(o.etapa_id) ?? "Sin etapa"}</p>
             </div>
@@ -161,7 +154,7 @@ export function OportunidadesLista({
               <span className="font-mono text-xs font-semibold tabular-nums">
                 {o.monto ? formatMoney(Number(o.monto)) : "—"}
               </span>
-              <Pill tono={est.tono}>{est.label}</Pill>
+              <EstadoOportunidadPill estado={o.estado} />
             </div>
           </li>
         );

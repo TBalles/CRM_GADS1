@@ -138,7 +138,7 @@ qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
 - **Tuco & Nito**: las etapas son **datos**, no un enum de código: nombre y color (hex) vienen
   de la tabla `etapas` y el usuario puede cambiarlos por seed/SQL. No hay mapa canónico
   estado→color que `StatusBadge` pueda usar. `EtapaBadge`
-  (`src/app/(app)/oportunidades/OportunidadesView.tsx`) construye el pill desde el hex de la
+  (`src/components/oportunidades.tsx`, usado por el tablero, la lista y el detalle) construye el pill desde el hex de la
   fila: superficie `color-mix(in srgb, {color} 14%, transparent)`, borde al 38%, texto en
   `foreground` y un dot saturado con el color puro.
 - **Por qué**: los colores sembrados son tonos 400 (`#4ade80`, `#fbbf24`, `#60a5fa`). La

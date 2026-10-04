@@ -41,8 +41,14 @@ Se aplican **en orden**, pegando cada archivo completo en **SQL Editor, New quer
 | 6 | `0006_superadmin_sin_organizacion.sql` | El superadmin deja de pertenecer a la organización demo | Requiere la 0005. Se puede correr más de una vez |
 | 7 | `0007_entrega_final.sql` | Entrega final (ver [notas de versión](./notas-de-version.md#c-la-base-de-datos-de-la-entrega-final-migración-0007)) | Requiere 0001 a 0006. **Leer la regla de orden de abajo** |
 
+| 8 | `0008_baja_logica.sql` | Quita las políticas `borrar` de empresas y contactos y garantiza una etapa ganada y una perdida. Idempotente, sin `begin`/`commit` | Requiere la 0007. **Pendiente de aplicar en la base viva** |
+| 9 | `0009_reglas_oportunidades.sql` | Fecha de cierre no futura (fecha de Argentina), fecha de cierre por defecto de Argentina y "empresa o contacto" obligatorio en oportunidades. `create or replace` + trigger nuevo, idempotente, sin `begin`/`commit` | Requiere la 0008. **Pendiente de aplicar en la base viva.** Después, `supabase/tests/0009_reglas_oportunidades.sql` |
+
 Cosas a saber:
 
+- **0008 y 0009 están en el repositorio pero no en la base viva.** Se aplican a mano, en ese orden, y se
+  despliega enseguida. La app de F2 ya valida las tres reglas de la 0009 en pantalla y traduce sus errores,
+  así que desplegarla antes o después no rompe nada; sin la 0009 la base simplemente no las impone.
 - **La 0004 cambia datos existentes** y, si el email del superadmin no existe en Authentication, aborta con
   un mensaje claro (todo dentro de una transacción: no queda nada a medias).
 - **La 0007 no es solo aditiva.** Renombra roles y etapas, cierra oportunidades, asigna responsables. Corre
@@ -79,7 +85,7 @@ Regenerarlo es previo a construir las pantallas de F1.
 
 Se ejecutan en el SQL Editor y terminan en `ROLLBACK` (no dejan nada). Detalle y qué prueba cada una en
 [pruebas](./pruebas.md). Después de la 0007: `0005_permisos.sql` y `0007_reglas.sql` tienen que devolver
-`TODO OK`. `0007_reejecucion.sql` es la excepción: solo funciona en una base **sin** la 0007.
+`TODO OK`; después de la 0008, `0008_baja_logica.sql`; después de la 0009, `0009_reglas_oportunidades.sql`. `0007_reejecucion.sql` es la excepción: solo funciona en una base **sin** la 0007.
 
 ### Storage
 
@@ -190,8 +196,8 @@ El caso concreto que motivó la regla es la `0007`:
 
 Qué cambia en la aplicación vieja con la base nueva (y por qué es compatible): las altas de empresas,
 contactos, oportunidades y bitácora siguen funcionando porque todo lo nuevo tiene valor por defecto o lo
-completa un trigger, y mover una tarjeta con `update` de `etapa_id` también. Lo que cambia a propósito: soltar
-una oportunidad en "Perdida" sin motivo da error, reabrir exige permiso, asignar a otro exige permiso y las
+completa un trigger, y mover una tarjeta con `update` de `etapa_id` también (la app de F2 usa la RPC `cambiar_etapa`). Lo que cambia a propósito: soltar
+una oportunidad en "Perdida" sin motivo da error en la app vieja (la actual pide el motivo), reabrir exige permiso, asignar a otro exige permiso y las
 oportunidades ya no se borran.
 
 ## 9. Lista de verificación posterior al deploy

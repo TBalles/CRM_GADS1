@@ -46,34 +46,44 @@ pantalla. Cambiar la ventana exige tocar los tres.
 
 Reglas de `Módulos Principales` (módulo 2). Todas viven en el trigger `oportunidades_reglas`
 (`oportunidad_reglas()`, migración `0007`) y en la restricción `oportunidades_estado_coherente`.
-**Interfaz: sin interfaz** para casi todas (ver la columna final); lo que sí rige en pantalla hoy está
-detallado en [las notas de versión](./notas-de-version.md#b8-oportunidades-y-embudo).
+**Interfaz: desde F2** el tablero, la lista, el detalle y el modal de cierre piden lo que la base va a
+exigir y traducen sus errores (columna final); lo que se ve en pantalla está detallado en
+[las notas de versión](./notas-de-version.md#b8-oportunidades-y-embudo).
 
 | # | Regla (consigna) | Cómo la cumple la base | Interfaz |
 |---|---|---|---|
 | 2.1 | Una única etapa actual | `oportunidades.etapa_id` es una columna, `not null` | Sí |
-| 2.2 | El **estado sale del tipo de la etapa** (`abierta`, `ganada`, `perdida`). Pedir un estado distinto al de la etapa es un error ("La etapa elegida no es compatible con el estado...") | Trigger | Sin interfaz |
-| 2.3 | Una oportunidad abierta no puede estar en una etapa ganada o perdida (y viceversa) | Trigger (el estado se fuerza al tipo de la etapa) y `oportunidades_estado_coherente` | Sin interfaz |
-| 2.4 | Una abierta no tiene `fecha_cierre` ni motivo de pérdida: se limpian | Trigger | Sin interfaz |
-| 2.5 | **Ganada exige fecha real de cierre.** Si no viene, el trigger pone la fecha de hoy. Se limpia el motivo | Trigger | Parcial: arrastrar a "Entregado" cierra con fecha de hoy |
-| 2.6 | **Perdida exige fecha real y motivo de pérdida.** Sin motivo, error ("Para marcar la oportunidad como perdida hay que indicar el motivo de pérdida.") | Trigger y CHECK | Sin interfaz: arrastrar a "Perdida" hoy falla |
-| 2.7 | **Una cerrada no vuelve a una etapa abierta sin autorización**: pasar de ganada o perdida a otro estado exige `oportunidades.reabrir` ("La oportunidad está cerrada: reabrirla requiere autorización") | Trigger (`tiene_permiso('oportunidades.reabrir')`) | Sin interfaz |
-| 2.8 | Reabrir limpia fecha de cierre y motivo | Trigger | Sin interfaz |
-| 2.9 | Una cerrada que **sigue** cerrada no puede perder su fecha de cierre ("Una oportunidad cerrada tiene que tener fecha real de cierre.") | Trigger | Sin interfaz |
-| 2.10 | Si se cambia el resultado (ganada a perdida o al revés), la fecha de cierre es la del **nuevo** cierre: la que mande quien cierra o, si no hay, hoy. La fecha del cierre anterior no cuenta | Trigger | Sin interfaz |
+| 2.2 | El **estado sale del tipo de la etapa** (`abierta`, `ganada`, `perdida`). Pedir un estado distinto al de la etapa es un error ("La etapa elegida no es compatible con el estado...") | Trigger | Sí (F2): el estado se muestra con texto y no se edita a mano |
+| 2.3 | Una oportunidad abierta no puede estar en una etapa ganada o perdida (y viceversa) | Trigger (el estado se fuerza al tipo de la etapa) y `oportunidades_estado_coherente` | Sí (F2): el estado no se edita; las columnas del tablero son solo las etapas abiertas |
+| 2.4 | Una abierta no tiene `fecha_cierre` ni motivo de pérdida: se limpian | Trigger | Sí (F2): el formulario las muestra de solo lectura |
+| 2.5 | **Ganada exige fecha real de cierre.** Si no viene, el trigger pone la fecha de hoy. Se limpia el motivo | Trigger | Sí (F2): el modal "Marcar ganada" propone hoy y no admite fecha futura |
+| 2.6 | **Perdida exige fecha real y motivo de pérdida.** Sin motivo, error ("Para marcar la oportunidad como perdida hay que indicar el motivo de pérdida.") | Trigger y CHECK | Sí (F2): el modal de cierre pide el motivo |
+| 2.7 | **Una cerrada no vuelve a una etapa abierta sin autorización**: pasar de ganada o perdida a otro estado exige `oportunidades.reabrir` ("La oportunidad está cerrada: reabrirla requiere autorización") | Trigger (`tiene_permiso('oportunidades.reabrir')`) | Sí (F2): el tablero y el detalle solo ofrecen lo que el rol puede |
+| 2.8 | Reabrir limpia fecha de cierre y motivo | Trigger | Sí (F2): "Reabrir" con la razón en el historial |
+| 2.9 | Una cerrada que **sigue** cerrada no puede perder su fecha de cierre ("Una oportunidad cerrada tiene que tener fecha real de cierre.") | Trigger | Sí (F2) |
+| 2.10 | Si se cambia el resultado (ganada a perdida o al revés), la fecha de cierre es la del **nuevo** cierre: la que mande quien cierra o, si no hay, hoy. La fecha del cierre anterior no cuenta | Trigger | Sí (F2): "Cambiar resultado" (ver 2.19) |
 | 2.11 | Al **insertar**, el estado también se fuerza al tipo de la etapa: una oportunidad creada directamente en una etapa de cierre nace cerrada (y si es perdida exige motivo). Pedir un estado cerrado distinto al de la etapa es un error | Trigger (`tg_op = 'INSERT'`) | Sin interfaz |
-| 2.12 | La probabilidad, si se usa, está entre 0 y 100 | Restricción | Sin interfaz |
+| 2.12 | La probabilidad, si se usa, está entre 0 y 100 | Restricción | Sí (F2): el formulario valida el entero de 0 a 100 |
 | 2.13 | El tipo de la oportunidad es `directa` o `licitacion`. **No hay todavía ninguna regla propia de licitaciones** (la regla "no se puede ganar antes de la fecha de apertura" es de F4, planificada) | Restricción | Planificado |
 | 2.14 | **No se puede cambiar el tipo de una etapa que tiene oportunidades**: primero hay que moverlas ("La etapa ... tiene oportunidades: movelas antes de cambiarle el tipo.") | Trigger `etapas_validar_tipo` | Sin interfaz |
 | 2.15 | Sin usuario (scripts, `service_role`, SQL Editor) las reglas de estado y fecha **valen**, pero el permiso de reabrir no se exige: esos caminos son de confianza | Trigger (`auth.uid() is not null`) | n/a |
+| 2.16 | **La fecha real de cierre no puede ser futura** ("La fecha real de cierre no puede ser futura."). Se compara con la fecha de Argentina, no con la del servidor, y solo cuando la fecha cambia (o en un alta cerrada): editar otros campos de una cerrada ya guardada no la vuelve a juzgar | Trigger `oportunidad_reglas`, migración `0009` (pendiente de aplicar en la base viva) | Sí (F2): el modal no admite fecha futura y traduce el error |
+| 2.17 | La fecha de cierre por defecto (cuando quien cierra no manda ninguna) es **hoy en Argentina**, no `current_date` del servidor | Trigger, `0009` | Sí (F2): el modal propone la de hoy |
+| 2.18 | **Una oportunidad es de una empresa o de un contacto** ("La oportunidad tiene que ser de una empresa o de un contacto."). Se exige a los usuarios en el alta y cuando un cambio toca `empresa_id` o `contacto_id`; **no** a `service_role`, scripts ni al `on delete set null` de las claves foráneas, ni a una oportunidad vieja sin cliente mientras no se toque ese par | Trigger `oportunidades_requiere_cliente` (`auth.uid() is not null`), `0009` | Sí (F2): el formulario lo pide |
+| 2.19 | Cambiar el resultado de una cerrada (ganada a perdida o al revés) toma la fecha del **nuevo** cierre: si se manda la misma fecha del cierre anterior, el trigger la entiende como "sin fecha" y pone la de hoy (regla 2.10) | Trigger | Sí (F2): "Cambiar resultado" exige la razón, el motivo si va a perdida y rechaza repetir la fecha anterior (salvo que sea hoy) |
+
+Las reglas 2.16 a 2.18 llegan con la migración `0009`, que está en el repositorio y **todavía hay que
+aplicarla a mano en Supabase** (junto con la `0008`). Hasta entonces las cumple la interfaz de F2 y la base no
+las impone. Prueba: `supabase/tests/0009_reglas_oportunidades.sql`.
 
 **Cómo se cambia de etapa.** Hay dos caminos con las mismas reglas porque las aplica el trigger:
 
-1. Un `update` directo de `etapa_id` (lo que hace hoy el arrastre del embudo).
+1. Un `update` directo de `etapa_id` (ninguna pantalla lo usa desde F2; sigue valiendo para scripts).
 2. La RPC `cambiar_etapa(oportunidad, etapa, observacion, motivo_perdida, fecha_cierre)`, que además
    deja la observación en el historial. Corre con los permisos de quien llama (`SECURITY INVOKER`): si la RLS
    no le muestra la oportunidad, devuelve "No existe la oportunidad o no tenés permiso para modificarla".
-   La interfaz todavía no la usa (F2).
+   **Es el único camino de la interfaz** (`src/lib/cambiarEtapa.ts`): arrastre del tablero, "Cambiar
+   etapa", "Marcar ganada", "Marcar perdida" y "Reabrir".
 
 **Etapas ganada y perdida.** La organización no puede quedarse sin ninguna etapa de tipo `ganada` ni sin
 ninguna de tipo `perdida`: el trigger `etapas_conservar_cierres` (migración `0008`) rechaza borrar la última
@@ -87,13 +97,13 @@ la garantía de última línea. Prueba: `supabase/tests/0008_baja_logica.sql`.
 
 | # | Regla | Dónde | Fuente | Interfaz |
 |---|---|---|---|---|
-| 3.1 | **Cada cambio de etapa se conserva**: etapa anterior, etapa nueva, usuario (`auth.uid()`), fecha y hora, y observación | Trigger `oportunidades_registrar_etapa` (después de insertar o actualizar), `SECURITY DEFINER` | `0007` | Se escribe; **sin interfaz** para leerlo |
-| 3.2 | El **alta** de una oportunidad registra su etapa inicial (`etapa_anterior_id` nulo). Así se puede responder "en qué etapa comenzó" | Trigger | `0007` | Ídem |
-| 3.3 | La observación llega por `current_setting('crm.observacion')`, que pone `cambiar_etapa()` y limpia al terminar. Un `update` directo la deja vacía | Trigger y RPC | `0007` | Ídem |
+| 3.1 | **Cada cambio de etapa se conserva**: etapa anterior, etapa nueva, usuario (`auth.uid()`), fecha y hora, y observación | Trigger `oportunidades_registrar_etapa` (después de insertar o actualizar), `SECURITY DEFINER` | `0007` | Sí (F2): línea de tiempo del detalle de la oportunidad |
+| 3.2 | El **alta** de una oportunidad registra su etapa inicial (`etapa_anterior_id` nulo). Así se puede responder "en qué etapa comenzó" | Trigger | `0007` | Sí (F2): se ve la etapa de alta |
+| 3.3 | La observación llega por `current_setting('crm.observacion')`, que pone `cambiar_etapa()` y limpia al terminar. Un `update` directo la deja vacía | Trigger y RPC | `0007` | Sí (F2): el modal manda la observación; el arrastre del tablero no |
 | 3.4 | Las oportunidades que ya existían al aplicar la 0007 arrancan su historial con la etapa **de ese momento**: no se inventa el recorrido que no quedó registrado | Bloque de datos de la migración | `0007` | n/a |
-| 3.5 | **Editar una oportunidad que ya estaba cerrada queda registrado**: solo los campos que cambiaron, como `{campo: {antes, despues}}`. `updated_at` no cuenta | Trigger `oportunidades_auditar_cerrada` | `0007` | Se escribe; **sin interfaz** |
+| 3.5 | **Editar una oportunidad que ya estaba cerrada queda registrado**: solo los campos que cambiaron, como `{campo: {antes, despues}}`. `updated_at` no cuenta | Trigger `oportunidades_auditar_cerrada` | `0007` | Sí (F2): sección "Cambios después del cierre" del detalle |
 | 3.6 | El historial y la auditoría solo se escriben por trigger: no hay políticas de insert, update ni delete | RLS | `0007` | n/a |
-| 3.7 | Se pueden leer si se puede ver la oportunidad (`oportunidades.ver` y cartera) | RLS | `0007` | Sin interfaz |
+| 3.7 | Se pueden leer si se puede ver la oportunidad (`oportunidades.ver` y cartera) | RLS | `0007` | Sí (F2) |
 | 3.8 | Una oportunidad con historial no se puede borrar físicamente (clave foránea `no action`, a propósito y no `restrict`: así borrar una organización entera sigue funcionando porque su cascada borra todo en la misma sentencia) | Restricción | `0007` | n/a |
 
 ---
@@ -110,7 +120,7 @@ administrador vean todo. Ver la [decisión 0005](./decisiones/0005-cartera-propi
 | 4.3 | Lo que **cuelga** de una empresa se ve si se ve la empresa: ventas, ítems, alertas enviadas, actividades (y la vista `alertas_vida_util`, que hereda por ser `security_invoker`) | RLS (subconsulta a `empresas` con la RLS de quien consulta) | `0007` | Sí |
 | 4.4 | Las actividades también se ven si se ve su contacto o su oportunidad | RLS | `0007` | Sí |
 | 4.5 | Alta sin responsable: queda asignada a **quien la crea** (la app vieja manda `null` explícito, por eso no alcanza con un `default`) | Trigger `validar_responsable` | `0007` | Sí (efecto automático) |
-| 4.6 | Crear algo para otra persona, o **reasignar**, exige `clientes.asignar` (empresas y contactos) u `oportunidades.asignar` (oportunidades) ("No tenés permiso para asignar o reasignar el responsable.") | Trigger | `0007` | Sí: los formularios de empresa y contacto ofrecen el selector solo con `clientes.asignar` (sin él, solo lectura); el de oportunidades ya lo hacía |
+| 4.6 | **Asignar exige ver la cartera de todos**: en el catálogo, `clientes.asignar` y `oportunidades.asignar` requieren `clientes.ver_todos` (sin él, quien reasigna dejaría de ver el resultado y el selector no tendría a quién ofrecer). La pantalla de roles tilda la dependencia sola. Crear algo para otra persona, o **reasignar**, exige `clientes.asignar` (empresas y contactos) u `oportunidades.asignar` (oportunidades) ("No tenés permiso para asignar o reasignar el responsable.") | Trigger | `0007` | Sí: los formularios de empresa y contacto ofrecen el selector solo con `clientes.asignar` (sin él, solo lectura); el de oportunidades ya lo hacía |
 | 4.7 | El responsable tiene que ser un usuario de la **misma organización** | Trigger | `0007` | Sí |
 | 4.8 | Sin usuario (scripts, `service_role`) no se exige permiso de asignar | Trigger (`auth.uid() is null`) | `0007` | n/a |
 | 4.9 | Los roles que ya veían clientes antes de la 0007 reciben `clientes.ver_todos` (para no quedar ciegos); los únicos con cartera propia son los vendedores (`Ventas`, `Vendedor`) | Bloque de datos, una sola vez | `0007`, sección 1 | n/a |
@@ -128,7 +138,7 @@ La consigna: los registros con información histórica no se eliminan; se cambia
 | Entidad | Cómo se da de baja | Qué impide el borrado | Interfaz |
 |---|---|---|---|
 | Empresa, contacto | `estado = 'inactivo'` (también `no_contactar`) | La interfaz no ofrece borrar y, desde la `0008`, **la base tampoco lo permite** a un usuario (sin política `borrar`: el `DELETE` afecta 0 filas). Solo el borrado de una organización entera (superadmin) arrastra todo por `on delete cascade` | Sí (F1b): "Dar de baja" y "Reactivar" con confirmación; las dadas de baja se esconden tras el chip "Ver dadas de baja" |
-| Oportunidad | Se marca perdida (con motivo) | **No hay política de borrar para nadie.** Su historial y auditoría la referencian sin cascada | Marcar perdida con motivo: sin interfaz |
+| Oportunidad | Se marca perdida (con motivo) | **No hay política de borrar para nadie.** Su historial y auditoría la referencian sin cascada | Sí (F2): "Marcar perdida" con motivo |
 | Producto | `activo = false` | `venta_items.producto_id` es `on delete restrict` | Sí (`/productos`, "Dar de baja") |
 | Etapa, origen, motivo, tipo de actividad | `activo = false` (catálogos) | Las oportunidades y actividades viejas los referencian sin cascada | Sin interfaz |
 | Usuario | `perfiles.activo = false` más ban en Auth | Se corta el acceso en la siguiente consulta aunque la sesión siga abierta | Sí (`/usuarios`) |

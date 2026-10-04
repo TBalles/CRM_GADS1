@@ -47,14 +47,22 @@ Incluido:
 - **Actividades** (la antigua bitácora): "Registrar actividad" desde la ficha de la empresa o del
   contacto (`src/components/ActividadForm.tsx`), con tipo de catálogo, fecha y hora (no futura),
   descripción, resultado y oportunidad opcional; se listan en la línea de tiempo de la ficha.
-- **Oportunidades**: alta y edición, relacionadas a una empresa y/o contacto, con responsable
-  asignado (usuario del sistema) y producto/servicio seleccionado. Listado; el detalle es el panel
-  de edición (no hay página de detalle todavía, F2).
-- **Embudo comercial**: vista Kanban integrada arriba de `/oportunidades` con las oportunidades
-  agrupadas por etapa (sin scroll horizontal, se achica a grilla 3×2 en mobile; columnas fijas en 6
-  con `lg:grid-cols-6`). Cambiar de etapa se hace **arrastrando la tarjeta** (HTML5 nativo, no
-  funciona con touch: en mobile se cambia desde el formulario de edición) y el cambio se persiste en
-  la base al instante con un `update` de `etapa_id` (todavía no usa la RPC `cambiar_etapa`).
+- **Oportunidades** (F2): alta y edición (título, empresa o contacto, producto, valor estimado,
+  probabilidad, fecha estimada de cierre, origen, responsable, observaciones). Estado, fecha real de
+  cierre y motivo de pérdida son de solo lectura: los fija la base al cambiar de etapa o cerrar.
+  Detalle en `/oportunidades/[id]`: datos, acciones según permisos (Editar, Cambiar etapa, Marcar
+  ganada/perdida, Reabrir y Cambiar resultado con `oportunidades.reabrir`, Reasignar con `oportunidades.asignar`
+  (que exige `clientes.ver_todos`),
+  Registrar actividad), línea de tiempo unificada de actividades y cambios de etapa, y la auditoría de
+  lo editado tras el cierre. 404 si no existe o la RLS la esconde. `tipo = licitacion` es solo una
+  insignia hasta F4.
+- **Embudo comercial**: `/oportunidades` con conmutador **Tablero | Lista**. El tablero arma una
+  columna por **etapa abierta** configurada (orden de `/configuracion`), con scroll horizontal e
+  imán en pantallas chicas, y muestra solo oportunidades abiertas. Mover de etapa (arrastre HTML5
+  nativo o "Cambiar etapa" del menú, que sirve en touch y pide observación) y cerrar/reabrir pasan
+  **siempre por la RPC `cambiar_etapa`** (`src/lib/cambiarEtapa.ts`); nunca un `update` de
+  `etapa_id`. La lista filtra (en el navegador, la paginación es F3) por estado (por defecto
+  abiertas), etapa, responsable (con `clientes.ver_todos`), origen y búsqueda.
 - **Etapas**: las crea el trigger al dar de alta una organización (embudo del rubro: Consulta
   recibida, Relevamiento de cancha, Presupuesto enviado, Negociación, Entregado, Perdida). La base
   se configuran en `/configuracion` (`configuracion.gestionar`, F1a).
@@ -81,9 +89,11 @@ usa aún, salvo donde se aclara:
 - Oportunidades con estado (abierta, ganada, perdida), fecha de cierre, motivo de pérdida, origen,
   probabilidad y tipo. **Reglas del embudo en el trigger `oportunidades_reglas`**: el estado sale del
   tipo de la etapa, ganada pone fecha de cierre, perdida exige motivo, reabrir exige
-  `oportunidades.reabrir`. Hoy arrastrar una tarjeta a "Perdida" falla (el arrastre no pide motivo).
+  `oportunidades.reabrir`. La interfaz (F2) pide lo que la base va a exigir y traduce sus errores
+  (`mensajeErrorOportunidad`); la fecha de cierre futura y la oportunidad sin empresa ni contacto las rechaza
+  la UI y, desde la `0009` (si está aplicada), también la base.
 - Historial de cambios de etapa (`oportunidad_etapas_historial`) y auditoría de las cerradas
-  (`oportunidad_auditoria`): se escriben solos, no hay pantalla para leerlos.
+  (`oportunidad_auditoria`): se escriben solos y desde F2 se leen en el detalle de la oportunidad.
 - Catálogos configurables por organización (`origenes`, `motivos_perdida`, `tipos_actividad`) y datos
   fiscales del proveedor más el bucket privado `logos` (PNG/JPG/WebP, 1 MB, sin SVG).
 - **Cartera propia**: sin `clientes.ver_todos` solo se ve lo asignado. Esto **sí rige en pantalla**
@@ -91,7 +101,7 @@ usa aún, salvo donde se aclara:
 - Actividades (`bitacora_entradas`) con tipo de catálogo, oportunidad y resultado: desde F1b la
   interfaz usa `tipo_actividad_id` (el `tipo` viejo lo completa el trigger).
 
-**Planificado** (F2 a F8, hasta 2026-11-11): detalle de oportunidad, cierre desde la UI, búsqueda/filtros/paginación en el servidor, funciones del rubro
+**Planificado** (F3 a F8, hasta 2026-11-11): búsqueda/filtros/paginación en el servidor, funciones del rubro
 (canchas, parque instalado, licitaciones), presupuesto imprimible, E2E y CI, IA opcional y manual.
 
 **Fuera de alcance según la consigna** (no agregar sin que el usuario lo pida): tareas, agenda,
@@ -107,7 +117,7 @@ borra, y no hay IA todavía.
 2. Registrar una empresa (en `/empresas`) y, desplegándola, un contacto.
 3. Crear una oportunidad (en `/oportunidades`).
 4. Visualizarla en el embudo (arriba de la misma página).
-5. Cambiarla de etapa (arrastrando la tarjeta).
+5. Cambiarla de etapa (arrastrando la tarjeta), cerrarla como ganada o perdida y mirar su historial.
 6. Refrescar y comprobar que la información permanece guardada.
 
 ## Stack técnico
@@ -178,10 +188,13 @@ src/
         actions.ts               Server Actions: envío por SMTP/Gmail (o mailto) + registro
         plantillas.ts            Mensajes prearmados — funciones puras
         plantillas.check.ts      Self-check: node --test "src/app/(app)/alertas/plantillas.check.ts"
-      oportunidades/             Embudo (kanban con drag & drop) + listado en una sola página
+      oportunidades/             Tablero (kanban con drag & drop) y lista en una sola página, y el detalle
         page.tsx                 Server Component: fetch de oportunidades + catálogos
-        OportunidadesView.tsx     Client: embudo, tabla + cards mobile, filtro por etapa, EtapaBadge
+        datos.ts                 cargarOpciones(): etapas, clientes, productos, perfiles, orígenes, motivos
+        OportunidadesView.tsx     Client: conmutador Tablero|Lista, filtros, columnas por etapa abierta
         OportunidadForm.tsx       Form de alta/edición (usado dentro del Drawer)
+        [id]/page.tsx             Detalle (Server Component; notFound si no existe o la RLS la esconde)
+        [id]/OportunidadDetalle.tsx  Client: datos, acciones, línea de tiempo, auditoría, Reasignar
   components/
     ui/                        Primitivos del Sumar UI Kit — reusar, no reinventar
       UIComponents.tsx          cn, useModalAnimation, useAnchoredPortal, Card, Button, Input,
@@ -204,6 +217,8 @@ src/
     Cancha.tsx                  MarcasCancha: la cancha en SVG sobre la superficie .cesped
     Equipamiento.tsx            Íconos del rubro (arco, red, pelota…) + IconoEquipo
     ConfirmModal.tsx            Alert dialog centrado (lo usa el logout)
+    CierreModal.tsx             Cambiar etapa / Marcar ganada / Marcar perdida / Reabrir / Cambiar resultado, por `cambiar_etapa`
+    oportunidades.tsx           EtapaBadge, EstadoOportunidadPill, TipoOportunidadBadge (server-safe)
     Drawer.tsx                   Panel lateral derecho para los formularios de alta/edición
     RowActions.tsx               Menú "⋮" portaled que usan las filas de cada lista
     ThemeToggle.tsx              Toggle de modo oscuro (localStorage + prefers-color-scheme)
@@ -225,6 +240,9 @@ src/
     email/                     enviar.ts (único punto de salida SMTP), layout.ts (HTML de mails), plantillas.ts
     clientes.ts                Estados, tipos de cliente, errores de la base en palabras, fechas (horario AR)
     clientes.check.ts          Self-check: node --test src/lib/clientes.check.ts
+    oportunidades.ts           Etapas válidas por acción, validaciones, errores en palabras, línea de tiempo, auditoría
+    oportunidades.check.ts     Self-check: node --test src/lib/oportunidades.check.ts
+    cambiarEtapa.ts            Único camino del navegador para cambiar de etapa: la RPC `cambiar_etapa`
     money.ts                   Máscara/parseo es-AR + formatters de display
     money.check.ts             Self-check: node --test src/lib/money.check.ts
     equipo.ts                  tipoEquipo(): qué equipo es un producto, para su ícono
@@ -254,16 +272,20 @@ supabase/
     0005_roles_permisos.sql     Roles con permisos por organización y RLS por permiso
     0006_superadmin_sin_organizacion.sql  El superadmin sale de la org demo (solo plataforma)
     0007_entrega_final.sql      Catálogos, estados, reglas del embudo, historial, cartera propia, logo
+    0008_baja_logica.sql        Sin DELETE en empresas/contactos; siempre una etapa ganada y una perdida (pendiente en la base viva)
+    0009_reglas_oportunidades.sql  Fecha de cierre no futura (hora de Argentina), empresa o contacto obligatorio (pendiente en la base viva)
   tests/                        SQL con rollback; devuelven "TODO OK" o fallan con "FALLA:"
     0005_permisos.sql           Aislamiento y permisos (correr DESPUÉS de la 0007)
     0007_reglas.sql             Reglas de la 0007 (correr después de aplicarla)
+    0008_baja_logica.sql        Baja lógica y etapas de cierre (correr después de aplicar la 0008)
+    0009_reglas_oportunidades.sql  Reglas de la 0009 (correr después de aplicarla)
     0007_reejecucion.sql        Re-ejecución de la 0007 (SOLO en una base sin la 0007)
   seeds/demo_catedra.sql        Organización "Cátedra UNLaM (demo)" con una cuenta por rol y datos
 ```
 
 No hay rutas separadas para "nueva empresa": todo alta/edición pasa por el `Drawer`, desde la lista o
-desde la ficha. Las fichas (`/empresas/[id]`, `/contactos/[id]`) son de F1b. Ruta planificada:
-`/oportunidades/[id]` (F2).
+desde la ficha. Las fichas (`/empresas/[id]`, `/contactos/[id]`) son de F1b y el detalle
+`/oportunidades/[id]` de F2.
 
 ### Modelo de datos (Postgres, esquema `public`)
 
@@ -303,7 +325,9 @@ asignación, vida útil) viven en triggers, no en la UI.
 Ya hay un proyecto de Supabase conectado y provisionado (organización `dgmoqhihtjjbetuedaad`,
 proyecto `pdseuwdifzywpdgawbrl`, región `us-west-2`). Se armó vía el MCP de Supabase:
 
-- Las migraciones `0001` a `0007` están aplicadas (la `0007` el 2026-10-04, con sus pruebas SQL).
+- Las migraciones `0001` a `0007` están aplicadas (la `0007` el 2026-10-04, con sus pruebas SQL). La `0008` y la
+  `0009` están en el repositorio pero **falta aplicarlas a mano** en el SQL Editor, en ese orden; hasta entonces
+  la base no impone "fecha de cierre no futura" ni "empresa o contacto" (la interfaz de F2 sí las valida).
   Se aplican a mano en el SQL Editor, en orden; **aplicar y desplegar enseguida**, ver
   [`docs/deploy.md`](./docs/deploy.md).
 - El seed `supabase/seeds/demo_catedra.sql` crea la organización de demostración con una cuenta por
@@ -394,8 +418,8 @@ npm run lint     # eslint
 npx tsc --noEmit                     # tipos
 npx eslint src --max-warnings=0      # lint sin advertencias
 
-# Self-checks (sin framework, runner de Node): money, equipo, permisos, email/layout, alertas/plantillas
-node --test "src/**/*.check.ts"      # 8 archivos, 50 pruebas
+# Self-checks (sin framework, runner de Node): money, equipo, permisos, email/layout, alertas/plantillas, clientes, oportunidades...
+node --test "src/**/*.check.ts"      # 9 archivos, 68 pruebas
 node --test src/lib/money.check.ts   # o uno solo
 ```
 

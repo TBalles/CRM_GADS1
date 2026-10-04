@@ -16,6 +16,31 @@ Todo lo de esta sección ya está en `main`. Lo que no está es la interfaz de b
 
 ### Agregado
 
+- F2, oportunidades completas en la interfaz (sin commit todavía):
+  - Tablero con una columna por **etapa abierta** configurada (scroll horizontal con imán en pantallas
+    chicas); mover una tarjeta usa la RPC `cambiar_etapa`, con actualización optimista, vuelta atrás y aviso
+    claro si la base lo rechaza.
+  - Lista con conmutador Tablero | Lista y filtros por estado (por defecto abiertas), etapa, responsable
+    (con `clientes.ver_todos`), origen y búsqueda; las cerradas muestran estado, fecha de cierre y motivo.
+  - `CierreModal`: "Marcar ganada", "Marcar perdida" (motivo obligatorio del catálogo), "Reabrir" (con
+    `oportunidades.reabrir`, pide la razón), "Cambiar resultado" (ganada a perdida y al revés sin reabrir,
+    con razón, motivo si va a perdida y una fecha distinta a la del cierre anterior) y "Cambiar etapa" con
+    observación. Foco atrapado dentro del modal, que devuelve el foco al cerrar; el fondo, Escape y Cancelar no
+    cierran mientras se guarda.
+  - Detalle `/oportunidades/[id]`: datos, acciones según permisos, línea de tiempo unificada de
+    actividades y cambios de etapa, sección "Cambios después del cierre" (auditoría), "Reasignar" con
+    `oportunidades.asignar` y "Registrar actividad" con la oportunidad ya elegida.
+  - Formulario completo: probabilidad, fecha estimada de cierre, origen, responsable (solo con
+    `oportunidades.asignar`), empresa o contacto obligatorio; estado, fecha real de cierre y motivo son de
+    solo lectura. Insignia "Licitación" para las de tipo licitación.
+  - Las fichas de empresa y de contacto enlazan cada oportunidad a su detalle.
+  - `src/lib/oportunidades.ts` (etapas válidas por acción, validaciones, errores de la base en palabras,
+    línea de tiempo, auditoría) con su self-check `oportunidades.check.ts`.
+- Migración `0009_reglas_oportunidades.sql` (**pendiente de aplicar a mano en Supabase, junto con la
+  `0008`**), con su prueba `supabase/tests/0009_reglas_oportunidades.sql`: la fecha real de cierre no puede
+  ser futura (fecha de Argentina), la fecha de cierre por defecto es la de Argentina y una oportunidad tiene
+  que ser de una empresa o de un contacto (solo para usuarios: no para scripts, `service_role` ni
+  `on delete set null`).
 - F1b, empresas y contactos completos en la interfaz (sin commit todavía):
   - `/empresas` con estado, tipo de cliente, responsable y origen; filtros por estado, responsable (con
     `clientes.ver_todos`) y origen; chip "Ver dadas de baja".
@@ -57,6 +82,14 @@ Todo lo de esta sección ya está en `main`. Lo que no está es la interfaz de b
 
 ### Cambiado
 
+- `oportunidades.asignar` ahora requiere `clientes.ver_todos` en el catálogo de permisos (como
+  `clientes.asignar`): la pantalla de roles lo tilda sola.
+- Los textos de "sin acceso" de la interfaz son neutros: "De otra cartera" / "Sin acceso" en vez de afirmar
+  que algo "ya no existe" o está "fuera de tu cartera".
+- El tablero de `/oportunidades` ya no tiene seis columnas fijas: se arma con las etapas abiertas del
+  cliente. Las etapas de cierre dejaron de ser columnas; se cierra desde la tarjeta o el detalle.
+- Cambiar de etapa deja de escribir `etapa_id` directo: todo pasa por `cambiar_etapa`, así queda la
+  observación en el historial.
 - Los roles por defecto pasan a llamarse **Vendedor** (antes Ventas) y **Responsable comercial** (antes
   Corporativo); se renombran en el lugar, sin perder la asignación de los usuarios (`a5c0135`).
 - Un Vendedor ve solo su cartera (empresas, contactos, oportunidades y lo que cuelga de ellos) (`a5c0135`).
@@ -78,7 +111,7 @@ Todo lo de esta sección ya está en `main`. Lo que no está es la interfaz de b
 
 ### Planificado (no implementado)
 
-Detalle y cierre de oportunidades, búsqueda y paginación en servidor, funciones del rubro (canchas, parque instalado,
+Búsqueda y paginación en servidor, funciones del rubro (canchas, parque instalado,
 licitaciones), presupuesto imprimible, E2E y CI, IA opcional y manual de usuario. Fases F1 a F8, del
 2026-10-13 al 2026-11-11, en [docs/notas-de-version.md](./docs/notas-de-version.md#g-pendiente-y-próximos-pasos).
 

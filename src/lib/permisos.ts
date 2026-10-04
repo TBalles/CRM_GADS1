@@ -61,7 +61,7 @@ export const PERMISOS: DefPermiso[] = [
   { clave: "bitacora.escribir", grupo: "Bitácora", etiqueta: "Escribir en la bitácora", descripcion: "Agregar entradas (no se pueden editar ni borrar).", requiere: ["bitacora.ver"] },
   { clave: "oportunidades.ver", grupo: "Oportunidades", etiqueta: "Ver oportunidades", descripcion: "El embudo comercial.", requiere: ["clientes.ver", "productos.ver"] },
   { clave: "oportunidades.editar", grupo: "Oportunidades", etiqueta: "Gestionar oportunidades", descripcion: "Crear, editar, mover de etapa y marcar ganada o perdida.", requiere: ["oportunidades.ver"] },
-  { clave: "oportunidades.asignar", grupo: "Oportunidades", etiqueta: "Asignar oportunidades", descripcion: "Elegir o cambiar el responsable de una oportunidad.", requiere: ["oportunidades.editar"] },
+  { clave: "oportunidades.asignar", grupo: "Oportunidades", etiqueta: "Asignar oportunidades", descripcion: "Elegir o cambiar el responsable de una oportunidad. Para asignar hay que ver la cartera de todos.", requiere: ["oportunidades.editar", "clientes.ver_todos"] },
   { clave: "oportunidades.reabrir", grupo: "Oportunidades", etiqueta: "Reabrir oportunidades", descripcion: "Volver a abrir una oportunidad ganada o perdida, o cambiar su resultado.", requiere: ["oportunidades.editar"] },
   { clave: "productos.ver", grupo: "Productos", etiqueta: "Ver el catálogo", descripcion: "Productos, precios y vida útil.", requiere: [] },
   { clave: "productos.editar", grupo: "Productos", etiqueta: "Editar el catálogo", descripcion: "Alta, edición y baja de productos.", requiere: ["productos.ver"] },

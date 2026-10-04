@@ -58,6 +58,17 @@ test("asignar clientes implica ver la cartera de todos", () => {
   assert.ok(conDependencias(["clientes.asignar"]).includes("clientes.editar"));
 });
 
+test("asignar oportunidades implica ver la cartera de todos", () => {
+  // Mismo motivo que clientes.asignar: sin ver_todos el que reasigna dejaría de ver la oportunidad y no podría elegir bien.
+  const con = conDependencias(["oportunidades.asignar"]);
+  assert.ok(con.includes("clientes.ver_todos"));
+  assert.ok(con.includes("oportunidades.editar"));
+  // Los roles por defecto que asignan ya cumplen la dependencia.
+  for (const rol of ROLES_POR_DEFECTO.filter((r) => r.permisos.includes("oportunidades.asignar"))) {
+    assert.ok(rol.permisos.includes("clientes.ver_todos"), `${rol.nombre} asigna sin ver la cartera de todos`);
+  }
+});
+
 test("el rol Administrador tiene TODOS los permisos", () => {
   const admin = ROLES_POR_DEFECTO.find((r) => r.esAdmin);
   assert.deepEqual([...(admin?.permisos ?? [])].sort(), [...CLAVES_PERMISOS].sort());

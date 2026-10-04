@@ -83,66 +83,89 @@ export default function ActividadesTimeline({
 
   return (
     <ol className="space-y-3">
-      {ordenadas.map((a) => {
-        const tipo = tipoPorId.get(a.tipo_actividad_id);
-        const Icon = (tipo?.codigo && ICONO_POR_CODIGO[tipo.codigo]) || CircleDot;
-        const esReclamo = tipo?.codigo === "queja";
-        const autor = a.autor_id ? autorPorId.get(a.autor_id) : null;
-        const contacto = a.contacto_id ? contactoPorId.get(a.contacto_id) : null;
-        const oportunidad = a.oportunidad_id ? oportunidadPorId.get(a.oportunidad_id) : null;
-
-        return (
-          <li key={a.id} className="flex gap-3 border-b border-border pb-3 last:border-0 last:pb-0">
-            <span
-              aria-hidden="true"
-              className={cn(
-                "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-                esReclamo ? "bg-destructive/10 text-destructive" : "bg-brand/10 text-brand",
-              )}
-            >
-              <Icon className="h-4 w-4" />
-            </span>
-
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <p className="text-sm font-semibold">{a.titulo}</p>
-                <Pill tono={esReclamo ? "rojo" : "gris"}>{tipo?.nombre ?? "Actividad"}</Pill>
-              </div>
-
-              <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                <time dateTime={a.ocurrido_en} className="tabular-nums">
-                  {formatMomento(a.ocurrido_en)}
-                </time>
-                {autor && (
-                  <span className="flex items-center gap-1">
-                    <UserRound aria-hidden="true" className="h-3 w-3 shrink-0" />
-                    <span className="sr-only">Registró </span>
-                    {autor}
-                  </span>
-                )}
-                {contacto && <span>con {contacto}</span>}
-                {oportunidad && (
-                  <span className="flex items-center gap-1">
-                    <Handshake aria-hidden="true" className="h-3 w-3 shrink-0" />
-                    <span className="sr-only">Oportunidad: </span>
-                    {oportunidad}
-                  </span>
-                )}
-              </p>
-
-              {a.detalle && (
-                <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{a.detalle}</p>
-              )}
-              {a.resultado && (
-                <p className="mt-1.5 text-sm">
-                  <span className="font-semibold">Resultado: </span>
-                  {a.resultado}
-                </p>
-              )}
-            </div>
-          </li>
-        );
-      })}
+      {ordenadas.map((a) => (
+        <ActividadFila
+          key={a.id}
+          actividad={a}
+          tipo={tipoPorId.get(a.tipo_actividad_id)}
+          autor={a.autor_id ? autorPorId.get(a.autor_id) : null}
+          contacto={a.contacto_id ? contactoPorId.get(a.contacto_id) : null}
+          oportunidad={a.oportunidad_id ? oportunidadPorId.get(a.oportunidad_id) : null}
+        />
+      ))}
     </ol>
+  );
+}
+
+/**
+ * Una actividad de la linea de tiempo (un `<li>`). Se exporta para que el
+ * detalle de la oportunidad la mezcle con los cambios de etapa en una sola lista.
+ */
+export function ActividadFila({
+  actividad: a,
+  tipo,
+  autor,
+  contacto,
+  oportunidad,
+}: {
+  actividad: Actividad;
+  tipo?: Pick<Tables<"tipos_actividad">, "id" | "nombre" | "codigo">;
+  autor?: string | null;
+  contacto?: string | null;
+  oportunidad?: string | null;
+}) {
+  const Icon = (tipo?.codigo && ICONO_POR_CODIGO[tipo.codigo]) || CircleDot;
+  const esReclamo = tipo?.codigo === "queja";
+
+  return (
+    <li className="flex gap-3 border-b border-border pb-3 last:border-0 last:pb-0">
+      <span
+        aria-hidden="true"
+        className={cn(
+          "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+          esReclamo ? "bg-destructive/10 text-destructive" : "bg-brand/10 text-brand",
+        )}
+      >
+        <Icon className="h-4 w-4" />
+      </span>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <p className="text-sm font-semibold">{a.titulo}</p>
+          <Pill tono={esReclamo ? "rojo" : "gris"}>{tipo?.nombre ?? "Actividad"}</Pill>
+        </div>
+
+        <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+          <time dateTime={a.ocurrido_en} className="tabular-nums">
+            {formatMomento(a.ocurrido_en)}
+          </time>
+          {autor && (
+            <span className="flex items-center gap-1">
+              <UserRound aria-hidden="true" className="h-3 w-3 shrink-0" />
+              <span className="sr-only">Registró </span>
+              {autor}
+            </span>
+          )}
+          {contacto && <span>con {contacto}</span>}
+          {oportunidad && (
+            <span className="flex items-center gap-1">
+              <Handshake aria-hidden="true" className="h-3 w-3 shrink-0" />
+              <span className="sr-only">Oportunidad: </span>
+              {oportunidad}
+            </span>
+          )}
+        </p>
+
+        {a.detalle && (
+          <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{a.detalle}</p>
+        )}
+        {a.resultado && (
+          <p className="mt-1.5 text-sm">
+            <span className="font-semibold">Resultado: </span>
+            {a.resultado}
+          </p>
+        )}
+      </div>
+    </li>
   );
 }

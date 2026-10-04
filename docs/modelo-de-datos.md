@@ -284,11 +284,11 @@ de la fila (para lo que cuelga de una empresa, poder ver la empresa). "Org" sign
 |---|---|
 | Propósito | Una negociación comercial concreta |
 | Columnas de la 1ª versión | `titulo`, `empresa_id`, `contacto_id`, `producto_id`, `responsable_id`, `etapa_id`, `monto`, `notas`, `created_at`, `updated_at` |
-| Columnas de la 0007 (**sin interfaz**) | `estado` (`abierta`, `ganada`, `perdida`), `fecha_estimada_cierre`, `fecha_cierre`, `origen_id`, `motivo_perdida_id`, `probabilidad` (0 a 100), `tipo` (`directa`, `licitacion`) |
+| Columnas de la 0007 (interfaz desde F2) | `estado` (`abierta`, `ganada`, `perdida`), `fecha_estimada_cierre`, `fecha_cierre`, `origen_id`, `motivo_perdida_id`, `probabilidad` (0 a 100), `tipo` (`directa`, `licitacion`) |
 | Claves foráneas | Compuestas a `empresas`, `contactos`, `productos` (las tres con set null de su columna), `etapas`, `origenes`, `motivos_perdida`; `responsable_id → perfiles` (set null) |
 | Restricción | `oportunidades_estado_coherente`: abierta sin fecha ni motivo; ganada con fecha y sin motivo; perdida con ambos |
 | RLS | Ver, editar: `oportunidades.ver`/`oportunidades.editar` y Cartera. Crear: `oportunidades.editar`. **Sin política de borrar** |
-| Triggers | `oportunidades_reglas`, `oportunidades_validar_responsable`, `set_oportunidades_updated_at` (antes); `oportunidades_registrar_etapa`, `oportunidades_auditar_cerrada` (después) |
+| Triggers | `oportunidades_reglas`, `oportunidades_requiere_cliente` (0009), `oportunidades_validar_responsable`, `set_oportunidades_updated_at` (antes); `oportunidades_registrar_etapa`, `oportunidades_auditar_cerrada` (después) |
 
 #### `ventas` y `venta_items`
 
@@ -330,7 +330,7 @@ de la fila (para lo que cuelga de una empresa, poder ver la empresa). "Org" sign
 | Columnas | `oportunidad_id`, `etapa_anterior_id`, `etapa_nueva_id`, `usuario_id`, `observacion`, `cambiado_en` |
 | Claves foráneas | A `oportunidades` y `etapas` con **no action** (una oportunidad con historial no se borra) |
 | RLS | Ver: `oportunidades.ver` y poder ver la oportunidad. Sin políticas de escritura; la escribe el trigger `oportunidad_registrar_etapa` (`SECURITY DEFINER`) |
-| Estado | Se escribe en cada alta y cambio de etapa. **Sin interfaz** para leerlo |
+| Estado | Se escribe en cada alta y cambio de etapa. Se lee en el detalle de la oportunidad (F2) |
 
 #### `oportunidad_auditoria`
 
@@ -339,7 +339,7 @@ de la fila (para lo que cuelga de una empresa, poder ver la empresa). "Org" sign
 | Propósito | Toda modificación de una oportunidad que ya estaba cerrada: `cambios = {campo: {antes, despues}}` |
 | Columnas | `oportunidad_id`, `usuario_id`, `cambios jsonb`, `cambiado_en` |
 | RLS | Igual que el historial. La escribe `oportunidad_auditar_cerrada` |
-| Estado | **Sin interfaz** |
+| Estado | Se lee en el detalle de la oportunidad, sección "Cambios después del cierre" (F2) |
 
 ### Catálogos configurables (0007, **sin interfaz**)
 
@@ -380,7 +380,8 @@ es la clave estable de los tipos de sistema y mapea los valores viejos de `bitac
 | `registrar_envio_auth(email, tipo)` | Revocada a usuarios finales | Límite de mails de cuenta con lock |
 | `venta_items_defaults()` | Trigger | Snapshot de vida útil y fecha de entrega |
 | `validar_responsable()` | Trigger (empresas, contactos, oportunidades) | Asignación y mismo cliente |
-| `oportunidad_reglas()` | Trigger antes de insertar o actualizar | Estado desde la etapa, cierre, reapertura |
+| `oportunidad_reglas()` | Trigger antes de insertar o actualizar | Estado desde la etapa, cierre, reapertura. Desde la 0009: fecha de cierre no futura y por defecto en fecha de Argentina |
+| `oportunidad_requiere_cliente()` | Trigger antes de insertar o actualizar `empresa_id`/`contacto_id` (0009) | Empresa o contacto obligatorio, solo con usuario |
 | `oportunidad_registrar_etapa()` | Trigger después, `SECURITY DEFINER` | Historial de etapas |
 | `oportunidad_auditar_cerrada()` | Trigger después, `SECURITY DEFINER` | Auditoría de cerradas |
 | `etapas_validar_tipo()` | Trigger, `SECURITY DEFINER` | No cambiar el tipo de una etapa con oportunidades |

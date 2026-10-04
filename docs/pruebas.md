@@ -8,7 +8,7 @@ pegan en el SQL Editor de Supabase.
 
 | Verificación | Resultado |
 |---|---|
-| `node --test "src/**/*.check.ts"` | 50 pruebas, 50 pasan, 0 fallan |
+| `node --test "src/**/*.check.ts"` | 68 pruebas, 68 pasan, 0 fallan |
 | `npx tsc --noEmit` | Sin errores |
 | `npx eslint src --max-warnings=0` | Sin advertencias |
 | `npx next build` | No se ejecutó al escribir estas notas |
@@ -25,13 +25,14 @@ Contenido: [1. Resumen](#1-resumen) · [2. Self-checks](#2-self-checks-con-node-
 
 | Qué | Cómo se corre | Dónde | Qué prueba |
 |---|---|---|---|
-| Self-checks (8 archivos, 50 pruebas) | `node --test "src/**/*.check.ts"` | Terminal | Lógica pura: dinero, íconos, permisos, mails, mensajes, CUIT, sitio web, vocabulario de clientes |
+| Self-checks (9 archivos, 68 pruebas) | `node --test "src/**/*.check.ts"` | Terminal | Lógica pura: dinero, íconos, permisos, mails, mensajes, CUIT, sitio web, vocabulario de clientes, reglas de oportunidades |
 | Tipos | `npx tsc --noEmit` | Terminal | Que todo el TypeScript compile |
 | Lint | `npx eslint src --max-warnings=0` | Terminal | Estilo y errores comunes, sin tolerar advertencias |
 | Build | `npx next build` | Terminal | Que la aplicación se construya (incluye el chequeo de `server-only`) |
 | `0005_permisos.sql` | Pegar en el SQL Editor | Supabase | Aislamiento entre organizaciones y permisos |
 | `0007_reglas.sql` | Pegar en el SQL Editor | Supabase | Reglas de la migración 0007 |
 | `0008_baja_logica.sql` | Pegar en el SQL Editor, con la 0008 aplicada | Supabase | Que borrar empresas o contactos afecte 0 filas y que la baja lógica (`estado = 'inactivo'`) funcione |
+| `0009_reglas_oportunidades.sql` | Pegar en el SQL Editor, con la 0009 aplicada | Supabase | Fecha de cierre no futura (fecha de Argentina), empresa o contacto obligatorio para usuarios (no para scripts ni para `on delete set null`), y que las reglas de la 0007 sigan en pie |
 | `0007_reejecucion.sql` | Pegar con la migración dos veces | Supabase | Que la 0007 se pueda re-ejecutar sin efectos |
 
 ---
@@ -53,6 +54,7 @@ node --test src/lib/permisos.check.ts
 node --test src/lib/cuit.check.ts
 node --test src/lib/email/layout.check.ts
 node --test "src/app/(app)/alertas/plantillas.check.ts"
+node --test src/lib/oportunidades.check.ts
 ```
 
 Requiere un Node que ejecute TypeScript directamente; se verificó con Node 24.14.1. *Pendiente de
@@ -63,8 +65,9 @@ confirmar:* la versión mínima de Node. Aparece una advertencia `MODULE_TYPELES
 |---|---|---|
 | `src/lib/money.check.ts` | 10 | La máscara de dinero es-AR agrupa miles con puntos, usa la coma como decimal (máximo 2), descarta basura y ceros iniciales; `parseMoney` nunca devuelve `NaN` ni lanza; el cursor se mantiene al editar en el medio del monto |
 | `src/lib/equipo.check.ts` | 3 | El nombre manda sobre la categoría y "red para arco" es una red; una marca ("Redex") no se confunde con el producto; sin pista en el nombre decide la categoría, y sin nada es "otro" |
-| `src/lib/permisos.check.ts` | 6 | El CHECK de `roles.permisos` de la **migración 0007** tiene exactamente las claves del catálogo de TypeScript; los roles por defecto de SQL coinciden con `ROLES_POR_DEFECTO`; las dependencias apuntan a permisos que existen y se agregan de forma transitiva; el Administrador tiene los 19; `rutaInicial` elige la primera pantalla permitida |
+| `src/lib/permisos.check.ts` | 7 | El CHECK de `roles.permisos` de la **migración 0007** tiene exactamente las claves del catálogo de TypeScript; los roles por defecto de SQL coinciden con `ROLES_POR_DEFECTO`; las dependencias apuntan a permisos que existen y se agregan de forma transitiva; el Administrador tiene los 19; `rutaInicial` elige la primera pantalla permitida |
 | `src/lib/email/layout.check.ts` | 8 | El HTML de los mails escapa el contenido (no se puede inyectar `<script>`); `urlSegura()` solo deja `http(s)` y `mailto`, y `javascript:` no llega a un `href`; el logo es por CID, sin imágenes externas; la versión en texto plano trae contenido y link; las plantillas de activación y recuperación |
+| `src/lib/oportunidades.check.ts` | 17 | Qué etapas sirven para cada acción (columnas del tablero, cierre a ganada o perdida, reabrir); qué acciones se ofrecen según estado y permisos; validación del cierre (motivo al perder, fecha real no futura, razón al reabrir), probabilidad y fechas; los errores de la base (42501, 23514, 23503, P0001) en palabras; el cambio de resultado (ganada a perdida y al revés) pide razón y motivo, y no admite repetir la fecha del cierre anterior; la línea de tiempo mezcla actividades y cambios de etapa sin mutar y titula cada uno (alta, registro inicial, cierre, reapertura, cambio de resultado); la auditoría traduce campos e ids |
 | `src/app/(app)/alertas/plantillas.check.ts` | 10 | Formato de fecha sin zonas horarias; saludo con nombre de pila o al club; la frase distingue vencido de por vencer; el verbo concuerda en plural; sin fecha de vencimiento no inventa plazo; el mensaje de WhatsApp es más corto que el del mail; los links de WhatsApp y `mailto` codifican bien |
 
 `permisos.check.ts` lee `supabase/migrations/0007_entrega_final.sql`. **Si agregás un permiso, hay que
@@ -125,6 +128,11 @@ Tres scripts en `supabase/tests/`. Todos:
 | `0005_permisos.sql` | `0004`, `0005` y **`0007` aplicadas** | **Después** de la 0007 | Desde la 0007 usa los nombres de rol nuevos (`Vendedor`, `Solo lectura`), exige que el Vendedor vea solo su cartera, y espera que la organización nueva reciba 4 roles y 6 etapas |
 | `0007_reglas.sql` | **`0007` aplicada** (o la migración dentro de la misma transacción) | **Después** | Prueba objetos que crea la 0007 |
 | `0007_reejecucion.sql` | Una base **sin** la 0007 | **Antes**, y nunca en una base que ya la tiene | Corre la migración **dos veces** dentro de la prueba para comprobar que es re-ejecutable. Hay que reemplazar cada línea `-- @@ MIGRACION 0007 @@` por el contenido completo de la migración (son dos líneas) |
+
+`0009_reglas_oportunidades.sql` se corre **después** de aplicar la 0009. Se ensayó junto con `0005_permisos.sql`,
+`0007_reglas.sql` y `0008_baja_logica.sql` en PGlite (la 0009 aplicada dos veces, para comprobar que es
+idempotente); sin la 0009 la prueba falla, como corresponde. Una prueba de la 0007 que creaba una oportunidad
+sin empresa para probar el responsable ajeno ahora lleva empresa, porque la 0009 lo exige a los usuarios.
 
 **Si re-ejecutás la 0007, re-ejecutá la 0008 después.** La 0007 de este repositorio ya no recrea las
 políticas `borrar` de `empresas` y `contactos`, pero una copia vieja de la 0007 sí lo haría.
