@@ -1,0 +1,46 @@
+/*
+ * CRM 2.0 — design tokens (esqueleto de la Etapa 0).
+ *
+ * Contrato de aislamiento (design-system/crm-2/README.md):
+ *  - Lo importan SOLO `(app)/layout.tsx` y `admin/layout.tsx`. Nunca el layout raíz: la landing no lo descarga.
+ *  - TODO cuelga de `[data-crm]`. Ningún selector suelto, ninguna variable existente
+ *    (`--background`, `--radius`, `--primary`…) se redefine: los tokens nuevos son `--crm-*`.
+ *  - Sin at-rules globales (@theme, @layer, @property, @import, @font-face, @keyframes sueltos). Las animaciones
+ *    son `@keyframes crm-*`, usadas solo bajo [data-crm]. `npm run guard:frozen` lo verifica.
+ *  - Los valores de abajo son PLACEHOLDERS: los reales llegan en la Etapa 1 (MASTER.md).
+ *    Hoy nada los usa, así que no cambian ninguna pantalla.
+ */
+
+/* El wrapper no genera caja: layout, scroll, sticky, h-dvh y @media print quedan como estaban. Sí hereda
+   variables, así que los tokens y las fuentes llegan a todo el CRM. */
+[data-crm] {
+  display: contents;
+
+  /* Familias: --font-crm-sans / --font-crm-mono las define next/font en el className del wrapper. */
+  --crm-font-sans: var(--font-crm-sans), ui-sans-serif, system-ui, sans-serif;
+  --crm-font-mono: var(--font-crm-mono), ui-monospace, monospace;
+
+  --crm-radius: 6px;
+
+  --crm-surface: #ffffff;
+  --crm-surface-raised: #f8f9fa;
+  --crm-text: #14181f;
+  --crm-text-muted: #5b6471;
+  --crm-border: #e1e5ea;
+  --crm-accent: #0f7b5c;
+}
+
+.dark [data-crm] {
+  --crm-surface: #12161c;
+  --crm-surface-raised: #1a1f27;
+  --crm-text: #e8ecf1;
+  --crm-text-muted: #9aa4b2;
+  --crm-border: #2a313b;
+  --crm-accent: #3ecf9e;
+}
+
+/* Raíz de portales (overlays de CRM 2.0). Vive DENTRO del wrapper para heredar los --crm-*. Vacía hoy.
+   `display: contents`: no ocupa lugar en el flex del body; lo portalizado va con `position: fixed`. */
+[data-crm] > #crm-portal {
+  display: contents;
+}

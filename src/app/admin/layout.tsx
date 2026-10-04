@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LogOut } from "lucide-react";
+import CrmRoot from "@/components/crm/CrmRoot";
 import { GoalMark } from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
 import { APP_NAME } from "@/lib/brand";
 import { getSesion } from "@/lib/sesion";
+import "../(app)/crm.css";
 
 /**
  * Panel de PLATAFORMA: la interfaz del superadmin, separada del CRM. Aca solo
@@ -20,6 +22,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const nombre = sesion.perfil?.nombre ?? sesion.user.email ?? "";
 
   return (
+    <CrmRoot>
     <div className="min-h-dvh bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b bg-card/90 backdrop-blur-sm">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
@@ -57,5 +60,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">{children}</main>
     </div>
+    </CrmRoot>
   );
 }

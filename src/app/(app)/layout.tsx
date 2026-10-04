@@ -2,7 +2,11 @@ import { redirect } from "next/navigation";
 import { Ban, LogOut } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import AuthCard from "@/components/AuthCard";
+import CrmRoot from "@/components/crm/CrmRoot";
 import { getSesion } from "@/lib/sesion";
+import "./crm.css";
+
+// La rama «Sin acceso» (AuthCard, sin shell) NO se envuelve en CrmRoot: es una pantalla de acceso, fuera de alcance.
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const sesion = await getSesion();
@@ -38,13 +42,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <AppShell
-      nombre={sesion.perfil?.nombre ?? sesion.user.email ?? ""}
-      organizacion={sesion.organizacion?.nombre ?? null}
-      rol={sesion.rol?.nombre ?? null}
-      permisos={sesion.permisos}
-    >
-      {children}
-    </AppShell>
+    <CrmRoot>
+      <AppShell
+        nombre={sesion.perfil?.nombre ?? sesion.user.email ?? ""}
+        organizacion={sesion.organizacion?.nombre ?? null}
+        rol={sesion.rol?.nombre ?? null}
+        permisos={sesion.permisos}
+      >
+        {children}
+      </AppShell>
+    </CrmRoot>
   );
 }

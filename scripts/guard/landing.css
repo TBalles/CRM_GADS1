@@ -1,0 +1,17 @@
+/*
+ * Hoja que Playwright inyecta SOLO al sacar las capturas de la guarda (opción `stylePath` de toHaveScreenshot).
+ * No es parte de la app. Neutraliza lo que no es determinista y cuya geometría no importa:
+ *  - <canvas>: las dos capas de partículas (cielo y figuras) se siembran con Math.random en cada carga, así que
+ *    ninguna captura se repite. `visibility: hidden` y NO una máscara: la máscara de Playwright pintaría un
+ *    rectángulo rosa sobre toda la zona del canvas, y como es `fixed inset-0` taparía el hero entero.
+ *  - cursor pelota: arranca invisible (opacity 0) hasta el primer movimiento del mouse; se oculta por si acaso.
+ */
+canvas {
+  visibility: hidden !important;
+}
+.ball-cursor-el {
+  display: none !important;
+}
+html {
+  scroll-behavior: auto !important;
+}

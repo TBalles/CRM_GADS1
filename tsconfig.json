@@ -35,5 +35,6 @@
   ],
   // e2e/ y playwright.config.ts tienen su propio tsconfig (e2e/tsconfig.json): asi el build de Next no
   // depende de los tipos de Playwright y el chequeo de src no se toca. `npm run typecheck` corre los dos.
-  "exclude": ["node_modules", "e2e", "playwright.config.ts"]
+  // scripts/guard + playwright.guard.config.ts (guardas de CRM 2.0) siguen el mismo criterio: scripts/guard/tsconfig.json.
+  "exclude": ["node_modules", "e2e", "playwright.config.ts", "scripts/guard", "playwright.guard.config.ts"]
 }
