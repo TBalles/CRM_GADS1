@@ -4,19 +4,19 @@
  *   node --test src/lib/permisos.check.ts
  *
  * El catalogo esta en dos lugares que no se pueden importar entre si: este
- * modulo (TS) y la migracion 0005 (SQL: el CHECK de roles.permisos y los roles
- * por defecto). Este test lee el SQL y falla si divergen. Sin el, agregar un
- * permiso en la app y no en la base haria que guardar un rol con ese permiso
- * explote con un error de CHECK.
+ * modulo (TS) y la ultima migracion que redefine el CHECK de roles.permisos y
+ * los roles por defecto (hoy, la 0007). Este test lee el SQL y falla si
+ * divergen. Sin el, agregar un permiso en la app y no en la base haria que
+ * guardar un rol con ese permiso explote con un error de CHECK.
  */
 import { strict as assert } from "node:assert";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { CLAVES_PERMISOS, PERMISOS, ROLES_POR_DEFECTO, conDependencias, rutaInicial } from "./permisos.ts";
 
-const SQL = readFileSync(new URL("../../supabase/migrations/0005_roles_permisos.sql", import.meta.url), "utf8");
+const SQL = readFileSync(new URL("../../supabase/migrations/0007_entrega_final.sql", import.meta.url), "utf8");
 
-const claves = (texto: string) => [...texto.matchAll(/'([a-z]+\.[a-z]+)'/g)].map((m) => m[1]).sort();
+const claves = (texto: string) => [...texto.matchAll(/'([a-z_]+\.[a-z_]+)'/g)].map((m) => m[1]).sort();
 
 test("el CHECK de roles.permisos tiene exactamente las claves del catálogo", () => {
   const bloque = SQL.match(/roles_permisos_validos check \(permisos <@ array\[([\s\S]*?)\]::text\[\]\)/);

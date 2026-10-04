@@ -6,12 +6,13 @@
  * puede tener "Ventas", "RRHH", "Logistica" o lo que necesite, sin tocar codigo.
  *
  * La autorizacion REAL la hace la base: cada politica RLS pide el permiso que
- * corresponde (ver supabase/migrations/0004_multitenant.sql). Lo que la app
- * hace con este catalogo es solo UX: esconder lo que el usuario no puede usar.
+ * corresponde (ver supabase/migrations/0005_roles_permisos.sql y 0007). Lo que
+ * la app hace con este catalogo es solo UX: esconder lo que el usuario no puede
+ * usar.
  *
  * SINCRONIA: la lista de claves esta repetida en el CHECK de `roles.permisos` y
- * en la funcion que crea los roles por defecto (ambos en la migracion 0004).
- * permisos.check.ts falla si divergen.
+ * en la funcion que crea los roles por defecto (ambos, en su ultima version, en
+ * la migracion 0007_entrega_final.sql). permisos.check.ts falla si divergen.
  *
  * Imports relativos o ninguno: este modulo se prueba con `node --test`.
  */
@@ -19,17 +20,22 @@
 export type Permiso =
   | "tablero.ver"
   | "clientes.ver"
+  | "clientes.ver_todos"
   | "clientes.editar"
+  | "clientes.asignar"
   | "bitacora.ver"
   | "bitacora.escribir"
   | "oportunidades.ver"
   | "oportunidades.editar"
+  | "oportunidades.asignar"
+  | "oportunidades.reabrir"
   | "productos.ver"
   | "productos.editar"
   | "ventas.ver"
   | "ventas.editar"
   | "alertas.ver"
   | "alertas.enviar"
+  | "configuracion.gestionar"
   | "usuarios.gestionar";
 
 export type DefPermiso = {
@@ -48,17 +54,22 @@ export type DefPermiso = {
 export const PERMISOS: DefPermiso[] = [
   { clave: "tablero.ver", grupo: "Inicio", etiqueta: "Ver el tablero", descripcion: "Métricas del embudo y montos en juego.", requiere: ["oportunidades.ver"] },
   { clave: "clientes.ver", grupo: "Clientes", etiqueta: "Ver clientes", descripcion: "Empresas y sus contactos.", requiere: [] },
+  { clave: "clientes.ver_todos", grupo: "Clientes", etiqueta: "Ver la cartera de todos", descripcion: "Sin este permiso, solo los clientes y oportunidades asignados al usuario.", requiere: ["clientes.ver"] },
   { clave: "clientes.editar", grupo: "Clientes", etiqueta: "Crear y editar clientes", descripcion: "Alta y edición de empresas y contactos.", requiere: ["clientes.ver"] },
+  { clave: "clientes.asignar", grupo: "Clientes", etiqueta: "Asignar clientes", descripcion: "Elegir o cambiar el responsable de empresas y contactos.", requiere: ["clientes.editar"] },
   { clave: "bitacora.ver", grupo: "Bitácora", etiqueta: "Ver la bitácora", descripcion: "Historial de charlas, consultas y quejas.", requiere: ["clientes.ver"] },
   { clave: "bitacora.escribir", grupo: "Bitácora", etiqueta: "Escribir en la bitácora", descripcion: "Agregar entradas (no se pueden editar ni borrar).", requiere: ["bitacora.ver"] },
   { clave: "oportunidades.ver", grupo: "Oportunidades", etiqueta: "Ver oportunidades", descripcion: "El embudo comercial.", requiere: ["clientes.ver", "productos.ver"] },
-  { clave: "oportunidades.editar", grupo: "Oportunidades", etiqueta: "Gestionar oportunidades", descripcion: "Crear, editar y mover de etapa.", requiere: ["oportunidades.ver"] },
+  { clave: "oportunidades.editar", grupo: "Oportunidades", etiqueta: "Gestionar oportunidades", descripcion: "Crear, editar, mover de etapa y marcar ganada o perdida.", requiere: ["oportunidades.ver"] },
+  { clave: "oportunidades.asignar", grupo: "Oportunidades", etiqueta: "Asignar oportunidades", descripcion: "Elegir o cambiar el responsable de una oportunidad.", requiere: ["oportunidades.editar"] },
+  { clave: "oportunidades.reabrir", grupo: "Oportunidades", etiqueta: "Reabrir oportunidades", descripcion: "Volver a abrir una oportunidad ganada o perdida, o cambiar su resultado.", requiere: ["oportunidades.editar"] },
   { clave: "productos.ver", grupo: "Productos", etiqueta: "Ver el catálogo", descripcion: "Productos, precios y vida útil.", requiere: [] },
   { clave: "productos.editar", grupo: "Productos", etiqueta: "Editar el catálogo", descripcion: "Alta, edición y baja de productos.", requiere: ["productos.ver"] },
   { clave: "ventas.ver", grupo: "Ventas", etiqueta: "Ver ventas", descripcion: "Historial de entregas.", requiere: ["clientes.ver", "productos.ver"] },
   { clave: "ventas.editar", grupo: "Ventas", etiqueta: "Registrar ventas", descripcion: "Cargar ventas y sus productos.", requiere: ["ventas.ver"] },
   { clave: "alertas.ver", grupo: "Alertas", etiqueta: "Ver alertas de recambio", descripcion: "Equipos vencidos o por vencer.", requiere: ["ventas.ver"] },
   { clave: "alertas.enviar", grupo: "Alertas", etiqueta: "Enviar alertas", descripcion: "Mandar los avisos por mail y WhatsApp.", requiere: ["alertas.ver"] },
+  { clave: "configuracion.gestionar", grupo: "Administración", etiqueta: "Configurar el CRM", descripcion: "Etapas del embudo, catálogos y datos de la empresa.", requiere: [] },
   { clave: "usuarios.gestionar", grupo: "Administración", etiqueta: "Gestionar usuarios y roles", descripcion: "Invitar, dar de baja, asignar roles y crear roles.", requiere: [] },
 ];
 
@@ -91,13 +102,13 @@ export function conDependencias(permisos: Iterable<Permiso>): Permiso[] {
 export const ROLES_POR_DEFECTO: { nombre: string; descripcion: string; esAdmin: boolean; permisos: Permiso[] }[] = [
   {
     nombre: "Administrador",
-    descripcion: "Acceso total, incluida la gestión de usuarios y roles.",
+    descripcion: "Acceso total, incluida la gestión de usuarios, roles y configuración.",
     esAdmin: true,
     permisos: CLAVES_PERMISOS,
   },
   {
-    nombre: "Ventas",
-    descripcion: "Trabaja clientes, oportunidades, ventas y alertas. No administra usuarios.",
+    nombre: "Vendedor",
+    descripcion: "Trabaja sus clientes y oportunidades asignados, ventas y alertas. No reasigna ni reabre.",
     esAdmin: false,
     permisos: conDependencias([
       "tablero.ver",
@@ -110,16 +121,26 @@ export const ROLES_POR_DEFECTO: { nombre: string; descripcion: string; esAdmin: 
     ]),
   },
   {
-    nombre: "Corporativo",
-    descripcion: "Ve todo para seguimiento y reportes, sin modificar.",
+    nombre: "Responsable comercial",
+    descripcion: "Supervisa al equipo: ve toda la cartera, asigna, reasigna y reabre oportunidades.",
     esAdmin: false,
-    permisos: conDependencias(["tablero.ver", "bitacora.ver", "oportunidades.ver", "ventas.ver", "alertas.ver"]),
+    permisos: conDependencias([
+      "tablero.ver",
+      "clientes.ver_todos",
+      "clientes.asignar",
+      "bitacora.escribir",
+      "oportunidades.asignar",
+      "oportunidades.reabrir",
+      "productos.ver",
+      "ventas.ver",
+      "alertas.ver",
+    ]),
   },
   {
     nombre: "Solo lectura",
     descripcion: "Consulta clientes y catálogo.",
     esAdmin: false,
-    permisos: conDependencias(["clientes.ver", "productos.ver"]),
+    permisos: conDependencias(["clientes.ver_todos", "productos.ver"]),
   },
 ];
 

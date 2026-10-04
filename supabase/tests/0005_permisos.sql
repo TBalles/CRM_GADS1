@@ -1,6 +1,7 @@
 -- Tuco & Nito - PRUEBA DE AISLAMIENTO Y PERMISOS
 --
--- Correr en el SQL Editor de Supabase DESPUES de aplicar 0004 y 0005.
+-- Correr en el SQL Editor de Supabase DESPUES de aplicar 0004, 0005 y 0007
+-- (desde la 0007 el rol Ventas se llama Vendedor y ve solo su cartera).
 --
 -- Crea dos organizaciones de prueba (A y B) con usuarios de distintos roles, se
 -- hace pasar por cada uno exactamente como lo hace la app (rol `authenticated`
@@ -31,7 +32,7 @@ begin
 end $$;
 
 -- ── Usuarios, con el rol en app_metadata como en un alta real ────────────────
---   A-ventas:  rol Ventas de A        A-lectura: rol Solo lectura de A
+--   A-ventas:  rol Vendedor de A       A-lectura: rol Solo lectura de A
 --   A-admin:   rol Administrador de A B-admin:   rol Administrador de B
 --   colado:    pide organizacion y rol por user_metadata (editable por el usuario)
 --   cruzado:   organizacion A pero con un rol de B
@@ -40,7 +41,7 @@ select v.id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authentic
        jsonb_build_object('organizacion_id', v.org, 'rol_id', (select id from public.roles where organizacion_id = v.rol_org and nombre = v.rol)),
        jsonb_build_object('nombre', v.email), now(), now()
 from (values
-  ('aaaaaaaa-1111-0000-0000-000000000001'::uuid, 'a.ventas@test.invalid',  'aaaaaaaa-0000-0000-0000-000000000000'::uuid, 'aaaaaaaa-0000-0000-0000-000000000000'::uuid, 'Ventas'),
+  ('aaaaaaaa-1111-0000-0000-000000000001'::uuid, 'a.ventas@test.invalid',  'aaaaaaaa-0000-0000-0000-000000000000'::uuid, 'aaaaaaaa-0000-0000-0000-000000000000'::uuid, 'Vendedor'),
   ('aaaaaaaa-1111-0000-0000-000000000002'::uuid, 'a.lectura@test.invalid', 'aaaaaaaa-0000-0000-0000-000000000000'::uuid, 'aaaaaaaa-0000-0000-0000-000000000000'::uuid, 'Solo lectura'),
   ('aaaaaaaa-1111-0000-0000-000000000003'::uuid, 'a.admin@test.invalid',   'aaaaaaaa-0000-0000-0000-000000000000'::uuid, 'aaaaaaaa-0000-0000-0000-000000000000'::uuid, 'Administrador'),
   ('bbbbbbbb-1111-0000-0000-000000000001'::uuid, 'b.admin@test.invalid',   'bbbbbbbb-0000-0000-0000-000000000000'::uuid, 'bbbbbbbb-0000-0000-0000-000000000000'::uuid, 'Administrador'),
@@ -62,10 +63,11 @@ begin
   end if;
 end $$;
 
--- Datos de prueba (como postgres, sin RLS)
-insert into public.empresas (id, organizacion_id, nombre) values
-  ('aaaaaaaa-2222-0000-0000-000000000000', 'aaaaaaaa-0000-0000-0000-000000000000', 'Empresa de A'),
-  ('bbbbbbbb-2222-0000-0000-000000000000', 'bbbbbbbb-0000-0000-0000-000000000000', 'Empresa de B');
+-- Datos de prueba (como postgres, sin RLS). La empresa de A es de la cartera
+-- de A-ventas: un Vendedor solo ve lo que tiene asignado.
+insert into public.empresas (id, organizacion_id, nombre, responsable_id) values
+  ('aaaaaaaa-2222-0000-0000-000000000000', 'aaaaaaaa-0000-0000-0000-000000000000', 'Empresa de A', 'aaaaaaaa-1111-0000-0000-000000000001'),
+  ('bbbbbbbb-2222-0000-0000-000000000000', 'bbbbbbbb-0000-0000-0000-000000000000', 'Empresa de B', null);
 insert into public.productos (id, organizacion_id, nombre, vida_util_meses) values
   ('aaaaaaaa-3333-0000-0000-000000000000', 'aaaaaaaa-0000-0000-0000-000000000000', 'Producto de A', 12),
   ('bbbbbbbb-3333-0000-0000-000000000000', 'bbbbbbbb-0000-0000-0000-000000000000', 'Producto de B', 12);
@@ -126,7 +128,7 @@ begin
   if n <> 0 then raise exception 'FALLA: un usuario pudo modificar su propio perfil'; end if;
 
   -- Ventas NO administra roles (sin usuarios.gestionar): 0 filas.
-  update public.roles set permisos = array['usuarios.gestionar'] where nombre = 'Ventas';
+  update public.roles set permisos = array['usuarios.gestionar'] where nombre = 'Vendedor';
   get diagnostics n = row_count;
   if n <> 0 then raise exception 'FALLA: Ventas pudo darse permisos editando su rol'; end if;
 end $$;
@@ -250,9 +252,9 @@ begin
   values ('RRHH', 'aaaaaaaa-0000-0000-0000-000000000000', array['usuarios.gestionar']);
 
   -- ...y editar los no-administradores...
-  update public.roles set descripcion = 'editado' where nombre = 'Ventas';
+  update public.roles set descripcion = 'editado' where nombre = 'Vendedor';
   get diagnostics n = row_count;
-  if n <> 1 then raise exception 'FALLA: el admin no pudo editar el rol Ventas'; end if;
+  if n <> 1 then raise exception 'FALLA: el admin no pudo editar el rol Vendedor'; end if;
 
   -- ...pero NO el rol Administrador.
   update public.roles set permisos = array['clientes.ver'] where es_admin;
