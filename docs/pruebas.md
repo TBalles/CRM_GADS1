@@ -31,6 +31,7 @@ Contenido: [1. Resumen](#1-resumen) · [2. Self-checks](#2-self-checks-con-node-
 | Build | `npx next build` | Terminal | Que la aplicación se construya (incluye el chequeo de `server-only`) |
 | `0005_permisos.sql` | Pegar en el SQL Editor | Supabase | Aislamiento entre organizaciones y permisos |
 | `0007_reglas.sql` | Pegar en el SQL Editor | Supabase | Reglas de la migración 0007 |
+| `0008_baja_logica.sql` | Pegar en el SQL Editor, con la 0008 aplicada | Supabase | Que borrar empresas o contactos afecte 0 filas y que la baja lógica (`estado = 'inactivo'`) funcione |
 | `0007_reejecucion.sql` | Pegar con la migración dos veces | Supabase | Que la 0007 se pueda re-ejecutar sin efectos |
 
 ---
@@ -49,6 +50,7 @@ node --test "src/**/*.check.ts"
 node --test src/lib/money.check.ts
 node --test src/lib/equipo.check.ts
 node --test src/lib/permisos.check.ts
+node --test src/lib/cuit.check.ts
 node --test src/lib/email/layout.check.ts
 node --test "src/app/(app)/alertas/plantillas.check.ts"
 ```
@@ -123,6 +125,11 @@ Tres scripts en `supabase/tests/`. Todos:
 | `0005_permisos.sql` | `0004`, `0005` y **`0007` aplicadas** | **Después** de la 0007 | Desde la 0007 usa los nombres de rol nuevos (`Vendedor`, `Solo lectura`), exige que el Vendedor vea solo su cartera, y espera que la organización nueva reciba 4 roles y 6 etapas |
 | `0007_reglas.sql` | **`0007` aplicada** (o la migración dentro de la misma transacción) | **Después** | Prueba objetos que crea la 0007 |
 | `0007_reejecucion.sql` | Una base **sin** la 0007 | **Antes**, y nunca en una base que ya la tiene | Corre la migración **dos veces** dentro de la prueba para comprobar que es re-ejecutable. Hay que reemplazar cada línea `-- @@ MIGRACION 0007 @@` por el contenido completo de la migración (son dos líneas) |
+
+**Si re-ejecutás la 0007, re-ejecutá la 0008 después.** La 0007 de este repositorio ya no recrea las
+políticas `borrar` de `empresas` y `contactos`, pero una copia vieja de la 0007 sí lo haría.
+`0008_baja_logica.sql` prueba, además de la baja lógica, el trigger que conserva una etapa ganada y una
+perdida; se corre **después** de aplicar la 0008.
 
 Como la base de producción ya tiene la 0007 aplicada, **`0007_reejecucion.sql` no se puede ejecutar ahí**.
 Sirve para una base nueva o un ensayo antes de aplicar la migración. Antes de la 0007 el script

@@ -62,7 +62,7 @@ export default async function DashboardPage() {
       supabase.from("etapas").select("id, nombre, orden, color").order("orden"),
       supabase
         .from("oportunidades")
-        .select("id, monto, etapa_id, empresa:empresas(id, nombre)"),
+        .select("id, monto, estado, etapa_id, empresa:empresas(id, nombre)"),
       verRecambios
         ? supabase
             .from("alertas_vida_util")
@@ -79,7 +79,10 @@ export default async function DashboardPage() {
 
   const items = oportunidades ?? [];
   const stages = etapas ?? [];
-  const totalPipeline = items.reduce((acc, o) => acc + (Number(o.monto) || 0), 0);
+  // "En juego" y "abiertas" cuentan SOLO las abiertas: una ganada o una perdida
+  // ya no esta en juego. El embudo de abajo si las muestra (cada una en su etapa).
+  const abiertas = items.filter((o) => o.estado === "abierta");
+  const totalPipeline = abiertas.reduce((acc, o) => acc + (Number(o.monto) || 0), 0);
 
   // Funnel: one row per stage, in stage order, with its count and amount.
   const porEtapa: Row[] = stages.map((etapa) => {
@@ -99,7 +102,7 @@ export default async function DashboardPage() {
   // company stay out: "Sin empresa asignada" is not a client, and ranking it
   // third among clients read as if it were. They still count in the masthead.
   const porEmpresa = new Map<string, { label: string; monto: number; count: number }>();
-  for (const o of items) {
+  for (const o of abiertas) {
     if (!o.empresa) continue;
     const key = o.empresa.id;
     const label = o.empresa.nombre;
@@ -154,7 +157,7 @@ export default async function DashboardPage() {
             href="/oportunidades"
             className="rounded-sm font-semibold text-white underline-offset-4 hover:text-pitch-line hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pitch-line"
           >
-            {items.length} oportunidades
+            {abiertas.length} oportunidades
           </Link>{" "}
           abiertas.
         </p>
@@ -165,8 +168,8 @@ export default async function DashboardPage() {
           <Metrica
             href="/oportunidades"
             icon={Handshake}
-            label="Oportunidades"
-            value={items.length}
+            label="Oportunidades abiertas"
+            value={abiertas.length}
           />
         </dl>
       </header>

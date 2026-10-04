@@ -610,10 +610,9 @@ Resumen; el modelo completo está en [seguridad](./seguridad.md).
 
 **Límites conocidos de esta versión.**
 
-1. La política `borrar` de `empresas` sigue vigente para quien tiene `clientes.editar` (dentro de su
-   cartera). La interfaz no borra, pero una llamada directa a la API podría, y el borrado de una empresa
-   arrastra sus ventas y su bitácora por `on delete cascade`. La baja lógica es una convención de la
-   interfaz, no una garantía de la base, para empresas.
+1. *(Resuelto por la `0008`, pendiente de aplicar.)* La política `borrar` de `empresas` y `contactos`
+   seguía vigente para quien tiene `clientes.editar`; la `0008` la quita y la baja lógica pasa a ser una
+   garantía de la base.
 2. `src/lib/supabase/types.ts` **no se regeneró después de la 0007**: no incluye las tablas ni columnas
    nuevas. Hay que regenerarlo antes de construir la interfaz de F1.
 3. `next.config.ts` no define cabeceras de seguridad (CSP y similares).

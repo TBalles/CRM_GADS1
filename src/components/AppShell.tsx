@@ -14,6 +14,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Receipt,
+  Settings,
   UsersRound,
   X,
 } from "lucide-react";
@@ -39,6 +40,7 @@ const NAV = [
   { href: "/ventas", label: "Ventas", icon: Receipt, permiso: "ventas.ver" },
   { href: "/alertas", label: "Alertas", icon: BellRing, permiso: "alertas.ver" },
   { href: "/usuarios", label: "Usuarios", icon: UsersRound, permiso: "usuarios.gestionar" },
+  { href: "/configuracion", label: "Configuración", icon: Settings, permiso: "configuracion.gestionar" },
 ] as const;
 
 /**

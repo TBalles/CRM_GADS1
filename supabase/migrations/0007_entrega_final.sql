@@ -1026,9 +1026,8 @@ create policy "editar" on public.empresas for update to authenticated
   using (organizacion_id = (select public.org_actual()) and (select public.tiene_permiso('clientes.editar'))
          and ((select public.tiene_permiso('clientes.ver_todos')) or responsable_id = (select auth.uid())))
   with check (organizacion_id = (select public.org_actual()) and (select public.tiene_permiso('clientes.editar')));
-create policy "borrar" on public.empresas for delete to authenticated
-  using (organizacion_id = (select public.org_actual()) and (select public.tiene_permiso('clientes.editar'))
-         and ((select public.tiene_permiso('clientes.ver_todos')) or responsable_id = (select auth.uid())));
+-- SIN politica de borrar (se quita arriba y NO se vuelve a crear; ver la 0008):
+-- una empresa no se borra, se da de baja con estado = 'inactivo'.
 
 drop policy if exists "ver" on public.contactos;
 drop policy if exists "crear" on public.contactos;
@@ -1046,10 +1045,7 @@ create policy "editar" on public.contactos for update to authenticated
          and ((select public.tiene_permiso('clientes.ver_todos')) or responsable_id = (select auth.uid())
               or exists (select 1 from public.empresas e where e.id = contactos.empresa_id)))
   with check (organizacion_id = (select public.org_actual()) and (select public.tiene_permiso('clientes.editar')));
-create policy "borrar" on public.contactos for delete to authenticated
-  using (organizacion_id = (select public.org_actual()) and (select public.tiene_permiso('clientes.editar'))
-         and ((select public.tiene_permiso('clientes.ver_todos')) or responsable_id = (select auth.uid())
-              or exists (select 1 from public.empresas e where e.id = contactos.empresa_id)));
+-- SIN politica de borrar (idem empresas): baja logica por estado.
 
 -- Oportunidades
 drop policy if exists "ver" on public.oportunidades;

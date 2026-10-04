@@ -553,11 +553,20 @@ select pg_temp.debe_fallar(
   'una oportunidad de A quedo asignada a un usuario de B');
 
 -- Un contacto con actividades no se borra fisicamente (baja logica por estado):
--- lo frena la FK, con un error que dice que esta referenciado.
-select pg_temp.debe_fallar(
-  $q$delete from public.contactos where id = 'a7a7a7a7-3333-0000-0000-000000000003'$q$,
-  '23503', '%violates foreign key constraint "bitacora_entradas_contacto_id_fkey"%',
-  'se pudo borrar un contacto con actividades');
+-- lo frena la FK (23503) con la 0007 sola, o la RLS (0 filas) una vez aplicada
+-- la 0008, que saca la politica de borrar. Lo que no puede pasar es que se borre.
+do $$ begin
+  begin
+    delete from public.contactos where id = 'a7a7a7a7-3333-0000-0000-000000000003';
+  exception when foreign_key_violation then
+    if sqlerrm not like '%violates foreign key constraint "bitacora_entradas_contacto_id_fkey"%' then
+      raise exception 'FALLA: el contacto con actividades fallo por otra FK: %', sqlerrm;
+    end if;
+  end;
+  if not exists (select 1 from public.contactos where id = 'a7a7a7a7-3333-0000-0000-000000000003') then
+    raise exception 'FALLA: se pudo borrar un contacto con actividades';
+  end if;
+end $$;
 
 -- ══ SOY ADMIN DE B: no ve nada de A en las tablas nuevas ══════════════════════
 select set_config('request.jwt.claims', '{"sub":"b7b7b7b7-1111-0000-0000-000000000001","role":"authenticated"}', true);

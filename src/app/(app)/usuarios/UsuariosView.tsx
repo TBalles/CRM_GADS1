@@ -102,7 +102,7 @@ function InvitarForm({
 }) {
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
-  const [rolId, setRolId] = useState(() => roles.find((r) => r.nombre === "Ventas")?.id ?? roles[0]?.id ?? "");
+  const [rolId, setRolId] = useState(() => roles.find((r) => r.nombre === "Vendedor")?.id ?? roles[0]?.id ?? "");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const { showToast } = useToast();

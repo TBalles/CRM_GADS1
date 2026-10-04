@@ -246,7 +246,7 @@ de la fila (para lo que cuelga de una empresa, poder ver la empresa). "Org" sign
 | Columnas de la 0007 (**sin interfaz**) | `estado` (`potencial`, `cliente`, `inactivo`, `no_contactar`; por defecto `potencial`), `responsable_id`, `origen_id`, `tipo_cliente` (`club`, `complejo_f5`, `escuela_futbol`, `predio_municipal`, `colegio`, `otro`), `sitio_web` |
 | Claves foráneas | `responsable_id → perfiles` (set null); `(organizacion_id, origen_id) → origenes` |
 | RLS | Ver, editar, borrar: Org y `clientes.ver`/`clientes.editar` y Cartera. Crear: Org y `clientes.editar` |
-| Notas | Trigger `validar_responsable('clientes.asignar')`. La política de borrar sigue vigente (ver [seguridad](./seguridad.md)); la interfaz no borra |
+| Notas | Trigger `validar_responsable('clientes.asignar')`. Sin política de borrar desde la `0008` (baja lógica por `estado`) |
 
 #### `contactos`
 
@@ -275,7 +275,7 @@ de la fila (para lo que cuelga de una empresa, poder ver la empresa). "Org" sign
 |---|---|
 | Propósito | Etapas del embudo de cada organización |
 | Columnas | `nombre`, `orden`, `color`, `tipo` (`abierta`, `ganada`, `perdida`; 0007) |
-| RLS | Ver: cualquier usuario de la organización. Crear, editar, borrar: `configuracion.gestionar` (**sin interfaz**) |
+| RLS | Ver: cualquier usuario de la organización. Crear, editar, borrar: `configuracion.gestionar` (interfaz en `/configuracion`; la etapa que alguna vez tuvo oportunidades no se puede borrar, la frenan las FK) |
 | Notas | El `tipo` define el `estado` de las oportunidades que están en la etapa. El trigger `etapas_validar_tipo` impide cambiar el tipo de una etapa con oportunidades. Embudo por defecto: Consulta recibida, Relevamiento de cancha, Presupuesto enviado, Negociación, Entregado (ganada), Perdida |
 
 #### `oportunidades`

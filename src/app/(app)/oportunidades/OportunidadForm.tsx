@@ -20,6 +20,8 @@ type Opcion = {
   id: string;
   label: string;
   color?: string | null;
+  /** Etapas only: abierta, ganada o perdida. */
+  tipo?: string;
   /** Contacts only: the company they belong to. */
   empresaId?: string | null;
   empresa?: string | null;
@@ -49,7 +51,7 @@ export default function OportunidadForm({
   const [contactoId, setContactoId] = useState(oportunidad?.contacto_id ?? "");
   const [productoId, setProductoId] = useState(oportunidad?.producto_id ?? "");
   const [responsableId, setResponsableId] = useState(oportunidad?.responsable_id ?? "");
-  const [etapaId, setEtapaId] = useState(oportunidad?.etapa_id ?? etapas[0]?.id ?? "");
+  const [etapaId, setEtapaId] = useState(oportunidad?.etapa_id ?? (etapas.find((e) => e.tipo === "abierta") ?? etapas[0])?.id ?? "");
   // Money is held as the masked string and parsed at submit (golden rule #4).
   const [monto, setMonto] = useState(maskFromNumber(oportunidad?.monto));
   const [notas, setNotas] = useState(oportunidad?.notas ?? "");

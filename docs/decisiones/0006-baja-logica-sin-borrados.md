@@ -30,11 +30,11 @@ el superadmin) sigue funcionando porque su cascada borra oportunidades e histori
 
 - Las listas tendrán que distinguir activos de inactivos (filtro por estado). Hoy las pantallas no lo hacen
   porque son anteriores a la `0007`.
-- **Límite abierto.** La política `borrar` de `empresas` y `contactos` sigue vigente para quien tiene
-  `clientes.editar` dentro de su cartera. La interfaz no borra, pero una llamada directa a la API podría, y
-  borrar una empresa arrastra sus ventas y su bitácora (`on delete cascade`). Para empresas, la baja lógica es
-  hoy una convención de la interfaz y no una garantía de la base. Quitar esas políticas es el cierre natural de
-  esta decisión y está pendiente.
+- **Cerrado por la `0008` (pendiente de aplicar en Supabase).** Se quitaron las políticas `borrar` de `empresas` y `contactos`: un `DELETE` de
+  un usuario afecta 0 filas, así que la baja lógica es una garantía de la base y no solo de la interfaz.
+  Hasta que se aplique, la política `borrar` sigue vigente en la base de producción. Probado en
+  `supabase/tests/0008_baja_logica.sql`. Borrar una organización entera (superadmin) sigue
+  funcionando porque la cascada de las claves foráneas no pasa por la RLS.
 - Una oportunidad creada por error no se puede borrar: se marca perdida, con el motivo que corresponda
   (existe un motivo "Dato histórico sin motivo" para los datos anteriores a la `0007`).
 - Los datos de prueba se limpian borrando la organización de demostración, no fila por fila.

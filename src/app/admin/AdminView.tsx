@@ -102,7 +102,7 @@ function ClienteForm({
       </CampoGrupo>
       {!cliente && (
         <p className="text-xs leading-relaxed text-muted-foreground">
-          El cliente arranca con los roles Administrador, Ventas, Corporativo y Solo lectura, y con las
+          El cliente arranca con los roles Administrador, Vendedor, Responsable comercial y Solo lectura, y con las
           etapas del embudo por defecto. Sus datos quedan aislados del resto.
         </p>
       )}

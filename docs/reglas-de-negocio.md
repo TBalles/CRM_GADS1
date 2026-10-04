@@ -75,6 +75,12 @@ detallado en [las notas de versión](./notas-de-version.md#b8-oportunidades-y-em
    no le muestra la oportunidad, devuelve "No existe la oportunidad o no tenés permiso para modificarla".
    La interfaz todavía no la usa (F2).
 
+**Etapas ganada y perdida.** La organización no puede quedarse sin ninguna etapa de tipo `ganada` ni sin
+ninguna de tipo `perdida`: el trigger `etapas_conservar_cierres` (migración `0008`) rechaza borrar la última
+de un tipo o cambiarle el tipo (error `23514`, "Tiene que quedar al menos una etapa de tipo…"). Borrar la
+organización entera (cascada) no lo dispara. `/configuracion` lo avisa antes de intentarlo; el trigger es
+la garantía de última línea. Prueba: `supabase/tests/0008_baja_logica.sql`.
+
 ---
 
 ## 3. Historial y auditoría
@@ -99,7 +105,7 @@ administrador vean todo. Ver la [decisión 0005](./decisiones/0005-cartera-propi
 
 | # | Regla | Dónde | Fuente | Interfaz |
 |---|---|---|---|---|
-| 4.1 | **Cartera propia.** Empresas, contactos y oportunidades se ven si el usuario tiene `clientes.ver_todos` o es el `responsable_id`. Vale para ver y editar, y para borrar en empresas y contactos (las oportunidades no se borran) | RLS | `0007`, sección 12 | Sí: la pantalla muestra lo que la base devuelve |
+| 4.1 | **Cartera propia.** Empresas, contactos y oportunidades se ven si el usuario tiene `clientes.ver_todos` o es el `responsable_id`. Vale para ver y editar (nadie borra: sin política de borrar en empresas, contactos ni oportunidades desde la `0008`) | RLS | `0007`, sección 12 | Sí: la pantalla muestra lo que la base devuelve |
 | 4.2 | Un contacto también se ve si se ve su empresa | RLS | `0007` | Sí |
 | 4.3 | Lo que **cuelga** de una empresa se ve si se ve la empresa: ventas, ítems, alertas enviadas, actividades (y la vista `alertas_vida_util`, que hereda por ser `security_invoker`) | RLS (subconsulta a `empresas` con la RLS de quien consulta) | `0007` | Sí |
 | 4.4 | Las actividades también se ven si se ve su contacto o su oportunidad | RLS | `0007` | Sí |
@@ -120,7 +126,7 @@ La consigna: los registros con información histórica no se eliminan; se cambia
 
 | Entidad | Cómo se da de baja | Qué impide el borrado | Interfaz |
 |---|---|---|---|
-| Empresa, contacto | `estado = 'inactivo'` (también `no_contactar`) | La interfaz no ofrece borrar. **En la base, la política `borrar` sigue vigente** para quien tiene `clientes.editar` (dentro de su cartera), y el borrado de una empresa arrastra sus ventas y su bitácora por `on delete cascade`. Un contacto con actividades sí está protegido (FK `no action`) | Sin interfaz para cambiar el estado |
+| Empresa, contacto | `estado = 'inactivo'` (también `no_contactar`) | La interfaz no ofrece borrar y, desde la `0008`, **la base tampoco lo permite** a un usuario (sin política `borrar`: el `DELETE` afecta 0 filas). Solo el borrado de una organización entera (superadmin) arrastra todo por `on delete cascade` | Sin interfaz para cambiar el estado |
 | Oportunidad | Se marca perdida (con motivo) | **No hay política de borrar para nadie.** Su historial y auditoría la referencian sin cascada | Marcar perdida con motivo: sin interfaz |
 | Producto | `activo = false` | `venta_items.producto_id` es `on delete restrict` | Sí (`/productos`, "Dar de baja") |
 | Etapa, origen, motivo, tipo de actividad | `activo = false` (catálogos) | Las oportunidades y actividades viejas los referencian sin cascada | Sin interfaz |
@@ -159,7 +165,7 @@ La consigna: los registros con información histórica no se eliminan; se cambia
 | 7.7 | Un rol no se borra si tiene usuarios asignados | Restricción (FK `restrict`) | `0005` |
 | 7.8 | Al crear un usuario, el rol tiene que ser de la organización de quien lo crea (la verificación está en el servidor y la FK compuesta lo garantiza en la base) | Servidor y restricción | `usuarios/actions.ts`, `0005` |
 | 7.9 | Un usuario dado de baja, o de una organización suspendida, no tiene ningún permiso: `org_actual()` es nulo y `tiene_permiso()` es falso | Funciones | `0004`, `0005` |
-| 7.10 | Primera pantalla de un usuario: la primera que su rol permite, en el orden Inicio, Oportunidades, Empresas, Ventas, Alertas, Productos, Usuarios; si no hay ninguna, `/sin-permisos` | `rutaInicial()` | `src/lib/permisos.ts` |
+| 7.10 | Primera pantalla de un usuario: la primera que su rol permite, en el orden Inicio, Oportunidades, Empresas, Ventas, Alertas, Productos, Usuarios, Configuración; si no hay ninguna, `/sin-permisos` | `rutaInicial()` | `src/lib/permisos.ts` |
 
 ### Roles por defecto (Administrador, Vendedor, Responsable comercial, Solo lectura)
 

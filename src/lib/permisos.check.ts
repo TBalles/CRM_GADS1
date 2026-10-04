@@ -61,5 +61,6 @@ test("rutaInicial lleva a la primera pantalla permitida", () => {
   assert.equal(rutaInicial(["tablero.ver", "clientes.ver"]), "/dashboard");
   assert.equal(rutaInicial(["clientes.ver", "productos.ver"]), "/empresas");
   assert.equal(rutaInicial(["usuarios.gestionar"]), "/usuarios");
+  assert.equal(rutaInicial(["configuracion.gestionar"]), "/configuracion");
   assert.equal(rutaInicial([]), "/sin-permisos");
 });

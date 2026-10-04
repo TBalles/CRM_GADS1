@@ -41,7 +41,7 @@ import type { Tables } from "@/lib/supabase/types";
 
 type Etapa = Tables<"etapas">;
 type Oportunidad = Tables<"oportunidades">;
-type Opcion = { id: string; label: string; color?: string | null; empresaId?: string | null; empresa?: string | null };
+type Opcion = { id: string; label: string; color?: string | null; tipo?: string; empresaId?: string | null; empresa?: string | null };
 
 type OportunidadRow = Oportunidad & {
   empresa: { id: string; nombre: string } | null;
@@ -140,6 +140,7 @@ export default function OportunidadesView({
     id: e.id,
     label: e.nombre,
     color: e.color,
+    tipo: e.tipo,
   }));
   const selectOptions = etapaOptions.map((e) => ({
     value: e.id,

@@ -154,6 +154,7 @@ export function rutaInicial(permisos: readonly string[]): string {
     ["alertas.ver", "/alertas"],
     ["productos.ver", "/productos"],
     ["usuarios.gestionar", "/usuarios"],
+    ["configuracion.gestionar", "/configuracion"],
   ];
   return orden.find(([p]) => permisos.includes(p))?.[1] ?? "/sin-permisos";
 }

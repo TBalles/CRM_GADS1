@@ -8,7 +8,14 @@
 // alertas_vida_util), 0004 (organizaciones, envios_auth, organizacion_id en
 // todas las tablas, columnas nuevas de perfiles) y 0005 (roles, rol_id)
 // estan escritos A MANO, siguiendo exactamente la forma que
-// genera la herramienta. Motivo: la migracion todavia no se corrio contra el
+// genera la herramienta. Lo mismo vale para la 0007 (origenes, motivos_perdida,
+// tipos_actividad, oportunidad_etapas_historial, oportunidad_auditoria, las
+// columnas nuevas de etapas, empresas, contactos, oportunidades,
+// bitacora_entradas y organizaciones, y la RPC cambiar_etapa): se escribio a
+// mano porque la generacion por MCP estaba bloqueada. DESVIO CONSCIENTE:
+// bitacora_entradas.tipo_actividad_id es NOT NULL sin default, asi que el
+// generador lo pediria en Insert; aca queda opcional porque lo completa el
+// trigger bitacora_defaults y la app vieja sigue insertando solo `tipo`. Motivo: la migracion todavia no se corrio contra el
 // proyecto, asi que no hay de donde generarlos. Despues de aplicar
 // esas migraciones en Supabase, REGENERAR este
 // archivo y pisar esta seccion — el generador es la fuente de verdad, esto es
@@ -63,21 +70,51 @@ export type Database = {
       organizaciones: {
         Row: {
           activa: boolean
+          condicion_iva: string | null
           created_at: string
+          cuit: string | null
+          direccion: string | null
+          email: string | null
           id: string
+          logo_path: string | null
           nombre: string
+          presupuesto_condiciones: string | null
+          presupuesto_validez_dias: number
+          razon_social: string | null
+          sitio_web: string | null
+          telefono: string | null
         }
         Insert: {
           activa?: boolean
+          condicion_iva?: string | null
           created_at?: string
+          cuit?: string | null
+          direccion?: string | null
+          email?: string | null
           id?: string
+          logo_path?: string | null
           nombre: string
+          presupuesto_condiciones?: string | null
+          presupuesto_validez_dias?: number
+          razon_social?: string | null
+          sitio_web?: string | null
+          telefono?: string | null
         }
         Update: {
           activa?: boolean
+          condicion_iva?: string | null
           created_at?: string
+          cuit?: string | null
+          direccion?: string | null
+          email?: string | null
           id?: string
+          logo_path?: string | null
           nombre?: string
+          presupuesto_condiciones?: string | null
+          presupuesto_validez_dias?: number
+          razon_social?: string | null
+          sitio_web?: string | null
+          telefono?: string | null
         }
         Relationships: []
       }
@@ -108,11 +145,15 @@ export type Database = {
           apellido: string | null
           cargo: string | null
           created_at: string
+          documento: string | null
           email: string | null
           empresa_id: string | null
+          estado: string
           id: string
           nombre: string
           notas: string | null
+          origen_id: string | null
+          responsable_id: string | null
           telefono: string | null
         }
         Insert: {
@@ -120,11 +161,15 @@ export type Database = {
           apellido?: string | null
           cargo?: string | null
           created_at?: string
+          documento?: string | null
           email?: string | null
           empresa_id?: string | null
+          estado?: string
           id?: string
           nombre: string
           notas?: string | null
+          origen_id?: string | null
+          responsable_id?: string | null
           telefono?: string | null
         }
         Update: {
@@ -132,11 +177,15 @@ export type Database = {
           apellido?: string | null
           cargo?: string | null
           created_at?: string
+          documento?: string | null
           email?: string | null
           empresa_id?: string | null
+          estado?: string
           id?: string
           nombre?: string
           notas?: string | null
+          origen_id?: string | null
+          responsable_id?: string | null
           telefono?: string | null
         }
         Relationships: [
@@ -145,6 +194,20 @@ export type Database = {
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contactos_origen_id_fkey"
+            columns: ["organizacion_id", "origen_id"]
+            isOneToOne: false
+            referencedRelation: "origenes"
+            referencedColumns: ["organizacion_id", "id"]
+          },
+          {
+            foreignKeyName: "contactos_responsable_id_fkey"
+            columns: ["responsable_id"]
+            isOneToOne: false
+            referencedRelation: "perfiles"
             referencedColumns: ["id"]
           },
         ]
@@ -156,10 +219,15 @@ export type Database = {
           cuit: string | null
           direccion: string | null
           email: string | null
+          estado: string
           id: string
           nombre: string
           notas: string | null
+          origen_id: string | null
+          responsable_id: string | null
+          sitio_web: string | null
           telefono: string | null
+          tipo_cliente: string | null
         }
         Insert: {
           organizacion_id?: string
@@ -167,10 +235,15 @@ export type Database = {
           cuit?: string | null
           direccion?: string | null
           email?: string | null
+          estado?: string
           id?: string
           nombre: string
           notas?: string | null
+          origen_id?: string | null
+          responsable_id?: string | null
+          sitio_web?: string | null
           telefono?: string | null
+          tipo_cliente?: string | null
         }
         Update: {
           organizacion_id?: string
@@ -178,12 +251,32 @@ export type Database = {
           cuit?: string | null
           direccion?: string | null
           email?: string | null
+          estado?: string
           id?: string
           nombre?: string
           notas?: string | null
+          origen_id?: string | null
+          responsable_id?: string | null
+          sitio_web?: string | null
           telefono?: string | null
+          tipo_cliente?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "empresas_origen_id_fkey"
+            columns: ["organizacion_id", "origen_id"]
+            isOneToOne: false
+            referencedRelation: "origenes"
+            referencedColumns: ["organizacion_id", "id"]
+          },
+          {
+            foreignKeyName: "empresas_responsable_id_fkey"
+            columns: ["responsable_id"]
+            isOneToOne: false
+            referencedRelation: "perfiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       etapas: {
         Row: {
@@ -192,6 +285,7 @@ export type Database = {
           id: string
           nombre: string
           orden: number
+          tipo: string
         }
         Insert: {
           organizacion_id?: string
@@ -199,6 +293,7 @@ export type Database = {
           id?: string
           nombre: string
           orden: number
+          tipo?: string
         }
         Update: {
           organizacion_id?: string
@@ -206,6 +301,7 @@ export type Database = {
           id?: string
           nombre?: string
           orden?: number
+          tipo?: string
         }
         Relationships: []
       }
@@ -215,12 +311,19 @@ export type Database = {
           contacto_id: string | null
           created_at: string
           empresa_id: string | null
+          estado: string
           etapa_id: string
+          fecha_cierre: string | null
+          fecha_estimada_cierre: string | null
           id: string
           monto: number | null
+          motivo_perdida_id: string | null
           notas: string | null
+          origen_id: string | null
+          probabilidad: number | null
           producto_id: string | null
           responsable_id: string | null
+          tipo: string
           titulo: string
           updated_at: string
         }
@@ -229,12 +332,19 @@ export type Database = {
           contacto_id?: string | null
           created_at?: string
           empresa_id?: string | null
+          estado?: string
           etapa_id: string
+          fecha_cierre?: string | null
+          fecha_estimada_cierre?: string | null
           id?: string
           monto?: number | null
+          motivo_perdida_id?: string | null
           notas?: string | null
+          origen_id?: string | null
+          probabilidad?: number | null
           producto_id?: string | null
           responsable_id?: string | null
+          tipo?: string
           titulo: string
           updated_at?: string
         }
@@ -243,12 +353,19 @@ export type Database = {
           contacto_id?: string | null
           created_at?: string
           empresa_id?: string | null
+          estado?: string
           etapa_id?: string
+          fecha_cierre?: string | null
+          fecha_estimada_cierre?: string | null
           id?: string
           monto?: number | null
+          motivo_perdida_id?: string | null
           notas?: string | null
+          origen_id?: string | null
+          probabilidad?: number | null
           producto_id?: string | null
           responsable_id?: string | null
+          tipo?: string
           titulo?: string
           updated_at?: string
         }
@@ -273,6 +390,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "etapas"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oportunidades_motivo_perdida_id_fkey"
+            columns: ["organizacion_id", "motivo_perdida_id"]
+            isOneToOne: false
+            referencedRelation: "motivos_perdida"
+            referencedColumns: ["organizacion_id", "id"]
+          },
+          {
+            foreignKeyName: "oportunidades_origen_id_fkey"
+            columns: ["organizacion_id", "origen_id"]
+            isOneToOne: false
+            referencedRelation: "origenes"
+            referencedColumns: ["organizacion_id", "id"]
           },
           {
             foreignKeyName: "oportunidades_producto_id_fkey"
@@ -478,10 +609,13 @@ export type Database = {
           contacto_id: string | null
           created_at: string
           detalle: string | null
-          empresa_id: string
+          empresa_id: string | null
           id: string
           ocurrido_en: string
+          oportunidad_id: string | null
+          resultado: string | null
           tipo: string
+          tipo_actividad_id: string
           titulo: string
         }
         Insert: {
@@ -490,10 +624,13 @@ export type Database = {
           contacto_id?: string | null
           created_at?: string
           detalle?: string | null
-          empresa_id: string
+          empresa_id?: string | null
           id?: string
           ocurrido_en?: string
+          oportunidad_id?: string | null
+          resultado?: string | null
           tipo?: string
+          tipo_actividad_id?: string
           titulo: string
         }
         Update: {
@@ -502,10 +639,13 @@ export type Database = {
           contacto_id?: string | null
           created_at?: string
           detalle?: string | null
-          empresa_id?: string
+          empresa_id?: string | null
           id?: string
           ocurrido_en?: string
+          oportunidad_id?: string | null
+          resultado?: string | null
           tipo?: string
+          tipo_actividad_id?: string
           titulo?: string
         }
         Relationships: [
@@ -528,6 +668,208 @@ export type Database = {
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bitacora_entradas_oportunidad_id_fkey"
+            columns: ["organizacion_id", "oportunidad_id"]
+            isOneToOne: false
+            referencedRelation: "oportunidades"
+            referencedColumns: ["organizacion_id", "id"]
+          },
+          {
+            foreignKeyName: "bitacora_entradas_tipo_actividad_id_fkey"
+            columns: ["organizacion_id", "tipo_actividad_id"]
+            isOneToOne: false
+            referencedRelation: "tipos_actividad"
+            referencedColumns: ["organizacion_id", "id"]
+          },
+        ]
+      }
+      origenes: {
+        Row: {
+          organizacion_id: string
+          activo: boolean
+          created_at: string
+          id: string
+          nombre: string
+          orden: number
+        }
+        Insert: {
+          organizacion_id?: string
+          activo?: boolean
+          created_at?: string
+          id?: string
+          nombre: string
+          orden?: number
+        }
+        Update: {
+          organizacion_id?: string
+          activo?: boolean
+          created_at?: string
+          id?: string
+          nombre?: string
+          orden?: number
+        }
+        Relationships: []
+      }
+      motivos_perdida: {
+        Row: {
+          organizacion_id: string
+          activo: boolean
+          created_at: string
+          id: string
+          nombre: string
+          orden: number
+        }
+        Insert: {
+          organizacion_id?: string
+          activo?: boolean
+          created_at?: string
+          id?: string
+          nombre: string
+          orden?: number
+        }
+        Update: {
+          organizacion_id?: string
+          activo?: boolean
+          created_at?: string
+          id?: string
+          nombre?: string
+          orden?: number
+        }
+        Relationships: []
+      }
+      tipos_actividad: {
+        Row: {
+          organizacion_id: string
+          activo: boolean
+          codigo: string | null
+          created_at: string
+          id: string
+          nombre: string
+          orden: number
+        }
+        Insert: {
+          organizacion_id?: string
+          activo?: boolean
+          codigo?: string | null
+          created_at?: string
+          id?: string
+          nombre: string
+          orden?: number
+        }
+        Update: {
+          organizacion_id?: string
+          activo?: boolean
+          codigo?: string | null
+          created_at?: string
+          id?: string
+          nombre?: string
+          orden?: number
+        }
+        Relationships: []
+      }
+      oportunidad_etapas_historial: {
+        Row: {
+          organizacion_id: string
+          cambiado_en: string
+          etapa_anterior_id: string | null
+          etapa_nueva_id: string
+          id: string
+          observacion: string | null
+          oportunidad_id: string
+          usuario_id: string | null
+        }
+        Insert: {
+          organizacion_id?: string
+          cambiado_en?: string
+          etapa_anterior_id?: string | null
+          etapa_nueva_id: string
+          id?: string
+          observacion?: string | null
+          oportunidad_id: string
+          usuario_id?: string | null
+        }
+        Update: {
+          organizacion_id?: string
+          cambiado_en?: string
+          etapa_anterior_id?: string | null
+          etapa_nueva_id?: string
+          id?: string
+          observacion?: string | null
+          oportunidad_id?: string
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oportunidad_etapas_historial_etapa_anterior_id_fkey"
+            columns: ["organizacion_id", "etapa_anterior_id"]
+            isOneToOne: false
+            referencedRelation: "etapas"
+            referencedColumns: ["organizacion_id", "id"]
+          },
+          {
+            foreignKeyName: "oportunidad_etapas_historial_etapa_nueva_id_fkey"
+            columns: ["organizacion_id", "etapa_nueva_id"]
+            isOneToOne: false
+            referencedRelation: "etapas"
+            referencedColumns: ["organizacion_id", "id"]
+          },
+          {
+            foreignKeyName: "oportunidad_etapas_historial_oportunidad_id_fkey"
+            columns: ["organizacion_id", "oportunidad_id"]
+            isOneToOne: false
+            referencedRelation: "oportunidades"
+            referencedColumns: ["organizacion_id", "id"]
+          },
+          {
+            foreignKeyName: "oportunidad_etapas_historial_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "perfiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oportunidad_auditoria: {
+        Row: {
+          organizacion_id: string
+          cambiado_en: string
+          cambios: Json
+          id: string
+          oportunidad_id: string
+          usuario_id: string | null
+        }
+        Insert: {
+          organizacion_id?: string
+          cambiado_en?: string
+          cambios: Json
+          id?: string
+          oportunidad_id: string
+          usuario_id?: string | null
+        }
+        Update: {
+          organizacion_id?: string
+          cambiado_en?: string
+          cambios?: Json
+          id?: string
+          oportunidad_id?: string
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oportunidad_auditoria_oportunidad_id_fkey"
+            columns: ["organizacion_id", "oportunidad_id"]
+            isOneToOne: false
+            referencedRelation: "oportunidades"
+            referencedColumns: ["organizacion_id", "id"]
+          },
+          {
+            foreignKeyName: "oportunidad_auditoria_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "perfiles"
             referencedColumns: ["id"]
           },
         ]
@@ -610,6 +952,16 @@ export type Database = {
       }
     }
     Functions: {
+      cambiar_etapa: {
+        Args: {
+          p_etapa: string
+          p_fecha_cierre?: string
+          p_motivo_perdida?: string
+          p_observacion?: string
+          p_oportunidad: string
+        }
+        Returns: Database["public"]["Tables"]["oportunidades"]["Row"]
+      }
       es_superadmin: { Args: never; Returns: boolean }
       org_actual: { Args: never; Returns: string }
       registrar_envio_auth: { Args: { p_email: string; p_tipo: string }; Returns: boolean }
