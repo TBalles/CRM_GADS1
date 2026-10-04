@@ -16,6 +16,26 @@ Todo lo de esta sección ya está en `main`. Lo que no está es la interfaz de b
 
 ### Agregado
 
+- F3, búsqueda, filtros y paginación en el servidor (sin commit todavía):
+  - Empresas, contactos, oportunidades (vista Lista), productos, ventas y usuarios piden al servidor solo la
+    página que se ve (`.range()` y `count: "exact"`), en lugar de traer todo y filtrar en el navegador
+    (PostgREST cortaba en silencio en 1000 filas).
+  - La URL es el estado de cada lista: `?q=&page=&pageSize=&estado=&responsable=&origen=...` (y `?vista=` en
+    oportunidades, `?tab=` en usuarios). Se comparte, sobrevive al reload y "atrás/adelante" anda. Los
+    parámetros inválidos se descartan; una página fuera de rango redirige a la última.
+  - Tamaños de página 10, 20 (por defecto) y 50. Componente `Paginacion` accesible (`nav` con
+    `aria-label`, `aria-current`, links reales que andan sin JavaScript) y texto "Mostrando 21-40 de 134".
+  - Búsqueda de texto con el texto del usuario escapado para `ILIKE` y para el `.or()` de PostgREST
+    (`%`, `_`, comas, paréntesis y comillas no rompen ni ensanchan la consulta). Empresas se buscan también
+    por sus contactos; contactos por nombre y apellido juntos y por el nombre de su empresa.
+  - Filtros nuevos: tipo de cliente (empresas), origen (contactos), categoría y estado (productos), cliente y
+    rango de fechas (ventas), rol y estado (usuarios). "Sin asignar" en el responsable de oportunidades.
+  - El tablero de oportunidades sigue cargando solo las abiertas, con un techo de 500 y un aviso visible.
+  - Estado "pendiente": `aria-busy` y una línea de progreso mientras el servidor recalcula.
+  - `src/lib/paginacion.ts` con `paginacion.check.ts` (14 pruebas), `src/components/FiltrosUrl.tsx`,
+    `src/components/Paginacion.tsx` y `src/app/(app)/error.tsx` (aviso si la base no responde).
+  - Migración `0010_indices_busqueda.sql` (índices por organización y orden de cada lista, y un bloque
+    opcional de trigramas `pg_trgm`); **pendiente de aplicar a mano en la base viva**.
 - F2, oportunidades completas en la interfaz (sin commit todavía):
   - Tablero con una columna por **etapa abierta** configurada (scroll horizontal con imán en pantallas
     chicas); mover una tarjeta usa la RPC `cambiar_etapa`, con actualización optimista, vuelta atrás y aviso
@@ -82,6 +102,10 @@ Todo lo de esta sección ya está en `main`. Lo que no está es la interfaz de b
 
 ### Cambiado
 
+- Las listas ya no copian sus filas a un estado local: después de una alta, edición, baja o cambio de etapa
+  piden la página de nuevo al servidor (`router.refresh()`).
+- El pie de totales de la lista de oportunidades cuenta la página, no todo el filtro ("En esta página").
+- La búsqueda de oportunidades ya no mira el nombre del responsable (para eso está el filtro).
 - `oportunidades.asignar` ahora requiere `clientes.ver_todos` en el catálogo de permisos (como
   `clientes.asignar`): la pantalla de roles lo tilda sola.
 - Los textos de "sin acceso" de la interfaz son neutros: "De otra cartera" / "Sin acceso" en vez de afirmar
@@ -111,7 +135,7 @@ Todo lo de esta sección ya está en `main`. Lo que no está es la interfaz de b
 
 ### Planificado (no implementado)
 
-Búsqueda y paginación en servidor, funciones del rubro (canchas, parque instalado,
+Funciones del rubro (canchas, parque instalado,
 licitaciones), presupuesto imprimible, E2E y CI, IA opcional y manual de usuario. Fases F1 a F8, del
 2026-10-13 al 2026-11-11, en [docs/notas-de-version.md](./docs/notas-de-version.md#g-pendiente-y-próximos-pasos).
 

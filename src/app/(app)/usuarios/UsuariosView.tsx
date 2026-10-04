@@ -10,7 +10,6 @@ import {
   Pencil,
   Plus,
   Power,
-  Search,
   ShieldCheck,
   Trash2,
   UserPlus,
@@ -35,6 +34,8 @@ import {
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { OverlayCarga } from "@/components/ui/OverlayCarga";
+import { AnuncioResultados, BarraPendiente, CajaBusqueda, FiltroSelect, useFiltrosUrl } from "@/components/FiltrosUrl";
+import { Paginacion } from "@/components/Paginacion";
 import { PERMISOS } from "@/lib/permisos";
 import { cn } from "@/lib/utils";
 import { borrarRol, cambiarActivo, cambiarRol, invitarUsuario, reenviarInvitacion } from "./actions";
@@ -214,22 +215,43 @@ function CambiarRolForm({
 }
 
 export default function UsuariosView({
+  tab,
   usuarios,
+  total,
+  page,
+  pageSize,
+  q,
+  hayFiltro,
+  totalUsuarios,
+  usosPorRol,
   roles,
   yoId,
   miRolId,
 }: {
+  /** Usuarios o Roles: vive en la URL (`?tab=`). */
+  tab: "usuarios" | "roles";
+  /** Solo la página actual: el servidor busca, filtra y pagina (F3). */
   usuarios: UsuarioFila[];
+  /** Coincidencias con los filtros, en todas las páginas. */
+  total: number;
+  page: number;
+  pageSize: number;
+  /** La búsqueda ya limpia, para repetirla en el "no hay resultados". */
+  q: string;
+  hayFiltro: boolean;
+  /** Usuarios de la organización, sin filtros. */
+  totalUsuarios: number;
+  /** Cuántos usuarios tiene cada rol (cuenta también a los dados de baja: la base no deja borrar un rol asignado). */
+  usosPorRol: Record<string, number>;
   roles: RolFila[];
   yoId: string;
   miRolId: string | null;
 }) {
   const router = useRouter();
+  const filtros = useFiltrosUrl();
   const [refrescando, startTransition] = useTransition();
   const [ocupado, setOcupado] = useState(false);
   const { showToast } = useToast();
-  const [tab, setTab] = useState<"usuarios" | "roles">("usuarios");
-  const [query, setQuery] = useState("");
   const [panel, setPanel] = useState<Panel | null>(null);
   const [open, setOpen] = useState(false);
   const [linkManual, setLinkManual] = useState<string | null>(null);
@@ -237,21 +259,6 @@ export default function UsuariosView({
   const [confirmBorrarRol, setConfirmBorrarRol] = useState<RolFila | null>(null);
 
   const rolPorId = useMemo(() => new Map(roles.map((r) => [r.id, r])), [roles]);
-  const usosPorRol = useMemo(() => {
-    const m = new Map<string, number>();
-    // Cuenta tambien a los dados de baja: la base no deja borrar un rol que
-    // alguien tiene asignado, este activo o no, y el numero tiene que coincidir.
-    for (const u of usuarios) if (u.rol_id) m.set(u.rol_id, (m.get(u.rol_id) ?? 0) + 1);
-    return m;
-  }, [usuarios]);
-
-  const filtrados = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return usuarios;
-    return usuarios.filter((u) =>
-      `${u.nombre ?? ""} ${u.email ?? ""} ${rolPorId.get(u.rol_id ?? "")?.nombre ?? ""}`.toLowerCase().includes(q),
-    );
-  }, [usuarios, query, rolPorId]);
 
   function abrir(p: Panel) {
     setPanel(p);
@@ -315,7 +322,7 @@ export default function UsuariosView({
       <PageHeader
         titulo="Usuarios"
         eyebrow="El equipo"
-        meta={query.trim() ? `${filtrados.length} de ${usuarios.length} usuarios` : `${usuarios.length} usuarios con acceso`}
+        meta={hayFiltro && tab === "usuarios" ? `${total} de ${totalUsuarios} usuarios` : `${totalUsuarios} usuarios con acceso`}
         bajada="Quién entra al CRM de tu empresa y qué puede hacer cada uno."
       >
         <div role="tablist" aria-label="Secciones" className="flex rounded-lg border bg-secondary/40 p-0.5">
@@ -330,7 +337,7 @@ export default function UsuariosView({
               type="button"
               role="tab"
               aria-selected={tab === valor}
-              onClick={() => setTab(valor)}
+              onClick={() => filtros.aplicar({ tab: valor === "usuarios" ? null : valor }, { historial: true })}
               className={cn(
                 "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                 tab === valor ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground",
@@ -355,58 +362,94 @@ export default function UsuariosView({
 
       {tab === "usuarios" ? (
         <>
-          <div className="relative sm:w-72">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nombre, email o rol…"
-              aria-label="Buscar usuario"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="h-9 pl-8 text-sm"
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filtros">
+            <CajaBusqueda filtros={filtros} etiqueta="Buscar usuario" placeholder="Buscar por nombre, email o rol…" className="sm:w-72" />
+            <FiltroSelect
+              filtros={filtros}
+              param="rol"
+              etiqueta="Filtrar por rol"
+              className="sm:w-48"
+              opciones={[{ value: "", label: "Todos los roles" }, ...roles.map((r) => ({ value: r.id, label: r.nombre }))]}
             />
+            <FiltroSelect
+              filtros={filtros}
+              param="estado"
+              etiqueta="Filtrar por estado"
+              className="sm:w-52"
+              opciones={[
+                { value: "", label: "Todos los estados" },
+                { value: "activo", label: "Activos" },
+                { value: "pendiente", label: "Invitación pendiente" },
+                { value: "baja", label: "De baja" },
+              ]}
+            />
+            {hayFiltro && (
+              <Button variant="ghost" size="sm" onClick={() => filtros.limpiar()} className="h-9">
+                Limpiar filtros
+              </Button>
+            )}
           </div>
 
-          {!filtrados.length ? (
-            <EmptyState escena="afuera" text={`Nadie del equipo con «${query.trim()}»`} hint="Probá por mail o por rol." />
-          ) : (
-            <div className="space-y-2">
-              {filtrados.map((u) => {
-                const rol = u.rol_id ? rolPorId.get(u.rol_id) : undefined;
-                const acciones = accionesUsuario(u);
-                return (
-                  <Card key={u.id} className={cn("flex items-center gap-3 p-3", !u.activo && "opacity-60")}>
-                    <Avatar className="h-9 w-9">
-                      <AvatarFallback className="bg-brand/10 text-brand">{initials(u.nombre ?? u.email ?? "?")}</AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">
-                        {u.nombre ?? u.email}
-                        {u.id === yoId && <span className="ml-1.5 text-xs font-normal text-muted-foreground">(vos)</span>}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground">{u.email}</p>
-                    </div>
-                    <div className="hidden shrink-0 items-center gap-2 sm:flex">
-                      <Pill tono={rol ? (rol.es_admin ? "indigo" : tonoPara(rol.nombre)) : "gris"}>
-                        {rol?.es_admin && <ShieldCheck className="h-3 w-3" />}
-                        {rol?.nombre ?? "Sin rol"}
-                      </Pill>
-                      <Estado u={u} />
-                    </div>
-                    {acciones.length ? (
-                      <RowActions label={`Acciones de ${u.nombre ?? u.email}`} items={acciones} />
-                    ) : (
-                      <span className="w-8" />
-                    )}
-                  </Card>
-                );
-              })}
-            </div>
-          )}
+          <div className="flex flex-col gap-4" aria-busy={filtros.pending}>
+            <BarraPendiente pending={filtros.pending} />
+            <AnuncioResultados total={total} />
+            {total === 0 ? (
+              <EmptyState
+                escena="afuera"
+                text={q ? `Nadie del equipo con «${q}»` : "Nadie del equipo con esos filtros"}
+                hint="Probá por mail o por rol, o aflojá los filtros."
+                action={
+                  hayFiltro ? (
+                    <Button variant="outline" onClick={() => filtros.limpiar()}>
+                      Limpiar filtros
+                    </Button>
+                  ) : undefined
+                }
+              />
+            ) : (
+              <>
+                <div className="space-y-2">
+                  {usuarios.map((u) => {
+                    const rol = u.rol_id ? rolPorId.get(u.rol_id) : undefined;
+                    const acciones = accionesUsuario(u);
+                    return (
+                      <Card key={u.id} className={cn("flex items-center gap-3 p-3", !u.activo && "opacity-60")}>
+                        <Avatar className="h-9 w-9">
+                          <AvatarFallback className="bg-brand/10 text-brand">{initials(u.nombre ?? u.email ?? "?")}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold">
+                            {u.nombre ?? u.email}
+                            {u.id === yoId && <span className="ml-1.5 text-xs font-normal text-muted-foreground">(vos)</span>}
+                          </p>
+                          <p className="truncate text-xs text-muted-foreground">{u.email}</p>
+                        </div>
+                        <div className="hidden shrink-0 items-center gap-2 sm:flex">
+                          <Pill tono={rol ? (rol.es_admin ? "indigo" : tonoPara(rol.nombre)) : "gris"}>
+                            {rol?.es_admin && <ShieldCheck className="h-3 w-3" />}
+                            {rol?.nombre ?? "Sin rol"}
+                          </Pill>
+                          <Estado u={u} />
+                        </div>
+                        {acciones.length ? (
+                          <RowActions label={`Acciones de ${u.nombre ?? u.email}`} items={acciones} />
+                        ) : (
+                          <span className="w-8" />
+                        )}
+                      </Card>
+                    );
+                  })}
+                </div>
+
+                <Paginacion total={total} page={page} pageSize={pageSize} filtros={filtros} />
+              </>
+            )}
+          </div>
         </>
       ) : (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {roles.map((r) => {
-            const usos = usosPorRol.get(r.id) ?? 0;
+            const usos = usosPorRol[r.id] ?? 0;
             return (
               <Card key={r.id} className="flex flex-col p-4">
                 <div className="flex items-start justify-between gap-2">

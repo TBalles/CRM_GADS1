@@ -29,7 +29,7 @@ Incluido:
 - **Acceso**: login con Supabase Auth, sin registro público. Los usuarios se invitan (superadmin y
   administradores), activan su cuenta definiendo una contraseña y pueden recuperarla (ver "Cuentas"
   más abajo).
-- **Empresas y contactos** (F1b): listas `/empresas` y `/contactos` con filtros (estado, responsable
+- **Empresas y contactos** (F1b, F3): listas `/empresas` y `/contactos` con búsqueda, filtros (estado, responsable
   con `clientes.ver_todos`, origen, empresa/individual) y chip "Ver dadas de baja"; fichas
   `/empresas/[id]` y `/contactos/[id]` (datos, contactos, oportunidades, ventas, línea de tiempo de
   actividades). Estado, tipo de cliente, responsable (editable solo con `clientes.asignar`) y origen.
@@ -61,8 +61,14 @@ Incluido:
   imán en pantallas chicas, y muestra solo oportunidades abiertas. Mover de etapa (arrastre HTML5
   nativo o "Cambiar etapa" del menú, que sirve en touch y pide observación) y cerrar/reabrir pasan
   **siempre por la RPC `cambiar_etapa`** (`src/lib/cambiarEtapa.ts`); nunca un `update` de
-  `etapa_id`. La lista filtra (en el navegador, la paginación es F3) por estado (por defecto
-  abiertas), etapa, responsable (con `clientes.ver_todos`), origen y búsqueda.
+  `etapa_id`. La lista (`?vista=lista`) busca, filtra y pagina **en el servidor** (F3) por estado (por defecto
+  abiertas), etapa, responsable (con `clientes.ver_todos`), origen y texto; el tablero carga solo las abiertas
+  (hasta 500, con aviso).
+- **Listas en el servidor (F3)**: empresas, contactos, oportunidades (Lista), productos, ventas y usuarios
+  piden solo la página que se ve. **La URL es el estado** (`?q=&page=&pageSize=&estado=...`); la página
+  servidor lee `searchParams` (una Promise en Next 16), sanea cada parámetro con `src/lib/paginacion.ts` y
+  consulta con `.range()`. Para sumar una lista nueva: `useFiltrosUrl`, `CajaBusqueda`, `FiltroSelect` y
+  `Paginacion`, y `filtroOr` para el texto (escapa `%`, `_` y las comas del `.or()`).
 - **Etapas**: las crea el trigger al dar de alta una organización (embudo del rubro: Consulta
   recibida, Relevamiento de cancha, Presupuesto enviado, Negociación, Entregado, Perdida). La base
   se configuran en `/configuracion` (`configuracion.gestionar`, F1a).
@@ -101,7 +107,7 @@ usa aún, salvo donde se aclara:
 - Actividades (`bitacora_entradas`) con tipo de catálogo, oportunidad y resultado: desde F1b la
   interfaz usa `tipo_actividad_id` (el `tipo` viejo lo completa el trigger).
 
-**Planificado** (F3 a F8, hasta 2026-11-11): búsqueda/filtros/paginación en el servidor, funciones del rubro
+**Planificado** (F4 a F8, hasta 2026-11-11): funciones del rubro
 (canchas, parque instalado, licitaciones), presupuesto imprimible, E2E y CI, IA opcional y manual.
 
 **Fuera de alcance según la consigna** (no agregar sin que el usuario lo pida): tareas, agenda,
@@ -146,6 +152,10 @@ pedir la fila guardada de vuelta con `.select().single()`, y mezclarla a mano en
 React — así la UI se actualiza al instante sin depender del refresh del router. RLS sigue
 protegiendo el acceso igual que si fuera server-side.
 
+**Desde F3** las listas ya no copian sus filas a un `useState`: son del servidor y, después de mutar, llaman a
+`router.refresh()`; sin esa copia el refresco sí repinta (verificado). El movimiento optimista de las tarjetas
+del tablero se conserva. Ver `docs/arquitectura.md` §2.1.
+
 ## Estructura del proyecto
 
 ```
@@ -167,12 +177,13 @@ src/
       usuarios/                Usuarios y roles del cliente (permiso usuarios.gestionar); actions.ts
       sin-permisos/            Destino cuando el rol no tiene ninguna sección
       */loading.tsx            Loader de marca por módulo
+      error.tsx                Aviso con "Reintentar" si la base no responde (las lecturas ya no se tragan el error)
       dashboard/                KPIs + distribución del embudo + rankings
         page.tsx                 Server Component: cuenta y agrega oportunidades por etapa/empresa
         charts.tsx               MagnitudeBars / ShareBar en CSS puro (sin librería de charts)
       empresas/                 Lista de empresas (filtros, baja lógica) y su ficha
-        page.tsx                 Server Component: fetch de empresas + contactos (mínimos) + catálogos
-        EmpresasList.tsx          Client: header+toolbar, filtros, tabla/cards, abre los drawers
+        page.tsx                 Server Component: lee searchParams, pide UNA página (.range) + catálogos
+        EmpresasList.tsx          Client: header+toolbar, filtros por URL, tabla/cards, paginación, abre los drawers
         EmpresaForm.tsx           Form de alta/edición de empresa (usado dentro del Drawer)
         [id]/page.tsx             Ficha (Server Component; notFound si no existe o la RLS la esconde)
         [id]/EmpresaDetalle.tsx   Client: datos, contactos, oportunidades, ventas, actividades
@@ -191,7 +202,7 @@ src/
       oportunidades/             Tablero (kanban con drag & drop) y lista en una sola página, y el detalle
         page.tsx                 Server Component: fetch de oportunidades + catálogos
         datos.ts                 cargarOpciones(): etapas, clientes, productos, perfiles, orígenes, motivos
-        OportunidadesView.tsx     Client: conmutador Tablero|Lista, filtros, columnas por etapa abierta
+        OportunidadesView.tsx     Client: conmutador Tablero|Lista (?vista=), filtros por URL, columnas por etapa abierta
         OportunidadForm.tsx       Form de alta/edición (usado dentro del Drawer)
         [id]/page.tsx             Detalle (Server Component; notFound si no existe o la RLS la esconde)
         [id]/OportunidadDetalle.tsx  Client: datos, acciones, línea de tiempo, auditoría, Reasignar
@@ -216,6 +227,9 @@ src/
     Logo.tsx                    GoalMark: isotipo en currentColor (sidebar, login, loader)
     Cancha.tsx                  MarcasCancha: la cancha en SVG sobre la superficie .cesped
     Equipamiento.tsx            Íconos del rubro (arco, red, pelota…) + IconoEquipo
+    FiltrosUrl.tsx              useFiltrosUrl (filtros en la URL con router.replace + useTransition), CajaBusqueda (300 ms),
+                                FiltroSelect, FiltroChip, FiltroFecha, BarraPendiente
+    Paginacion.tsx              nav accesible con links ?page=N, selector de filas por página y "Mostrando 21-40 de 134"
     ConfirmModal.tsx            Alert dialog centrado (lo usa el logout)
     CierreModal.tsx             Cambiar etapa / Marcar ganada / Marcar perdida / Reabrir / Cambiar resultado, por `cambiar_etapa`
     oportunidades.tsx           EtapaBadge, EstadoOportunidadPill, TipoOportunidadBadge (server-safe)
@@ -240,6 +254,8 @@ src/
     email/                     enviar.ts (único punto de salida SMTP), layout.ts (HTML de mails), plantillas.ts
     clientes.ts                Estados, tipos de cliente, errores de la base en palabras, fechas (horario AR)
     clientes.check.ts          Self-check: node --test src/lib/clientes.check.ts
+    paginacion.ts              Paginación y búsqueda por URL: leer parámetros sin confiar en ellos, rango, escape de ILIKE/.or(), leerPagina
+    paginacion.check.ts        Self-check: node --test src/lib/paginacion.check.ts
     oportunidades.ts           Etapas válidas por acción, validaciones, errores en palabras, línea de tiempo, auditoría
     oportunidades.check.ts     Self-check: node --test src/lib/oportunidades.check.ts
     cambiarEtapa.ts            Único camino del navegador para cambiar de etapa: la RPC `cambiar_etapa`
@@ -274,6 +290,7 @@ supabase/
     0007_entrega_final.sql      Catálogos, estados, reglas del embudo, historial, cartera propia, logo
     0008_baja_logica.sql        Sin DELETE en empresas/contactos; siempre una etapa ganada y una perdida (pendiente en la base viva)
     0009_reglas_oportunidades.sql  Fecha de cierre no futura (hora de Argentina), empresa o contacto obligatorio (pendiente en la base viva)
+    0010_indices_busqueda.sql   Índices para la búsqueda y la paginación del servidor, con un bloque opcional pg_trgm (pendiente en la base viva)
   tests/                        SQL con rollback; devuelven "TODO OK" o fallan con "FALLA:"
     0005_permisos.sql           Aislamiento y permisos (correr DESPUÉS de la 0007)
     0007_reglas.sql             Reglas de la 0007 (correr después de aplicarla)
@@ -325,8 +342,8 @@ asignación, vida útil) viven en triggers, no en la UI.
 Ya hay un proyecto de Supabase conectado y provisionado (organización `dgmoqhihtjjbetuedaad`,
 proyecto `pdseuwdifzywpdgawbrl`, región `us-west-2`). Se armó vía el MCP de Supabase:
 
-- Las migraciones `0001` a `0007` están aplicadas (la `0007` el 2026-10-04, con sus pruebas SQL). La `0008` y la
-  `0009` están en el repositorio pero **falta aplicarlas a mano** en el SQL Editor, en ese orden; hasta entonces
+- Las migraciones `0001` a `0007` están aplicadas (la `0007` el 2026-10-04, con sus pruebas SQL). La `0008`, la
+  `0009` y la `0010` (índices de F3, sin cambios de reglas) están en el repositorio pero **falta aplicarlas a mano** en el SQL Editor, en ese orden; hasta entonces
   la base no impone "fecha de cierre no futura" ni "empresa o contacto" (la interfaz de F2 sí las valida).
   Se aplican a mano en el SQL Editor, en orden; **aplicar y desplegar enseguida**, ver
   [`docs/deploy.md`](./docs/deploy.md).
@@ -419,7 +436,7 @@ npx tsc --noEmit                     # tipos
 npx eslint src --max-warnings=0      # lint sin advertencias
 
 # Self-checks (sin framework, runner de Node): money, equipo, permisos, email/layout, alertas/plantillas, clientes, oportunidades...
-node --test "src/**/*.check.ts"      # 9 archivos, 68 pruebas
+node --test "src/**/*.check.ts"      # 10 archivos, 82 pruebas
 node --test src/lib/money.check.ts   # o uno solo
 ```
 

@@ -43,3 +43,13 @@ RLS de la base (ver [0002](./0002-multitenencia-con-rls-y-fks-compuestas.md)).
 
 Server Actions con `revalidatePath` y `router.refresh()`: descartada por el problema de repintado descrito
 en el contexto.
+
+## Actualización (F3)
+
+La decisión sigue en pie: las escrituras del CRUD salen del navegador. Lo que cambió es cómo se ve el
+resultado. Las listas ya no copian sus filas a un estado local de React: son del servidor (paginadas, con
+la URL como estado) y, después de escribir, llaman a `router.refresh()` para volver a pedir la página. El
+problema de repintado de esta decisión venía de listas que copiaban sus props a un `useState` y no veían las
+props nuevas; sin esa copia, el refresco anda (verificado en el navegador al dar de alta, editar y dar de baja
+empresas y contactos, y al cerrar y reabrir oportunidades). El movimiento optimista de las tarjetas del
+tablero se conserva. Ver [arquitectura §2.1](../arquitectura.md#21-listas-paginadas-en-el-servidor-la-url-es-el-estado-f3).

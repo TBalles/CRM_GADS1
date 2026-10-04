@@ -160,7 +160,7 @@ ser del mismo cliente (organización).
 - Los contactos sin empresa (clientes individuales) se listan en `/contactos` desde F1b.
 - Las fichas de empresa y contacto existen desde F1b; la ficha 360 (indicadores, conversión) sigue
   planificada en F5. El título de cada oportunidad en la ficha lleva al detalle (`/oportunidades/[id]`, F2).
-- Las listas siguen filtrando en el navegador sobre todo lo que devuelve la base (F3 las pasa al servidor).
+- **F3: implementado.** `/empresas` y `/contactos` buscan, filtran y paginan en el servidor (ver [b.14](#b14-búsqueda-filtros-y-paginación-en-el-servidor-f3)). La búsqueda de empresas alcanza razón social, CUIT, email, teléfono, dirección y los nombres, apellidos y mails de sus contactos; la de contactos, nombre y apellido (juntos o por separado), documento, email, teléfono, cargo y nombre de la empresa. Se agregan los filtros "tipo de cliente" (empresas) y "origen" (contactos).
 
 **Cómo probarlo.** Cuenta Vendedor del seed: `/empresas` muestra 4 de las 8 empresas (su cartera). Con
 la cuenta Administrador se ven las 8.
@@ -314,8 +314,9 @@ colgar una actividad en el cliente de otro usando su propia oportunidad.
   móvil, donde el arrastre no anda, y permite dejar una observación.
 - **Lista** (conmutador Tablero | Lista): filtros por estado (por defecto Abiertas), etapa, responsable
   (solo con `clientes.ver_todos`), origen y búsqueda. Las cerradas muestran el estado con texto, la fecha
-  de cierre y, si es perdida, el motivo. Los filtros corren en el navegador sobre lo ya cargado; la
-  paginación y la búsqueda en el servidor son F3.
+  de cierre y, si es perdida, el motivo. **Desde F3** la búsqueda, los filtros y la paginación corren en el
+  servidor (la lista pide solo la página que se ve) y el conmutador Tablero | Lista vive en la URL
+  (`?vista=lista`). El tablero sigue mostrando solo las abiertas, hasta 500, con un aviso si hay más.
 - **Cierre** (`CierreModal`): "Marcar ganada" (fecha de cierre, por defecto hoy y nunca futura;
   observación opcional), "Marcar perdida" (motivo del catálogo obligatorio, fecha, observación),
   "Reabrir" (con `oportunidades.reabrir`; vuelve a una etapa abierta a elección y pide la razón) y "Cambiar
@@ -450,9 +451,9 @@ Antes de esos pases hubo ajustes de color y modo oscuro (`a86ccf4`, `0c65a35`, `
 |---|---|
 | Detalle | [docs/pruebas.md](./pruebas.md) |
 
-- **8 archivos `*.check.ts`, 50 pruebas**, ejecutables con `node --test` y sin framework:
-  `money` (10), `equipo` (3), `permisos` (7), `email/layout` (8), `alertas/plantillas` (10), `cuit` (3),
-  `sitioweb` (2) y `clientes` (7).
+- **10 archivos `*.check.ts`, 82 pruebas**, ejecutables con `node --test` y sin framework:
+  `money` (10), `equipo` (3), `permisos` (8), `email/layout` (8), `alertas/plantillas` (10), `cuit` (3),
+  `sitioweb` (2), `clientes` (7), `oportunidades` (17) y `paginacion` (14, de F3).
 - `permisos.check.ts` **lee la migración `0007`** y falla si el CHECK de `roles.permisos` o los roles por
   defecto divergen del catálogo de `src/lib/permisos.ts`.
 - **3 scripts SQL con rollback** (`supabase/tests/`): `0005_permisos.sql` (aislamiento y permisos),
@@ -460,6 +461,55 @@ Antes de esos pases hubo ajustes de color y modo oscuro (`a86ccf4`, `0c65a35`, `
   `0007_reejecucion.sql` (que la migración se pueda correr dos veces). Los casos negativos verifican el
   código y el mensaje del error, no solo que falle. El usuario ejecutó la migración y estas pruebas el
   2026-10-04.
+
+---
+
+### b.14 Búsqueda, filtros y paginación en el servidor (F3)
+
+| Aspecto | Detalle |
+|---|---|
+| Estado | **Implementado (F3)** |
+| Dónde | `src/lib/paginacion.ts` (lógica pura, con `paginacion.check.ts`), `src/components/FiltrosUrl.tsx` (`useFiltrosUrl`, `CajaBusqueda`, `FiltroSelect`, `FiltroChip`, `FiltroFecha`, `BarraPendiente`), `src/components/Paginacion.tsx`, y el `page.tsx` + `*List.tsx`/`*View.tsx` de empresas, contactos, oportunidades, productos, ventas y usuarios. `src/app/(app)/error.tsx` avisa si la base no responde |
+| Base | `supabase/migrations/0010_indices_busqueda.sql`: índices por organización y orden de cada lista, y un bloque **opcional** de trigramas (`pg_trgm`). **Pendiente de aplicar a mano en la base viva**; la app funciona igual sin ella |
+| Commits | Sin commit todavía |
+
+**Qué hace.**
+
+- Cada lista pide al servidor solo la página que muestra (`.range()` con `count: "exact"`). Antes traía todo y
+  PostgREST cortaba en silencio en 1000 filas.
+- La URL es el estado: `?q=&page=&pageSize=&estado=&responsable=&origen=…`. Se puede compartir, sobrevive a un
+  reload y "atrás/adelante" anda. Página por defecto 1, 20 por página (10, 20 o 50).
+- **Qué filtra cada pantalla.** Empresas: búsqueda (también por sus contactos), estado, tipo de cliente,
+  responsable (con `clientes.ver_todos`), origen y "Ver dadas de baja". Contactos: búsqueda, estado, empresa o
+  individual, responsable, origen y "Ver bajas". Oportunidades: búsqueda (título, cliente, producto), estado
+  (por defecto abierta), etapa, responsable (incluye "Sin asignar"), origen y vista (`?vista=lista`). Productos:
+  búsqueda, categoría y estado (activos o de baja). Ventas: búsqueda (comprobante, cliente, producto), cliente
+  y rango de fechas. Usuarios: búsqueda, rol y estado (activo, invitación pendiente, de baja), y la pestaña
+  (`?tab=roles`).
+- **Paginación accesible.** `nav` con `aria-label`, "Anterior/Siguiente" y números con "…", la página actual
+  con `aria-current="page"`, extremos deshabilitados con `aria-disabled`, links reales (`?page=N`) que
+  funcionan sin JavaScript, y el texto "Mostrando 21–40 de 134" anunciado como `role="status"`.
+- **Estado "pendiente".** Mientras el servidor recalcula, la lista tiene `aria-busy` y una línea de progreso.
+- **Después de una alta, edición, baja o cambio de etapa** la lista se vuelve a pedir (`router.refresh()`).
+- **Sin resultados.** "afuera" con la búsqueda entre «», o el vacío "cancha" si de verdad no hay nada.
+
+**Límites conocidos.**
+
+- La búsqueda que cruza tablas (empresas por sus contactos, contactos por su empresa, oportunidades y ventas
+  por cliente o producto) se hace en dos pasos con un tope de 100 ids por paso. Una búsqueda muy corta ("a")
+  puede dejar afuera coincidencias que solo existen por la otra tabla. Está marcado con `ponytail:` en cada
+  página; lo exacto sería una vista o RPC.
+- El `*` que escribe la persona vale por un carácter cualquiera, no por "cualquier cosa" (PostgREST no tiene
+  escape para el `*`). `%`, `_` y `\` se buscan literales.
+- No se busca sin tildes ("perez" no encuentra "Pérez"), igual que antes.
+- Los desplegables de empresas y contactos **dentro de los formularios** (oportunidad, contacto, venta)
+  siguen trayendo la lista entera, con el tope de 1000 de PostgREST. Con más de 1000 empresas haría falta un
+  buscador en el servidor dentro del select.
+- El pie de totales de la lista de oportunidades ahora cuenta **la página**, no todo el filtro (se rotuló
+  "En esta página" / "Valor de la página"); sumar todo el filtro pide una agregación en la base.
+- La búsqueda de oportunidades ya no mira el nombre del responsable: para eso está el filtro de responsable.
+- La pestaña "Roles" de `/usuarios` y los conteos de usuarios por rol traen una fila por usuario de la
+  organización (con el tope de 1000).
 
 ---
 
@@ -582,7 +632,7 @@ lista, sin interfaz · **P** Planificado.
 | Cierre de oportunidades ganadas o perdidas | I (F2) | `CierreModal`: fecha de cierre, motivo y observación; reabrir con permiso |
 | Registro de motivos de pérdida | I (F1a, F2) | Catálogo en `/configuracion`; el modal de pérdida lo exige |
 | Gestión de etapas, tipos de actividad, orígenes y motivos de pérdida | I (F1a) | `/configuracion` |
-| Búsqueda, filtros y paginación | I parcial + P | Búsqueda en pantalla (sobre lo ya cargado) y filtros de etapa y de alertas: I. Búsqueda en servidor, filtros por responsable, estado y origen, y paginación: P (F3) |
+| Búsqueda, filtros y paginación | I (F3) | Las seis listas (empresas, contactos, oportunidades, productos, ventas, usuarios) buscan, filtran y paginan **en el servidor**, con el estado en la URL; 10, 20 o 50 por página. Filtros por responsable, estado, etapa y origen donde corresponde. Las alertas siguen filtrando en el navegador. Los índices de apoyo (`0010`) están en el repositorio, **pendientes de aplicar** |
 | Adaptación real a la industria | I + B + P | Vida útil, snapshot, alertas de recambio, ventas por entrega: I. Embudo, orígenes, motivos y tipos del rubro, `tipo_cliente`: B. Canchas, parque instalado, licitaciones: P (F4) |
 | Inteligencia artificial (opcional) | P | F7 |
 
@@ -599,7 +649,7 @@ lista, sin interfaz · **P** Planificado.
 | Vendedor: cambia de etapa; registra actividades | I | Tablero, detalle y bitácora |
 | Vendedor: consulta el historial comercial | I | Actividades en las fichas y, en el detalle de la oportunidad, actividades y cambios de etapa (F2) |
 | Vendedor: marca ganadas o perdidas | I (F2) | Desde el menú de la tarjeta o el detalle |
-| Responsable comercial: consulta todo el equipo, supervisa abiertas, ve el embudo | I | Sin filtros por responsable en pantalla (F3) |
+| Responsable comercial: consulta todo el equipo, supervisa abiertas, ve el embudo | I | Filtro por responsable en empresas, contactos y oportunidades (F3), solo con `clientes.ver_todos` |
 | Responsable comercial: historial de cada negociación | I (F2) | Detalle de la oportunidad |
 | Responsable comercial: revisa ganadas y perdidas | I (F2) | Lista con filtro por estado, motivo y fecha de cierre |
 
@@ -614,7 +664,7 @@ lista, sin interfaz · **P** Planificado.
 | Separación contacto / oportunidad | I | Entidades distintas |
 | Módulo 2, datos mínimos de oportunidad | I (F2: título, empresa/contacto, responsable, producto, valor, etapa, probabilidad, fechas, origen, estado, motivo, observaciones) | |
 | Estados abierta, ganada, perdida | I (F2) | Derivados del tipo de la etapa; Pill con texto |
-| Vistas: lista, individual, tablero; filtros por responsable, etapa, estado y origen | I (F2): lista, tablero e individual; filtros en el navegador | Filtros en el servidor y paginación: F3 |
+| Vistas: lista, individual, tablero; filtros por responsable, etapa, estado y origen | I (F2, F3): lista, tablero e individual; filtros y paginación en el servidor | La lista se pagina; el tablero muestra hasta 500 abiertas con aviso |
 | Cambio de etapa desde el detalle o el tablero | I (F2) | |
 | Reglas del cambio de etapa (ocho condiciones) | I (F2) | Triggers y CHECK; probadas en `0007_reglas.sql`; la interfaz las pide y traduce los errores |
 | Módulo 3, tipos mínimos de actividad (9) | B (12 sembrados); la pantalla usa 7 tipos propios | F2 |
@@ -676,7 +726,7 @@ luego F4 (licitaciones); nunca F0 a F3.
 | F0 | Migración `0007_entrega_final.sql` | 2026-10-08 | **Hecha** (aplicada el 2026-10-04) |
 | F1 | `/configuracion` (datos de la empresa y logo, etapas, tipos de actividad, orígenes, motivos de pérdida) y empresas/contactos completos (estado, responsable, origen, tipo de cliente; `/contactos`; detalles) | 2026-10-13 | **Hecha** (F1a `/configuracion`, F1b empresas y contactos) |
 | F2 | Oportunidades completas: detalle, cerrar ganada/perdida con modal de motivo, reabrir, reasignar, kanban dinámico con `cambiar_etapa`, línea de tiempo; actividades genéricas | 2026-10-18 | **Hecha** (sin commit todavía) |
-| F3 | Búsqueda, filtros y paginación en el servidor en todas las listas | 2026-10-22 | Planificado |
+| F3 | Búsqueda, filtros y paginación en el servidor en todas las listas | 2026-10-22 | **Hecha** (sin commit todavía; la migración `0010` de índices está pendiente de aplicar) |
 | F4 | Rubro: recambio en un clic, parque instalado, ficha de canchas, licitaciones | 2026-10-28 | Planificado |
 | F5 | Ficha 360, tablero del responsable, conversión del embudo, búsqueda global Ctrl+K | 2026-11-02 | Planificado |
 | F6 | Presupuesto imprimible; pruebas E2E con Playwright y CI en GitHub Actions | 2026-11-05 | Planificado |

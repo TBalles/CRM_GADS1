@@ -8,7 +8,7 @@ pegan en el SQL Editor de Supabase.
 
 | Verificación | Resultado |
 |---|---|
-| `node --test "src/**/*.check.ts"` | 68 pruebas, 68 pasan, 0 fallan |
+| `node --test "src/**/*.check.ts"` | 68 pruebas, 68 pasan, 0 fallan (**con F3, sin commit todavía: 10 archivos, 82 pruebas, 82 pasan**) |
 | `npx tsc --noEmit` | Sin errores |
 | `npx eslint src --max-warnings=0` | Sin advertencias |
 | `npx next build` | No se ejecutó al escribir estas notas |
@@ -25,7 +25,7 @@ Contenido: [1. Resumen](#1-resumen) · [2. Self-checks](#2-self-checks-con-node-
 
 | Qué | Cómo se corre | Dónde | Qué prueba |
 |---|---|---|---|
-| Self-checks (9 archivos, 68 pruebas) | `node --test "src/**/*.check.ts"` | Terminal | Lógica pura: dinero, íconos, permisos, mails, mensajes, CUIT, sitio web, vocabulario de clientes, reglas de oportunidades |
+| Self-checks (10 archivos, 82 pruebas) | `node --test "src/**/*.check.ts"` | Terminal | Lógica pura: dinero, íconos, permisos, mails, mensajes, CUIT, sitio web, vocabulario de clientes, reglas de oportunidades, paginación y búsqueda por URL |
 | Tipos | `npx tsc --noEmit` | Terminal | Que todo el TypeScript compile |
 | Lint | `npx eslint src --max-warnings=0` | Terminal | Estilo y errores comunes, sin tolerar advertencias |
 | Build | `npx next build` | Terminal | Que la aplicación se construya (incluye el chequeo de `server-only`) |
@@ -55,6 +55,7 @@ node --test src/lib/cuit.check.ts
 node --test src/lib/email/layout.check.ts
 node --test "src/app/(app)/alertas/plantillas.check.ts"
 node --test src/lib/oportunidades.check.ts
+node --test src/lib/paginacion.check.ts
 ```
 
 Requiere un Node que ejecute TypeScript directamente; se verificó con Node 24.14.1. *Pendiente de
@@ -68,6 +69,7 @@ confirmar:* la versión mínima de Node. Aparece una advertencia `MODULE_TYPELES
 | `src/lib/permisos.check.ts` | 7 | El CHECK de `roles.permisos` de la **migración 0007** tiene exactamente las claves del catálogo de TypeScript; los roles por defecto de SQL coinciden con `ROLES_POR_DEFECTO`; las dependencias apuntan a permisos que existen y se agregan de forma transitiva; el Administrador tiene los 19; `rutaInicial` elige la primera pantalla permitida |
 | `src/lib/email/layout.check.ts` | 8 | El HTML de los mails escapa el contenido (no se puede inyectar `<script>`); `urlSegura()` solo deja `http(s)` y `mailto`, y `javascript:` no llega a un `href`; el logo es por CID, sin imágenes externas; la versión en texto plano trae contenido y link; las plantillas de activación y recuperación |
 | `src/lib/oportunidades.check.ts` | 17 | Qué etapas sirven para cada acción (columnas del tablero, cierre a ganada o perdida, reabrir); qué acciones se ofrecen según estado y permisos; validación del cierre (motivo al perder, fecha real no futura, razón al reabrir), probabilidad y fechas; los errores de la base (42501, 23514, 23503, P0001) en palabras; el cambio de resultado (ganada a perdida y al revés) pide razón y motivo, y no admite repetir la fecha del cierre anterior; la línea de tiempo mezcla actividades y cambios de etapa sin mutar y titula cada uno (alta, registro inicial, cierre, reapertura, cambio de resultado); la auditoría traduce campos e ids |
+| `src/lib/paginacion.check.ts` | 14 | **F3.** `filtroOr` hace la búsqueda **literal**: `%`, `_`, `\` y `*` no son comodines de quien escribe, y una coma, un paréntesis o una comilla no rompen el `.or()` de PostgREST (el check emula lo que PostgREST y `ILIKE` hacen con el valor); `leerPaginacion` y los `*Param` rechazan `page=-4`, `pageSize=5000`, un estado inventado o un uuid falso; rango, total de páginas, "Mostrando 21–40 de 134" y la ventana de números con "…"; `urlConParams` conserva los demás parámetros y no escribe los valores por defecto; `leerPagina` detecta la página fuera de rango (`PGRST103`) y propaga los errores de la base en vez de devolver una lista vacía |
 | `src/app/(app)/alertas/plantillas.check.ts` | 10 | Formato de fecha sin zonas horarias; saludo con nombre de pila o al club; la frase distingue vencido de por vencer; el verbo concuerda en plural; sin fecha de vencimiento no inventa plazo; el mensaje de WhatsApp es más corto que el del mail; los links de WhatsApp y `mailto` codifican bien |
 
 `permisos.check.ts` lee `supabase/migrations/0007_entrega_final.sql`. **Si agregás un permiso, hay que
@@ -245,7 +247,11 @@ aplicarla, correr `0005_permisos.sql` y `0007_reglas.sql` (o la prueba nueva que
 ## 7. Lo que todavía no se prueba
 
 - **No hay pruebas de interfaz ni de extremo a extremo.** Playwright y GitHub Actions están planificados en
-  F6 (2026-11-05). Hoy la interfaz se verifica a mano.
+  F6 (2026-11-05). Hoy la interfaz se verifica a mano; F3 se recorrió con Playwright en scripts descartables
+  (búsqueda, filtros, paginación, atrás/adelante, link directo, teclado, 390 y 1280 px, claro y oscuro), que
+  no se guardaron en el repositorio.
+- **La migración `0010` (índices) no tiene prueba SQL propia**: solo agrega índices. Se la ensayó en un Postgres
+  local (PGlite) con y sin el bloque opcional de `pg_trgm` y re-ejecutándola; no está aplicada en la base viva.
 - **No hay integración continua**: nada corre solo en cada push.
 - **Los componentes React no tienen pruebas**: los self-checks cubren lógica pura (dinero, permisos, mails,
   mensajes, íconos).

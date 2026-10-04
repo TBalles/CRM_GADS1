@@ -7,6 +7,7 @@ Supabase, donde la seguridad y las reglas de negocio viven en la base (RLS y tri
 la aplicación.
 
 Contenido: [1. Componentes y capas](#1-componentes-y-capas) · [2. Flujo de un pedido](#2-flujo-de-un-pedido) ·
+[2.1 Listas paginadas en el servidor](#21-listas-paginadas-en-el-servidor-la-url-es-el-estado-f3) ·
 [3. Sesión y protección de rutas](#3-sesión-y-protección-de-rutas) · [4. Multitenencia](#4-multitenencia) ·
 [5. Flujo de mails](#5-flujo-de-mails) · [6. Topología de despliegue](#6-topología-de-despliegue)
 
@@ -96,7 +97,7 @@ sequenceDiagram
     B->>S: INSERT o UPDATE con el cliente de navegador
     S->>S: RLS verifica organización y permiso, triggers aplican reglas
     S-->>B: fila guardada (.select().single())
-    B->>B: mezcla la fila en el estado local de React
+    B->>V: router.refresh() (las listas se piden de nuevo al servidor)
 
     Note over B,S: Camino C, acción privilegiada (invitar usuario, alta de cliente, enviar alerta)
     B->>V: Server Action
@@ -124,6 +125,58 @@ servidor. Detalle en la [decisión 0001](./decisiones/0001-mutaciones-desde-el-c
 
 Cada Server Action empieza verificando la sesión y el permiso y valida el tipo y la forma de sus
 argumentos, porque llegan del navegador y pueden ser cualquier cosa.
+
+### 2.1 Listas paginadas en el servidor: la URL es el estado (F3)
+
+Desde F3 las seis listas (`/empresas`, `/contactos`, `/oportunidades` en vista Lista, `/productos`,
+`/ventas` y `/usuarios`) **no cargan todo y filtran en el navegador**: cada pantalla pide al servidor
+solo la página que se ve. Antes un `select("*")` traía todo y PostgREST cortaba en silencio en `max_rows`
+(1000 por defecto en Supabase), con lo que una cartera grande se veía recortada sin aviso.
+
+```
+/empresas?q=club&estado=cliente&page=2&pageSize=20
+   │
+   ├─ page.tsx (servidor)   lee `searchParams` (en Next 16 es una Promise), sanea cada parámetro
+   │                        (`src/lib/paginacion.ts`), arma la consulta con `.range()` y `count: "exact"`
+   │                        y entrega a la lista SOLO la página + el total
+   └─ *List.tsx (cliente)   dibuja; filtrar, buscar o cambiar de página solo escribe la URL
+                            (`useFiltrosUrl` → `router.replace`/`push` dentro de `useTransition`)
+```
+
+- **La URL manda.** Búsqueda (`q`), filtros, página y tamaño viven en la URL: se pueden compartir, sobreviven
+  a un reload y "atrás/adelante" anda. Un filtro reemplaza la entrada del historial (`replace`) y vuelve a la
+  página 1; cambiar de página, de vista (`?vista=lista`) o de pestaña (`?tab=roles`) agrega una entrada
+  (`push`). Los valores por defecto no se escriben (página 1, 20 por página, estado "abierta").
+- **Nunca se confía en la URL.** `leerPaginacion`, `textoParam`, `opcionParam`, `uuidParam` y `fechaParam`
+  descartan lo que no sea válido (un `page=-4`, un `estado=hack`, un id que no es uuid). Una página fuera de
+  rango (por ejemplo, después de dar de baja la última fila) redirige a la última página real.
+- **Búsqueda de texto.** `ILIKE '%texto%'` con el texto del usuario **escapado** (`\`, `%`, `_`) y entre
+  comillas dentro del `.or()` de PostgREST, para que una coma, un paréntesis o una comilla no rompan el
+  filtro (`filtroOr`, con su self-check). Lo que vive en otra tabla (los contactos de una empresa, el cliente
+  o el producto de una oportunidad o venta) se resuelve en dos pasos: primero los ids que coinciden y después
+  `id.in.(…)` en el mismo OR. Esos ids tienen un tope (100) para no inflar la URL; es una limitación conocida
+  y está marcada con un comentario `ponytail:` en cada página.
+- **Orden total.** Cada consulta desempata por `id` para que una fila no se repita ni falte entre dos páginas.
+- **La seguridad sigue siendo la RLS.** Nada de esto agrega control de acceso: un Vendedor ve solo su
+  cartera y los totales ("Mostrando 1–4 de 4") salen de lo que la base le devuelve.
+- **Las opciones de los filtros no salen de la lista.** Responsables, orígenes, etapas y categorías se cargan
+  aparte (catálogos chicos) para que el desplegable no dependa de la página. Los desplegables de **empresas
+  y contactos dentro de los formularios** siguen trayendo la lista entera (con el tope de PostgREST):
+  un buscador en el servidor dentro del select queda como mejora si una organización pasa las 1000 empresas.
+- **El tablero no se pagina.** Muestra todas las oportunidades abiertas, con un techo de 500 y un aviso
+  visible si hay más ("Mostrando las primeras 500; usá la lista con filtros").
+- **Después de una mutación** (alta, edición, baja, cambio de etapa) la lista llama a `router.refresh()` y el
+  servidor la vuelve a calcular: la fila nueva puede caer en otra página o salir del filtro, y eso solo lo
+  sabe la consulta. (La nota de la decisión 0001 sobre `router.refresh()` valía para listas que copiaban sus
+  props a un `useState`; ahora no hay estado local de filas, salvo el movimiento optimista de las tarjetas.)
+- **Estado "pendiente".** `useFiltrosUrl` expone `pending`: la lista pone `aria-busy` y una línea de progreso
+  (`BarraPendiente`) mientras el servidor recalcula, sin atenuar el texto.
+
+Piezas reutilizables: `src/lib/paginacion.ts` (lógica pura), `src/components/FiltrosUrl.tsx`
+(`useFiltrosUrl`, `CajaBusqueda`, `FiltroSelect`, `FiltroChip`, `FiltroFecha`, `BarraPendiente`) y
+`src/components/Paginacion.tsx` (`nav` accesible con links `?page=N`, que funcionan sin JavaScript).
+Los índices que ayudan a estas consultas están en `supabase/migrations/0010_indices_busqueda.sql`
+(**pendiente de aplicar a mano en la base viva**; la app funciona igual sin ella).
 
 ---
 

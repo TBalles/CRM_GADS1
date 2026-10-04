@@ -51,7 +51,7 @@ llegó en F2, y todo lo que la 0007 agregó y las fases F1 y F2 ya muestran. Det
 
 ### Planificado
 
-Búsqueda y paginación en el servidor, funciones del rubro (ficha de canchas, parque instalado,
+Funciones del rubro (ficha de canchas, parque instalado,
 licitaciones), presupuesto imprimible, pruebas E2E con CI, IA opcional y manual de usuario en PDF.
 
 ## Stack

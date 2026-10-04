@@ -43,9 +43,12 @@ Se aplican **en orden**, pegando cada archivo completo en **SQL Editor, New quer
 
 | 8 | `0008_baja_logica.sql` | Quita las políticas `borrar` de empresas y contactos y garantiza una etapa ganada y una perdida. Idempotente, sin `begin`/`commit` | Requiere la 0007. **Pendiente de aplicar en la base viva** |
 | 9 | `0009_reglas_oportunidades.sql` | Fecha de cierre no futura (fecha de Argentina), fecha de cierre por defecto de Argentina y "empresa o contacto" obligatorio en oportunidades. `create or replace` + trigger nuevo, idempotente, sin `begin`/`commit` | Requiere la 0008. **Pendiente de aplicar en la base viva.** Después, `supabase/tests/0009_reglas_oportunidades.sql` |
+| 10 | `0010_indices_busqueda.sql` | Índices para la búsqueda y la paginación del servidor (F3): btree por organización y orden de cada lista, y un bloque **opcional** de trigramas (`create extension pg_trgm`). Idempotente, sin `begin`/`commit`. Sin prueba SQL: solo agrega índices | Requiere la 0009. **Pendiente de aplicar en la base viva.** Mejora el tiempo con volumen; la app anda igual sin ella. Si el entorno no tiene `pg_trgm`, borrar el bloque entre `BLOQUE OPCIONAL: PG_TRGM` y `FIN BLOQUE OPCIONAL` |
 
 Cosas a saber:
 
+- **0010 (índices de F3) también está pendiente.** Se pega en el SQL Editor después de la 0009; no cambia
+  tablas, reglas ni políticas, así que se puede aplicar antes o después de desplegar F3.
 - **0008 y 0009 están en el repositorio pero no en la base viva.** Se aplican a mano, en ese orden, y se
   despliega enseguida. La app de F2 ya valida las tres reglas de la 0009 en pantalla y traduce sus errores,
   así que desplegarla antes o después no rompe nada; sin la 0009 la base simplemente no las impone.
