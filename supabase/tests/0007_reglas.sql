@@ -493,10 +493,22 @@ begin
     raise exception 'FALLA: el admin de A ve un logo que no es el suyo';
   end if;
 
-  -- El logo de B: ni cambiarlo ni borrarlo (no lo ve: 0 filas).
-  if pg_temp.filas($q$update storage.objects set name = name where name like 'b7b7b7b7-%'$q$) <> 0
-     or pg_temp.filas($q$delete from storage.objects where name like 'b7b7b7b7-%'$q$) <> 0 then
-    raise exception 'FALLA: el admin de A pudo cambiar o borrar el logo de B';
+  -- El logo de B: no lo ve, asi que cambiarlo toca 0 filas.
+  if pg_temp.filas($q$update storage.objects set name = name where name like 'b7b7b7b7-%'$q$) <> 0 then
+    raise exception 'FALLA: el admin de A pudo cambiar el logo de B';
+  end if;
+  -- Borrarlo NO se puede probar con un DELETE: Supabase prohibe todo DELETE
+  -- directo sobre storage.objects con un trigger (storage.protect_delete), aun
+  -- cuando no toque ninguna fila; los archivos se borran por la Storage API,
+  -- que corre con las mismas politicas. Lo que se verifica es la politica:
+  -- limitada a la propia organizacion y a configuracion.gestionar.
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'storage' and tablename = 'objects'
+      and policyname = 'logos: borrar el de la propia organizacion' and cmd = 'DELETE'
+      and qual like '%org_actual%' and qual like '%configuracion.gestionar%'
+  ) then
+    raise exception 'FALLA: la politica de borrado de logos no esta limitada a la propia organizacion y a configuracion.gestionar';
   end if;
 
   -- Puede asignar a otro al crear.
