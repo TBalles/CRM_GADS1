@@ -1,11 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { MoreVertical } from "lucide-react";
+import { Check, MoreVertical } from "lucide-react";
 import { CrmPortal } from "./portal";
 import { useAnchor, useLayer, useTypeahead } from "./overlay";
 import { buscarPorTexto, moverIndice, pasoDeTecla } from "./teclado";
-import { Button, IconButton, type ButtonVariant } from "./Button";
+import { Button, FilterChip, IconButton, type ButtonVariant } from "./Button";
 import { FLOATING, ITEM, UI_ROOT, cn } from "./cx";
 
 export type MenuItem = {
@@ -14,6 +14,8 @@ export type MenuItem = {
   onSelect: () => void;
   variant?: "default" | "danger";
   disabled?: boolean;
+  /** Opción de una elección única (filtro): el item es `menuitemradio` con `aria-checked` y un tilde. */
+  checked?: boolean;
 };
 
 /**
@@ -30,6 +32,8 @@ export type MenuItem = {
  *   decorativo, el menú de usuario), `variant` y `triggerClassName` lo ajustan, `triggerDescription` lo describe.
  *   `header` es un bloque de solo lectura arriba de los items (nombre, rol): va FUERA del `role="menu"` y lo describe
  *   (`aria-describedby`); el teclado lo saltea.
+ * - `chip`: el disparador es un `FilterChip` ("Estado: Activo ▾") y los items con `checked` son una elección única
+ *   (`menuitemradio`): el filtro de la toolbar con el mismo teclado del menú. Listas largas scrollean (máx. 320).
  */
 export function Menu({
   label,
@@ -42,6 +46,7 @@ export function Menu({
   variant,
   triggerClassName,
   triggerDescription,
+  chip,
 }: {
   label: string;
   items: MenuItem[];
@@ -54,6 +59,8 @@ export function Menu({
   triggerClassName?: string;
   /** Descripción accesible del disparador (p. ej. "Administrador · Cátedra"): la lee el lector junto al nombre. */
   triggerDescription?: string;
+  /** Disparador de filtro: nombre del filtro y valor aplicado (sin valor, solo el nombre). */
+  chip?: { label: string; value?: string };
 }) {
   const [abierto, setAbierto] = React.useState(false);
   const [activo, setActivo] = React.useState(-1);
@@ -128,7 +135,7 @@ export function Menu({
     onKeyDown: onTriggerKey,
   };
 
-  const flotante = cn(UI_ROOT, FLOATING, "z-(--crm-z-popover) min-w-44 max-w-72 p-1");
+  const flotante = cn(UI_ROOT, FLOATING, "z-(--crm-z-popover) max-h-80 min-w-44 max-w-72 overflow-y-auto p-1");
   const lista = items.map((item, i) => {
     const Icon = item.icon;
     return (
@@ -138,7 +145,8 @@ export function Menu({
           itemsRef.current[i] = el;
         }}
         type="button"
-        role="menuitem"
+        role={item.checked === undefined ? "menuitem" : "menuitemradio"}
+        aria-checked={item.checked}
         tabIndex={-1}
         aria-disabled={item.disabled || undefined}
         data-active={i === activo}
@@ -151,6 +159,7 @@ export function Menu({
       >
         {Icon && <Icon aria-hidden="true" strokeWidth={1.75} className="size-4 shrink-0" />}
         <span className="truncate">{item.label}</span>
+        {item.checked && <Check aria-hidden="true" strokeWidth={1.75} className="ml-auto size-4 shrink-0 text-(--crm-accent-text)" />}
       </button>
     );
   });
@@ -163,7 +172,9 @@ export function Menu({
           {triggerDescription}
         </span>
       )}
-      {children ? (
+      {chip ? (
+        <FilterChip label={chip.label} value={chip.value} aria-label={triggerLabel} {...triggerProps} />
+      ) : children ? (
         <Button
           size={size}
           variant={variant}

@@ -9,17 +9,16 @@ import { useToast } from "@/components/ui/Toast";
 import { MENSAJES_IA } from "@/lib/ia/config";
 
 /**
- * "Resumir con IA" en la Historia de la cuenta (F7, ficha 360 de empresa y de contacto).
- *
- * El resumen vive solo en el estado de este componente: no se guarda, no se envía, no se agrega a la historia.
- * La Server Action recibe únicamente el tipo y el id; los datos los vuelve a leer el servidor con la sesión de
- * quien mira. Esta pieza solo se monta si el servidor dice que la IA está activada.
+ * Estado de "Resumir con IA" sin UI (lo comparten esta pieza legacy y la de CRM 2.0). `notificar` es el toast de cada una.
  */
-export function ResumenIA({ tipo, id }: { tipo: "empresa" | "contacto"; id: string }) {
+export function useResumenIA(
+  tipo: "empresa" | "contacto",
+  id: string,
+  notificar: (mensaje: string, tipo: "success" | "error") => void,
+) {
   const [cargando, setCargando] = useState(false);
   const [texto, setTexto] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { showToast } = useToast();
 
   async function resumir() {
     if (cargando) return;
@@ -41,11 +40,25 @@ export function ResumenIA({ tipo, id }: { tipo: "empresa" | "contacto"; id: stri
     if (!texto) return;
     try {
       await navigator.clipboard.writeText(texto);
-      showToast("Resumen copiado.", "success");
+      notificar("Resumen copiado.", "success");
     } catch {
-      showToast("No se pudo copiar. Seleccioná el texto y copialo a mano.", "error");
+      notificar("No se pudo copiar. Seleccioná el texto y copialo a mano.", "error");
     }
   }
+
+  return { cargando, texto, error, resumir, copiar, cerrar: () => setTexto(null) };
+}
+
+/**
+ * "Resumir con IA" en la Historia de la cuenta (F7, ficha 360 de empresa y de contacto).
+ *
+ * El resumen vive solo en el estado de este componente: no se guarda, no se envía, no se agrega a la historia.
+ * La Server Action recibe únicamente el tipo y el id; los datos los vuelve a leer el servidor con la sesión de
+ * quien mira. Esta pieza solo se monta si el servidor dice que la IA está activada.
+ */
+export function ResumenIA({ tipo, id }: { tipo: "empresa" | "contacto"; id: string }) {
+  const { showToast } = useToast();
+  const { cargando, texto, error, resumir, copiar, cerrar } = useResumenIA(tipo, id, showToast);
 
   return (
     <div className="mb-4 flex flex-col gap-3">
@@ -78,7 +91,7 @@ export function ResumenIA({ tipo, id }: { tipo: "empresa" | "contacto"; id: stri
               <Button variant="ghost" size="sm" className="gap-1.5" disabled={cargando} onClick={resumir}>
                 <RefreshCw aria-hidden="true" className="h-3.5 w-3.5" /> Regenerar
               </Button>
-              <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => setTexto(null)}>
+              <Button variant="ghost" size="sm" className="gap-1.5" onClick={cerrar}>
                 <X aria-hidden="true" className="h-3.5 w-3.5" /> Cerrar
               </Button>
             </div>

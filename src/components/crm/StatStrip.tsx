@@ -1,0 +1,85 @@
+import * as React from "react";
+import { AlertTriangle } from "lucide-react";
+import { TYPE, cn } from "./cx";
+
+export type Stat = {
+  label: string;
+  /** La cifra ya formateada, o un texto ("Todavía no compró"). Sin valor: "—". */
+  value?: React.ReactNode;
+  /** Unidad o símbolo en gris ("$", "d"). */
+  unit?: string;
+  unitPosition?: "before" | "after";
+  /** Línea de apoyo debajo (12 secundario): "en 3 compras", "el 17/09/2026". */
+  detail?: React.ReactNode;
+  /** La cifra es texto y no número (va en sans, no en mono). */
+  text?: boolean;
+  /** Pide atención (ícono + color de aviso; nunca solo el color). */
+  warning?: boolean;
+};
+
+/**
+ * Franja de cifras (MASTER.md §10.12 y §10.13): 2–5 cifras en una fila con divisores verticales, sin cards ni caja.
+ * Solo cifras que ya existen (las calcula quien llama). Sin "use client".
+ *
+ * - `md` (ficha): UNA fila fina desde `sm` (N columnas iguales), cifra de 20 en mono (sans si es texto); de a dos en
+ *   mobile. La cifra de 28 (`TYPE.kpi`) queda para tableros, no para la franja de una ficha.
+ * - `sm` (vista previa): grilla de 2, cifra de 16.
+ */
+export function StatStrip({
+  items,
+  size = "md",
+  label,
+  describedBy,
+  className,
+}: {
+  items: Stat[];
+  size?: "sm" | "md";
+  label?: string;
+  /** Id de una nota que explica de dónde salen las cifras (p. ej. "sin estimaciones"), sin ocupar lugar en pantalla. */
+  describedBy?: string;
+  className?: string;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <dl
+      aria-label={label}
+      aria-describedby={describedBy}
+      style={{ "--n": items.length } as React.CSSProperties}
+      className={cn(
+        "grid",
+        size === "md"
+          ? // Una sola fila desde sm (N columnas iguales, divisores verticales); en mobile, de a dos.
+            "grid-cols-2 gap-y-3 sm:grid-cols-[repeat(var(--n),minmax(0,1fr))] [&>div]:border-l [&>div]:border-(--crm-border) [&>div]:px-4 [&>div:first-child]:border-l-0 [&>div:first-child]:pl-0 max-sm:[&>div:nth-child(odd)]:border-l-0 max-sm:[&>div:nth-child(odd)]:pl-0"
+          : "grid-cols-2 gap-x-4 gap-y-3",
+        className,
+      )}
+    >
+      {items.map((it) => (
+        <div key={it.label} className="flex min-w-0 flex-col gap-0.5">
+          <dt className={cn(TYPE.meta, "text-(--crm-text-2)")}>{it.label}</dt>
+          <dd
+            className={cn(
+              "flex min-w-0 items-baseline gap-1 font-medium",
+              it.text
+                ? "text-[14px] leading-6 tabular-nums"
+                : cn(TYPE.mono, size === "md" ? "text-[20px] leading-6" : "text-[16px] leading-6"),
+              it.warning && "text-(--crm-warning)",
+            )}
+          >
+            {it.warning && <AlertTriangle aria-hidden="true" strokeWidth={1.75} className="size-4 shrink-0 self-center" />}
+            {it.value === undefined || it.value === null || it.value === "" ? (
+              <span className="text-(--crm-text-2)">—</span>
+            ) : (
+              <>
+                {it.unit && it.unitPosition === "before" && <span className={cn(TYPE.unit, "text-[0.7em]")}>{it.unit}</span>}
+                <span className="min-w-0 break-words">{it.value}</span>
+                {it.unit && it.unitPosition !== "before" && <span className={cn(TYPE.unit, "text-[0.7em]")}>{it.unit}</span>}
+              </>
+            )}
+          </dd>
+          {it.detail && <dd className={cn(TYPE.meta, "truncate text-(--crm-text-2)")}>{it.detail}</dd>}
+        </div>
+      ))}
+    </dl>
+  );
+}

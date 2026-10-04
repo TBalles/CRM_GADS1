@@ -28,9 +28,13 @@ export const TYPE = {
   unit: "text-(--crm-text-2) font-normal",
 } as const;
 
-/** Anillo de foco único: 2 px de acento, offset 1. Solo con teclado (`:focus-visible`). */
+/**
+ * Anillo de foco único: 2 px de acento, offset 1. Solo con teclado (`:focus-visible`).
+ * `focus-visible:outline-solid` es obligatorio: en Tailwind v4 `outline-none` deja `--tw-outline-style: none` y
+ * `outline-2` usa esa variable, así que sin él el anillo NO se dibuja (bug de la Etapa 1, corregido en la Etapa 3).
+ */
 export const FOCUS =
-  "outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-(--crm-focus)";
+  "outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-1 focus-visible:outline-(--crm-focus)";
 
 /** Deshabilitado: 45 % y `not-allowed`, igual en todos los controles. */
 export const DISABLED = "disabled:cursor-not-allowed disabled:opacity-45 aria-disabled:cursor-not-allowed aria-disabled:opacity-45";

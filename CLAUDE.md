@@ -205,14 +205,16 @@ src/
       dashboard/                KPIs + distribución del embudo + rankings
         page.tsx                 Server Component: cuenta y agrega oportunidades por etapa/empresa
         charts.tsx               MagnitudeBars / ShareBar en CSS puro (sin librería de charts)
-      empresas/                 Lista de empresas (filtros, baja lógica) y su ficha
-        page.tsx                 Server Component: lee searchParams, pide UNA página (.range) + catálogos
-        EmpresasList.tsx          Client: header+toolbar, filtros por URL, tabla/cards, paginación, abre los drawers
-        EmpresaForm.tsx           Form de alta/edición de empresa (usado dentro del Drawer)
-        [id]/page.tsx             Ficha (Server Component; notFound si no existe o la RLS la esconde)
-        [id]/EmpresaDetalle.tsx   Client: datos, canchas, parque instalado, contactos, oportunidades, ventas, actividades
-        [id]/CanchasSeccion.tsx   Client (F4): lista de canchas, baja lógica y equipamiento sugerido + "Crear oportunidad"
-        [id]/CanchaForm.tsx       Form de alta/edición de cancha (Drawer)
+      (crm2)/empresas/          CRM 2.0 (Etapa 3): lista + vista previa (master-detail, `?sel=`) y ficha con tabs (`?tab=`)
+        page.tsx                 Server Component: searchParams → UNA página (.range) + catálogos; vista previa en <Suspense key={sel}>
+        EmpresasList.tsx          Client: PageBar, toolbar (filtros por URL), DataTable, selección optimista ↑/↓/Esc, banda de pie; recibe el panel
+        VistaPrevia.tsx           Server Component: panel ≥1280 con leerCuenta360 (RLS); nada si `sel` no es visible; <1280 la lista quita `sel`
+        AccionesVistaPrevia.tsx / acciones.tsx   Acciones de empresa (nueva, editar, baja, reactivar) con drawers CRM
+        EmpresaForm.tsx           Drawer de alta/edición de empresa (única implementación)
+        seleccion.ts(+.check)     Lógica pura de ↑/↓ y de la tab válida
+        [id]/page.tsx             Ficha (notFound si no existe o la RLS la esconde); arma las tabs según permisos
+        [id]/EmpresaDetalle.tsx   Client: DetailHeader + Tabs (Resumen, Actividad, Oportunidades, Ventas, Contactos, Canchas y parque)
+        [id]/CanchasSeccion.tsx / CanchaForm.tsx / ParqueInstalado.tsx   Canchas, equipamiento sugerido y parque (CRM 2.0)
       contactos/                Lista de contactos (de empresa e individuales) y su ficha
         page.tsx / ContactosList.tsx / ContactoForm.tsx / [id]/page.tsx / [id]/ContactoDetalle.tsx
       tablero-comercial/         Tablero del responsable (F5): pipeline por responsable, sin actividad, cierres del mes, motivos

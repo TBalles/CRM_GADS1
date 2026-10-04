@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { exigirPermiso } from "@/lib/sesion";
@@ -15,6 +16,7 @@ import {
   type ParamsUrl,
 } from "@/lib/paginacion";
 import EmpresasList from "./EmpresasList";
+import VistaPrevia, { VistaPreviaCargando } from "./VistaPrevia";
 
 export const metadata = { title: "Empresas" };
 
@@ -22,6 +24,14 @@ const BAJAS = "(inactivo,no_contactar)";
 /** Contactos que se miran para encontrar una empresa por su gente. Más de esto cabría mal en la URL del `.or()`. */
 const IDS_MAX = 100;
 
+/**
+ * Empresas (CRM 2.0): lista servida por la URL + vista previa (master-detail desde 1280 px).
+ *
+ * La selección vive en la URL (`?sel=<id>`, junto a q/page/filtros): el servidor la lee y dibuja la vista previa como
+ * un server component dentro de `<Suspense key={sel}>`, con el mismo cliente con RLS y la misma capa de datos que la
+ * ficha. Un `sel` inválido, de otra cartera o inexistente no dibuja nada (la RLS lo esconde). Atrás/adelante, recarga
+ * y link directo funcionan porque la URL es el único estado.
+ */
 export default async function EmpresasPage({ searchParams }: { searchParams: Promise<ParamsUrl> }) {
   const sesion = await exigirPermiso("clientes.ver");
   const sp = await searchParams;
@@ -37,6 +47,7 @@ export default async function EmpresasPage({ searchParams }: { searchParams: Pro
   const responsable = puedeVerTodos ? uuidParam(sp.responsable) : "";
   const verBajas = sp.bajas === "1";
   const hayFiltro = Boolean(q || estado || tipo || origen || responsable);
+  const sel = uuidParam(sp.sel);
 
   // La búsqueda alcanza a la gente de la empresa: se buscan primero los contactos que coinciden y se suman sus empresas.
   // ponytail: tope de IDS_MAX contactos por búsqueda; una búsqueda muy corta ("a") puede dejar afuera empresas que solo
@@ -65,7 +76,7 @@ export default async function EmpresasPage({ searchParams }: { searchParams: Pro
   };
 
   const visibles = supabase.from("empresas").select("id", { count: "exact", head: true });
-  const [pagina, sinFiltro, bajas, contactosTotal, { data: perfiles }, { data: origenes }] = await Promise.all([
+  const [pagina, sinFiltro, bajas, contactosTotal, { data: perfilesRaw }, { data: origenesRaw }] = await Promise.all([
     leerPagina(consultar, paginacion),
     verBajas ? visibles : visibles.not("estado", "in", BAJAS),
     supabase.from("empresas").select("id", { count: "exact", head: true }).in("estado", ["inactivo", "no_contactar"]),
@@ -89,8 +100,35 @@ export default async function EmpresasPage({ searchParams }: { searchParams: Pro
     if (c.empresa_id && !estaDeBaja(c.estado)) contactosPorEmpresa[c.empresa_id] = (contactosPorEmpresa[c.empresa_id] ?? 0) + 1;
   }
 
-  // The page header and toolbar live inside EmpresasList: the kit puts the
-  // title and the search box on the same row (DESIGN.md §4.4).
+  const perfiles = (perfilesRaw ?? []).map((p) => ({ id: p.id, nombre: p.nombre ?? p.email ?? "Usuario", activo: p.activo }));
+  const origenes = origenesRaw ?? [];
+  const permisos = {
+    puedeEditar: sesion.puede("clientes.editar"),
+    puedeAsignar: sesion.puede("clientes.asignar"),
+  };
+
+  const panel = sel ? (
+    <Suspense key={sel} fallback={<VistaPreviaCargando />}>
+      <VistaPrevia
+        id={sel}
+        params={sp}
+        enLista={ids.includes(sel)}
+        perfiles={perfiles}
+        origenes={origenes}
+        yoId={sesion.user.id}
+        puedeEditar={permisos.puedeEditar}
+        puedeAsignar={permisos.puedeAsignar}
+        permisos={{
+          oportunidades: sesion.puede("oportunidades.ver"),
+          ventas: sesion.puede("ventas.ver"),
+          actividades: sesion.puede("bitacora.ver"),
+          avisos: sesion.puede("alertas.ver"),
+        }}
+        puedeEscribirActividad={sesion.puede("bitacora.escribir")}
+      />
+    </Suspense>
+  ) : null;
+
   return (
     <EmpresasList
       empresas={pagina.filas}
@@ -104,12 +142,14 @@ export default async function EmpresasPage({ searchParams }: { searchParams: Pro
       dadasDeBaja={bajas.count ?? 0}
       totalContactos={contactosTotal.count ?? 0}
       contactosPorEmpresa={contactosPorEmpresa}
-      perfiles={(perfiles ?? []).map((p) => ({ id: p.id, nombre: p.nombre ?? p.email ?? "Usuario", activo: p.activo }))}
-      origenes={origenes ?? []}
-      puedeEditar={sesion.puede("clientes.editar")}
-      puedeAsignar={sesion.puede("clientes.asignar")}
+      perfiles={perfiles}
+      origenes={origenes}
+      puedeEditar={permisos.puedeEditar}
+      puedeAsignar={permisos.puedeAsignar}
       puedeVerTodos={puedeVerTodos}
       yoId={sesion.user.id}
+      sel={sel || null}
+      panel={panel}
     />
   );
 }

@@ -133,3 +133,13 @@ export function IconoEquipo({
     </span>
   );
 }
+
+/** Solo el ícono del equipo, sin caja de color (CRM 2.0: los íconos de equipamiento son contenido de dominio, MASTER.md §8). */
+export function IconoEquipoSimple({ nombre, categoria, className }: { nombre?: string | null; categoria?: string | null; className?: string }) {
+  const Icono = ICONOS[tipoEquipo(nombre, categoria)];
+  return (
+    <span aria-hidden="true" className="inline-flex shrink-0">
+      <Icono className={className} />
+    </span>
+  );
+}

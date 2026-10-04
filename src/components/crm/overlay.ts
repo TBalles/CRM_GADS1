@@ -16,6 +16,15 @@ const pila: symbol[] = [];
 const esTope = (t: symbol) => pila[pila.length - 1] === t;
 
 /**
+ * Hay alguna capa de CRM 2.0 abierta (menú, popover, select, drawer, diálogo)? Para atajos de página que no son una
+ * capa (Esc de la vista previa): sus listeners pueden correr ANTES que el de la capa (se registraron antes, en el mismo
+ * `document`), así que no alcanza con mirar `defaultPrevented`.
+ */
+export function hayCapaAbierta(): boolean {
+  return pila.length > 0;
+}
+
+/**
  * Registra una capa abierta. `onDismiss` se llama con Escape o (si se pasan `dentro`) con un pointerdown fuera de
  * esos elementos, solo si es la capa de arriba. Escape queda marcado con `preventDefault` para que ninguna otra
  * capa (tampoco las legacy, que miran `defaultPrevented`) lo atienda dos veces.

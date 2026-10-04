@@ -9,14 +9,23 @@ import { leerCuenta360 } from "@/lib/cuenta360";
 import { iaDisponible } from "@/lib/ia/config";
 import EmpresaDetalle from "./EmpresaDetalle";
 import { CrumbLabel } from "@/components/crm/shell/Crumbs";
+import { tabValida } from "../seleccion";
+import type { TabFicha } from "./EmpresaDetalle";
 
 export const metadata = { title: "Empresa" };
 
 /** Equipos entregados que se leen para el parque instalado (PostgREST corta en 1000 sin avisar). */
 const TOPE_PARQUE = 1000;
 
-export default async function EmpresaPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EmpresaPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string | string[] }>;
+}) {
   const { id } = await params;
+  const { tab: tabPedida } = await searchParams;
   const sesion = await exigirPermiso("clientes.ver");
   if (!esUuid(id)) notFound();
 
@@ -86,6 +95,19 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
   const faltaMigracion = esErrorDeEsquema(canchasRes.error);
   if (canchasRes.error && !faltaMigracion) throw new Error(`No se pudieron leer las canchas: ${canchasRes.error.message}`);
 
+  const canchas = faltaMigracion ? null : (canchasRes.data ?? []);
+  const mostrarAvisoMigracion = faltaMigracion && sesion.puede("configuracion.gestionar");
+  // Tabs que existen para este rol y esta empresa (las mismas condiciones con que la ficha legacy mostraba cada sección).
+  // Una tab pedida que no existe (o que el rol no ve) cae en Resumen.
+  const tabs: TabFicha[] = [
+    "resumen",
+    ...(puedeVerActividades || puedeVerOportunidades || puedeVerVentas || puedeVerAvisos ? (["actividad"] as const) : []),
+    ...(puedeVerOportunidades ? (["oportunidades"] as const) : []),
+    ...(puedeVerVentas ? (["ventas"] as const) : []),
+    "contactos",
+    ...(canchas || parque || mostrarAvisoMigracion ? (["canchas"] as const) : []),
+  ];
+
   return (
     <>
       <CrumbLabel>{empresa.nombre}</CrumbLabel>
@@ -106,8 +128,10 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
         perfiles={(perfiles ?? []).map((p) => ({ id: p.id, nombre: p.nombre ?? p.email ?? "Usuario", activo: p.activo }))}
         origenes={origenes ?? []}
         parque={parque}
-        canchas={faltaMigracion ? null : (canchasRes.data ?? [])}
-        mostrarAvisoMigracion={faltaMigracion && sesion.puede("configuracion.gestionar")}
+        canchas={canchas}
+        mostrarAvisoMigracion={mostrarAvisoMigracion}
+        tabs={tabs}
+        tab={tabValida(tabPedida, tabs)}
         puedeCrearOportunidad={sesion.puede("oportunidades.editar")}
         yoId={sesion.user.id}
         puedeEditar={sesion.puede("clientes.editar")}

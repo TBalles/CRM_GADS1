@@ -1,8 +1,8 @@
 "use client";
 
-import { Ban } from "lucide-react";
-import { Campo, CampoSelect, CampoTextarea, FormActions, FormBanner } from "@/components/form";
-import { useToast } from "@/components/ui/Toast";
+import { useCrmToast } from "../Toast";
+import { InlineBanner } from "../Feedback";
+import { CampoArea, CampoOpciones, CampoTexto, FormDrawer, Par } from "./FormDrawer";
 import { ahoraLocal, useActividadForm, type TipoActividadOpcion } from "@/lib/formularios/actividad";
 import type { Tables } from "@/lib/supabase/types";
 
@@ -10,11 +10,12 @@ type Actividad = Tables<"bitacora_entradas">;
 type Opcion = { id: string; label: string };
 
 /**
- * Registrar una actividad (formulario legacy): algo que YA pasó con un cliente. Sirve desde la ficha de un contacto y
- * de una oportunidad: quien lo usa decide a qué se cuelga con `empresaId`, `contactoId` y `oportunidadId`. La lógica
- * (validación y alta) es `useActividadForm`, compartida con el drawer de CRM 2.0.
+ * "Registrar actividad" en un drawer de CRM 2.0. Misma lógica que `ActividadForm` legacy (`useActividadForm`): mismos
+ * campos e ids (`#tipo_actividad_id`, `#ocurrido_en`, `#titulo`…), validaciones y mensajes. `key` por apertura.
  */
-export default function ActividadForm({
+export function ActividadDrawer({
+  open,
+  onClose,
   empresaId = null,
   contactoId = null,
   oportunidadId = null,
@@ -22,23 +23,22 @@ export default function ActividadForm({
   contactos = [],
   oportunidades = [],
   avisoNoContactar = false,
+  description,
   onSaved,
-  onCancel,
 }: {
+  open: boolean;
+  onClose: () => void;
   empresaId?: string | null;
   contactoId?: string | null;
   oportunidadId?: string | null;
   tipos: TipoActividadOpcion[];
-  /** "Con quién": solo se ofrece si la actividad es de una empresa y no trae contacto fijo. */
   contactos?: Opcion[];
-  /** Oportunidad opcional a la que vincularla; si ya viene fija (`oportunidadId`) no se ofrece. */
   oportunidades?: Opcion[];
-  /** El cliente está marcado como "No contactar": se avisa, no se bloquea. */
   avisoNoContactar?: boolean;
+  description?: string;
   onSaved: (actividad: Actividad) => void;
-  onCancel: () => void;
 }) {
-  const { showToast } = useToast();
+  const { showToast } = useCrmToast();
   const { v, set, activos, errores, error, saving, submit } = useActividadForm({
     empresaId,
     contactoId,
@@ -47,27 +47,36 @@ export default function ActividadForm({
     notificar: showToast,
     onSaved,
   });
-
   return (
-    <form onSubmit={submit} className="space-y-4" noValidate>
-      {error && <FormBanner message={error} />}
-
+    <FormDrawer
+      open={open}
+      onClose={onClose}
+      title="Registrar actividad"
+      description={description}
+      saving={saving}
+      error={error}
+      submitLabel="Registrar"
+      onSubmit={submit}
+    >
       {avisoNoContactar && (
-        <p role="status" className="flex items-start gap-2 rounded-lg border border-border bg-secondary p-3 text-sm">
-          <Ban aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-          <span>
-            <strong>Este cliente está marcado como «No contactar».</strong> Podés registrar lo que ya pasó, pero
-            confirmá que corresponde antes de volver a escribirle o llamarlo.
-          </span>
-        </p>
+        <InlineBanner tone="warning" title="Este cliente está marcado como «No contactar».">
+          Podés registrar lo que ya pasó, pero confirmá que corresponde antes de volver a escribirle o llamarlo.
+        </InlineBanner>
       )}
-
       {!activos.length && (
-        <FormBanner message="No hay tipos de actividad activos. Quien administra el CRM los carga en Configuración." />
+        <InlineBanner tone="danger">No hay tipos de actividad activos. Quien administra el CRM los carga en Configuración.</InlineBanner>
       )}
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <CampoSelect
+      <CampoTexto
+        id="titulo"
+        label="Descripción"
+        required
+        placeholder="Consultó por recambio de redes"
+        value={v.titulo}
+        onChange={(x) => set("titulo", x)}
+        error={errores.titulo}
+      />
+      <Par>
+        <CampoOpciones
           id="tipo_actividad_id"
           label="Tipo"
           required
@@ -77,7 +86,7 @@ export default function ActividadForm({
           options={activos.map((t) => ({ value: t.id, label: t.nombre }))}
           error={errores.tipo}
         />
-        <Campo
+        <CampoTexto
           id="ocurrido_en"
           label="Cuándo"
           required
@@ -87,21 +96,9 @@ export default function ActividadForm({
           onChange={(x) => set("ocurridoEn", x)}
           error={errores.ocurrido_en}
         />
-      </div>
-
-      <Campo
-        id="titulo"
-        label="Descripción"
-        required
-        autoFocus
-        placeholder="Consultó por recambio de redes"
-        value={v.titulo}
-        onChange={(x) => set("titulo", x)}
-        error={errores.titulo}
-      />
-
+      </Par>
       {!contactoId && contactos.length > 0 && (
-        <CampoSelect
+        <CampoOpciones
           id="contacto_id"
           label="Con quién"
           placeholder="Opcional"
@@ -111,9 +108,8 @@ export default function ActividadForm({
           options={[{ value: "", label: "Sin contacto puntual" }, ...contactos.map((c) => ({ value: c.id, label: c.label }))]}
         />
       )}
-
       {!oportunidadId && oportunidades.length > 0 && (
-        <CampoSelect
+        <CampoOpciones
           id="oportunidad_id"
           label="Oportunidad"
           placeholder="Opcional"
@@ -123,8 +119,7 @@ export default function ActividadForm({
           options={[{ value: "", label: "Sin oportunidad" }, ...oportunidades.map((o) => ({ value: o.id, label: o.label }))]}
         />
       )}
-
-      <CampoTextarea
+      <CampoArea
         id="detalle"
         label="Detalle"
         rows={4}
@@ -132,16 +127,13 @@ export default function ActividadForm({
         value={v.detalle}
         onChange={(x) => set("detalle", x)}
       />
-
-      <Campo
+      <CampoTexto
         id="resultado"
         label="Resultado"
         placeholder="Pidió presupuesto, no atendió, quedó en confirmar…"
         value={v.resultado}
         onChange={(x) => set("resultado", x)}
       />
-
-      <FormActions saving={saving} onCancel={onCancel} submitLabel="Registrar" />
-    </form>
+    </FormDrawer>
   );
 }

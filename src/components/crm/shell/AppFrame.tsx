@@ -168,7 +168,7 @@ export default function AppFrame({
             }}
             className={cn(
               UI_ROOT,
-              "fixed left-2 top-2 z-(--crm-z-tooltip) -translate-y-16 rounded-(--crm-radius-sm) bg-(--crm-accent) px-3 py-2 font-normal text-(--crm-on-accent) outline-none focus-visible:translate-y-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--crm-focus) motion-safe:transition-transform",
+              "fixed left-2 top-2 z-(--crm-z-tooltip) -translate-y-16 rounded-(--crm-radius-sm) bg-(--crm-accent) px-3 py-2 font-normal text-(--crm-on-accent) outline-none focus-visible:translate-y-0 focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-(--crm-focus) motion-safe:transition-transform",
             )}
           >
             Saltar al contenido

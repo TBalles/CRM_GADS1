@@ -106,7 +106,8 @@ export function Drawer({
             <IconButton label="Cerrar panel" icon={X} onClick={cerrar} disabled={busy} />
           </header>
           {onSubmit ? (
-            <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
+            // noValidate: los formularios validan a mano (mensajes en español, por campo, con role="alert"), como form.tsx.
+            <form noValidate onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
               {cuerpo}
             </form>
           ) : (

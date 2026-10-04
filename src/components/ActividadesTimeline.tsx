@@ -22,7 +22,7 @@ import type { Tables } from "@/lib/supabase/types";
 type Actividad = Tables<"bitacora_entradas">;
 
 /** Ícono por el `codigo` estable de los tipos de sistema. Los tipos que crea el cliente (codigo null) usan el genérico. */
-const ICONO_POR_CODIGO: Record<string, React.ElementType> = {
+export const ICONO_POR_CODIGO: Record<string, React.ElementType> = {
   llamada: Phone,
   email: Mail,
   whatsapp: MessageCircle,

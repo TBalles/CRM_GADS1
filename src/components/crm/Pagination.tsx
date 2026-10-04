@@ -58,7 +58,7 @@ export function Pagination({
 
   return (
     <div className={cn("flex flex-col items-center gap-2 sm:flex-row sm:justify-between", className)}>
-      <p className={cn(TYPE.meta, TYPE.mono, "text-(--crm-text-2)")}>{textoRango(actual, pageSize, total)}</p>
+      <p className={cn(TYPE.table, "tabular-nums text-(--crm-text-2)")}>{textoRango(actual, pageSize, total)}</p>
       <div className="flex flex-wrap items-center justify-center gap-3">
         {pageSizeControl}
         {paginas > 1 && (

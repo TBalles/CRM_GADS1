@@ -73,29 +73,15 @@ export function useFiltrosUrl() {
 export type FiltrosUrl = ReturnType<typeof useFiltrosUrl>;
 
 /**
- * Buscador de una lista. Escribe en la URL 300 ms después de la última tecla (o
- * al instante con Enter), así no se consulta la base por cada letra.
+ * Estado del buscador de una lista, sin UI (lo comparten `CajaBusqueda` y el buscador de CRM 2.0): escribe en la URL
+ * 300 ms después de la última tecla, o al instante con `enviarYa` (Enter, borrar).
  */
-export function CajaBusqueda({
-  filtros,
-  etiqueta,
-  placeholder,
-  param = "q",
-  className,
-}: {
-  filtros: FiltrosUrl;
-  /** Texto para lectores de pantalla (el placeholder no alcanza como etiqueta). */
-  etiqueta: string;
-  placeholder: string;
-  param?: string;
-  className?: string;
-}) {
-  const { aplicar, pending } = filtros;
+export function useBusquedaUrl(filtros: FiltrosUrl, param = "q") {
+  const { aplicar } = filtros;
   const enUrl = filtros.valor(param);
   const [texto, setTexto] = useState(enUrl);
   const [enviado, setEnviado] = useState(enUrl);
   const [urlPrevia, setUrlPrevia] = useState(enUrl);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   // Si la URL cambió por otro camino (atrás/adelante, "Limpiar filtros") el campo la sigue.
   // Si cambió porque la acabamos de escribir nosotros, no se toca lo que la persona sigue tipeando.
@@ -123,6 +109,31 @@ export function CajaBusqueda({
     setEnviado(limpio);
     aplicar({ [param]: limpio });
   }
+
+  return { texto, setTexto, enviarYa };
+}
+
+/**
+ * Buscador de una lista. Escribe en la URL 300 ms después de la última tecla (o
+ * al instante con Enter), así no se consulta la base por cada letra.
+ */
+export function CajaBusqueda({
+  filtros,
+  etiqueta,
+  placeholder,
+  param = "q",
+  className,
+}: {
+  filtros: FiltrosUrl;
+  /** Texto para lectores de pantalla (el placeholder no alcanza como etiqueta). */
+  etiqueta: string;
+  placeholder: string;
+  param?: string;
+  className?: string;
+}) {
+  const { pending } = filtros;
+  const { texto, setTexto, enviarYa } = useBusquedaUrl(filtros, param);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className={cn("relative min-w-[7rem] flex-1 sm:w-64 sm:flex-none", className)}>

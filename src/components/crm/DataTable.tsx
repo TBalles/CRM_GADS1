@@ -97,13 +97,13 @@ export function Tr({
   selected = false,
   className,
   children,
-}: {
+  ...props
+}: React.ComponentProps<"tr"> & {
   selected?: boolean;
-  className?: string;
-  children: React.ReactNode;
 }) {
   return (
     <tr
+      {...props}
       aria-current={selected || undefined}
       data-selected={selected || undefined}
       className={cn(

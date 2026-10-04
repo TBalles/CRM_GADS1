@@ -50,15 +50,26 @@ export type Definition = {
  * Datos de una ficha como `dl`: término arriba en 12 px secundario, valor en 14 px. Una o dos columnas
  * (dos desde 640 px de contenedor). Reemplaza a las cards de "Datos".
  */
-export function DefinitionList({ items, columns = 2, className }: { items: Definition[]; columns?: 1 | 2; className?: string }) {
+export function DefinitionList({
+  items,
+  columns = 2,
+  inline = false,
+  className,
+}: {
+  items: Definition[];
+  columns?: 1 | 2;
+  /** Término a la izquierda (columna de 112), valor a la derecha en 13 px y un hairline entre filas: el riel de propiedades. */
+  inline?: boolean;
+  className?: string;
+}) {
   return (
     // El contenedor (y no la pantalla) decide las columnas: la misma lista va en una ficha ancha o en un panel angosto.
     <div className={cn("@container", className)}>
-      <dl className={cn("grid gap-x-6 gap-y-3", columns === 2 && "@[40rem]:grid-cols-2")}>
+      <dl className={cn("grid", inline ? "divide-y divide-(--crm-border)" : "gap-x-6 gap-y-3", columns === 2 && "@[40rem]:grid-cols-2")}>
         {items.map((it, i) => (
-          <div key={i} className="flex min-w-0 flex-col gap-0.5">
+          <div key={i} className={cn("min-w-0", inline ? "grid grid-cols-[7rem_minmax(0,1fr)] items-baseline gap-x-3 py-1.5" : "flex flex-col gap-0.5")}>
             <dt className={cn(TYPE.meta, "text-(--crm-text-2)")}>{it.term}</dt>
-            <dd className={cn("min-w-0 break-words text-[14px] leading-5", it.mono && TYPE.mono)}>
+            <dd className={cn("min-w-0 break-words", inline ? TYPE.table : "text-[14px] leading-5", it.mono && TYPE.mono)}>
               {it.value === null || it.value === undefined || it.value === "" ? (
                 <span className="text-(--crm-text-2)">—</span>
               ) : (

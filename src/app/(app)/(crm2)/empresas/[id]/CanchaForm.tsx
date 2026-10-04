@@ -1,34 +1,37 @@
 "use client";
 
 import { useState } from "react";
-import { Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { Campo, CampoSelect, CampoTextarea, FormActions, FormBanner } from "@/components/form";
-import { useToast } from "@/components/ui/Toast";
+import { Checkbox } from "@/components/crm/Field";
+import { useCrmToast } from "@/components/crm/Toast";
+import { CampoArea, CampoOpciones, CampoTexto, FormDrawer, Par } from "@/components/crm/cuenta/FormDrawer";
 import { mensajeErrorGuardado } from "@/lib/clientes";
 import { FORMATOS, SUPERFICIES } from "@/lib/canchas";
 import { esErrorDeEsquema } from "@/lib/esquema";
-import { cn } from "@/lib/utils";
 import type { Tables } from "@/lib/supabase/types";
 
 type Cancha = Tables<"canchas">;
 type Errores = Partial<Record<"nombre" | "formato" | "cantidad", string>>;
 
 /**
- * Alta y edición de una ficha de cancha (dentro de un Drawer). Una ficha puede
- * representar varias canchas iguales ("Canchas de F5": cantidad 4). La baja es
- * lógica y se hace desde la lista: nada se borra.
+ * "Nueva cancha" / "Editar cancha" (drawer de CRM 2.0). Una ficha puede representar varias canchas iguales ("Canchas
+ * de F5": cantidad 4). La baja es lógica y se hace desde la lista: nada se borra. Única implementación (solo la usa la
+ * ficha de empresa); validación, payload y mensajes de siempre. `key` por apertura.
  */
 export default function CanchaForm({
+  open,
+  onClose,
   cancha,
   empresaId,
+  empresaNombre,
   onSaved,
-  onCancel,
 }: {
+  open: boolean;
+  onClose: () => void;
   cancha?: Cancha;
   empresaId: string;
+  empresaNombre: string;
   onSaved: (cancha: Cancha) => void;
-  onCancel: () => void;
 }) {
   const [nombre, setNombre] = useState(cancha?.nombre ?? "");
   const [formato, setFormato] = useState(cancha?.formato ?? "");
@@ -39,7 +42,7 @@ export default function CanchaForm({
   const [errores, setErrores] = useState<Errores>({});
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const { showToast } = useToast();
+  const { showToast } = useCrmToast();
 
   function limpiar(campo: keyof Errores) {
     if (errores[campo]) setErrores((prev) => ({ ...prev, [campo]: undefined }));
@@ -84,14 +87,19 @@ export default function CanchaForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-      {error && <FormBanner message={error} />}
-
-      <Campo
+    <FormDrawer
+      open={open}
+      onClose={onClose}
+      title={cancha ? "Editar cancha" : "Nueva cancha"}
+      description={empresaNombre}
+      saving={saving}
+      error={error}
+      onSubmit={handleSubmit}
+    >
+      <CampoTexto
         id="cancha_nombre"
         label="Nombre"
         required
-        autoFocus
         placeholder="Canchas de fútbol 5"
         value={nombre}
         onChange={(v) => {
@@ -100,9 +108,8 @@ export default function CanchaForm({
         }}
         error={errores.nombre}
       />
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <CampoSelect
+      <Par>
+        <CampoOpciones
           id="cancha_formato"
           label="Formato"
           required
@@ -115,12 +122,13 @@ export default function CanchaForm({
           options={FORMATOS.map((f) => ({ value: f.value, label: f.label }))}
           error={errores.formato}
         />
-        <Campo
+        <CampoTexto
           id="cancha_cantidad"
           label="Cantidad de canchas"
           required
           inputMode="numeric"
           placeholder="1"
+          className="[&_input]:font-(family-name:--crm-font-mono)"
           value={cantidad}
           onChange={(v) => {
             setCantidad(v);
@@ -128,9 +136,8 @@ export default function CanchaForm({
           }}
           error={errores.cantidad}
         />
-      </div>
-
-      <CampoSelect
+      </Par>
+      <CampoOpciones
         id="cancha_superficie"
         label="Superficie"
         placeholder="Sin dato"
@@ -138,38 +145,20 @@ export default function CanchaForm({
         onChange={setSuperficie}
         options={[{ value: "", label: "Sin dato" }, ...SUPERFICIES.map((s) => ({ value: s.value, label: s.label }))]}
       />
-
-      <label
-        className={cn(
-          "flex cursor-pointer items-start gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-accent",
-          iluminacion && "bg-secondary",
-        )}
-      >
-        <input type="checkbox" checked={iluminacion} onChange={(e) => setIluminacion(e.target.checked)} className="peer sr-only" />
-        <span
-          aria-hidden="true"
-          className={cn(
-            "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-1",
-            iluminacion ? "border-brand bg-brand text-brand-foreground" : "border-input bg-background",
-          )}
-        >
-          {iluminacion && <Check className="h-3 w-3" />}
-        </span>
-        <span className="min-w-0">
-          <span className="block text-sm font-medium">Tiene iluminación</span>
-          <span className="block text-xs text-muted-foreground">Para jugar de noche.</span>
-        </span>
-      </label>
-
-      <CampoTextarea
+      <Checkbox
+        id="cancha_iluminacion"
+        label="Tiene iluminación"
+        description="Para jugar de noche."
+        checked={iluminacion}
+        onChange={(e) => setIluminacion(e.target.checked)}
+      />
+      <CampoArea
         id="cancha_notas"
         label="Observaciones"
         placeholder="Estado de los arcos, medidas especiales, quién las mantiene…"
         value={notas}
         onChange={setNotas}
       />
-
-      <FormActions saving={saving} onCancel={onCancel} />
-    </form>
+    </FormDrawer>
   );
 }

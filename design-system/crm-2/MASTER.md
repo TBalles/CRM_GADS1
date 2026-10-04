@@ -342,8 +342,8 @@ los pares de las barras y bordes indicadores; el par más justo es el foco sobre
 
 Los de §10.1–§10.10 están construidos en `src/components/crm/` y se ven en `/crm-lab` (solo desarrollo). Los marcados **(server-safe)**
 no tienen `"use client"` ni hooks y se pueden usar desde server components (el laboratorio dibuja una DataTable con links y
-tooltips de recorte desde su página servidor); los demás son de cliente. §10.11 es el shell (Etapa 2, construido); §10.12 en adelante es **especificación** para
-las Etapas 2 y 3.
+tooltips de recorte desde su página servidor); los demás son de cliente. §10.11 es el shell (Etapa 2, construido); §10.12 es la
+especificación de las composiciones y §10.13 cómo quedaron construidas en Empresas (Etapa 3).
 
 ### 10.1 Button, IconButton, FilterChip — `Button.tsx` (server-safe)
 - Variantes: `primary` (acento sólido; **una por pantalla**), `secondary` (panel + hairline; la normal), `ghost` (sin caja; acciones
@@ -485,6 +485,95 @@ lógica pura (cookie del rail, ruta → migas) está en `logica.ts` (probada en 
 - **Stepper de etapas** (oportunidad): segmentos con el color de la etapa como cuadradito, actual con barra de acento; clic = el
   mismo "Cambiar etapa".
 
+### 10.13 Empresas slice: compositions (Etapa 3, construido)
+Primera pantalla migrada (`src/app/(app)/(crm2)/empresas/`). Lo que MASTER no decía y se decidió acá; vale para los
+próximos slices (Contactos, Oportunidades…).
+
+- **PageBar** (`PageBar.tsx`, server-safe): 48 de alto; h1 20/600 + contador 14 secundario en **sans** con numerales tabulares
+  ("8 empresas · 10 contactos": es una frase; el mono queda para cifras sueltas, montos e identificadores) + acciones a la
+  derecha. Sin migas (las pone la topbar), sin bajada ni eyebrow. En mobile la primaria queda como botón de ícono (nombre accesible
+  igual: "Nueva empresa").
+- **Toolbar** (`Toolbar.tsx`, cliente): `role="group"` "Filtros", alto mínimo 40, `flex-wrap` (los chips bajan de línea, no se
+  recortan). `SearchField` = campo de 28 (36 en mobile), 256 de ancho, `type="text"` (rol `textbox`, contrato E2E), misma lógica de
+  300 ms / Enter que `CajaBusqueda` (`useBusquedaUrl`). Cada filtro de opción única es un **`Menu` con `chip`**: disparador
+  `FilterChip` y items `menuitemradio` con `aria-checked` y tilde (mismo teclado del menú, typeahead, lista con scroll a 320). Los
+  filtros on/off ("Ver dadas de baja") son `ToggleChip` (`aria-pressed`, tilde + acento). "Limpiar filtros" ghost `sm`, solo con
+  filtros; no borra `sel`.
+- **DataTable en una lista**: la lista es una columna flex de alto completo; la tabla queda a su **alto natural** (sin caja vacía si
+  hay pocas filas), se achica y scrollea con el header fijo si no entra, y debajo hay una **banda de pie** (40, `--crm-panel`,
+  hairline arriba) pegada al borde inferior del área de trabajo con "Mostrando N–M de T" (sans, numerales tabulares), la
+  paginación y "Filas por página".
+- **Columnas que colapsan (sin perder datos)**: se esconden por ancho del **contenedor** y lo escondido pasa a una línea de apoyo
+  (12, secundaria, una sola línea con "…") debajo del nombre. El nombre es SIEMPRE un link a la ficha (contrato E2E).
+
+  | Contenedor | Columnas | Línea de apoyo bajo el nombre |
+  |---|---|---|
+  | ≥ 60rem (lista sin vista previa) | Empresa (+ mail o teléfono en gris al lado) · Tipo · Estado · Responsable · Origen · Contactos | — (fila de 36) |
+  | 45–60rem (vista previa abierta, 1440) | Empresa · Estado · Responsable · Contactos | tipo · origen · mail o teléfono |
+  | 30–45rem (vista previa abierta, 1280) | Empresa · Estado · Responsable | tipo · origen · mail o teléfono · N contactos |
+  | < 30rem (celular) | Empresa · `⋮` | estado · tipo · responsable · N contactos |
+
+  Mismo markup en todos los anchos (container queries), sin cards. En celular el origen y el mail quedan en la ficha.
+- **Master-detail (selección)**: `?sel=<id>` en la URL, junto a q/page/filtros: es la única fuente de verdad. El server lee `sel`
+  (uuid o nada) y la página le pasa a la lista, como `panel`, `VistaPrevia` (server component, cliente con RLS, `leerCuenta360`)
+  dentro de `<Suspense key={sel}>` con un esqueleto del mismo panel. `sel` inválido, inexistente o de otra cartera: nada.
+  - **Elegir:** clic en la fila (fuera de sus links y botones) o en el link "Vista previa de <nombre>" (link real `?sel=`, abre en
+    otra pestaña con Ctrl/botón del medio; visible al hover, fuera del orden de Tab: con teclado se elige con flechas).
+  - **Selección optimista:** la fila marcada cambia al instante; la lista guarda lo último pedido y, cuando el servidor contesta
+    con ese `sel` (o la URL cambia por otro camino: atrás/adelante), sigue a la URL. Mientras la vista previa nueva está en camino,
+    la vieja se atenúa (60 %) con `aria-busy` y "Cargando vista previa…".
+  - **Teclado:** ↑/↓ (foco en la grilla) cuentan desde la fila CON FOCO: si no es la elegida, la eligen; si lo es, pasan a la
+    vecina, sin vuelta en los bordes. El foco va al nombre de la fila nueva (Enter ahí abre la ficha). Con la tecla apretada se
+    navega UNA vez, a la última fila, 200 ms después de la última flecha (`vecinoSel` en `seleccion.ts`, probado).
+  - **Esc** quita `sel` y devuelve el foco a la fila. Su listener está en `document` y se registró ANTES que el de un menú, select o
+    drawer que se abra después, así que corre primero: por eso no alcanza con `defaultPrevented` y se fija si hay una capa abierta
+    (`hayCapaAbierta()` de `overlay.ts`, o un `aria-modal`, o el foco en un menú/listbox/diálogo). Con una capa abierta, el Esc es
+    de la capa.
+  - **Debajo de 1280** no hay panel: la fila abre la ficha y, si la URL trae `sel` (link directo, ventana que se achica), la lista
+    lo quita con `router.replace` (conserva lo demás). Límite: ese primer pedido del link directo ya dibujó el panel en el servidor
+    (el servidor no conoce el ancho); desde ahí ya no se pide.
+- **PreviewPanel** (`VistaPrevia.tsx`): `aside` de 400 (440 desde 2xl), borde izquierdo, sin sombra; entra sin scroll en 1440 × 900.
+  Header fijo: nombre (16/600, h2) + "Fuera de la lista actual" si la empresa no está en la página que se ve, "Cerrar vista previa"
+  (link que quita `sel`), estado · tipo · responsable, UNA acción ("Registrar actividad"; sin permiso, "Editar") + `⋮` "Más
+  acciones" (Editar, Dar de baja / Reactivar; mismos permisos y drawers que la ficha; después de mutar, `router.refresh()`). Cuerpo:
+  teléfono, email, CUIT y último contacto (`DefinitionList inline`), hasta 3 contactos (nombre, cargo, teléfono, mail), hasta 3
+  oportunidades abiertas (etapa, monto) y los 3 últimos movimientos. Alta, origen, sitio web y dirección quedan en la ficha (el
+  origen también en la fila). Pie fijo: "Abrir ficha completa →".
+- **DetailHeader** (`PageBar.tsx`): franja en `--crm-panel` con borde inferior; h1 = nombre exacto (`break-words`, sin truncar);
+  meta 13 secundaria: estado (punto + palabra), tipo, Avatar + responsable, "CUIT" + número mono. Una primaria ("Registrar
+  actividad"; si el rol no puede, "Editar") + `⋮` "Más acciones" con el resto. Las `Tabs` van pegadas abajo, dentro de la franja.
+  Sin "volver", sin eyebrow, sin avatar grande.
+- **Tabs de ficha**: `?tab=` (Resumen sin parámetro); una tab existe solo si el rol/los datos la habilitan (mismas condiciones que
+  la ficha legacy); una pedida que no existe cae en Resumen (`tabValida`). Contador mono en Oportunidades, Ventas (con "+" si la
+  lectura llegó al tope: "100+"), Contactos y Canchas. Cambiar de tab navega dentro de una transición (`Tabs navigate`): el `TabPanel`
+  queda `busy` (`aria-busy`, "Cargando…", contenido viejo al 60 %) hasta que llega. Si las tabs no entran (celular) se scrollean,
+  la activa queda a la vista y el borde con más tabs se desvanece (máscara de 24–32 px).
+- **Resumen = superficie de trabajo, no una card**: sin caja exterior. Columna principal: franja de cifras (`StatStrip`, sin
+  título visible; "Calculado con lo que está cargado en el CRM, sin estimaciones." va como descripción accesible), la señal de
+  recambio ("N unidades para recambiar ya · M por vencer · Ver parque", solo con `ventas.ver`, el mismo dato del Parque
+  instalado), "Oportunidades abiertas" (tabla: oportunidad, etapa, monto; "Ver todas"), "Contactos" (tabla: nombre + cargo,
+  teléfono, mail; "Agregar", que E2E usa sin cambiar de tab) y "Actividad reciente" (5). A la derecha, desde 1280, un **riel de
+  propiedades** de 340 con hairline a la izquierda: "Datos" en `DefinitionList inline` de una columna (término a la izquierda,
+  hairline entre filas) + Observaciones.
+- **StatStrip**: una fila fina de N columnas iguales desde `sm` (`--n`), divisores verticales; de a 2 en mobile. Cifras en mono de
+  20 (16 en el panel) con la unidad en gris al 70 %; fechas y frases ("Hace 17 días") en 14/500 sans con numerales tabulares. La
+  cifra de 28 (`TYPE.kpi`) queda para tableros. `warning` = ícono + color de aviso.
+- **Historia de la cuenta**: filas de libro mayor desde 48rem de contenedor (fecha mono 176 | ícono 16 | hecho + cuerpo | quién
+  208); angosta, apilada. Filtro por tipo = grupo de botones `aria-pressed` con forma de segmentado. Mes como cabecera 12/500
+  secundaria sobre regla fuerte (como `th`). Íconos de equipamiento sin caja, en gris. "Mostrando N de M" en sans.
+- **Tablas de ficha** (Oportunidades, Ventas, Contactos, Canchas, Parque): `DataTable` con `SectionBar` (14/600 + contador mono +
+  acción `sm`) arriba; vacíos `EmptyState compact` dentro de la tabla. Parque instalado agrupa con filas `th colgroup` en
+  `--crm-panel-2`; lo vencido como `StatusBadge` danger, el resto `StatusDot`.
+- **Drawers de dominio** (`components/crm/cuenta/`): `FormDrawer` (Drawer + footer "Cancelar"/"Guardar"→"Guardando…" + banner de
+  error) y campos `CampoTexto`/`CampoArea`/`CampoOpciones` atados por id. Empresa 640, el resto 480. `useApertura` lleva el valor y
+  un contador `n` que va como `key`: cada apertura arranca el formulario limpio y el título no cambia durante la salida. La lógica
+  vive fuera del UI: `lib/formularios/{contacto,actividad}.ts` (compartida con los formularios legacy), `BajaCliente`
+  (`reactivarCliente`, `darDeBajaCliente`, `textoBaja`) y `ResumenIA` (`useResumenIA`). El Drawer valida a mano (`noValidate`).
+  Foco después de mutar: si la fila desaparece de la lista (dar de baja sin "Ver dadas de baja"), el foco va a la fila siguiente
+  (o al buscador si la lista queda vacía); en el panel y la ficha vuelve al `⋮`, que sigue existiendo.
+- **Foco (corrección)**: `FOCUS` lleva `focus-visible:outline-solid`. Sin él, en Tailwind v4 `outline-none` deja
+  `--tw-outline-style: none` y el anillo de 2 px no se dibujaba en ningún primitivo (Etapas 1–2).
+
 ---
 
 ## 11. Interacción y teclado
@@ -504,7 +593,7 @@ lógica pura (cookie del rail, ruta → migas) está en `logica.ts` (probada en 
   buffer); Enter elige; Escape cierra sin cambiar; las deshabilitadas se saltan. Clic en su label: enfoca sin abrir.
 - **Tabs:** ←/→/Home/End; por URL activación manual (Enter o Espacio), controladas automática. **Segmentado:** flechas mueven y eligen.
 - **Popover:** foco al primer control; Escape o salir con Tab cierran y vuelven al disparador.
-- **Grilla (Etapa 3):** ↑/↓ mueve la selección, Enter abre la ficha, Esc cierra la vista previa.
+- **Grilla (Etapa 3, construido):** ↑/↓ mueve la selección desde la fila con foco (optimista, una sola navegación al soltar), Enter en el nombre abre la ficha, Esc cierra la vista previa si no hay una capa abierta (detalle en §10.13).
 - Ctrl/Cmd+clic y botón del medio en links de lista y paginación abren donde la persona quiere (son links reales).
 - La lógica pura de teclado está en `src/components/crm/teclado.ts` (probada en `teclado.check.ts`).
 

@@ -3,13 +3,14 @@
 import * as React from "react";
 import Link from "next/link";
 import { moverIndice, pasoDeTecla } from "./teclado";
+import { LoadingStatus } from "./Feedback";
 import { FOCUS, TYPE, cn } from "./cx";
 
 export type TabItem = {
   value: string;
   label: string;
-  /** Contador opcional (cantidad de oportunidades, ventas…): mono, en gris. */
-  count?: number;
+  /** Contador opcional (cantidad de oportunidades, ventas…): mono, en gris. Texto para "100+" (lista con tope). */
+  count?: number | string;
   /** Modo URL: el link de esta tab (armado con `urlConParams(ruta, params, { tab })`). */
   href?: string;
   disabled?: boolean;
@@ -25,6 +26,10 @@ export type TabItem = {
  *
  * `id` es obligatorio y estable: une cada tab con su panel (`${id}-tab-${value}` / `${id}-panel`), también cuando el
  * panel lo dibuja el servidor con `<TabPanel tabsId={id} value={…}>`.
+ *
+ * - `navigate` (modo URL): quien llama navega (p. ej. `router.push` dentro de `startTransition`) y marca el `TabPanel`
+ *   con `busy` mientras llega el contenido. Ctrl/Cmd/Shift/botón del medio siguen siendo links normales.
+ * - Si las tabs no entran (celular), se scrollean y el borde con más tabs se desvanece: se ve que hay más.
  */
 export function Tabs({
   id,
@@ -32,6 +37,7 @@ export function Tabs({
   items,
   value,
   onValueChange,
+  navigate,
   className,
 }: {
   id: string;
@@ -39,9 +45,28 @@ export function Tabs({
   items: TabItem[];
   value: string;
   onValueChange?: (value: string) => void;
+  navigate?: (href: string) => void;
   className?: string;
 }) {
   const refs = React.useRef<(HTMLElement | null)[]>([]);
+  const lista = React.useRef<HTMLDivElement>(null);
+  // Qué bordes tienen tabs escondidas (para desvanecerlos). Se mide al montar, al scrollear y al cambiar el tamaño.
+  const [mas, setMas] = React.useState({ izq: false, der: false });
+  React.useEffect(() => {
+    const el = lista.current;
+    if (!el) return;
+    const medir = () => setMas({ izq: el.scrollLeft > 1, der: el.scrollLeft + el.clientWidth < el.scrollWidth - 1 });
+    const activa = el.querySelector<HTMLElement>('[aria-selected="true"]');
+    if (activa && el.scrollWidth > el.clientWidth) el.scrollLeft = activa.offsetLeft - 16;
+    medir();
+    el.addEventListener("scroll", medir, { passive: true });
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", medir);
+      ro.disconnect();
+    };
+  }, [value]);
   const off = (i: number) => Boolean(items[i]?.disabled);
   const actual = items.findIndex((t) => t.value === value);
 
@@ -62,7 +87,20 @@ export function Tabs({
   };
 
   return (
-    <div role="tablist" aria-label={label} className={cn("flex min-w-0 items-end gap-4 overflow-x-auto border-b border-(--crm-border)", className)}>
+    <div
+      ref={lista}
+      role="tablist"
+      aria-label={label}
+      className={cn(
+        "flex min-w-0 items-end gap-4 overflow-x-auto border-b border-(--crm-border) [scrollbar-width:none]",
+        mas.der && mas.izq
+          ? "[mask-image:linear-gradient(to_right,transparent,black_24px,black_calc(100%-32px),transparent)]"
+          : mas.der
+            ? "[mask-image:linear-gradient(to_right,black_calc(100%-32px),transparent)]"
+            : mas.izq && "[mask-image:linear-gradient(to_right,transparent,black_24px)]",
+        className,
+      )}
+    >
       {items.map((t, i) => {
         const sel = t.value === value;
         const props = {
@@ -94,7 +132,17 @@ export function Tabs({
           </>
         );
         return t.href && !t.disabled ? (
-          <Link key={t.value} href={t.href} scroll={false} {...props}>
+          <Link
+            key={t.value}
+            href={t.href}
+            scroll={false}
+            onClick={(e) => {
+              if (!navigate || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+              e.preventDefault();
+              if (!sel) navigate(t.href!);
+            }}
+            {...props}
+          >
             {contenido}
           </Link>
         ) : (
@@ -107,16 +155,38 @@ export function Tabs({
   );
 }
 
-/** El panel de la tab activa. Va donde se dibuje el contenido (puede ser un server component). */
-export function TabPanel({ tabsId, value, children, className }: { tabsId: string; value: string; children: React.ReactNode; className?: string }) {
+/**
+ * El panel de la tab activa. Va donde se dibuje el contenido (puede ser un server component). `busy`: la tab nueva
+ * está llegando (navegación en curso): `aria-busy`, "Cargando…" y el contenido viejo atenuado hasta que llegue.
+ */
+export function TabPanel({
+  tabsId,
+  value,
+  busy = false,
+  children,
+  className,
+}: {
+  tabsId: string;
+  value: string;
+  busy?: boolean;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <div
       id={`${tabsId}-panel`}
       role="tabpanel"
       aria-labelledby={`${tabsId}-tab-${value}`}
+      aria-busy={busy || undefined}
       tabIndex={0}
-      className={cn("min-w-0 rounded-(--crm-radius-sm)", FOCUS, className)}
+      className={cn(
+        "min-w-0 rounded-(--crm-radius-sm) transition-opacity duration-(--crm-dur-fast)",
+        busy && "opacity-60 motion-reduce:transition-none",
+        FOCUS,
+        className,
+      )}
     >
+      {busy && <LoadingStatus />}
       {children}
     </div>
   );

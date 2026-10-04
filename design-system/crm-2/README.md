@@ -60,7 +60,9 @@ contratos de accesibilidad y la definición de terminado de una pantalla migrada
 - **Primitivos:** `src/components/crm/`, un archivo por familia (`Button`, `Field`, `Select`, `Menu`, `Popover`, `Tooltip`, `Tabs`,
   `Status`, `Panel`, `Feedback`, `Drawer`, `Dialog`, `Toast`, `Pagination`, `DataTable`), más `cx.ts` (clases compartidas),
   `portal.tsx` (`CrmPortal` → `#crm-portal`), `overlay.ts` (pila de capas, foco modal, anclaje) y `teclado.ts` (lógica pura de
-  teclado). Se importan por archivo (`@/components/crm/Button`), sin barril.
+  teclado). Se importan por archivo (`@/components/crm/Button`), sin barril. Desde la Etapa 3 también las composiciones
+  `PageBar` (PageBar, DetailHeader, SectionBar; server-safe), `StatStrip` (server-safe), `Toolbar` (SearchField, ToggleChip) y
+  `cuenta/` (drawers de empresa/contacto/actividad, baja, historia de la cuenta, estados): MASTER §10.13.
 - **Server-safe:** `Button`, `Field`, `Status`, `Panel`, `Feedback`, `DataTable` y `cx.ts` no tienen `"use client"` ni hooks: se
   pueden usar desde server components. Los hooks viven en `overlay.ts` (cliente), como `ui/overlay.ts` frente a `UIComponents.tsx`.
 - **Sumar un primitivo:** archivo nuevo en `components/crm/`; solo tokens (ningún color, radio, sombra ni z-index literal);
