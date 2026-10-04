@@ -10,10 +10,12 @@ import {
   Mail,
   MessageCircle,
   Search,
+  Sparkles,
 } from "lucide-react";
 import { Badge, Button, Card, Input, PageHeader, Pill, buttonClass } from "@/components/ui/UIComponents";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MarcasCancha } from "@/components/Cancha";
+import { ComoUsamosIA } from "@/components/IaAviso";
 import { IconoEquipo } from "@/components/Equipamiento";
 import { RelojRecambio } from "@/components/RelojRecambio";
 import { createClient } from "@/lib/supabase/client";
@@ -23,6 +25,7 @@ import { useToast } from "@/components/ui/Toast";
 import { OverlayCarga } from "@/components/ui/OverlayCarga";
 import { cn } from "@/lib/utils";
 import { enviarAlertaEmail, registrarEnvioWhatsapp } from "./actions";
+import { BorradorIA, useBorradorIA } from "./BorradorIA";
 import {
   asunto,
   cuerpo,
@@ -62,6 +65,7 @@ export default function AlertasView({
   enviaDesdeServidor,
   puedeEnviar,
   recambio,
+  iaDisponible,
 }: {
   alertas: Alerta[];
   /**
@@ -74,8 +78,12 @@ export default function AlertasView({
   /** Sin `alertas.enviar`: se ven las alertas pero no se mandan. */
   puedeEnviar: boolean;
   recambio: DatosRecambio | null;
+  /** F7: hay clave de la IA en el servidor. Sin ella no se ofrece "Redactar con IA". */
+  iaDisponible: boolean;
 }) {
   const router = useRouter();
+  const ia = useBorradorIA();
+  const conIA = iaDisponible && puedeEnviar;
   const [query, setQuery] = useState("");
   const [filtro, setFiltro] = useState<Filtro>("todas");
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -123,8 +131,16 @@ export default function AlertasView({
     setPendingId(a.venta_item_id);
     // Solo viaja el id: destinatario y texto los vuelve a derivar el servidor
     // de la base. Ver la nota de seguridad en actions.ts.
-    const res = await enviarAlertaEmail({ ventaItemId: a.venta_item_id });
-    setPendingId(null);
+    let res: Awaited<ReturnType<typeof enviarAlertaEmail>>;
+    try {
+      res = await enviarAlertaEmail({ ventaItemId: a.venta_item_id });
+    } catch {
+      // Si la acción tira, el overlay de "Enviando…" no puede quedar pegado: se avisa y se libera.
+      showToast("No se pudo completar el envío. Si se abrió tu correo y mandaste el mensaje, no lo repitas.", "error");
+      return;
+    } finally {
+      setPendingId(null);
+    }
 
     if (!res.ok) {
       showToast(res.error, "error");
@@ -157,8 +173,15 @@ export default function AlertasView({
     window.open(linkWhatsapp(telefono, mensaje), "_blank", "noopener,noreferrer");
 
     setPendingId(a.venta_item_id);
-    const res = await registrarEnvioWhatsapp({ ventaItemId: a.venta_item_id });
-    setPendingId(null);
+    let res: Awaited<ReturnType<typeof registrarEnvioWhatsapp>>;
+    try {
+      res = await registrarEnvioWhatsapp({ ventaItemId: a.venta_item_id });
+    } catch {
+      showToast("No se pudo registrar el envío. Si mandaste el mensaje, no lo repitas.", "error");
+      return;
+    } finally {
+      setPendingId(null);
+    }
 
     if (!res.ok) {
       showToast(res.error, "error");
@@ -241,6 +264,7 @@ export default function AlertasView({
   return (
     <div className="flex w-full flex-col gap-4">
       <OverlayCarga visible={pendingId !== null} texto={creandoOportunidad ? "Creando la oportunidad…" : "Enviando…"} />
+      {conIA && <BorradorIA ia={ia} onEnviado={() => startTransition(() => router.refresh())} />}
       <PageHeader
         titulo="Alertas de recambio"
         eyebrow="Llegá antes que nadie"
@@ -273,6 +297,16 @@ export default function AlertasView({
           ))}
         </dl>
       </section>
+
+      {conIA && (
+        <div className="-mb-2 text-xs text-muted-foreground">
+          <p>
+            Si querés, «Redactar con IA» arma un borrador del aviso con los datos de cada equipo. Siempre lo revisás vos antes de
+            mandarlo.
+          </p>
+          <ComoUsamosIA className="mt-1" />
+        </div>
+      )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filtrar alertas">
@@ -407,6 +441,19 @@ export default function AlertasView({
                             Crear oportunidad de recambio
                           </Button>
                         ))}
+                      {conIA && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          // Una sola llamada paga a la vez: mientras una alerta espera su borrador, las otras esperan.
+                          disabled={busy || (ia.estado.cargando && ia.estado.alerta?.venta_item_id !== a.venta_item_id)}
+                          onClick={() => ia.abrir(a)}
+                          className="w-full gap-1.5 sm:w-auto"
+                        >
+                          <Sparkles aria-hidden="true" className="h-3.5 w-3.5" />
+                          Redactar con IA
+                        </Button>
+                      )}
                       {puedeEnviar && (
                         <div className="flex gap-2">
                           <Button

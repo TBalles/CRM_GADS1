@@ -15,6 +15,7 @@
 | Entender cómo está armado | [arquitectura.md](./arquitectura.md) |
 | Consultar una tabla o una columna | [modelo-de-datos.md](./modelo-de-datos.md) |
 | Saber dónde se cumple una regla | [reglas-de-negocio.md](./reglas-de-negocio.md) |
+| Entender la IA opcional (qué manda, costo, cómo apagarla) | [ia.md](./ia.md) |
 | Desplegar o actualizar | [deploy.md](./deploy.md) |
 | Verificar que todo anda | [pruebas.md](./pruebas.md) |
 | Entender por qué se decidió algo | [decisiones/](./decisiones/README.md) |
@@ -27,6 +28,7 @@
 | Documento | Para qué sirve |
 |---|---|
 | [notas-de-version.md](./notas-de-version.md) | Todo lo agregado desde la primera entrega, por área: qué hace, dónde vive, la regla de negocio, cómo probarlo y el commit. Incluye el estado requisito por requisito frente a la consigna, la seguridad de la versión, el plan (F1 a F8), los commits agrupados y el catálogo de permisos |
+| [ia.md](./ia.md) | La IA asistida (F7): las siete condiciones de la consigna y cómo se cumplen, qué datos salen y cuáles no, cómo está hecha, costo estimado, variables y cómo apagarla |
 | [arquitectura.md](./arquitectura.md) | Diagramas de componentes, flujo de un pedido, sesión y protección de rutas, multitenencia, flujo de mails y topología de despliegue |
 | [modelo-de-datos.md](./modelo-de-datos.md) | Diagrama entidad-relación y una ficha por tabla: propósito, columnas clave, claves foráneas y RLS |
 | [reglas-de-negocio.md](./reglas-de-negocio.md) | Cada regla (vida útil, alertas, embudo, historial, cartera propia, baja lógica, permisos, logo) con el lugar donde se aplica |

@@ -638,7 +638,7 @@ lista, sin interfaz · **P** Planificado.
 | Adaptación real a la industria | I + B + P | Vida útil, snapshot, alertas de recambio, ventas por entrega: I. Embudo, orígenes, motivos y tipos del rubro, `tipo_cliente`: B. Parque instalado: I (F4, anda hoy). Canchas, equipamiento sugerido, licitaciones y recambio en un clic: I (F4) pero **requieren aplicar la `0011`** |
 | Presupuesto imprimible | I (F6) | `/oportunidades/[id]/presupuesto`: encabezado del proveedor con su logo, cliente, líneas editables (catálogo o texto libre), IVA según la condición del proveedor, validez y condiciones, numeración por organización, «Imprimir / Guardar PDF» y registro de la actividad «Envío de propuesta». **Guardar y numerar requiere aplicar la `0012`**; sin ella se imprime como «Borrador» |
 | Pruebas E2E y CI | I (F6) | Playwright (`e2e/`, `npm run test:e2e`) contra una organización de pruebas dedicada (`supabase/seeds/e2e_tests.sql`) y GitHub Actions (`.github/workflows/ci.yml`: lint, tipos, self-checks y build). Escritas; **todavía sin ejecutar completas** (ver [pruebas](./pruebas.md)) |
-| Inteligencia artificial (opcional) | P | F7 |
+| Inteligencia artificial (opcional) | I (F7) | Aviso de recambio y resumen de cuenta, siempre revisados por una persona; se apaga quitando `ANTHROPIC_API_KEY`. Cumple las siete condiciones de la consigna (ver [ia](./ia.md)). **Probada contra un servidor simulado, no contra la API real** |
 
 ### e.3 Usuarios del sistema (consigna, pp. 5 y 6)
 
@@ -734,7 +734,7 @@ luego F4 (licitaciones); nunca F0 a F3.
 | F4 | Rubro: recambio en un clic, parque instalado, ficha de canchas, licitaciones | 2026-10-28 | **Hecha** (sin commit todavía; la migración `0011` está pendiente de aplicar a mano y, hasta entonces, canchas, licitaciones y el botón de recambio no se muestran) |
 | F5 | Ficha 360, tablero del responsable, conversión del embudo, búsqueda global Ctrl+K | 2026-11-02 | **Hecha** (sin commit todavía; no necesita migración) |
 | F6 | Presupuesto imprimible; pruebas E2E con Playwright y CI en GitHub Actions | 2026-11-05 | **Hecha** (sin commit todavía; la migración `0012` está pendiente de aplicar a mano y, hasta entonces, el presupuesto se imprime como «Borrador» sin guardarse; la suite E2E y la CI **no se ejecutaron** contra una base real ni en GitHub, ver [pruebas](./pruebas.md)) |
-| F7 | IA opcional: aviso de recambio y resumen de cuenta | 2026-11-08 | Planificado |
+| F7 | IA opcional: aviso de recambio y resumen de cuenta | 2026-11-08 | **Hecha** (sin commit todavía; sin migración; necesita `ANTHROPIC_API_KEY`, que alguien tiene que aportar, y no se probó contra la API real, ver [ia](./ia.md)) |
 | F8 | Documentación (este conjunto, ya escrito) y manual de usuario en PDF | 2026-11-11 | En curso |
 
 **Pendiente inmediato (no es una fase).**
@@ -1056,3 +1056,28 @@ devuelve solo su cartera.
 5. En el celular la hoja se desplaza horizontalmente dentro de su caja (es un A4 en miniatura); se edita y se imprime bien, pero no se lee de corrido.
 6. El demo de la cátedra trae la condición "Precios en pesos, IVA incluido" mientras el proveedor es Responsable Inscripto y la hoja
    discrimina IVA: la condición es un texto editable de Configuración y conviene corregirla a "más IVA".
+
+## b.18 IA asistida (F7)
+
+| | |
+|---|---|
+| Estado | **Implementado (F7)**, sin commit todavía. Sin migración. **Opcional: se enciende con `ANTHROPIC_API_KEY`** |
+| Qué hace | "Redactar con IA" en `/alertas` (borrador editable del aviso de recambio) y "Resumir con IA" en la ficha 360 de empresa y de contacto (resumen de solo lectura) |
+| Sin la clave | Nada: ningún botón, ninguna llamada, el CRM igual que antes. `/configuracion` dice "IA: desactivada" |
+| Verificación | Self-checks, tipos, lint, build y navegador contra un **servidor simulado** de la API. **No se llamó a la API real**: la calidad de los textos y el costo medido están sin verificar |
+
+| Pieza | Dónde |
+|---|---|
+| Capa de servidor (config, cliente, prompts, contexto, errores, límite, llamada) | `src/lib/ia/` y sus tres self-checks |
+| Server Actions `redactarAvisoRecambio` y `resumirCuenta` | `src/app/(app)/ia/actions.ts` |
+| Panel del aviso (con la plantilla como respaldo) y registro del envío | `src/app/(app)/alertas/BorradorIA.tsx`, `registrarEnvioConBorrador` en `alertas/actions.ts` |
+| Panel del resumen | `src/components/ResumenIA.tsx`, integrado en `HistoriaCuenta` |
+| Etiqueta de IA y "Cómo usamos la IA" | `src/components/IaAviso.tsx` |
+
+- **La IA solo redacta.** No envía, no guarda, no cambia datos. El aviso se manda desde el WhatsApp o el correo de la persona.
+- **Datos mínimos.** No se piden mails, teléfonos, CUIT, documentos ni notas (y en los textos libres se intentan tachar, sin garantía); de los contactos, el nombre de pila. El servidor relee con la sesión de
+  quien pide (la RLS decide qué ve la IA).
+- **Las siete condiciones de la consigna** y cómo se cumplen, qué datos salen, el costo estimado y los límites: [ia](./ia.md).
+- **Límite por persona** de 10 borradores cada 10 minutos, en memoria y por instancia del servidor.
+- **Pendiente.** Quién aporta la clave y el presupuesto; leer borradores reales y ajustar `prompts.ts`; fijar un tope de gasto en la consola de Anthropic.
+

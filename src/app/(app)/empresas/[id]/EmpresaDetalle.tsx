@@ -17,6 +17,7 @@ import {
 import Drawer from "@/components/Drawer";
 import ActividadForm from "@/components/ActividadForm";
 import { HistoriaCuenta, ResumenCuentaCard } from "@/components/Cuenta360";
+import { ResumenIA } from "@/components/ResumenIA";
 import { BajaModal, useReactivar } from "@/components/BajaCliente";
 import {
   AvisoEstado,
@@ -85,6 +86,7 @@ export default function EmpresaDetalle({
   puedeVerActividades,
   puedeVerAvisos,
   puedeEscribirActividad,
+  iaDisponible,
 }: {
   empresa: Empresa;
   contactos: Contacto[];
@@ -121,6 +123,8 @@ export default function EmpresaDetalle({
   puedeVerActividades: boolean;
   puedeVerAvisos: boolean;
   puedeEscribirActividad: boolean;
+  /** F7: la IA está activada en el servidor (hay clave). Sin ella no se ofrece nada. */
+  iaDisponible: boolean;
 }) {
   const reactivar = useReactivar("empresa");
   const [empresa, setEmpresa] = useState(empresaInicial);
@@ -428,6 +432,7 @@ export default function EmpresaDetalle({
             contactos={contactosNombres}
             ver={verHistoria}
             truncado={truncado}
+            ia={iaDisponible ? <ResumenIA tipo="empresa" id={empresa.id} /> : undefined}
             accion={
               puedeEscribirActividad && puedeVerActividades ? (
                 <Button variant="outline" size="sm" className="gap-1.5" onClick={() => abrir({ tipo: "actividad" })}>

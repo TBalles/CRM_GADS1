@@ -321,3 +321,19 @@ reconoce con `esErrorDeEsquema`): se puede armar e imprimir, pero no se guarda n
 | 13.10 | **Permisos de los presupuestos guardados.** Ver: `oportunidades.ver`; crear y editar (solo `actividad_id`): `oportunidades.editar`; cartera propia heredada de la oportunidad (un Vendedor ve solo los de sus oportunidades, salvo `clientes.ver_todos`). Dos organizaciones no se ven. `presupuesto_contadores` no se lee ni se escribe desde la API | RLS y privilegios | Sí |
 | 13.11 | **Imprimir registra la actividad "Envío de propuesta"** en el historial de la oportunidad, la empresa y el contacto (tipo de `tipos_actividad` con código `propuesta`, o de nombre "Envío de propuesta"; si no existe o está inactivo, **se omite en silencio**). Solo para un presupuesto **guardado**, **una sola vez** (se anota en `actividad_id`: reimprimirlo, aunque sea otro día, no la repite; y el botón no se puede disparar dos veces a la vez: un doble clic registra una sola actividad) y solo si quien imprime puede escribir actividades (`bitacora.escribir`) y editar la oportunidad. Un borrador no registra nada. Si el registro falla, el PDF se genera igual y se avisa; si la actividad se inserta pero no se puede vincular al presupuesto, también se avisa («no se pudo vincular… no la cargues de nuevo») y esa pestaña no la vuelve a insertar | `registrarActividad` en `PresupuestoView.tsx` | Sí |
 | 13.12 | **Papel.** El documento es blanco con texto oscuro en cualquier tema (representa papel; es la excepción documentada a "sin colores fijos"; no lleva color de acento porque el proveedor no tiene un color cargado). En `@media print` el menú, la barra móvil, los avisos, el editor y los botones no salen; la hoja se parte en páginas A4 vertical (márgenes de 14 mm), la fila de encabezado de la tabla se repite en cada página y una línea no se corta. El nombre sugerido del PDF es "Presupuesto N° … - cliente" | `globals.css` (`@media print`), `data-app-shell`/`data-app-chrome`/`data-app-main` en `AppShell` | Sí |
+
+---
+
+## 14. IA asistida (F7)
+
+Opcional y sin migración. Detalle, datos y costo en [ia](./ia.md); decisión en la [0013](./decisiones/0013-ia-asistida.md).
+
+| # | Regla | Dónde | Interfaz |
+|---|---|---|---|
+| 14.1 | **Apagada sin clave.** Sin `ANTHROPIC_API_KEY` en el servidor no hay botones ni llamadas; el CRM anda igual | `iaDisponible()` en `src/lib/ia/config.ts`, `UI` + Server Action | Sí: `/configuracion` dice "IA: activa" o "desactivada" |
+| 14.2 | **Solo redacta.** La IA no envía, no guarda y no cambia datos. El aviso lo manda la persona desde su WhatsApp o su correo; `registrarEnvioConBorrador` solo registra | `ia/actions.ts`, `alertas/actions.ts` | Sí |
+| 14.3 | **Permisos.** Redactar un aviso pide `alertas.enviar`; resumir una cuenta, `clientes.ver`. El contexto se lee con la sesión de la persona: la RLS decide qué ve la IA, y lo que su rol no puede ver (compras, actividades, oportunidades, avisos) no se manda | `ia/actions.ts`, RLS | Sí |
+| 14.4 | **Contexto mínimo.** Los campos de mails, teléfonos, CUIT, documentos, direcciones y notas no se piden; de los contactos, solo el nombre de pila; en los textos libres se intentan tachar mails, enlaces, CUIT y números largos (sin garantía) y el total tiene tope de 6000 caracteres | `src/lib/ia/contexto.ts` | Sí: "Cómo usamos la IA" |
+| 14.5 | **Revisión.** Todo texto de la IA lleva la etiqueta de IA; el aviso se edita en un cuadro de texto y nada sale hasta que la persona lo manda | `EtiquetaIA`, `BorradorIA.tsx` | Sí |
+| 14.6 | **Respaldo.** Ante cualquier falla de la IA el cuadro del aviso se llena con la plantilla fija y un aviso dice por qué; "Volver a la plantilla" la restaura | `useBorradorIA` | Sí |
+| 14.7 | **Límite por persona.** 10 borradores cada 10 minutos, en memoria y por instancia del servidor | `src/lib/ia/limite.ts` | Sí: mensaje con los minutos de espera |

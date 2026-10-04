@@ -122,14 +122,19 @@ presupuesto con el logo y los datos del proveedor (nunca la marca de la platafor
 organización (`N° 000042`, la asigna un trigger con contador). Mientras la base no tenga la 0012 se imprime como «Borrador» sin guardarse.
 Pruebas E2E con Playwright contra una organización dedicada (`supabase/seeds/e2e_tests.sql`) y CI en GitHub Actions.
 
-**Planificado** (F7 y F8, hasta 2026-11-11): IA opcional y manual.
+**IA asistida opcional (F7, sin migración)**: "Redactar con IA" en `/alertas` (borrador editable del aviso de recambio, con la plantilla fija
+como respaldo ante cualquier falla) y "Resumir con IA" en la ficha 360 de empresa y de contacto (resumen de solo lectura). La IA **solo
+redacta**: no envía, no guarda, no cambia datos; una persona revisa todo. Se enciende con `ANTHROPIC_API_KEY` (sin ella no hay botones) y
+se prueba solo contra un servidor simulado: **no se llamó a la API real**. Detalle, datos y costo en [`docs/ia.md`](./docs/ia.md).
+
+**Planificado** (F8, hasta 2026-11-11): manual de usuario en PDF.
 
 **Fuera de alcance según la consigna** (no agregar sin que el usuario lo pida): tareas, agenda,
 recordatorios, exportación, integraciones, API pública, importación, facturación, pagos,
 contabilidad, stock y campañas. El proyecto igual tiene multitenancy, envío de mails, links de
 WhatsApp y un tablero con indicadores, que la consigna lista como fuera de alcance: se conservan.
 Además: no hay envío automático de alertas (lo confirma una persona), la bitácora no se edita ni se
-borra, y no hay IA todavía.
+borra, y la IA (F7) nunca envía ni decide: solo redacta borradores que una persona revisa.
 
 ### Demo esperada
 
@@ -155,7 +160,8 @@ entre el equipo.
 
 Las Server Actions se reservan para lo que no puede ir desde el navegador: escribir cookies de
 sesión (`src/app/login/actions.ts`), usar la clave de servicio (`usuarios/actions.ts`,
-`admin/actions.ts`, `recuperar/`, `definir-clave/`) y enviar mails (`alertas/actions.ts`).
+`admin/actions.ts`, `recuperar/`, `definir-clave/`), enviar mails (`alertas/actions.ts`) y llamar a la API de Claude con
+`ANTHROPIC_API_KEY` (`ia/actions.ts`, F7). Variables nuevas: `ANTHROPIC_API_KEY` y `ANTHROPIC_MODEL` (opcionales, ver `docs/deploy.md`).
 Pero el CRUD de empresas/contactos/oportunidades/productos/ventas (crear, editar, cambiar
 etapa) se hace desde Client Components con el cliente de Supabase del navegador
 (`src/lib/supabase/client.ts`), no con Server Actions. Motivo: la UI usa paneles laterales
@@ -214,10 +220,12 @@ src/
         page.tsx / ProductosList.tsx / ProductoForm.tsx
       ventas/                    Historial de compras (cabecera + ítems)
         page.tsx / VentasList.tsx / VentaForm.tsx
+      ia/actions.ts              Server Actions de la IA (F7): redactarAvisoRecambio y resumirCuenta; solo redactan, con la sesión de la persona
       alertas/                   Recambios vencidos o por vencer
         page.tsx                 Lee la vista alertas_vida_util (+ datos del recambio en 1 clic si la 0011 está)
         AlertasView.tsx          Client: KPIs, filtros, "Crear oportunidad de recambio", envío por mail/WhatsApp
         actions.ts               Server Actions: envío por SMTP/Gmail (o mailto) + registro
+        BorradorIA.tsx           Client (F7): panel del aviso con IA (useBorradorIA + Drawer), plantilla como respaldo
         plantillas.ts            Mensajes prearmados — funciones puras
         plantillas.check.ts      Self-check: node --test "src/app/(app)/alertas/plantillas.check.ts"
       oportunidades/             Tablero (kanban con drag & drop) y lista en una sola página, y el detalle
@@ -265,6 +273,7 @@ src/
     ActividadForm.tsx           Alta reutilizable de actividad (empresa, contacto, luego oportunidad)
     ActividadesTimeline.tsx     Línea de tiempo de actividades, la más reciente arriba
     Cuenta360.tsx               Ficha 360 (F5): ResumenCuentaCard y HistoriaCuenta (chips, meses, "Ver más")
+    ResumenIA.tsx               "Resumir con IA" de la ficha 360 (F7); IaAviso.tsx: EtiquetaIA y "Cómo usamos la IA"
     PaletaBusqueda.tsx          Búsqueda global Ctrl/Cmd+K (F5): diálogo combobox + listbox, foco atrapado
     BajaCliente.tsx             BajaModal + useReactivar: baja lógica de empresas y contactos
     ClienteCampos.tsx           CampoResponsable (solo lectura sin clientes.asignar) y CampoOrigen
@@ -302,6 +311,8 @@ src/
     parque.ts                  Parque instalado: vence, días, estado y grupos (misma cuenta que la vista de alertas)
     canchas.ts                 Formatos, medidas y equipamiento sugerido (función pura)
     recambio.ts                Recambio en 1 clic: título, valor, origen, duplicados (función pura)
+    ia/                        IA asistida (F7): config (clave y modelo), cliente y generar (SDK, `server-only`), prompts, contexto (mínimo,
+                               sin datos personales), errores, limite; self-checks contexto, errores y limite
     presupuesto.ts             Presupuesto (F6): cuentas en centavos, regla de IVA, validez, número `N° 000042`, validación (función pura)
     (cada uno con su .check.ts)
     supabase/
@@ -457,7 +468,7 @@ Como el stack es Tailwind v4 (no v3 como el kit), los tokens se declaran con `@t
   del negocio (empresas, contactos, oportunidades, embudo, etapas).
 - Identificadores de código (variables, funciones, tipos TS) en inglés/español mixto está bien,
   pero seguí el patrón ya usado en cada archivo en vez de mezclar convenciones nuevas.
-- Las Server Actions son solo para lo privilegiado (login/cookies, clave de servicio, mails). Cada una
+- Las Server Actions son solo para lo privilegiado (login/cookies, clave de servicio, mails, la clave de la IA). Cada una
   verifica sesión y permiso con `getSesion()` y valida tipo y forma de sus argumentos. El CRUD
   (empresas, contactos, oportunidades, productos, ventas) muta la base directo desde Client
   Components — ver "Por qué mutaciones client-side" más arriba antes de agregar un Server Action
@@ -484,8 +495,8 @@ npm run build    # build de producción
 npm run lint     # eslint src e2e playwright.config.ts --max-warnings=0 (sin advertencias)
 npm run typecheck  # tsc --noEmit sobre src y sobre e2e (e2e tiene su propio tsconfig)
 
-# Self-checks (sin framework, runner de Node): money, equipo, permisos, email/layout, alertas/plantillas, clientes, oportunidades, presupuesto...
-npm test                             # node --test "src/**/*.check.ts": 20 archivos, 187 pruebas
+# Self-checks (sin framework, runner de Node): money, equipo, permisos, email/layout, alertas/plantillas, clientes, oportunidades, presupuesto, ia...
+npm test                             # node --test "src/**/*.check.ts": 23 archivos, 233 pruebas
 node --test src/lib/money.check.ts   # o uno solo
 
 npm run test:e2e   # Playwright (e2e/); necesita E2E_EMAIL, E2E_PASSWORD, E2E_EMAIL_VENDEDOR, E2E_PASSWORD_VENDEDOR y E2E_BASE_URL; sin credenciales se saltan

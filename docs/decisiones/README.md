@@ -18,6 +18,7 @@ tomado de los comentarios del código, las migraciones y el historial de git, no
 | [0010](./0010-correo-por-smtp-propio.md) | Todos los mails por SMTP propio | Aceptada | `b9b2fe9`, `2908420` |
 | [0011](./0011-self-checks-con-node-test.md) | Self-checks con `node --test`, sin framework de pruebas | Aceptada | `8326161`, `a72f794`, `2908420` |
 | [0012](./0012-reglas-del-rubro.md) | Reglas del rubro: medidas estáticas, sugerencia (no diagnóstico) y la regla de la apertura en un trigger aparte | Aceptada | F4, sin commit todavía |
+| [0013](./0013-ia-asistida.md) | IA asistida: borradores que una persona revisa, una Server Action por el secreto y apagada por defecto | Aceptada | F7, sin commit todavía |
 
 ## Cómo agregar una decisión
 

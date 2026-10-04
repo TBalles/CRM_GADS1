@@ -6,6 +6,7 @@ import { ArrowLeft, Handshake, NotebookPen, Pencil, Plus, Power, Receipt, UserRo
 import Drawer from "@/components/Drawer";
 import ActividadForm from "@/components/ActividadForm";
 import { HistoriaCuenta, ResumenCuentaCard } from "@/components/Cuenta360";
+import { ResumenIA } from "@/components/ResumenIA";
 import { BajaModal, useReactivar } from "@/components/BajaCliente";
 import {
   AvisoEstado,
@@ -52,6 +53,7 @@ export default function ContactoDetalle({
   puedeVerActividades,
   puedeVerAvisos,
   puedeEscribirActividad,
+  iaDisponible,
 }: {
   contacto: Contacto;
   /** La empresa del contacto, solo si el usuario la ve (puede ser de otra cartera). */
@@ -81,6 +83,8 @@ export default function ContactoDetalle({
   puedeVerActividades: boolean;
   puedeVerAvisos: boolean;
   puedeEscribirActividad: boolean;
+  /** F7: la IA está activada en el servidor (hay clave). Sin ella no se ofrece nada. */
+  iaDisponible: boolean;
 }) {
   const reactivar = useReactivar("contacto");
   const [contacto, setContacto] = useState(contactoInicial);
@@ -266,6 +270,7 @@ export default function ContactoDetalle({
             perfiles={perfiles}
             ver={verHistoria}
             truncado={truncado}
+            ia={iaDisponible ? <ResumenIA tipo="contacto" id={contacto.id} /> : undefined}
             accion={
               puedeEscribirActividad && puedeVerActividades ? (
                 <Button variant="outline" size="sm" className="gap-1.5" onClick={() => abrir("actividad")}>

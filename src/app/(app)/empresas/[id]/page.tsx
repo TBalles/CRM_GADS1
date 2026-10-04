@@ -6,6 +6,7 @@ import { esErrorDeEsquema } from "@/lib/esquema";
 import { hoyAR } from "@/lib/oportunidades";
 import { agruparParque, type GrupoParque, type ItemParque } from "@/lib/parque";
 import { leerCuenta360 } from "@/lib/cuenta360";
+import { iaDisponible } from "@/lib/ia/config";
 import EmpresaDetalle from "./EmpresaDetalle";
 
 export const metadata = { title: "Empresa" };
@@ -113,6 +114,7 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
       puedeVerActividades={puedeVerActividades}
       puedeVerAvisos={puedeVerAvisos}
       puedeEscribirActividad={sesion.puede("bitacora.escribir")}
+      iaDisponible={iaDisponible()}
     />
   );
 }

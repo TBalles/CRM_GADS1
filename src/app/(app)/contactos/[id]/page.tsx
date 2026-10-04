@@ -4,6 +4,7 @@ import { exigirPermiso } from "@/lib/sesion";
 import { esUuid } from "@/lib/clientes";
 import { leerCuenta360 } from "@/lib/cuenta360";
 import { hoyAR } from "@/lib/oportunidades";
+import { iaDisponible } from "@/lib/ia/config";
 import ContactoDetalle from "./ContactoDetalle";
 
 export const metadata = { title: "Contacto" };
@@ -66,6 +67,7 @@ export default async function ContactoPage({ params }: { params: Promise<{ id: s
       puedeVerActividades={puedeVerActividades}
       puedeVerAvisos={puedeVerAvisos}
       puedeEscribirActividad={sesion.puede("bitacora.escribir")}
+      iaDisponible={iaDisponible()}
     />
   );
 }

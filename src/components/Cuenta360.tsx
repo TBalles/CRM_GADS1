@@ -167,6 +167,7 @@ export function HistoriaCuenta({
   ver,
   truncado,
   accion,
+  ia,
 }: {
   actividades: Actividad[];
   cambios: CambioEtapaFila[];
@@ -182,6 +183,8 @@ export function HistoriaCuenta({
   ver: VerHistoria;
   truncado: { actividades: boolean; ventas: boolean; oportunidades: boolean; cambios: boolean; avisos: boolean };
   accion?: React.ReactNode;
+  /** F7: el botón "Resumir con IA" y su panel. Solo llega si el servidor tiene la IA activada. */
+  ia?: React.ReactNode;
 }) {
   const [filtro, setFiltro] = useState<Filtro360>("todo");
   const [visibles, setVisibles] = useState(TAMANIO_TRAMO_360);
@@ -256,6 +259,8 @@ export function HistoriaCuenta({
       >
         Historia de la cuenta
       </SectionTitle>
+
+      {ia}
 
       {chips.length > 1 && (
         <div role="group" aria-label="Filtrar la historia por tipo" className="mb-4 flex flex-wrap gap-2">

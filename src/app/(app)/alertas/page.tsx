@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getRemitente } from "@/lib/contacto";
 import { exigirPermiso } from "@/lib/sesion";
 import { esErrorDeEsquema } from "@/lib/esquema";
+import { iaDisponible } from "@/lib/ia/config";
 import { abiertasPorItem, etapaInicialId, origenRecambioId } from "@/lib/recambio";
 import { AvisoMigracion } from "@/components/AvisoMigracion";
 import AlertasView, { type DatosRecambio } from "./AlertasView";
@@ -77,6 +78,7 @@ export default async function AlertasPage() {
         enviaDesdeServidor={getRemitente() !== null}
         puedeEnviar={sesion.puede("alertas.enviar")}
         recambio={recambio}
+        iaDisponible={iaDisponible()}
       />
     </div>
   );

@@ -168,13 +168,21 @@ Project Settings, Environment Variables**. La lista sale del uso de `process.env
 | `CONTACTO_EMAIL` | Opcional | Landing; además es el `Reply-To` de los mails si está definida | No |
 | `CONTACTO_WHATSAPP` | Opcional | Landing; además arma el botón "Coordinar por WhatsApp" del mail de alerta | No |
 | `CONTACTO_TELEFONO`, `CONTACTO_DIRECCION`, `CONTACTO_CIUDAD`, `CONTACTO_INSTAGRAM`, `CONTACTO_LINKEDIN` | Opcionales | Datos de contacto de la landing. Sin ellas se ven valores de ejemplo | No |
+| `ANTHROPIC_API_KEY` | Opcional (F7) | Clave de la API de Claude. **Con ella se activan los botones "Redactar con IA" y "Resumir con IA"; sin ella no aparece nada** y el CRM anda igual. Solo servidor, nunca con `NEXT_PUBLIC_`. Ver [ia](./ia.md) | **Sí** |
+| `ANTHROPIC_MODEL` | Opcional (F7) | Modelo de la IA. Por defecto `claude-opus-5-5` (id exacto, sin fecha). El reintento por rechazo de seguridad (`fallbacks`) y el control de esfuerzo (`effort: "low"`) solo se mandan con los modelos que los aceptan; con `claude-haiku-4-5`, Sonnet 4.5 o un id desconocido se omiten solos (no hay control de esfuerzo y el costo puede ser distinto del estimado en [ia](./ia.md#6-costo-por-llamada)) | No |
 | `VERCEL_ENV`, `VERCEL_PROJECT_PRODUCTION_URL`, `VERCEL_URL` | No se cargan | Las inyecta Vercel; `origenPublico()` las usa si no hay `SITE_URL` | No |
 
 Las variables `CONTACTO_*` no llevan prefijo `NEXT_PUBLIC_` a propósito: la landing es un Server Component y
 se resuelven en el servidor.
 
 *Pendiente de confirmar:* que `.env.example` liste todas las variables de esta tabla (no se pudo leer al
-escribir este documento).
+escribir este documento). Para F7 hay que sumarle a mano estas líneas (el archivo no se pudo editar desde la sesión que implementó F7):
+
+```bash
+# IA asistida (F7), opcional. Sin la clave la función no existe: ni botones ni llamadas.
+# ANTHROPIC_API_KEY=
+# ANTHROPIC_MODEL=claude-opus-5-5
+```
 
 ## 6. Vercel
 
@@ -251,6 +259,8 @@ oportunidades ya no se borran.
 - [ ] Una invitación desde `/usuarios` llega por mail; el link abre `/definir-clave` en el dominio correcto.
 - [ ] Una alerta se puede enviar por mail (con `SMTP_*`) y queda registrada.
 - [ ] `0005_permisos.sql` y `0007_reglas.sql` devuelven `TODO OK`.
+- [ ] Sin `ANTHROPIC_API_KEY`: `/alertas` y las fichas no muestran botones de IA y `/configuracion` dice "IA: desactivada".
+      Con la clave: "Redactar con IA" abre un borrador editable (si falla, deja la plantilla) y "Resumir con IA" muestra un resumen marcado.
 - [ ] El tablero de Vercel muestra el último commit de `main` como deploy de producción.
 - [ ] "Allow new users to sign up" está desactivado.
 - [ ] Ninguna clave aparece en el repositorio ni en variables con prefijo `NEXT_PUBLIC_` (salvo la URL y la
@@ -267,3 +277,5 @@ oportunidades ya no se borran.
 | Un rol guardado pierde permisos nuevos | Se editó con la aplicación anterior a la 0007 | Desplegar y volver a asignar los permisos |
 | El test SQL devuelve `FALLA:` | Una regla o permiso no se cumple | El mensaje dice qué se pudo hacer que no se debía; ver [pruebas](./pruebas.md) |
 | Un usuario nuevo no puede ingresar | Cuenta sin activar | Reenviar la invitación desde `/usuarios`; al intentar ingresar también se reenvía sola |
+| "La IA no está disponible por un problema de configuración del servidor" | `ANTHROPIC_API_KEY` inválida o sin permisos (401/403) | Revisar la clave en Vercel; el CRM sigue andando con las plantillas |
+| "La IA está recibiendo muchas consultas" o "Pediste muchos borradores seguidos" | Límite de la API (429) o límite propio de 10 cada 10 minutos por persona | Esperar unos minutos |

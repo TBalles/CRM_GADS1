@@ -257,7 +257,7 @@ export const Badge = ({
  * Unlike Badge, which is one neutral grey, each value gets its own hue so a
  * column of categories can be scanned by color.
  */
-const TONOS = {
+export const TONOS = {
   violeta: "bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300",
   azul: "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300",
   cian: "bg-cyan-100 text-cyan-800 dark:bg-cyan-500/15 dark:text-cyan-300",

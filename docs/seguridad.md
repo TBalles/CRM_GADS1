@@ -38,6 +38,12 @@ Contenido: [1. Modelo](#1-modelo-de-amenazas-y-controles) · [2. Capas](#2-capas
 | Enumerar qué emails tienen cuenta o invitación | Mensaje idéntico en login y en recuperar | `login/actions.ts`, `recuperar/actions.ts` | Revisión de código |
 | Inyección de HTML en los mails | `esc()` en todo texto interpolado; `urlSegura()` solo deja `http(s)` y `mailto` | `src/lib/email/layout.ts` | `layout.check.ts` |
 | Script en un logo subido | SVG rechazado: tipos MIME y extensiones permitidas, ruta validada | `0007`, bucket `logos` | `0007_reglas.sql` |
+| La clave de la IA (`ANTHROPIC_API_KEY`) llega al navegador, o el SDK se empaqueta en el cliente | El SDK solo se importa en código de servidor (`cliente.ts` y `generar.ts` con `import "server-only"`); a las pantallas llega solo el booleano `iaDisponible`; sin prefijo `NEXT_PUBLIC_` | `src/lib/ia/` | Verificado en el build: ningún chunk de `.next/static` contiene el SDK |
+| Datos personales a un tercero (el proveedor de IA) | Contexto mínimo armado en el servidor con filas leídas con la sesión de la persona; los campos de mails, teléfonos, CUIT, documentos, direcciones y notas de ficha no se piden; en los textos libres que sí van se intentan tachar mails, enlaces, CUIT y números largos (sin garantía: nombres propios y direcciones en prosa pasan) | `src/lib/ia/contexto.ts` | `contexto.check.ts` |
+| Un texto cargado en el CRM da órdenes a la IA (inyección de instrucciones) | El prompt de sistema es constante; los datos van aparte, entre `<DATOS>`, sin `<` ni `>`; las reglas dicen que son información; el resultado es un borrador que una persona revisa y que nunca dispara una acción | `prompts.ts`, `contexto.ts` | `contexto.check.ts` |
+| Gasto descontrolado de la API o abuso de las acciones de IA | Límite de 10 borradores cada 10 minutos por persona (en memoria, mejor esfuerzo por instancia); `max_tokens` 4000, esfuerzo bajo; cada acción verifica sesión y permiso y vuelve a leer los datos | `ia/actions.ts`, `limite.ts` | `limite.check.ts` |
+| La IA se usa para mandar mensajes sin que nadie los vea | La IA no envía ni guarda nada; el aviso lo manda la persona desde su WhatsApp o su correo, y `registrarEnvioConBorrador` solo registra | `alertas/actions.ts` | Revisión de código |
+| Se filtra el mensaje de error del proveedor, una clave o un stack | Los errores del SDK se mapean a frases fijas; el log del servidor lleva solo clase y status | `errores.ts` | `errores.check.ts` |
 | La clave de servicio llega al navegador | `import "server-only"` en `admin.ts`; sin prefijo `NEXT_PUBLIC_` | `src/lib/supabase/admin.ts` | El build falla si se importa desde el cliente |
 | El administrador de un cliente renombra o suspende su organización | Trigger `organizaciones_proteger_plataforma` | `0007` | `0007_reglas.sql` |
 
@@ -84,6 +90,8 @@ no hay configuración propia en este repositorio).
 | `SUPABASE_SERVICE_ROLE_KEY` | **Secreta, saltea toda la RLS** | Solo servidor (`admin.ts`) | Nunca con prefijo `NEXT_PUBLIC_`. Se usa solo después de verificar permisos |
 | `SMTP_USER`, `SMTP_PASS` | **Secreta** | Solo servidor | Con Gmail, `SMTP_PASS` es una contraseña de aplicación, no la de la cuenta |
 | `SITE_URL` | Pública | Servidor | Define el origen de los links de los mails |
+| `ANTHROPIC_API_KEY` | **Secreta** (cuesta dinero si se filtra) | Solo servidor (`src/lib/ia/`) | Opcional: sin ella la IA queda apagada. Nunca con prefijo `NEXT_PUBLIC_`; se lee del entorno, no se guarda ni se loguea |
+| `ANTHROPIC_MODEL` | No sensible | Servidor | Opcional; por defecto `claude-opus-5-5` |
 
 - `.env` y `.env.local` están en `.gitignore`; no se commitean. La lista completa de variables está en
   [deploy](./deploy.md).
@@ -141,6 +149,8 @@ Lo que hoy no está cubierto o se cubre solo en parte. Se listan porque conocerl
 | 7 | No se ejecutó `npm audit` | Dependencias sin revisar | Ejecutarlo y revisar |
 | 8 | Cuando falta el SMTP, el administrador ve el link de activación en pantalla | Aceptado: quien lo ve es un administrador verificado de la misma organización | — |
 | 9 | Sin autenticación de dos factores ni política de contraseñas propia | Cuentas protegidas solo por contraseña | Configurar MFA en Supabase |
+| 10 | El límite de la IA vive en la memoria de cada instancia del servidor (F7) | Varias instancias en paralelo o un reinicio pueden dejar pasar más de 10 llamadas; el techo real de gasto es el límite mensual de la cuenta de la API | Una tabla en la base o Redis con el mismo contrato; fijar un límite de gasto en la consola de Anthropic |
+| 11 | Los datos de una cuenta viajan al proveedor de IA cuando alguien toca un botón de IA (F7) | Es un tercero: los textos libres pueden contener datos que el filtro no reconozca (nombres propios, direcciones escritas en prosa) | Revisar las condiciones de la cuenta de la API con el cliente; apagar la función quitando la clave |
 
 ---
 
@@ -154,6 +164,7 @@ Detalle en [pruebas](./pruebas.md). Lo relevante para seguridad:
 | `supabase/tests/0007_reglas.sql` | Cartera propia; asignación con permiso; reglas de cierre, historial y auditoría; catálogos; logo; aislamiento de las tablas nuevas. Los negativos verifican código y mensaje del error |
 | `src/lib/email/layout.check.ts` | El contenido dinámico no inyecta HTML; `javascript:` no llega a un `href`; el logo es por CID |
 | `src/lib/permisos.check.ts` | El catálogo de permisos de la aplicación coincide con el CHECK de la base |
+| `src/lib/ia/*.check.ts` | El contexto de la IA no lleva mails, teléfonos ni CUIT y tiene tope; los errores del proveedor no llegan a la pantalla; el límite por persona funciona |
 
 Las pruebas SQL se hacen pasar por cada usuario como lo hace la aplicación (rol `authenticated` con un JWT
 del usuario) y terminan en `ROLLBACK`: no dejan nada en la base.
@@ -170,3 +181,4 @@ del usuario) y terminan en `ROLLBACK`: no dejan nada en la base.
 - [ ] El email de superadmin de la `0004` es una cuenta real del equipo.
 - [ ] Decidido qué hacer con las cuentas de demostración.
 - [ ] `.env` y `.env.local` fuera del repositorio.
+- [ ] Si se activa la IA (F7): `ANTHROPIC_API_KEY` cargada solo en Vercel, sin prefijo `NEXT_PUBLIC_`, con un límite de gasto fijado en la consola de Anthropic.

@@ -8,7 +8,7 @@ pegan en el SQL Editor de Supabase.
 
 | Verificación | Resultado |
 |---|---|
-| `npm test` (`node --test "src/**/*.check.ts"`) | **20 archivos, 187 pruebas, 187 pasan, 0 fallan** (F6 suma `presupuesto.check.ts`: 20 pruebas) |
+| `npm test` (`node --test "src/**/*.check.ts"`) | **23 archivos, 233 pruebas, 233 pasan, 0 fallan** (F6 sumó `presupuesto.check.ts`: 20 pruebas; F7 suma los tres de `src/lib/ia/`: 46) |
 | `npm run typecheck` (`tsc --noEmit` sobre `src` y sobre `e2e`) | Sin errores |
 | `npm run lint` (`eslint src e2e playwright.config.ts --max-warnings=0`) | Sin advertencias |
 | `npx next build` (con las variables públicas de relleno que usa la CI) | Compila; `/oportunidades/[id]/presupuesto` figura entre las rutas |
@@ -28,7 +28,7 @@ Contenido: [1. Resumen](#1-resumen) · [2. Self-checks](#2-self-checks-con-node-
 
 | Qué | Cómo se corre | Dónde | Qué prueba |
 |---|---|---|---|
-| Self-checks (20 archivos, 187 pruebas) | `npm test` (= `node --test "src/**/*.check.ts"`) | Terminal | Lógica pura: dinero, íconos, permisos, mails, mensajes, CUIT, sitio web, vocabulario de clientes, reglas de oportunidades, paginación y búsqueda por URL, errores de esquema faltante, licitaciones, parque instalado, equipamiento sugerido, recambio, ficha 360, tablero del responsable, conversión del embudo, búsqueda global y cuentas del presupuesto |
+| Self-checks (23 archivos, 233 pruebas) | `npm test` (= `node --test "src/**/*.check.ts"`) | Terminal | Lógica pura: dinero, íconos, permisos, mails, mensajes, CUIT, sitio web, vocabulario de clientes, reglas de oportunidades, paginación y búsqueda por URL, errores de esquema faltante, licitaciones, parque instalado, equipamiento sugerido, recambio, ficha 360, tablero del responsable, conversión del embudo, búsqueda global, cuentas del presupuesto y la IA asistida (contexto sin datos personales, errores, límite) |
 | Tipos | `npm run typecheck` (= `tsc --noEmit && tsc --noEmit -p e2e`) | Terminal | Que todo el TypeScript compile, `src` y las pruebas E2E |
 | Lint | `npm run lint` (= `eslint src e2e playwright.config.ts --max-warnings=0`) | Terminal | Estilo y errores comunes, sin tolerar advertencias |
 | E2E | `npm run test:e2e` (= `playwright test`) | Terminal, contra una app y la organización de pruebas | La demo de punta a punta, los roles, la paginación por URL, Ctrl+K y la hoja del presupuesto. Se saltan sin credenciales |
@@ -69,6 +69,9 @@ node --test src/lib/tablero.check.ts
 node --test src/lib/embudo.check.ts
 node --test src/lib/paleta.check.ts
 node --test src/lib/presupuesto.check.ts
+node --test src/lib/ia/contexto.check.ts
+node --test src/lib/ia/errores.check.ts
+node --test src/lib/ia/limite.check.ts
 ```
 
 Requiere un Node que ejecute TypeScript directamente; se verificó con Node 24.14.1 y la CI usa Node 22 (las versiones
@@ -88,6 +91,9 @@ Requiere un Node que ejecute TypeScript directamente; se verificó con Node 24.1
 | `src/lib/tablero.check.ts` | 15 | **F5.** `?dias=` y `?mes=` no confían en la URL; el rango del mes (también diciembre); `sinActividad`: el día del umbral ya cuenta, vale la actividad de la oportunidad, de su empresa o de su contacto, la que nunca tuvo se cuenta desde el alta y la más vieja que lo leído sale con "más de"; pipeline por responsable, cierres del mes y ranking de motivos con empates |
 | `src/lib/embudo.check.ts` | 12 | **F5.** Fixtures calculados a mano con cinco oportunidades: una normal, una que **se salta una etapa**, una que **vuelve atrás**, una **reabierta** y una trabada. Entraron, avanzaron, conversión, mediana de estadías terminadas y "hasta hoy" para las que siguen, tasa de éxito y ciclo; sin historial; el orden del historial no cambia el resultado; la cohorte por día argentino y por origen |
 | `src/lib/presupuesto.check.ts` | 20 | **F6.** Las cuentas del presupuesto en centavos enteros y con valores hechos a mano: el redondeo medio hacia arriba (1,005 → 1,01, sin el error de los flotantes), el importe de una línea con su descuento, la **regla de IVA** (Responsable Inscripto: precios netos, IVA 21 % sobre el neto y total con IVA; Monotributo, Exento o sin condición: sin discriminar y el total es el neto), el IVA redondeado una sola vez sobre el neto, las leyendas, el formato es-AR con centavos, el número `N° 000042` y «Borrador», la aritmética de la validez (cruce de mes y de año, bisiestos), la validación de líneas, el saneo del `jsonb` que viene de la base, **la foto del emisor** (armarla desde la organización y leerla del `jsonb`) y el título de la actividad |
+| `src/lib/ia/contexto.check.ts` | 20 | **F7.** El contexto que se manda a la IA: se intentan tachar mails (también sin punto o `[at]`), usuarios `@`, enlaces y dominios sueltos o acortadores, CUIT y teléfonos o DNI en los textos libres, incluidos los que tienen forma de fecha (`11.45.6789`), y no las fechas reales ni las cantidades; un texto no puede cerrar el bloque `<DATOS>`; solo el nombre de pila; el aviso lleva los hechos que necesita y las canchas dadas de baja no viajan; lo que el rol no ve se declara desconocido; topes por tipo y total |
+| `src/lib/ia/errores.check.ts` | 20 | **F7.** `ANTHROPIC_API_KEY` vacía apaga la función; modelo por defecto `claude-opus-5-5`; `effort` solo con los modelos que lo aceptan; un solo tope de largo (2000); con **errores reales del SDK** (429, 401, 403, 529, 500, 400, sin conexión y timeout) cada uno da su frase y ninguna filtra el mensaje del proveedor ni una clave; `refusal`, `max_tokens`, respuesta vacía y otros `stop_reason` no son un borrador; el texto tiene tope |
+| `src/lib/ia/limite.check.ts` | 6 | **F7.** El límite por persona: deja pasar hasta el máximo, dice cuánto esperar, la ventana se desliza, cada persona tiene su cupo, una llamada rechazada no consume cupo y el Map no crece sin techo |
 | `src/lib/paleta.check.ts` | 10 | **F5.** Las rutas piden permisos que existen; el menú por rol (el Vendedor no ve las dos pantallas del equipo); en qué tablas se busca según el rol; la consulta se limpia y exige 2 caracteres; grupos en orden fijo con tope de 5; las acciones rápidas por rol, con la caja vacía y con texto; las flechas dan la vuelta; los ids de las opciones |
 
 `permisos.check.ts` lee `supabase/migrations/0007_entrega_final.sql`. **Si agregás un permiso, hay que
@@ -121,6 +127,8 @@ npx next build
   `playwright.config.ts` están **excluidos del `tsconfig.json` raíz** (así `next build` no depende de los tipos de
   Playwright y el chequeo de `src` queda igual) y se chequean aparte con `e2e/tsconfig.json`.
 - `eslint … --max-warnings=0` trata cualquier advertencia como error; desde F6 alcanza también a `e2e/` y a `playwright.config.ts`.
+- En F7 se comprobó además, a mano, que el SDK de Anthropic no aparece en ningún chunk de `.next/static` (`rg -il anthropic .next/static`
+  solo encuentra el texto de "Cómo usamos la IA").
 - `next build` además comprueba que `src/lib/supabase/admin.ts` (que importa `server-only`) no termine
   importado desde un componente de cliente: si pasara, el build falla, y es la garantía de que la clave de
   servicio no llega al navegador.
@@ -377,6 +385,9 @@ Más en [CONTRIBUTING](../CONTRIBUTING.md).
 - **El PDF se probó en Chromium** (`page.pdf()`); otros navegadores pueden paginar distinto.
 - **La migración `0010` (índices) no tiene prueba SQL propia**: solo agrega índices. Se la ensayó en un Postgres
   local (PGlite) con y sin el bloque opcional de `pg_trgm` y re-ejecutándola; no está aplicada en la base viva.
+- **La IA (F7) no se probó contra la API real** (no había clave): el navegador se ejercitó contra un servidor simulado que devuelve texto
+  fijo y los errores 429, 401, 529, `refusal` y `max_tokens`. Falta leer borradores reales (calidad y tono), medir el costo y probar el
+  envío completo del aviso desde el panel de IA, que escribe en `alertas_enviadas`. Sin clave, los botones no existen (verificado).
 - **Los componentes React no tienen pruebas unitarias**: los self-checks cubren lógica pura (dinero, permisos, mails,
   mensajes, íconos, las cuentas del presupuesto) y lo demás lo cubren las E2E.
 - **La CI no corre las pruebas SQL** y no se ejecutó todavía en GitHub.

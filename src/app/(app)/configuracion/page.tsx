@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { exigirPermiso } from "@/lib/sesion";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { iaDisponible } from "@/lib/ia/config";
 import ConfiguracionView from "./ConfiguracionView";
 
 export const metadata = { title: "Configuración" };
@@ -57,6 +58,7 @@ export default async function ConfiguracionPage() {
       tipos={tipos ?? []}
       origenes={origenes ?? []}
       motivos={motivos ?? []}
+      iaActiva={iaDisponible()}
     />
   );
 }

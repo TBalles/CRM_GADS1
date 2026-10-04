@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getRemitente } from "@/lib/contacto";
 import { getSesion } from "@/lib/sesion";
 import { enviarMail } from "@/lib/email/enviar";
+import { MAX_MENSAJE_BORRADOR } from "@/lib/ia/config";
 import { asunto, contenidoAlerta, cuerpo, cuerpoWhatsapp, desdeFila, linkWhatsapp } from "./plantillas";
 
 /**
@@ -145,6 +146,52 @@ export async function enviarAlertaEmail({
   }
 
   return { ok: true, modo: enviaServidor ? "enviado" : "mailto" };
+}
+
+/**
+ * Deja asentado un aviso que la persona armó con el borrador de la IA (F7) y mandó ELLA, desde su propio
+ * WhatsApp o cliente de correo. Esta acción NO envía nada: solo registra, para que la alerta figure como
+ * avisada y quede el texto que realmente se mandó.
+ *
+ * Por eso puede aceptar el texto sin abrir un relay: no sale por el servidor (a diferencia de
+ * `enviarAlertaEmail`, que sigue derivando el texto de la base). El destinatario sí se deriva acá, de la fila
+ * real de la alerta.
+ */
+export async function registrarEnvioConBorrador({
+  ventaItemId,
+  canal,
+  mensaje,
+}: {
+  ventaItemId: string;
+  canal: "email" | "whatsapp";
+  mensaje: string;
+}): Promise<ResultadoEnvio> {
+  if (canal !== "email" && canal !== "whatsapp") return { ok: false, error: "Canal no válido." };
+  const texto = typeof mensaje === "string" ? mensaje.trim() : "";
+  if (!texto || texto.length > MAX_MENSAJE_BORRADOR) {
+    return { ok: false, error: "El mensaje está vacío o es demasiado largo." };
+  }
+  const cargada = await cargarAlerta(ventaItemId);
+  if (!cargada.ok) return { ok: false, error: cargada.error };
+  const { supabase, user, alerta } = cargada;
+
+  const destinatario =
+    canal === "email" ? (alerta.contacto_email ?? alerta.empresa_email) : (alerta.contacto_telefono ?? alerta.empresa_telefono);
+  if (!destinatario) {
+    return { ok: false, error: canal === "email" ? "Este cliente no tiene un email cargado." : "Este cliente no tiene un teléfono cargado." };
+  }
+
+  const errorRegistro = await registrarEnvio(supabase, {
+    venta_item_id: ventaItemId,
+    canal,
+    destinatario,
+    mensaje: texto,
+    enviado_por: user.id,
+  });
+  if (errorRegistro) {
+    return { ok: false, error: "No se pudo registrar el envío. Si mandaste el mensaje, no lo repitas." };
+  }
+  return { ok: true, modo: "enviado" };
 }
 
 /** Deja asentado un envío de WhatsApp, que siempre lo dispara el navegador. */

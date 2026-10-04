@@ -16,6 +16,21 @@ Todo lo de esta sección ya está en `main`. Lo que no está es la interfaz de b
 
 ### Agregado
 
+- F7, IA asistida opcional (sin commit todavía; sin migración; probada contra un servidor simulado, **no contra la API real**):
+  - **Aviso de recambio con IA** en `/alertas` ("Redactar con IA"): borrador editable en un panel lateral, con la etiqueta de IA, "Volver a
+    la plantilla", "Regenerar", "Copiar" y "Abrir en WhatsApp" / "Abrir en mail" (se abre el WhatsApp o el correo de la persona y se registra
+    el aviso; la IA no envía nada). Si la IA falla, el cuadro queda con la plantilla fija de siempre.
+  - **Resumen de cuenta con IA** en la ficha 360 de empresa y de contacto ("Resumir con IA"): panel de solo lectura (qué pasó,
+    equipamiento instalado, qué ofrecerle) con "Copiar", "Regenerar" y "Cerrar"; no se guarda.
+  - **Transparencia y control**: etiqueta de IA en todo texto generado, "Cómo usamos la IA" (qué se envía y qué no), contexto mínimo sin
+    mails, teléfonos, CUIT ni documentos (`src/lib/ia/contexto.ts`), límite de 10 borradores cada 10 minutos por persona y la línea
+    "IA: activa/desactivada" en `/configuracion`. **Se apaga quitando `ANTHROPIC_API_KEY`.**
+  - SDK oficial `@anthropic-ai/sdk` (única dependencia nueva, solo en servidor), modelo `claude-opus-5-5` (`ANTHROPIC_MODEL`), esfuerzo
+    bajo, reintento por rechazo de seguridad del lado del servidor y errores del proveedor traducidos a frases fijas.
+  - Server Actions `redactarAvisoRecambio` y `resumirCuenta` (`src/app/(app)/ia/actions.ts`) y `registrarEnvioConBorrador`
+    (`alertas/actions.ts`, solo registra). Excepción documentada a "mutaciones desde el cliente": hace falta un secreto.
+  - 46 self-checks nuevos (`npm test`: 233 pruebas en 23 archivos). Docs: [`docs/ia.md`](./docs/ia.md) (las siete condiciones de la
+    consigna, datos, costo estimado) y la [decisión 0013](./docs/decisiones/0013-ia-asistida.md).
 - F6, presupuesto imprimible, pruebas E2E y CI (sin commit todavía; la migración `0012` está pendiente de aplicar a mano):
   - **Presupuesto imprimible** en `/oportunidades/[id]/presupuesto` (botón "Presupuesto" en el detalle; `oportunidades.ver`, 404 si la
     RLS esconde la oportunidad): encabezado con el **logo y los datos del proveedor** (nunca la marca de la plataforma), cliente y
@@ -197,7 +212,8 @@ Todo lo de esta sección ya está en `main`. Lo que no está es la interfaz de b
 ### Planificado (no implementado)
 
 Funciones del rubro (canchas, parque instalado,
-licitaciones), presupuesto imprimible, E2E y CI, IA opcional y manual de usuario. Fases F1 a F8, del
+licitaciones), presupuesto imprimible, E2E y CI, IA opcional y manual de usuario (las del rubro, el presupuesto, E2E/CI y la IA ya están
+arriba en "Agregado"). Fases F1 a F8, del
 2026-10-13 al 2026-11-11, en [docs/notas-de-version.md](./docs/notas-de-version.md#g-pendiente-y-próximos-pasos).
 
 ## Segunda entrega - 2026-09-18 a 2026-09-24

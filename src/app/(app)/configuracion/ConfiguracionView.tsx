@@ -25,6 +25,7 @@ export default function ConfiguracionView({
   tipos,
   origenes,
   motivos,
+  iaActiva,
 }: {
   organizacion: Tables<"organizaciones">;
   logoUrl: string | null;
@@ -32,6 +33,8 @@ export default function ConfiguracionView({
   tipos: Tables<"tipos_actividad">[];
   origenes: Tables<"origenes">[];
   motivos: Tables<"motivos_perdida">[];
+  /** F7: solo lectura. La IA se activa o apaga con la variable ANTHROPIC_API_KEY del servidor, no desde acá. */
+  iaActiva: boolean;
 }) {
   const [tab, setTab] = useState<Tab>("empresa");
   const botones = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -57,7 +60,7 @@ export default function ConfiguracionView({
       <PageHeader
         titulo="Configuración"
         eyebrow="Puesta a punto"
-        meta={organizacion.razon_social ?? organizacion.nombre}
+        meta={`${organizacion.razon_social ?? organizacion.nombre} · IA: ${iaActiva ? "activa" : "desactivada"}`}
         bajada="Los datos que salen en tus presupuestos y las listas que ordenan el embudo: etapas, tipos de actividad, orígenes y motivos de pérdida."
       />
 

@@ -42,6 +42,8 @@ Producción: [crmgads1.vercel.app](https://crmgads1.vercel.app). Entrega final: 
 - **Multitenant** con aislamiento por Row Level Security, y **panel de plataforma** (`/admin`) para el
   superadmin.
 - **Landing pública** en `/` y modo oscuro.
+- **IA asistida opcional** (F7): borrador del aviso de recambio y resumen de cuenta, siempre revisados por una persona; se apaga
+  quitando la clave. Probada contra un servidor simulado, **no contra la API real** ([docs/ia.md](./docs/ia.md)).
 
 ### Base lista, sin interfaz (migración 0007)
 
@@ -51,7 +53,7 @@ llegó en F2, y todo lo que la 0007 agregó y las fases F1 y F2 ya muestran. Det
 
 ### Planificado
 
-IA opcional y manual de usuario en PDF. Ya están en el repositorio las funciones del rubro (F4, migración `0011`) y el
+Manual de usuario en PDF. La **IA opcional** (F7) ya está implementada y se enciende con `ANTHROPIC_API_KEY` (ver [docs/ia.md](./docs/ia.md)). Ya están en el repositorio las funciones del rubro (F4, migración `0011`) y el
 presupuesto imprimible, las pruebas E2E y la CI (F6, migración `0012`); las dos migraciones se aplican a mano (ver
 [docs/deploy.md](./docs/deploy.md)).
 
@@ -131,6 +133,12 @@ requiere verificación en dos pasos) y `SITE_URL` con el dominio público. Los l
 `SITE_URL` y nunca con el encabezado `Host`. Pasos de Gmail y límites en
 [docs/deploy.md](./docs/deploy.md#7-mails-por-smtp-con-gmail).
 
+### IA opcional (F7)
+
+Con `ANTHROPIC_API_KEY` en `.env.local` (y `ANTHROPIC_MODEL`, por defecto `claude-opus-5-5`) aparecen "Redactar con IA" en
+`/alertas` y "Resumir con IA" en las fichas de empresa y de contacto. Son borradores que una persona revisa: nada se envía ni se
+guarda solo. **Sin la clave la función no existe** y el CRM anda igual. Qué datos salen, costo y límites: [docs/ia.md](./docs/ia.md).
+
 ## Cuentas de demostración
 
 `supabase/seeds/demo_catedra.sql` crea la organización **Cátedra UNLaM (demo)** con una cuenta por cada rol
@@ -157,7 +165,7 @@ npm run build                        # build de producción
 npm run start                        # sirve el build de producción
 npm run lint                         # eslint src e2e playwright.config.ts --max-warnings=0 (sin advertencias)
 npm run typecheck                    # tsc --noEmit sobre src y sobre e2e
-npm test                             # self-checks: node --test "src/**/*.check.ts" (187 pruebas en 20 archivos)
+npm test                             # self-checks: node --test "src/**/*.check.ts" (233 pruebas en 23 archivos)
 npm run test:e2e                     # pruebas de extremo a extremo (Playwright); sin credenciales E2E_* se saltan
 ```
 
@@ -177,7 +185,7 @@ src/
     login, recuperar, definir-clave, auth/   Acceso y cuentas
     page.tsx            Landing pública
   components/           Primitivos del UI Kit, formularios, shell, íconos del rubro
-  lib/                  sesion, permisos, cuentas, email, supabase (3 clientes), money, equipo
+  lib/                  sesion, permisos, cuentas, email, ia (F7), supabase (3 clientes), money, equipo
   proxy.ts              Refresca la sesión y exige login
 supabase/
   migrations/           0001 a 0009 (se aplican en orden; la 0008 y la 0009 faltan en la base viva)

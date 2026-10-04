@@ -9,6 +9,7 @@ la aplicación.
 Contenido: [1. Componentes y capas](#1-componentes-y-capas) · [2. Flujo de un pedido](#2-flujo-de-un-pedido) ·
 [2.1 Listas paginadas en el servidor](#21-listas-paginadas-en-el-servidor-la-url-es-el-estado-f3) ·
 [2.2 Búsqueda global](#22-búsqueda-global-ctrlk-f5) ·
+[2.3 IA asistida](#23-ia-asistida-f7-una-server-action-por-el-secreto) ·
 [3. Sesión y protección de rutas](#3-sesión-y-protección-de-rutas) · [4. Multitenencia](#4-multitenencia) ·
 [5. Flujo de mails](#5-flujo-de-mails) · [6. Topología de despliegue](#6-topología-de-despliegue)
 
@@ -26,7 +27,7 @@ flowchart TB
     subgraph Vercel["Next.js 16 en Vercel"]
         PX["proxy.ts: refresca sesión y exige login"]
         SC["Server Components: page.tsx, leen datos"]
-        SA["Server Actions: login, usuarios, admin, alertas, cuentas"]
+        SA["Server Actions: login, usuarios, admin, alertas, cuentas, IA"]
         RH["Route handlers: /auth/confirm, /auth/signout"]
         LIB["src/lib: sesion, permisos, cuentas, email"]
     end
@@ -38,6 +39,7 @@ flowchart TB
     end
 
     SMTP["SMTP de la casilla de la marca (Gmail)"]
+    CLAUDE["API de Claude (Anthropic), opcional"]
 
     RSC --> PX --> SC
     CC -->|"cliente de navegador, clave anon"| PG
@@ -49,6 +51,7 @@ flowchart TB
     SA --> LIB
     RH -->|"verifyOtp"| AUTH
     LIB -->|"nodemailer"| SMTP
+    SA -->|"SDK, solo servidor, ANTHROPIC_API_KEY"| CLAUDE
 ```
 
 | Capa | Dónde vive | Responsabilidad |
@@ -123,6 +126,8 @@ servidor. Detalle en la [decisión 0001](./decisiones/0001-mutaciones-desde-el-c
 | `src/app/(app)/usuarios/actions.ts` | `invitarUsuario`, `cambiarRol`, `cambiarActivo`, `reenviarInvitacion`, `guardarRol`, `borrarRol` | Los `perfiles` no tienen política de escritura: solo el servidor los toca |
 | `src/app/admin/actions.ts` | `crearCliente`, `agregarAdministrador`, `cambiarEstadoCliente`, `reenviarInvitacionAdmin` | Operaciones de plataforma |
 | `src/app/(app)/alertas/actions.ts` | `enviarAlertaEmail`, `registrarEnvioWhatsapp` | Envía por SMTP; deriva destinatario y texto de la base, no del navegador |
+| `src/app/(app)/alertas/actions.ts` | `registrarEnvioConBorrador` (F7) | Solo REGISTRA un aviso que la persona mandó desde su WhatsApp o su correo con el borrador de la IA; no envía nada |
+| `src/app/(app)/ia/actions.ts` | `redactarAvisoRecambio`, `resumirCuenta` (F7) | **Excepción a propósito** (ver 2.3): llamar a Claude exige `ANTHROPIC_API_KEY`, un secreto que no puede llegar al navegador |
 | `src/app/(app)/buscar/actions.ts` | `buscarGlobal` | **Excepción a propósito** (ver 2.2): no usa secretos; consulta con la sesión de la persona y resuelve la búsqueda global en una sola ida |
 
 Cada Server Action empieza verificando la sesión y el permiso y valida el tipo y la forma de sus
@@ -206,6 +211,32 @@ AppShell (cliente)  Ctrl/Cmd+K o el botón "Buscar…" ──► PaletaBusqueda 
   acciones rápidas ("Ir a …"); el self-check comprueba que todos los permisos existan en el catálogo.
 - **Ficha 360, tablero y conversión** no necesitan Server Actions: son páginas de servidor que leen con la sesión
   (`src/lib/cuenta360.ts` para las fichas) y agregan en JS con tope, con la lógica en funciones puras.
+
+### 2.3 IA asistida (F7): una Server Action por el secreto
+
+```
+Botón "Redactar con IA" / "Resumir con IA" (cliente) ──► Server Action redactarAvisoRecambio / resumirCuenta
+   solo viaja un id                                          │ getSesion() ─ IA activada ─ permiso ─ valida el id ─ límite por persona
+                                                             ▼
+                                         lecturas con la sesión de la persona (la RLS decide qué hay)
+                                                             │ src/lib/ia/contexto.ts: contexto mínimo, sin pedir mails/teléfonos/CUIT
+                                                             ▼
+                                         src/lib/ia/generar.ts ──► SDK @anthropic-ai/sdk ──► API de Claude
+                                                             │ { ok, texto } | { ok: false, motivo en palabras }
+                                                             ▼
+                          borrador en pantalla (con etiqueta de IA): la persona lo revisa; nada se guarda ni se envía
+```
+
+- **Por qué una Server Action y no el cliente de navegador.** La llamada necesita `ANTHROPIC_API_KEY`: un secreto que
+  nunca puede viajar al navegador. Es el mismo criterio por el que ya son Server Actions el envío de mails y las
+  operaciones con la clave de servicio, y otra excepción acotada a "mutaciones desde el navegador". Verificado: el SDK
+  no aparece en ningún chunk de `.next/static`; a las pantallas cliente solo llega el booleano `iaDisponible`.
+- **El navegador manda ids, nunca contexto.** El servidor vuelve a leer todo con la sesión de la persona; lo que su rol o su
+  cartera no ven, la IA no lo ve.
+- **Se apaga solo.** Sin `ANTHROPIC_API_KEY` no hay botones ni llamadas (`src/lib/ia/config.ts`).
+- **Capas.** `config.ts` (clave, modelo), `cliente.ts` (singleton, `server-only`), `prompts.ts` (constantes en español
+  rioplatense), `contexto.ts` (funciones puras y probadas), `errores.ts` (mapeo de errores y de `stop_reason`),
+  `limite.ts` (límite por persona), `generar.ts` (la llamada). Detalle de datos, costo y límites en [ia](./ia.md).
 
 ---
 
@@ -357,6 +388,7 @@ flowchart LR
 | Frontend, Server Actions y proxy | Vercel (plan gratuito), proyecto `crmgads1` | Automático con cada push a `main` |
 | Base, Auth y Storage | Supabase (plan gratuito) | Las migraciones se pegan en el SQL Editor, **en orden** |
 | Mails | SMTP de una casilla de Gmail con contraseña de aplicación | Variables de entorno en Vercel |
+| IA (opcional, F7) | API de Claude de Anthropic | `ANTHROPIC_API_KEY` y `ANTHROPIC_MODEL` en Vercel; sin la clave la función queda apagada |
 
 No hay servidores propios, colas ni cron: las alertas se calculan en vivo con una vista, y los mails salen
 en el momento en que una persona los confirma. Las variables de entorno, el orden de las migraciones y el
@@ -369,7 +401,7 @@ aplicación vieja no conoce los permisos nuevos de la 0007.
 
 ## Documentación relacionada
 
-- [Modelo de datos](./modelo-de-datos.md) · [Reglas de negocio](./reglas-de-negocio.md) ·
+- [Modelo de datos](./modelo-de-datos.md) · [Reglas de negocio](./reglas-de-negocio.md) · [IA asistida](./ia.md) ·
   [Seguridad](./seguridad.md) · [Decisiones de arquitectura](./decisiones/README.md)
 - Diseño visual: [`docs/DESIGN.md`](./DESIGN.md) (vendoreado, solo lectura) y
   [`docs/design-overrides.md`](./design-overrides.md) (dónde esta app se aparta del kit y por qué).
