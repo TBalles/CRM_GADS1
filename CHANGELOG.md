@@ -16,6 +16,31 @@ Todo lo de esta sección ya está en `main`. Lo que no está es la interfaz de b
 
 ### Agregado
 
+- F6, presupuesto imprimible, pruebas E2E y CI (sin commit todavía; la migración `0012` está pendiente de aplicar a mano):
+  - **Presupuesto imprimible** en `/oportunidades/[id]/presupuesto` (botón "Presupuesto" en el detalle; `oportunidades.ver`, 404 si la
+    RLS esconde la oportunidad): encabezado con el **logo y los datos del proveedor** (nunca la marca de la plataforma), cliente y
+    contacto, líneas editables (agregar, quitar, reordenar; del catálogo con precio o texto libre; cantidad, precio, descuento %),
+    totales en vivo, validez y condiciones editables por presupuesto, e «Imprimir / Guardar PDF» con estilos `@media print` (A4 vertical,
+    el menú y los botones no salen, la hoja se parte en páginas con el encabezado de la tabla repetido).
+  - **Regla de IVA**: Responsable Inscripto = precios netos con IVA 21 % discriminado; Monotributo, Exento o sin condición = sin
+    discriminar. Todo en centavos enteros con redondeo medio hacia arriba. `src/lib/presupuesto.ts` (20 pruebas).
+  - **Guardar y numerar** (migración `0012_presupuestos.sql`, prueba `supabase/tests/0012_presupuestos.sql`): tabla `presupuestos` con número
+    correlativo por organización asignado por un trigger con contador (sin duplicados bajo concurrencia, sin huecos por altas fallidas),
+    inmutable, sin borrado y con la cartera de la oportunidad. Lista los anteriores y permite reabrirlos para reimprimir o usarlos de base.
+    Se imprime `N° 000042`; sin guardar, «Borrador».
+  - Al imprimir un presupuesto guardado se registra **una sola vez** la actividad «Envío de propuesta» en el historial.
+  - Mientras falte la `0012` el presupuesto se arma e imprime como borrador y un administrador ve el aviso (`src/lib/esquema.ts`).
+  - **Pruebas E2E con Playwright** (`@playwright/test`, solo devDependency; `e2e/`, `playwright.config.ts`): acceso por rol, aislamiento del
+    Vendedor, la demo (empresa, contacto, oportunidad, etapas, perdida con motivo e historial), paginación y filtros por URL, Ctrl+K y la hoja
+    del presupuesto. Corren contra una organización dedicada (`supabase/seeds/e2e_tests.sql`) y se saltan sin credenciales.
+  - **CI** (`.github/workflows/ci.yml`): lint, tipos, self-checks y build en cada push y pull request a `main` (Node 22, `npm ci`, caché,
+    sin secretos); job E2E aparte, solo en `main` o a mano y solo con secretos.
+  - Scripts `typecheck`, `test` y `test:e2e`; `lint` pasa a `eslint src e2e playwright.config.ts --max-warnings=0`. `e2e/` tiene su propio `tsconfig`. `engines.node` pide `>=22.18`.
+  - **Foto del emisor**: el presupuesto guarda la condición frente al IVA y los datos del emisor (razón social, CUIT, dirección, teléfono, mail, web; no el logo). Reimprimir un presupuesto emitido calcula el IVA y muestra el encabezado desde esa foto, no desde lo que la organización tenga hoy; el logo y los datos del cliente se leen en vivo.
+  - Endurecimiento de la `0012`: el trigger fuerza `creado_por` (el usuario que guarda) y deja `actividad_id` en nulo al alta; `numero` tiene `default 0` y `check (numero > 0)` (lo pisa el trigger); la fecha de emisión la pone la base; borrar la actividad vinculada suelta el vínculo.
+  - Imprimir no se puede disparar dos veces a la vez (doble clic): una sola actividad «Envío de propuesta»; si falla el vínculo se avisa y no se repite. El logo se vuelve a firmar al volver a la pestaña, cada 50 minutos y antes de imprimir.
+  - **Repositorio público**: `supabase/seeds/e2e_tests.sql` ya no trae contraseña (hay que elegirla antes de ejecutarlo; se corta si queda el valor de ejemplo, es corta o los correos no son `@e2e.tuconito.com.ar`). En CI las trazas, capturas y videos están apagados y solo se sube un `junit.xml` con los secretos tachados (nada de reporte HTML).
+  - Se agregan `data-app-shell`, `data-app-chrome` y `data-app-main` al shell (para ocultarlo al imprimir).
 - F5, pantallas del responsable y búsqueda (sin commit todavía; **no necesita migración**):
   - **Ficha 360** en `/empresas/[id]` y `/contactos/[id]`: "Resumen de la cuenta" (primera compra de toda la cuenta, total comprado, última
     compra, oportunidades abiertas y días desde el último contacto, con ámbar + ícono + frase, nunca solo color) e

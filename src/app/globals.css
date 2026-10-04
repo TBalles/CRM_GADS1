@@ -688,3 +688,69 @@ body:has(.landing-root) {
     cursor: pointer;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Impresion (F6: presupuesto imprimible)
+
+   El shell del CRM es un contenedor de altura fija (`h-dvh overflow-hidden`) con el
+   contenido dentro de un `<main>` que scrollea: impreso, solo saldria la primera
+   pantalla. En papel el shell desaparece (menu lateral, barra movil, toasts), el
+   contenido fluye en bloque y se parte en hojas, y lo que lleve `.no-print`
+   (botones, editor, avisos) no se imprime. El documento (`.hoja-presupuesto`) es
+   papel: fondo blanco y texto oscuro en cualquier tema.
+   --------------------------------------------------------------------------- */
+@page {
+  size: A4 portrait;
+  margin: 14mm 14mm 16mm;
+}
+
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    color: #0f172a !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  [data-app-shell] {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  [data-app-chrome],
+  .no-print {
+    display: none !important;
+  }
+  [data-app-main] {
+    display: block !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+  [data-app-main] > div {
+    max-width: none !important;
+  }
+  .hoja-presupuesto {
+    border: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    font-family: Arial, Helvetica, "Liberation Sans", sans-serif !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .hoja-scroll {
+    overflow: visible !important;
+  }
+  .hoja-presupuesto thead {
+    display: table-header-group;
+  }
+  .hoja-presupuesto tr,
+  .hoja-presupuesto .sin-corte {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

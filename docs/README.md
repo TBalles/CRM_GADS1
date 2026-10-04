@@ -37,7 +37,7 @@
 | Documento | Para qué sirve |
 |---|---|
 | [deploy.md](./deploy.md) | Runbook de Supabase y Vercel, orden de migraciones, seed, SMTP, variables de entorno y lista de verificación |
-| [pruebas.md](./pruebas.md) | Self-checks, verificación estática, pruebas SQL (cuál va antes o después de la `0007`) y cómo leer un resultado |
+| [pruebas.md](./pruebas.md) | Self-checks, verificación estática, pruebas SQL (cuál va antes o después de la `0007`), pruebas E2E con Playwright, la CI y cómo leer un resultado |
 | [seguridad.md](./seguridad.md) | Modelo de amenazas y controles, secretos, límites conocidos |
 
 ## Diseño

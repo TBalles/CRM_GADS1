@@ -4,20 +4,23 @@ Todo lo que se puede ejecutar para comprobar que el proyecto está sano, cómo c
 leer el resultado. No hay framework de pruebas: los self-checks usan el runner de Node y las pruebas SQL se
 pegan en el SQL Editor de Supabase.
 
-**Estado al commit `cb7c251`** (ejecutado al escribir esta documentación):
+**Estado con F6** (ejecutado al cerrar la fase, 2026-10-04):
 
 | Verificación | Resultado |
 |---|---|
-| `node --test "src/**/*.check.ts"` | **19 archivos, 167 pruebas, 167 pasan, 0 fallan** (con F4: se suman `esquema`, `licitaciones`, `parque`, `canchas` y `recambio`; con F5: `timeline360`, `tablero`, `embudo` y `paleta`) |
-| `npx tsc --noEmit` | Sin errores |
-| `npx eslint src --max-warnings=0` | Sin advertencias |
-| `npx next build` | No se ejecutó al escribir estas notas |
-| Pruebas SQL | Las ejecutó el equipo el 2026-10-04 después de aplicar la 0007, según lo informado. No se re-ejecutaron al escribir esta documentación |
+| `npm test` (`node --test "src/**/*.check.ts"`) | **20 archivos, 187 pruebas, 187 pasan, 0 fallan** (F6 suma `presupuesto.check.ts`: 20 pruebas) |
+| `npm run typecheck` (`tsc --noEmit` sobre `src` y sobre `e2e`) | Sin errores |
+| `npm run lint` (`eslint src e2e playwright.config.ts --max-warnings=0`) | Sin advertencias |
+| `npx next build` (con las variables públicas de relleno que usa la CI) | Compila; `/oportunidades/[id]/presupuesto` figura entre las rutas |
+| Pruebas SQL `0005`, `0007`, `0008`, `0009`, `0011` y `0012` | Todas `TODO OK` en PGlite (migraciones `0001` a `0012`, la `0012` aplicada dos veces). **No se corrieron contra la base viva**: la `0012` no está aplicada ahí |
+| `npx playwright test --list` | 14 pruebas en 3 archivos compilan. **La suite E2E no se ejecutó contra una base real**: la organización de pruebas todavía no existe (ver [§5](#5-pruebas-e2e-con-playwright)) |
+| `.github/workflows/ci.yml` | El YAML se parseó (PyYAML). **No se ejecutó en GitHub Actions** |
 
 Contenido: [1. Resumen](#1-resumen) · [2. Self-checks](#2-self-checks-con-node---test) ·
 [3. Verificación estática](#3-verificación-estática-y-build) · [4. Pruebas SQL](#4-pruebas-sql) ·
-[5. Cómo leer un resultado](#5-cómo-leer-un-resultado) · [6. Antes de hacer push](#6-antes-de-hacer-push) ·
-[7. Lo que todavía no se prueba](#7-lo-que-todavía-no-se-prueba)
+[5. Pruebas E2E con Playwright](#5-pruebas-e2e-con-playwright) · [6. Integración continua](#6-integración-continua) ·
+[7. Cómo leer un resultado](#7-cómo-leer-un-resultado) · [8. Antes de hacer push](#8-antes-de-hacer-push) ·
+[9. Lo que todavía no se prueba](#9-lo-que-todavía-no-se-prueba)
 
 ---
 
@@ -25,15 +28,18 @@ Contenido: [1. Resumen](#1-resumen) · [2. Self-checks](#2-self-checks-con-node-
 
 | Qué | Cómo se corre | Dónde | Qué prueba |
 |---|---|---|---|
-| Self-checks (19 archivos, 167 pruebas) | `node --test "src/**/*.check.ts"` | Terminal | Lógica pura: dinero, íconos, permisos, mails, mensajes, CUIT, sitio web, vocabulario de clientes, reglas de oportunidades, paginación y búsqueda por URL, errores de esquema faltante, licitaciones, parque instalado, equipamiento sugerido, recambio, ficha 360, tablero del responsable, conversión del embudo y búsqueda global |
-| Tipos | `npx tsc --noEmit` | Terminal | Que todo el TypeScript compile |
-| Lint | `npx eslint src --max-warnings=0` | Terminal | Estilo y errores comunes, sin tolerar advertencias |
+| Self-checks (20 archivos, 187 pruebas) | `npm test` (= `node --test "src/**/*.check.ts"`) | Terminal | Lógica pura: dinero, íconos, permisos, mails, mensajes, CUIT, sitio web, vocabulario de clientes, reglas de oportunidades, paginación y búsqueda por URL, errores de esquema faltante, licitaciones, parque instalado, equipamiento sugerido, recambio, ficha 360, tablero del responsable, conversión del embudo, búsqueda global y cuentas del presupuesto |
+| Tipos | `npm run typecheck` (= `tsc --noEmit && tsc --noEmit -p e2e`) | Terminal | Que todo el TypeScript compile, `src` y las pruebas E2E |
+| Lint | `npm run lint` (= `eslint src e2e playwright.config.ts --max-warnings=0`) | Terminal | Estilo y errores comunes, sin tolerar advertencias |
+| E2E | `npm run test:e2e` (= `playwright test`) | Terminal, contra una app y la organización de pruebas | La demo de punta a punta, los roles, la paginación por URL, Ctrl+K y la hoja del presupuesto. Se saltan sin credenciales |
+| CI | `.github/workflows/ci.yml` | GitHub Actions | Lint, tipos, self-checks y build en cada push; E2E en `main` si están los secretos |
 | Build | `npx next build` | Terminal | Que la aplicación se construya (incluye el chequeo de `server-only`) |
 | `0005_permisos.sql` | Pegar en el SQL Editor | Supabase | Aislamiento entre organizaciones y permisos |
 | `0007_reglas.sql` | Pegar en el SQL Editor | Supabase | Reglas de la migración 0007 |
 | `0008_baja_logica.sql` | Pegar en el SQL Editor, con la 0008 aplicada | Supabase | Que borrar empresas o contactos afecte 0 filas y que la baja lógica (`estado = 'inactivo'`) funcione |
 | `0009_reglas_oportunidades.sql` | Pegar en el SQL Editor, con la 0009 aplicada | Supabase | Fecha de cierre no futura (fecha de Argentina), empresa o contacto obligatorio para usuarios (no para scripts ni para `on delete set null`), y que las reglas de la 0007 sigan en pie |
 | `0011_rubro.sql` | Pegar en el SQL Editor, con la 0011 aplicada | Supabase | Canchas y licitaciones: CHECK, aislamiento entre organizaciones, cartera propia del Vendedor, solo lectura, sin borrar; la regla de la apertura (por `update` y por `cambiar_etapa`, con fecha de Argentina); `venta_item_id` y una sola oportunidad abierta por equipo (la segunda falla con `23505`; al cerrar la primera se puede abrir otra) |
+| `0012_presupuestos.sql` | Pegar en el SQL Editor, con la 0012 aplicada | Supabase | Presupuestos: numeración correlativa por organización (el cliente no elige el número, un alta fallida no deja huecos, el UNIQUE respalda), aislamiento y cartera propia, inmutabilidad (solo `actividad_id`, una vez), sin borrar, contadores inaccesibles desde la API y borrado en cascada de la organización |
 | `0007_reejecucion.sql` | Pegar con la migración dos veces | Supabase | Que la 0007 se pueda re-ejecutar sin efectos |
 
 ---
@@ -45,7 +51,8 @@ que prueban usan imports relativos con extensión (`./permisos.ts`) y no el alia
 `paths` de `tsconfig`.
 
 ```bash
-# todos
+# todos (el script `test` de package.json: anda igual en Windows, macOS y Linux porque Node expande el glob)
+npm test
 node --test "src/**/*.check.ts"
 
 # uno solo
@@ -61,10 +68,11 @@ node --test src/lib/timeline360.check.ts
 node --test src/lib/tablero.check.ts
 node --test src/lib/embudo.check.ts
 node --test src/lib/paleta.check.ts
+node --test src/lib/presupuesto.check.ts
 ```
 
-Requiere un Node que ejecute TypeScript directamente; se verificó con Node 24.14.1. *Pendiente de
-confirmar:* la versión mínima de Node. Aparece una advertencia `MODULE_TYPELESS_PACKAGE_JSON` porque
+Requiere un Node que ejecute TypeScript directamente; se verificó con Node 24.14.1 y la CI usa Node 22 (las versiones
+22.18 y posteriores ya traen la eliminación de tipos sin flags; **no se verificó en Node 22 localmente**). Aparece una advertencia `MODULE_TYPELESS_PACKAGE_JSON` porque
 `package.json` no declara `"type": "module"`; es inofensiva.
 
 | Archivo | Pruebas | Qué demuestra |
@@ -79,6 +87,7 @@ confirmar:* la versión mínima de Node. Aparece una advertencia `MODULE_TYPELES
 | `src/lib/timeline360.check.ts` | 14 | **F5.** La historia junta las cinco fuentes, ordenada de más reciente a más vieja y sin depender del orden de entrada; los empates se resuelven siempre igual; la fila inicial del historial no es un cambio (salvo que ya naciera cerrada); cierre, reapertura y cambio de resultado se titulan bien; el filtro por chip ("Etapas" incluye las altas) y sus cuentas; el agrupado por mes **argentino** (las 22:00 del 30/09 no pasan a octubre); "Ver más" por tramos; el resumen con cifras calculadas a mano (y la primera compra consultada aparte), sus umbrales de 30 y 90 días y los casos sin datos |
 | `src/lib/tablero.check.ts` | 15 | **F5.** `?dias=` y `?mes=` no confían en la URL; el rango del mes (también diciembre); `sinActividad`: el día del umbral ya cuenta, vale la actividad de la oportunidad, de su empresa o de su contacto, la que nunca tuvo se cuenta desde el alta y la más vieja que lo leído sale con "más de"; pipeline por responsable, cierres del mes y ranking de motivos con empates |
 | `src/lib/embudo.check.ts` | 12 | **F5.** Fixtures calculados a mano con cinco oportunidades: una normal, una que **se salta una etapa**, una que **vuelve atrás**, una **reabierta** y una trabada. Entraron, avanzaron, conversión, mediana de estadías terminadas y "hasta hoy" para las que siguen, tasa de éxito y ciclo; sin historial; el orden del historial no cambia el resultado; la cohorte por día argentino y por origen |
+| `src/lib/presupuesto.check.ts` | 20 | **F6.** Las cuentas del presupuesto en centavos enteros y con valores hechos a mano: el redondeo medio hacia arriba (1,005 → 1,01, sin el error de los flotantes), el importe de una línea con su descuento, la **regla de IVA** (Responsable Inscripto: precios netos, IVA 21 % sobre el neto y total con IVA; Monotributo, Exento o sin condición: sin discriminar y el total es el neto), el IVA redondeado una sola vez sobre el neto, las leyendas, el formato es-AR con centavos, el número `N° 000042` y «Borrador», la aritmética de la validez (cruce de mes y de año, bisiestos), la validación de líneas, el saneo del `jsonb` que viene de la base, **la foto del emisor** (armarla desde la organización y leerla del `jsonb`) y el título de la actividad |
 | `src/lib/paleta.check.ts` | 10 | **F5.** Las rutas piden permisos que existen; el menú por rol (el Vendedor no ve las dos pantallas del equipo); en qué tablas se busca según el rol; la consulta se limpia y exige 2 caracteres; grupos en orden fijo con tope de 5; las acciones rápidas por rol, con la caja vacía y con texto; las flechas dan la vuelta; los ids de las opciones |
 
 `permisos.check.ts` lee `supabase/migrations/0007_entrega_final.sql`. **Si agregás un permiso, hay que
@@ -103,22 +112,23 @@ de 0 si algo falla.
 ## 3. Verificación estática y build
 
 ```bash
-npx tsc --noEmit
-npx eslint src --max-warnings=0
+npm run typecheck        # tsc --noEmit (src) y tsc --noEmit -p e2e (las pruebas E2E, con su propio tsconfig)
+npm run lint             # eslint src e2e playwright.config.ts --max-warnings=0
 npx next build
 ```
 
-- `tsc --noEmit` compila sin generar archivos. Un error de tipos en cualquier archivo corta.
-- `eslint src --max-warnings=0` trata cualquier advertencia como error.
+- `tsc --noEmit` compila sin generar archivos. Un error de tipos en cualquier archivo corta. `e2e/` y
+  `playwright.config.ts` están **excluidos del `tsconfig.json` raíz** (así `next build` no depende de los tipos de
+  Playwright y el chequeo de `src` queda igual) y se chequean aparte con `e2e/tsconfig.json`.
+- `eslint … --max-warnings=0` trata cualquier advertencia como error; desde F6 alcanza también a `e2e/` y a `playwright.config.ts`.
 - `next build` además comprueba que `src/lib/supabase/admin.ts` (que importa `server-only`) no termine
   importado desde un componente de cliente: si pasara, el build falla, y es la garantía de que la clave de
   servicio no llega al navegador.
 
 Los tres tienen que pasar antes de pushear (ver [CONTRIBUTING](../CONTRIBUTING.md)).
 
-`package.json` solo define los scripts `dev`, `build`, `start` y `lint` (este último es `eslint` a secas, sin
-`--max-warnings=0`). Los scripts `typecheck` y `test` están planificados en F6; mientras tanto se corren los
-comandos de arriba tal cual.
+`package.json` define desde F6 los scripts `dev`, `build`, `start`, `lint` (`eslint src e2e playwright.config.ts --max-warnings=0`, lo
+mismo que corre la CI), `typecheck`, `test` y `test:e2e`.
 
 ---
 
@@ -149,6 +159,15 @@ sin empresa para probar el responsable ajeno ahora lleva empresa, porque la 0009
 `0007_reglas.sql`, `0008_baja_logica.sql` y `0009_reglas_oportunidades.sql` (migraciones `0001` a `0011`, la 0011
 aplicada dos veces para comprobar que es idempotente). Se hizo una prueba de mutación: sin el trigger
 `oportunidades_licitacion_regla`, o sin el índice único de una abierta por equipo, o con una política `ver` de canchas sin la cartera, la prueba falla.
+
+`0012_presupuestos.sql` se corre **después** de aplicar la 0012. Se ensayó en PGlite con las migraciones `0001` a `0012`
+(la 0012 aplicada dos veces, para comprobar que es idempotente) y con las pruebas `0005`, `0007`, `0008`, `0009`,
+`0011` y `0012` seguidas. Se hicieron pruebas de mutación: con un trigger de numeración que calcula `max(numero) + 1`
+(sin contador por organización), con una política `borrar`, sin el trigger `presupuestos_proteger`, sin forzar `creado_por` o `actividad_id` en el alta, sin la excepción que deja soltar el vínculo cuando se borra la actividad, con `default 1` en `numero` y sin el CHECK de `condicion_iva`, la prueba falla.
+**La concurrencia real no se puede probar con una sola conexión**; lo que se prueba es el mecanismo que la resuelve
+(`insert ... on conflict do update ... returning` sobre el contador, que bloquea esa fila hasta el fin de la
+transacción), que el cliente no elige el número y que el `UNIQUE (organizacion_id, numero)` frena un duplicado si el
+trigger faltara.
 
 **Si re-ejecutás la 0007, re-ejecutá la 0008 después.** La 0007 de este repositorio ya no recrea las
 políticas `borrar` de `empresas` y `contactos`, pero una copia vieja de la 0007 sí lo haría.
@@ -222,9 +241,97 @@ Prueba lo que `0007_reglas.sql` no puede, porque necesita correr la migración d
 Dentro de una transacción: `begin;`, el contenido de `0007_entrega_final.sql` y el de `0007_reglas.sql`
 (que termina en `ROLLBACK` y deshace las dos cosas). Ver [deploy](./deploy.md#ensayar-la-0007-sin-aplicarla).
 
+### Cómo correr las pruebas SQL fuera de Supabase
+
+Para ensayar una migración sin tocar la base viva sirve un Postgres local con el esquema mínimo de Supabase
+(`auth.users`, `auth.uid()`, `storage.buckets` y los roles `anon`, `authenticated` y `service_role`): PGlite
+(`@electric-sql/pglite`, Postgres en WebAssembly, con `pgcrypto` y `pg_trgm`) o el stack local de la CLI
+(`supabase start` y `supabase db reset`). Se aplican `0001` a `0012` en orden y después cada prueba; todas tienen que
+terminar en `TODO OK`. **La CI no corre estas pruebas** (mantenerla simple: no tiene una base con el esquema de
+Supabase); las corre quien toca `supabase/migrations/`, antes de pegarlas en el SQL Editor.
+
 ---
 
-## 5. Cómo leer un resultado
+## 5. Pruebas E2E con Playwright
+
+Las pruebas de extremo a extremo viven en `e2e/` y se corren con `npm run test:e2e` (`@playwright/test`, solo Chromium,
+`playwright.config.ts`). Son lo único que ejercita la interfaz real: el login, los drawers, el tablero y la hoja del
+presupuesto.
+
+| Archivo | Qué prueba |
+|---|---|
+| `e2e/acceso.spec.ts` | Sin sesión se va al login; una contraseña equivocada no entra; el Administrador entra y ve Configuración; el Vendedor entra y **no** ve la administración; el Vendedor ve **menos empresas** que el Administrador y no encuentra las del otro ni buscándolas |
+| `e2e/demo.spec.ts` | La demo de la consigna, en serie y como Administrador: crear empresa, agregarle un contacto desde su ficha, crear una oportunidad y verla en el tablero, moverla con «Cambiar etapa» (dos veces, con observación), marcarla perdida desde el detalle (**sin motivo la interfaz lo frena; con motivo se cierra**) y ver el historial con las observaciones, antes y después de recargar |
+| `e2e/navegacion.spec.ts` | Solo lectura: paginación por URL (`?pageSize=10`, «Página 2», link directo), búsqueda que deja `q=` en la URL, **Ctrl+K** abre la búsqueda global y navega a la ficha, y la **hoja del presupuesto** (encabezado del proveedor sin la marca de la plataforma, totales con IVA, y en `@media print` desaparecen el menú y los botones) |
+
+### La organización de pruebas
+
+**Nunca se apuntan a la demo.** Las pruebas crean y mueven registros reales y el CRM no borra nada (baja lógica), así
+que corren contra una organización aparte, **"E2E Tuco & Nito"**, que crea `supabase/seeds/e2e_tests.sql` (se pega una
+vez en el SQL Editor; es re-ejecutable; requiere `0001` a `0007`). **El repositorio es público y el archivo no trae ninguna contraseña**: antes de pegarlo, elegí tu clave (12 caracteres o más, que no uses en ningún otro lado) y escribila en el bloque `CONFIGURACION` del archivo; si queda el valor de ejemplo, si es corta o si un correo no termina en `@e2e.tuconito.com.ar`, el script se corta sin crear nada. Después guardá esa clave como secreto `E2E_PASSWORD` y `E2E_PASSWORD_VENDEDOR` (en GitHub y en tu entorno); nunca la escribas en un archivo del repositorio. Trae un Administrador y un Vendedor, 12 empresas
+(`E2E Club 01` a `12`: 01 a 06 del Administrador, 07 a 12 del Vendedor), un contacto, dos productos y una oportunidad fija
+para el presupuesto. Cada corrida crea cosas llamadas `E2E <hora>` (la oportunidad termina perdida y la empresa activa);
+una segunda corrida convive con la primera.
+
+### Variables de entorno
+
+| Variable | Para qué | Valor con el seed |
+|---|---|---|
+| `E2E_BASE_URL` | Dónde corre la app. Por defecto `http://localhost:3000` | |
+| `E2E_EMAIL`, `E2E_PASSWORD` | Administrador | `e2e.admin@e2e.tuconito.com.ar` y la clave que elegiste |
+| `E2E_EMAIL_VENDEDOR`, `E2E_PASSWORD_VENDEDOR` | Vendedor | `e2e.vendedor@e2e.tuconito.com.ar` y la misma clave |
+| `E2E_WEB_SERVER` | Opcional: comando que levanta la app (por ejemplo `npm run start`); Playwright lo arranca y lo apaga | |
+
+Sin las credenciales **las pruebas se saltan** (no fallan) y se imprime un aviso con lo que falta.
+
+```bash
+# la app apuntando al proyecto de Supabase que tiene la organización E2E (variables en .env.local)
+npm run build && npm run start
+
+# en otra terminal (bash; en PowerShell: $env:E2E_EMAIL="..."; npm run test:e2e)
+E2E_EMAIL=e2e.admin@e2e.tuconito.com.ar E2E_PASSWORD="$TU_CLAVE_E2E" \
+E2E_EMAIL_VENDEDOR=e2e.vendedor@e2e.tuconito.com.ar E2E_PASSWORD_VENDEDOR="$TU_CLAVE_E2E" \
+npm run test:e2e
+
+npx playwright install chromium     # la primera vez, para bajar el navegador
+npx playwright test --list          # ver las 14 pruebas sin correrlas
+npx playwright show-report          # el reporte HTML de la última corrida
+```
+
+En local, la traza (`trace: on-first-retry`) y las capturas de las fallas quedan en `test-results/` y `playwright-report/`
+(ignorados por git; **no los compartas**: guardan lo que las pruebas escriben en los campos, el login incluido). En CI trazas, capturas y videos están apagados. Los selectores usan roles y nombres accesibles (`getByRole`), igual que una persona con lector de
+pantalla: si cambia un texto de la interfaz que una prueba nombra, la prueba lo dice.
+
+> **Estado.** Las 14 pruebas compilan (`npx playwright test --list`, `npm run typecheck`) y los selectores de solo
+> lectura (búsqueda, Ctrl+K, menú de la tarjeta, modales «Cambiar de etapa» y «Marcar como perdida» hasta su error de
+> validación, hoja del presupuesto en `@media print`) se comprobaron a mano contra la demo **sin crear ni modificar
+> nada**. **La suite no se ejecutó completa**: la organización E2E y su seed no estaban cargados, y a propósito no se corrió
+> contra la demo. Las pruebas que **escriben** (`demo.spec.ts`) están sin ejecutar; hay que correrlas una vez contra la
+> organización de pruebas y ajustar lo que falle.
+
+---
+
+## 6. Integración continua
+
+`.github/workflows/ci.yml` (GitHub Actions) corre en cada push y pull request a `main` y a mano (*Run workflow*):
+
+| Paso | Comando |
+|---|---|
+| Lint | `npm run lint` (`src`, `e2e` y `playwright.config.ts`, sin advertencias) |
+| Tipos | `npm run typecheck` |
+| Self-checks | `npm test` |
+| Build | `npx next build`, con `NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co` y `NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder`: **no usa ningún secreto** |
+
+Node 22 (`engines.node` pide `>=22.18`: `node --test` ejecuta `.ts` sin flags desde esa versión), `npm ci` con caché, caché de `.next/cache`, y un push nuevo a la misma rama cancela la corrida anterior. El job
+**E2E** corre solo en `main` o a mano y solo si están los secretos del repositorio (lista en
+[deploy](./deploy.md#integración-continua-github-actions)); sin ellos termina bien con un aviso. **El repositorio es público**, así que los artefactos los puede bajar cualquiera: en CI Playwright corre con trazas, capturas y videos apagados y sin reporte HTML, y el job solo sube `e2e-junit` (`junit.xml`) después de tachar con `***` el valor de todos los secretos; los detalles de una falla se ven en el log (GitHub enmascara ahí los secretos). Las pruebas SQL no corren en la CI (ver §4).
+
+> El archivo se validó parseando el YAML, pero **no se pudo ejecutar GitHub Actions** desde acá: la primera corrida real
+> puede mostrar algo que ajustar (sobre todo la versión de Node 22 con `node --test` sobre `.ts`).
+
+---
+
+## 7. Cómo leer un resultado
 
 Todas las pruebas SQL terminan con una consulta final que solo se alcanza si nada falló. Va **después** del
 `ROLLBACK` porque el SQL Editor muestra el resultado de la **última** sentencia.
@@ -241,33 +348,35 @@ seguir, para no dejar datos de prueba.
 
 ---
 
-## 6. Antes de hacer push
+## 8. Antes de hacer push
 
-Los cuatro pasos de verificación estática y automática, en este orden:
+Los pasos de verificación estática y automática, en este orden (son los mismos que corre la CI):
 
 ```bash
-npx tsc --noEmit
-npx eslint src --max-warnings=0
-node --test "src/**/*.check.ts"
+npm run lint
+npm run typecheck
+npm test
 npx next build
 ```
 
 Si el cambio toca `supabase/migrations/`, además: ensayar la migración en una transacción con rollback,
 aplicarla, correr `0005_permisos.sql` y `0007_reglas.sql` (o la prueba nueva que corresponda), y regenerar
-`src/lib/supabase/types.ts`. Más en [CONTRIBUTING](../CONTRIBUTING.md).
+`src/lib/supabase/types.ts`. Si toca la interfaz, correr `npm run test:e2e` contra la organización de pruebas.
+Más en [CONTRIBUTING](../CONTRIBUTING.md).
 
 ---
 
-## 7. Lo que todavía no se prueba
+## 9. Lo que todavía no se prueba
 
-- **No hay pruebas de interfaz ni de extremo a extremo.** Playwright y GitHub Actions están planificados en
-  F6 (2026-11-05). Hoy la interfaz se verifica a mano; F3 se recorrió con Playwright en scripts descartables
-  (búsqueda, filtros, paginación, atrás/adelante, link directo, teclado, 390 y 1280 px, claro y oscuro), que
-  no se guardaron en el repositorio.
+- **La suite E2E no corrió completa** (ver §5): falta cargar la organización de pruebas y ejecutarla una vez.
+- **El guardado de presupuestos no se probó contra una base real.** La migración `0012` no está aplicada en la base viva:
+  se probó en PGlite (`0012_presupuestos.sql`) y el camino del cliente (guardar, imprimir, registrar la actividad una sola
+  vez, reabrir, «usar como base») se ejercitó en el navegador **simulando las respuestas de la base**; falta correrlo
+  contra la `0012` real.
+- **El logo del proveedor en la hoja** se comprobó con un logo simulado en la página: la demo no tiene un logo cargado.
+- **El PDF se probó en Chromium** (`page.pdf()`); otros navegadores pueden paginar distinto.
 - **La migración `0010` (índices) no tiene prueba SQL propia**: solo agrega índices. Se la ensayó en un Postgres
   local (PGlite) con y sin el bloque opcional de `pg_trgm` y re-ejecutándola; no está aplicada en la base viva.
-- **No hay integración continua**: nada corre solo en cada push.
-- **Los componentes React no tienen pruebas**: los self-checks cubren lógica pura (dinero, permisos, mails,
-  mensajes, íconos).
-- **La interfaz de la 0007 no existe**, así que sus pantallas no se pueden probar todavía; las reglas sí
-  están cubiertas en la base por `0007_reglas.sql`.
+- **Los componentes React no tienen pruebas unitarias**: los self-checks cubren lógica pura (dinero, permisos, mails,
+  mensajes, íconos, las cuentas del presupuesto) y lo demás lo cubren las E2E.
+- **La CI no corre las pruebas SQL** y no se ejecutó todavía en GitHub.

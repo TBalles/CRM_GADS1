@@ -347,12 +347,13 @@ export default function AppShell({
   );
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-background text-foreground">
+    <div data-app-shell className="flex h-dvh overflow-hidden bg-background text-foreground">
       {/* ── Desktop sidebar ─────────────────────────────────────────── */}
       {/* The sidebar is the pitch: same surface as the login panel, with the
           full markings under the nav at 5% white. In both themes — it is the
           brand's permanent frame, and the content area keeps the user's theme. */}
       <aside
+        data-app-chrome
         className={cn(
           "cesped relative z-20 hidden h-full shrink-0 flex-col overflow-hidden border-r border-black/20 transition-all duration-300 ease-in-out md:flex",
           collapsed ? "w-16" : "w-64",
@@ -387,7 +388,7 @@ export default function AppShell({
       </aside>
 
       {/* ── Mobile header ───────────────────────────────────────────── */}
-      <header className="cesped fixed left-0 right-0 top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-black/20 px-4 [--cesped-angulo:90deg] md:hidden">
+      <header data-app-chrome className="cesped fixed left-0 right-0 top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-black/20 px-4 [--cesped-angulo:90deg] md:hidden">
         <div className="flex min-w-0 items-center gap-3">
           <button
             type="button"
@@ -421,7 +422,7 @@ export default function AppShell({
 
       {/* ── Mobile drawer ───────────────────────────────────────────── */}
       {drawer.visible && (
-        <div className="fixed inset-0 z-40 md:hidden">
+        <div data-app-chrome className="fixed inset-0 z-40 md:hidden">
           <div
             className={`absolute inset-0 bg-black/60 backdrop-blur-sm ${drawer.overlayClass}`}
             onClick={() => setMobileOpen(false)}
@@ -465,7 +466,7 @@ export default function AppShell({
           rests on, so the content area no longer needs `bg-secondary/30` to
           fake a step away from white. Sidebar (card white) → canvas (tinted) →
           cards (white, lifted) is one coherent ladder. */}
-      <main className="min-w-0 flex-1 overflow-y-auto bg-background p-3 pt-[4.75rem] md:p-8 md:pt-8">
+      <main data-app-main className="min-w-0 flex-1 overflow-y-auto bg-background p-3 pt-[4.75rem] md:p-8 md:pt-8">
         <div className="mx-auto w-full max-w-7xl">{children}</div>
       </main>
 

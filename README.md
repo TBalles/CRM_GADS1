@@ -51,8 +51,9 @@ llegó en F2, y todo lo que la 0007 agregó y las fases F1 y F2 ya muestran. Det
 
 ### Planificado
 
-Funciones del rubro (ficha de canchas, parque instalado,
-licitaciones), presupuesto imprimible, pruebas E2E con CI, IA opcional y manual de usuario en PDF.
+IA opcional y manual de usuario en PDF. Ya están en el repositorio las funciones del rubro (F4, migración `0011`) y el
+presupuesto imprimible, las pruebas E2E y la CI (F6, migración `0012`); las dos migraciones se aplican a mano (ver
+[docs/deploy.md](./docs/deploy.md)).
 
 ## Stack
 
@@ -154,15 +155,16 @@ cartera. El superadmin es la cuenta que cada instalación define en la migració
 npm run dev                          # servidor de desarrollo (http://localhost:3000)
 npm run build                        # build de producción
 npm run start                        # sirve el build de producción
-npm run lint                         # eslint
-
-npx tsc --noEmit                     # tipos
-npx eslint src --max-warnings=0      # lint, sin advertencias
-node --test "src/**/*.check.ts"      # self-checks (37 pruebas en 5 archivos)
+npm run lint                         # eslint src e2e playwright.config.ts --max-warnings=0 (sin advertencias)
+npm run typecheck                    # tsc --noEmit sobre src y sobre e2e
+npm test                             # self-checks: node --test "src/**/*.check.ts" (187 pruebas en 20 archivos)
+npm run test:e2e                     # pruebas de extremo a extremo (Playwright); sin credenciales E2E_* se saltan
 ```
 
-Las pruebas SQL (`supabase/tests/`) se pegan en el SQL Editor. Qué prueba cada una y cuál va antes o después de
-la `0007`: [docs/pruebas.md](./docs/pruebas.md).
+`lint`, `typecheck`, `test` y `build` son los pasos de la integración continua (`.github/workflows/ci.yml`). Las
+pruebas SQL (`supabase/tests/`) se pegan en el SQL Editor. Las E2E corren contra una organización de pruebas aparte
+(`supabase/seeds/e2e_tests.sql`), nunca contra la demo. Qué prueba cada una, las variables y cuál SQL va antes o
+después de la `0007`: [docs/pruebas.md](./docs/pruebas.md).
 
 ## Mapa del proyecto
 

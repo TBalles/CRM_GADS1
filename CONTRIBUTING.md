@@ -61,17 +61,19 @@ Un PR muy grande (más de unas 400 líneas) se parte en PRs encadenados.
 
 ## 4. Chequeos antes de pushear
 
-Los cuatro tienen que pasar. No hay integración continua todavía (está planificada en F6), así que los corre
-quien pushea.
+Los cuatro tienen que pasar. Son los scripts de `package.json` y **los mismos que corre la integración continua**
+(`.github/workflows/ci.yml`, en cada push y pull request a `main`), así que conviene correrlos antes de pushear:
 
 ```bash
-npx tsc --noEmit                      # tipos
-npx eslint src --max-warnings=0       # lint, sin advertencias
-node --test "src/**/*.check.ts"       # self-checks
+npm run lint                          # eslint src e2e playwright.config.ts --max-warnings=0 (lint, sin advertencias)
+npm run typecheck                     # tsc --noEmit sobre src y sobre e2e
+npm test                              # node --test "src/**/*.check.ts" (self-checks)
 npx next build                        # build de producción
 ```
 
-Qué prueba cada uno y cómo leer los resultados: [docs/pruebas.md](./docs/pruebas.md).
+Si el cambio toca la interfaz, además `npm run test:e2e` contra la organización de pruebas (necesita las variables
+`E2E_*` y el seed `supabase/seeds/e2e_tests.sql`; sin ellas las pruebas se saltan). Las pruebas SQL no corren en la CI: las corre
+quien toca `supabase/migrations/`. Qué prueba cada uno y cómo leer los resultados: [docs/pruebas.md](./docs/pruebas.md).
 
 Además, si el cambio es visible, mirá la pantalla en claro y oscuro y en ancho de móvil.
 

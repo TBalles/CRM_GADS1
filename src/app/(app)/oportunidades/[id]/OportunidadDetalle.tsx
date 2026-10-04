@@ -9,6 +9,7 @@ import {
   CircleCheck,
   CircleX,
   FileClock,
+  FileText,
   Gavel,
   Handshake,
   History,
@@ -24,7 +25,7 @@ import CierreModal, { ACCION_CAMBIO, useCierre } from "@/components/CierreModal"
 import { Dato, Seccion } from "@/components/cliente";
 import { CampoSelect, FormActions, FormBanner } from "@/components/form";
 import { EstadoOportunidadPill, EtapaBadge, TipoOportunidadBadge } from "@/components/oportunidades";
-import { Button, Card, Pill } from "@/components/ui/UIComponents";
+import { Button, Card, Pill, buttonClass } from "@/components/ui/UIComponents";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { createClient } from "@/lib/supabase/client";
@@ -207,6 +208,9 @@ export default function OportunidadDetalle({
               <NotebookPen aria-hidden="true" className="h-4 w-4" /> Registrar actividad
             </Button>
           )}
+          <Link href={`/oportunidades/${oportunidad.id}/presupuesto`} className={buttonClass({ variant: "outline", className: "gap-1.5" })}>
+            <FileText aria-hidden="true" className="h-4 w-4" /> Presupuesto
+          </Link>
           {modos.map((modo) => {
             const Icon = ACCION_CAMBIO[modo].icon;
             return (

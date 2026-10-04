@@ -636,6 +636,8 @@ lista, sin interfaz · **P** Planificado.
 | Gestión de etapas, tipos de actividad, orígenes y motivos de pérdida | I (F1a) | `/configuracion` |
 | Búsqueda, filtros y paginación | I (F3) | Las seis listas (empresas, contactos, oportunidades, productos, ventas, usuarios) buscan, filtran y paginan **en el servidor**, con el estado en la URL; 10, 20 o 50 por página. Filtros por responsable, estado, etapa y origen donde corresponde. Las alertas siguen filtrando en el navegador. Los índices de apoyo (`0010`) están en el repositorio, **pendientes de aplicar** |
 | Adaptación real a la industria | I + B + P | Vida útil, snapshot, alertas de recambio, ventas por entrega: I. Embudo, orígenes, motivos y tipos del rubro, `tipo_cliente`: B. Parque instalado: I (F4, anda hoy). Canchas, equipamiento sugerido, licitaciones y recambio en un clic: I (F4) pero **requieren aplicar la `0011`** |
+| Presupuesto imprimible | I (F6) | `/oportunidades/[id]/presupuesto`: encabezado del proveedor con su logo, cliente, líneas editables (catálogo o texto libre), IVA según la condición del proveedor, validez y condiciones, numeración por organización, «Imprimir / Guardar PDF» y registro de la actividad «Envío de propuesta». **Guardar y numerar requiere aplicar la `0012`**; sin ella se imprime como «Borrador» |
+| Pruebas E2E y CI | I (F6) | Playwright (`e2e/`, `npm run test:e2e`) contra una organización de pruebas dedicada (`supabase/seeds/e2e_tests.sql`) y GitHub Actions (`.github/workflows/ci.yml`: lint, tipos, self-checks y build). Escritas; **todavía sin ejecutar completas** (ver [pruebas](./pruebas.md)) |
 | Inteligencia artificial (opcional) | P | F7 |
 
 ### e.3 Usuarios del sistema (consigna, pp. 5 y 6)
@@ -731,7 +733,7 @@ luego F4 (licitaciones); nunca F0 a F3.
 | F3 | Búsqueda, filtros y paginación en el servidor en todas las listas | 2026-10-22 | **Hecha** (`1ccb553`; la migración `0010` de índices está pendiente de aplicar) |
 | F4 | Rubro: recambio en un clic, parque instalado, ficha de canchas, licitaciones | 2026-10-28 | **Hecha** (sin commit todavía; la migración `0011` está pendiente de aplicar a mano y, hasta entonces, canchas, licitaciones y el botón de recambio no se muestran) |
 | F5 | Ficha 360, tablero del responsable, conversión del embudo, búsqueda global Ctrl+K | 2026-11-02 | **Hecha** (sin commit todavía; no necesita migración) |
-| F6 | Presupuesto imprimible; pruebas E2E con Playwright y CI en GitHub Actions | 2026-11-05 | Planificado |
+| F6 | Presupuesto imprimible; pruebas E2E con Playwright y CI en GitHub Actions | 2026-11-05 | **Hecha** (sin commit todavía; la migración `0012` está pendiente de aplicar a mano y, hasta entonces, el presupuesto se imprime como «Borrador» sin guardarse; la suite E2E y la CI **no se ejecutaron** contra una base real ni en GitHub, ver [pruebas](./pruebas.md)) |
 | F7 | IA opcional: aviso de recambio y resumen de cuenta | 2026-11-08 | Planificado |
 | F8 | Documentación (este conjunto, ya escrito) y manual de usuario en PDF | 2026-11-11 | En curso |
 
@@ -913,8 +915,9 @@ lectura (3).
 | `/configuracion` | `configuracion.gestionar` | Datos de la empresa y logo, etapas, tipos de actividad, orígenes y motivos de pérdida |
 | `/sin-permisos` | Con sesión | Destino cuando el rol no tiene secciones |
 | `/admin` | Superadmin | Panel de plataforma |
+| `/oportunidades/[id]/presupuesto` | `oportunidades.ver` (guardar: `oportunidades.editar`) | Presupuesto imprimible de la oportunidad (F6); 404 si no existe o la RLS la esconde |
 
-Ruta planificada, aún inexistente: `/oportunidades/[id]/presupuesto`. Sin el permiso, `/tablero-comercial` y `/embudo` llevan a la primera pantalla que el rol puede ver (`rutaInicial`). La búsqueda global (`Ctrl+K`) no es una ruta: es un diálogo del menú que llama a la Server Action `buscarGlobal`.
+Sin el permiso, `/tablero-comercial` y `/embudo` llevan a la primera pantalla que el rol puede ver (`rutaInicial`). La búsqueda global (`Ctrl+K`) no es una ruta: es un diálogo del menú que llama a la Server Action `buscarGlobal`.
 
 ---
 
@@ -1009,3 +1012,47 @@ devuelve solo su cartera.
    cierre vigente. No hay series en el tiempo ni comparación entre períodos.
 5. Los productos no tienen ficha: el resultado lleva a `/productos?q=<nombre>`.
 6. El navegador no puede abrir un resultado en una pestaña nueva con clic del medio (las filas del diálogo no son links).
+
+---
+
+## b.17 Presupuesto imprimible, pruebas E2E y CI (F6)
+
+| | |
+|---|---|
+| Estado | **Implementado (F6)**, sin commit todavía. La migración `0012_presupuestos.sql` está **pendiente de aplicar a mano** en Supabase |
+| Qué anda hoy sin la 0012 | Armar el presupuesto (líneas, totales, validez, condiciones) e **imprimirlo o guardarlo como PDF**, siempre como «Borrador» |
+| Qué se activa al aplicarla | **Guardar** el presupuesto con su número correlativo por organización, listar los anteriores, reabrirlos para reimprimir y registrar la actividad «Envío de propuesta» al imprimir |
+| Si falta la 0012 | Nada se rompe: "Guardar presupuesto" explica que se activa al aplicar la migración, y quien tiene `configuracion.gestionar` ve el aviso "Se activa al aplicar la migración 0012" |
+
+| Pieza | Estado | Dónde |
+|---|---|---|
+| **Presupuesto imprimible** | Implementado | `/oportunidades/[id]/presupuesto` (`page.tsx` y `PresupuestoView.tsx`); botón "Presupuesto" en el detalle de la oportunidad |
+| Cuentas y reglas (centavos enteros, IVA, validez, numeración) | Implementado | `src/lib/presupuesto.ts` y su self-check (20 pruebas) |
+| Migración `0012` y su prueba SQL | Escritas, **pendientes de aplicar** | `supabase/migrations/0012_presupuestos.sql`, `supabase/tests/0012_presupuestos.sql` |
+| Estilos de impresión | Implementado | `@media print` en `src/app/globals.css`; el shell lleva `data-app-shell`, `data-app-chrome` y `data-app-main` |
+| **Pruebas E2E** (Playwright) | Escritas, **sin ejecutar completas** | `e2e/`, `playwright.config.ts`, `supabase/seeds/e2e_tests.sql` |
+| **CI** (GitHub Actions) | Escrita, **sin ejecutar en GitHub** | `.github/workflows/ci.yml` |
+| Scripts de `package.json` | Implementado | `lint` (ahora `eslint src e2e playwright.config.ts --max-warnings=0`), `typecheck`, `test`, `test:e2e`; `engines.node >=22.18` |
+
+- **La hoja es del proveedor.** Encabezado con el logo de la organización (URL firmada del bucket privado `logos`) y sus datos;
+  sin logo, la razón social en texto; nunca la marca de Tuco & Nito. Cliente y contacto salen de la oportunidad.
+- **IVA.** Responsable Inscripto: precios netos y se discrimina IVA 21 %; con otra condición no se discrimina y una leyenda
+  lo dice. La regla es pura y está probada (`calcularTotales`).
+- **Numeración sin duplicados.** La asigna un trigger con un contador por organización que bloquea la fila hasta el fin de la
+  transacción; es correlativa (`N° 000042`), el cliente no la elige y un alta fallida no deja huecos. Un presupuesto emitido
+  no se modifica ni se borra: corregirlo es armar otro («Usar como base de uno nuevo»).
+- **Actividad.** Imprimir un presupuesto guardado registra «Envío de propuesta» en el historial, **una sola vez** por presupuesto.
+- **Tests.** `npm test` pasa a 187 pruebas en 20 archivos. Las SQL (`0005`, `0007`, `0008`, `0009`, `0011` y `0012`) dan `TODO OK`
+  en PGlite. Los E2E son 14 pruebas en 3 archivos; corren contra la organización "E2E Tuco & Nito", nunca contra la demo.
+
+**Límites conocidos.**
+
+1. El logo se muestra con una URL firmada de 1 hora que la pantalla renueva sola (al volver a la pestaña, cada 50 minutos y antes de imprimir con el botón). Imprimir con `Ctrl+P` en una pestaña que estuvo mucho rato en segundo plano puede mostrar el logo roto: usá el botón.
+2. Un presupuesto emitido guarda una **foto del emisor** (condición frente al IVA, razón social, CUIT, dirección, teléfono, mail y
+   web; no el logo) y se reimprime desde ella. El logo y los datos del cliente y del contacto sí se leen en vivo: si cambian después,
+   el presupuesto reimpreso muestra los nuevos. La alícuota (21 %) es la del código, no se guarda.
+3. El borrador no se guarda mientras se escribe: si se cierra la pestaña se pierde.
+4. No hay alícuotas reducidas (10,5 %), ni descuento global, ni moneda distinta del peso.
+5. En el celular la hoja se desplaza horizontalmente dentro de su caja (es un A4 en miniatura); se edita y se imprime bien, pero no se lee de corrido.
+6. El demo de la cátedra trae la condición "Precios en pesos, IVA incluido" mientras el proveedor es Responsable Inscripto y la hoja
+   discrimina IVA: la condición es un texto editable de Configuración y conviene corregirla a "más IVA".

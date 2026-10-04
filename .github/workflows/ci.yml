@@ -1,0 +1,184 @@
+name: CI
+
+# Verificación de cada cambio (F6). Es la misma lista de docs/pruebas.md §6 "Antes de hacer push":
+# lint, tipos, self-checks y build. Las pruebas SQL (supabase/tests/) NO corren acá: necesitan una base
+# Postgres con el esquema de Supabase y se corren con el arnés PGlite o con `supabase db` (ver docs/pruebas.md).
+# Las pruebas E2E (Playwright) corren en un job aparte, solo en main o a mano, y solo si están los secretos.
+# El repositorio es PUBLICO: los artefactos de una corrida los puede bajar cualquiera. Por eso el job E2E no sube
+# trazas, capturas, videos ni el reporte HTML (todos pueden contener lo que las pruebas escriben en los campos,
+# incluidas las credenciales); solo sube un junit.xml al que antes se le tachan los valores de los secretos.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Un push nuevo a la misma rama cancela la corrida anterior que quedó vieja.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  # node --test sobre archivos .ts necesita Node 22.18 o más nuevo (viene sin flags; package.json lo exige en
+  # `engines`). `22` toma la última 22.x.
+  NODE_VERSION: "22"
+
+jobs:
+  verificar:
+    name: Lint, tipos, self-checks y build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # El build no necesita secretos: estas variables públicas se leen al compilar pero no se usan para
+      # hablar con ninguna base (ningún render del build consulta datos). No hay SERVICE_ROLE ni SMTP acá.
+      NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Lint (src y e2e, sin advertencias)
+        run: npm run lint
+
+      - name: Tipos (src y e2e)
+        run: npm run typecheck
+
+      - name: Self-checks (node --test)
+        run: npm test
+
+      - name: Cache de Next.js
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('src/**/*.ts', 'src/**/*.tsx') }}
+          restore-keys: |
+            next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+
+      - name: Build de producción
+        run: npx next build
+
+  e2e:
+    name: Pruebas E2E (Playwright)
+    needs: verificar
+    # Solo en main o a mano. Nunca en pull requests: los secretos no llegan a los forks y no queremos
+    # crear datos en la organización de pruebas por cada borrador.
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # Un `if:` no puede leer secretos: se convierten en una bandera en un paso previo. Sin secretos el job
+      # termina bien y deja un aviso, así el repositorio sin configurar no queda en rojo.
+      - name: ¿Están los secretos de E2E?
+        id: gate
+        env:
+          E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
+          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+          E2E_EMAIL_VENDEDOR: ${{ secrets.E2E_EMAIL_VENDEDOR }}
+          E2E_PASSWORD_VENDEDOR: ${{ secrets.E2E_PASSWORD_VENDEDOR }}
+          E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$E2E_EMAIL" ] || [ -z "$E2E_PASSWORD" ] || [ -z "$E2E_EMAIL_VENDEDOR" ] || [ -z "$E2E_PASSWORD_VENDEDOR" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=E2E salteadas::Faltan los secretos E2E_EMAIL, E2E_PASSWORD, E2E_EMAIL_VENDEDOR y E2E_PASSWORD_VENDEDOR. Ver docs/pruebas.md."
+            exit 0
+          fi
+          if [ -n "$E2E_BASE_URL" ]; then
+            # Se prueba una app ya desplegada (por ejemplo la preview de Vercel).
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "local=false" >> "$GITHUB_OUTPUT"
+          elif [ -n "$NEXT_PUBLIC_SUPABASE_URL" ] && [ -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ]; then
+            # Sin URL desplegada se compila y levanta la app acá, apuntando al Supabase real de pruebas.
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "local=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=E2E salteadas::Falta E2E_BASE_URL o, en su lugar, NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY."
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.run == 'true'
+
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.run == 'true'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Instalar dependencias
+        if: steps.gate.outputs.run == 'true'
+        run: npm ci
+
+      - name: Instalar Chromium
+        if: steps.gate.outputs.run == 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Build (app local)
+        if: steps.gate.outputs.run == 'true' && steps.gate.outputs.local == 'true'
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: npx next build
+
+      - name: Pruebas E2E (app local)
+        if: steps.gate.outputs.run == 'true' && steps.gate.outputs.local == 'true'
+        env:
+          E2E_BASE_URL: http://localhost:3000
+          E2E_WEB_SERVER: npm run start
+          E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
+          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+          E2E_EMAIL_VENDEDOR: ${{ secrets.E2E_EMAIL_VENDEDOR }}
+          E2E_PASSWORD_VENDEDOR: ${{ secrets.E2E_PASSWORD_VENDEDOR }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: npm run test:e2e
+
+      - name: Pruebas E2E (app desplegada)
+        if: steps.gate.outputs.run == 'true' && steps.gate.outputs.local == 'false'
+        env:
+          E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+          E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
+          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+          E2E_EMAIL_VENDEDOR: ${{ secrets.E2E_EMAIL_VENDEDOR }}
+          E2E_PASSWORD_VENDEDOR: ${{ secrets.E2E_PASSWORD_VENDEDOR }}
+        run: npm run test:e2e
+
+      # El junit.xml trae los mensajes de error, y un mensaje puede citar lo que se escribio en un campo. Antes de subirlo se
+      # tachan los valores de todos los secretos (GitHub los enmascara en el log, pero NO dentro de un artefacto).
+      - name: Tachar secretos del resumen
+        if: ${{ !cancelled() && steps.gate.outputs.run == 'true' }}
+        env:
+          SECRETOS: ${{ toJSON(secrets) }}
+        run: |
+          node -e '
+            const fs = require("fs");
+            const f = "test-results/junit.xml";
+            if (!fs.existsSync(f)) process.exit(0);
+            let t = fs.readFileSync(f, "utf8");
+            const secretos = Object.values(JSON.parse(process.env.SECRETOS)).filter((v) => typeof v === "string" && v.length >= 4);
+            for (const s of secretos) for (const v of new Set([s, encodeURIComponent(s), JSON.stringify(s).slice(1, -1), s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")])) t = t.split(v).join("***");
+            fs.writeFileSync(f, t);
+          '
+
+      - name: Subir el resumen (junit.xml, sin trazas ni capturas)
+        if: ${{ !cancelled() && steps.gate.outputs.run == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-junit
+          path: test-results/junit.xml
+          if-no-files-found: ignore
+          retention-days: 14

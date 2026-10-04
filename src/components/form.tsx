@@ -25,7 +25,8 @@ function FieldError({ id, error }: { id: string; error?: string }) {
 
 type BaseProps = {
   id: string;
-  label: string;
+  /** Texto de la etiqueta. Puede llevar un `<span className="sr-only">` para dar contexto a lectores de pantalla. */
+  label: React.ReactNode;
   required?: boolean;
   error?: string;
   className?: string;

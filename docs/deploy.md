@@ -45,8 +45,14 @@ Se aplican **en orden**, pegando cada archivo completo en **SQL Editor, New quer
 | 9 | `0009_reglas_oportunidades.sql` | Fecha de cierre no futura (fecha de Argentina), fecha de cierre por defecto de Argentina y "empresa o contacto" obligatorio en oportunidades. `create or replace` + trigger nuevo, idempotente, sin `begin`/`commit` | Requiere la 0008. **Pendiente de aplicar en la base viva.** Después, `supabase/tests/0009_reglas_oportunidades.sql` |
 | 10 | `0010_indices_busqueda.sql` | Índices para la búsqueda y la paginación del servidor (F3): btree por organización y orden de cada lista, y un bloque **opcional** de trigramas (`create extension pg_trgm`). Idempotente, sin `begin`/`commit`. Sin prueba SQL: solo agrega índices | Requiere la 0009. **Pendiente de aplicar en la base viva.** Mejora el tiempo con volumen; la app anda igual sin ella. Si el entorno no tiene `pg_trgm`, borrar el bloque entre `BLOQUE OPCIONAL: PG_TRGM` y `FIN BLOQUE OPCIONAL` |
 | 11 | `0011_rubro.sql` | Rubro (F4): tablas `canchas` y `licitaciones` con RLS multitenant, columna `oportunidades.venta_item_id` el índice único de una oportunidad abierta por equipo y el trigger que impide ganar una licitación antes de su apertura. Idempotente, sin `begin`/`commit` | Requiere la 0010. **Pendiente de aplicar en la base viva.** Después, `supabase/tests/0011_rubro.sql`. Hasta aplicarla, la app esconde canchas, licitaciones y el botón de recambio (no se rompe nada); el parque instalado anda igual |
+| 12 | `0012_presupuestos.sql` | Presupuesto imprimible (F6): tabla `presupuestos` (numerada por organización, inmutable, sin borrado) y su contador `presupuesto_contadores` con el trigger `presupuestos_numero`; agrega `bitacora_entradas_org_id_key` (UNIQUE `(organizacion_id, id)`) para la FK compuesta de la actividad. Idempotente, sin `begin`/`commit` | Requiere la 0011. **Pendiente de aplicar en la base viva.** Después, `supabase/tests/0012_presupuestos.sql`. Hasta aplicarla, `/oportunidades/[id]/presupuesto` arma e imprime el presupuesto como «Borrador» (sin número, sin guardar y sin registrar la actividad) y un administrador ve el aviso "Se activa al aplicar la migración 0012" |
 
 Cosas a saber:
+
+- **0012 (presupuestos, F6) también está pendiente.** Se pega después de la 0011, y conviene correr enseguida
+  `supabase/tests/0012_presupuestos.sql` (tiene que dar `TODO OK`). La app detecta que falta (`esErrorDeEsquema`) y sigue
+  andando como borrador, así que se puede desplegar antes; al aplicarla, "Guardar presupuesto" funciona al recargar.
+  Al aplicarla, regenerar `src/lib/supabase/types.ts` (la tabla `presupuestos` está escrita a mano).
 
 - **0011 (rubro, F4) también está pendiente.** Se pega después de la 0010. La app de F4 detecta que falta y esconde
   lo que depende de ella, así que se puede desplegar antes; las secciones aparecen solas al aplicarla (recargar la página).
@@ -92,7 +98,7 @@ Regenerarlo es previo a construir las pantallas de F1.
 
 Se ejecutan en el SQL Editor y terminan en `ROLLBACK` (no dejan nada). Detalle y qué prueba cada una en
 [pruebas](./pruebas.md). Después de la 0007: `0005_permisos.sql` y `0007_reglas.sql` tienen que devolver
-`TODO OK`; después de la 0008, `0008_baja_logica.sql`; después de la 0009, `0009_reglas_oportunidades.sql`; después de la 0011, `0011_rubro.sql`. `0007_reejecucion.sql` es la excepción: solo funciona en una base **sin** la 0007.
+`TODO OK`; después de la 0008, `0008_baja_logica.sql`; después de la 0009, `0009_reglas_oportunidades.sql`; después de la 0011, `0011_rubro.sql`; después de la 0012, `0012_presupuestos.sql`. `0007_reejecucion.sql` es la excepción: solo funciona en una base **sin** la 0007.
 
 ### Storage
 
@@ -119,6 +125,14 @@ rol por defecto) y datos en todos los módulos. Requiere `0001` a `0007`.
 - Las cuentas están en el [README](../README.md#cuentas-de-demostración). Su contraseña es pública: ver los
   [límites de seguridad](./seguridad.md#6-límites-conocidos).
 - Después de aplicar la 0007 a una demo anterior, hay que volver a correr el seed.
+
+### Organización de pruebas E2E
+
+`supabase/seeds/e2e_tests.sql` crea otra organización, **"E2E Tuco & Nito"**, con un Administrador y un Vendedor
+(`@e2e.tuconito.com.ar`; **la contraseña la elegís vos y se escribe en el bloque `CONFIGURACION` del archivo antes de pegarlo**: el repositorio es público y el archivo no trae ninguna, y si queda el valor de ejemplo se corta sin crear nada), 12 empresas, un contacto, dos productos y una
+oportunidad fija. Es lo que usan las pruebas de Playwright (ver [pruebas](./pruebas.md#5-pruebas-e2e-con-playwright)):
+**las pruebas E2E crean registros reales, así que nunca se apuntan a la demo**. Se pega entero en el SQL Editor,
+una vez por proyecto; es re-ejecutable. Requiere `0001` a `0007`.
 
 ## 4. Configuración de Auth
 
@@ -174,6 +188,26 @@ Desde ahí, **cada push a `main` genera un deploy de producción** automático. 
 `crmgads1` (sin guion). El dominio de producción apunta siempre al último build exitoso.
 
 Una variable de entorno nueva o cambiada solo se aplica con un deploy nuevo.
+
+### Integración continua (GitHub Actions)
+
+`.github/workflows/ci.yml` corre en cada push y pull request a `main`: `npm run lint` (`src`, `e2e` y la config de Playwright, sin advertencias), `npm run typecheck`
+(`src` y `e2e`), `npm test` (los self-checks) y `next build`. Usa Node 22, `npm ci` con caché y cancela la corrida
+anterior de la misma rama. **El build no usa secretos**: compila con
+`NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co` y `NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder` (ninguna pantalla
+consulta datos al compilar). No corre las pruebas SQL (ver [pruebas](./pruebas.md#4-pruebas-sql)).
+
+Hay un segundo job, **E2E**, que corre solo en `main` o con *Run workflow* (nunca en pull requests) y solo si están estos
+**secretos del repositorio** (Settings, Secrets and variables, Actions). Sin ellos termina bien y deja un aviso:
+
+| Secreto | Para qué |
+|---|---|
+| `E2E_EMAIL`, `E2E_PASSWORD` | Administrador de la organización de pruebas |
+| `E2E_EMAIL_VENDEDOR`, `E2E_PASSWORD_VENDEDOR` | Vendedor de esa organización |
+| `E2E_BASE_URL` | Opcional: una app ya desplegada para probar. Si falta, el job compila y levanta la app ahí mismo |
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Los **reales**, del proyecto donde está la organización E2E; solo hacen falta si no hay `E2E_BASE_URL` |
+
+**El repositorio es público: los artefactos de una corrida los puede bajar cualquiera.** Por eso en CI Playwright corre con trazas, capturas y videos apagados y sin reporte HTML (todo eso puede guardar lo que las pruebas escriben en los campos, el login incluido), y el job solo sube `e2e-junit` (`junit.xml`, 14 días) después de **tachar con `***` el valor de todos los secretos**. Los detalles de una falla se ven en el log del job (GitHub enmascara los secretos ahí) o corriendo la prueba localmente. Elegí para las cuentas E2E una clave que **no reuses en ningún otro lado** y cargala solo como secreto (`E2E_PASSWORD`, `E2E_PASSWORD_VENDEDOR`); nunca la escribas en un archivo del repositorio.
 
 ## 7. Mails por SMTP con Gmail
 

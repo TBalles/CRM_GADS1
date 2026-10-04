@@ -23,6 +23,9 @@
 //
 // 0011 (F4, rubro): canchas, licitaciones y oportunidades.venta_item_id tambien
 // estan escritos a mano (la migracion se aplica a mano, despues). Regenerar al aplicarla.
+//
+// 0012 (F6, presupuestos): la tabla `presupuestos` tambien esta escrita a mano (`numero` es opcional en
+// Insert porque lo asigna el trigger). `presupuesto_contadores` no se tipa: la API no la ve. Regenerar al aplicarla.
 
 export type Json =
   | string
@@ -1035,6 +1038,76 @@ export type Database = {
             // Escrito a mano: es 1 a 1 por el unique de `oportunidad_id` (0011). Regenerar al aplicar la migracion.
             isOneToOne: true
             referencedRelation: "oportunidades"
+            referencedColumns: ["organizacion_id", "id"]
+          },
+        ]
+      }
+      presupuestos: {
+        Row: {
+          actividad_id: string | null
+          condicion_iva: string | null
+          condiciones: string | null
+          created_at: string
+          creado_por: string | null
+          emisor: Json
+          fecha: string
+          id: string
+          lineas: Json
+          notas: string | null
+          numero: number
+          oportunidad_id: string
+          organizacion_id: string
+          total: number
+          validez_dias: number
+        }
+        Insert: {
+          actividad_id?: string | null
+          condicion_iva?: string | null
+          condiciones?: string | null
+          created_at?: string
+          creado_por?: string | null
+          emisor?: Json
+          fecha?: string
+          id?: string
+          lineas?: Json
+          notas?: string | null
+          // Escrito a mano: la columna es NOT NULL, pero la asigna el trigger presupuestos_numero (0012).
+          numero?: number
+          oportunidad_id: string
+          organizacion_id?: string
+          total?: number
+          validez_dias?: number
+        }
+        Update: {
+          actividad_id?: string | null
+          condicion_iva?: string | null
+          condiciones?: string | null
+          created_at?: string
+          creado_por?: string | null
+          emisor?: Json
+          fecha?: string
+          id?: string
+          lineas?: Json
+          notas?: string | null
+          numero?: number
+          oportunidad_id?: string
+          organizacion_id?: string
+          total?: number
+          validez_dias?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presupuestos_oportunidad_id_fkey"
+            columns: ["organizacion_id", "oportunidad_id"]
+            isOneToOne: false
+            referencedRelation: "oportunidades"
+            referencedColumns: ["organizacion_id", "id"]
+          },
+          {
+            foreignKeyName: "presupuestos_actividad_id_fkey"
+            columns: ["organizacion_id", "actividad_id"]
+            isOneToOne: false
+            referencedRelation: "bitacora_entradas"
             referencedColumns: ["organizacion_id", "id"]
           },
         ]

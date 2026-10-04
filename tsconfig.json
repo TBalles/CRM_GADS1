@@ -33,5 +33,7 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  // e2e/ y playwright.config.ts tienen su propio tsconfig (e2e/tsconfig.json): asi el build de Next no
+  // depende de los tipos de Playwright y el chequeo de src no se toca. `npm run typecheck` corre los dos.
+  "exclude": ["node_modules", "e2e", "playwright.config.ts"]
 }

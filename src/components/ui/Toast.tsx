@@ -133,7 +133,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       {mounted &&
         toasts.length > 0 &&
         createPortal(
-          <div className="fixed right-4 top-4 z-[130] flex flex-col gap-2">
+          <div data-app-chrome className="fixed right-4 top-4 z-[130] flex flex-col gap-2">
             {toasts.map((t) => (
               <ToastItem key={t.id} toast={t} onRemove={removeToast} />
             ))}

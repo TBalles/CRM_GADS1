@@ -1,8 +1,9 @@
 # Modelo de datos
 
 Esquema `public` de Postgres (Supabase) tal como queda después de aplicar las migraciones `0001` a `0007`
-(más la `0008` a la `0011`, que están en el repositorio y **se aplican a mano**; la `0011` agrega `canchas`,
-`licitaciones` y `oportunidades.venta_item_id`, ver [Rubro](#rubro-0011-f4)).
+(más la `0008` a la `0012`, que están en el repositorio y **se aplican a mano**; la `0011` agrega `canchas`,
+`licitaciones` y `oportunidades.venta_item_id`, ver [Rubro](#rubro-0011-f4); la `0012` agrega `presupuestos` y
+`presupuesto_contadores`, ver [Presupuestos](#presupuestos-0012-f6)).
 La fuente de verdad son los archivos de `supabase/migrations/`; este documento los resume.
 
 **Estado de cada parte.** Las tablas, columnas y reglas de este documento existen en la base de producción
@@ -50,6 +51,9 @@ erDiagram
     venta_items |o--o{ oportunidades : "venta_item_id (0011)"
     empresas ||--o{ canchas : "empresa_id (0011)"
     oportunidades ||--o| licitaciones : "oportunidad_id (0011)"
+    oportunidades ||--o{ presupuestos : "oportunidad_id (0012)"
+    bitacora_entradas |o--o| presupuestos : "actividad_id (0012)"
+    organizaciones ||--o| presupuesto_contadores : "organizacion_id (0012)"
 
     empresas |o--o{ bitacora_entradas : "empresa_id"
     contactos |o--o{ bitacora_entradas : "contacto_id"
@@ -355,6 +359,35 @@ Columna nula, FK compuesta `(organizacion_id, venta_item_id)` a `venta_items`, `
 tiene a lo sumo una oportunidad de recambio abierta.
 Es el equipo entregado del que sale una oportunidad de recambio.
 
+### Presupuestos (0012, F6)
+
+Se aplican a mano; mientras falten, `/oportunidades/[id]/presupuesto` arma e imprime el presupuesto como «Borrador» (ver
+[reglas, sección 13](./reglas-de-negocio.md#13-presupuesto-imprimible-f6)).
+
+#### `presupuestos`
+
+| | |
+|---|---|
+| Propósito | Cada presupuesto emitido desde una oportunidad: numerado, con sus líneas y lo que se imprimió. Documento emitido: **no se borra ni se modifica** |
+| Columnas | `oportunidad_id` (obligatoria, FK compuesta a `oportunidades`, sin `on delete`), `numero` (correlativo por organización, **lo asigna el trigger**; `default 0` y `check (numero > 0)`: el trigger pisa el 0 y cualquier valor del cliente), `fecha` (emisión; **la pone la base**, hoy en Argentina), `validez_dias` (1 a 365), `condiciones` (hasta 2000 caracteres), `lineas` (`jsonb`, arreglo de hasta 200: `{ producto_id?, descripcion, cantidad, precio_unitario, descuento_pct }`), `notas`, `total` (mayor o igual a 0; con IVA si el proveedor es Responsable Inscripto), `creado_por` (el trigger lo fuerza a `auth.uid()` cuando hay usuario), `condicion_iva` y `emisor` (**foto del emisor al emitir**: la condición frente al IVA, y razón social, CUIT, dirección, teléfono, mail y web en un `jsonb` objeto; **no el logo**), `created_at`, `actividad_id` (la actividad «Envío de propuesta» registrada al imprimir; FK compuesta a `bitacora_entradas`, `on delete set null`) |
+| Restricciones | `UNIQUE (organizacion_id, numero)`, `UNIQUE (organizacion_id, id)` |
+| RLS | Ver: `oportunidades.ver`; crear y editar: `oportunidades.editar`; cartera por la oportunidad (salvo `clientes.ver_todos`). **Sin política de borrar** |
+| Reglas | `presupuestos_numero` (antes de insertar) asigna el número, fuerza `creado_por` y deja `actividad_id` en nulo; `presupuestos_proteger` (antes de actualizar) rechaza cualquier cambio salvo completar `actividad_id`, y una sola vez (`23514`); la única excepción es soltar el vínculo cuando la actividad ya no existe (el `on delete set null` de la FK) |
+
+`lineas` y `total` los arma la aplicación con `src/lib/presupuesto.ts`; la base solo exige que `lineas` sea un arreglo
+de hasta 200 elementos y que `total` no sea negativo (no recalcula el total: es la copia de lo que se imprimió).
+
+#### `presupuesto_contadores`
+
+| | |
+|---|---|
+| Propósito | Último número asignado por organización |
+| Columnas | `organizacion_id` (PK, cascade), `ultimo` |
+| RLS | Prendida **sin políticas** y con los privilegios de `anon` y `authenticated` revocados: no se lee ni se escribe desde la API. Solo la toca el trigger, que es `SECURITY DEFINER` |
+
+La 0012 también agrega `bitacora_entradas_org_id_key` (`UNIQUE (organizacion_id, id)`) en `bitacora_entradas`, que la FK
+compuesta de `actividad_id` necesita como destino.
+
 ### Actividad e historial
 
 #### `bitacora_entradas` (las "actividades")
@@ -435,6 +468,8 @@ es la clave estable de los tipos de sistema y mapea los valores viejos de `bitac
 | `bitacora_defaults()` | Trigger | Autor y tipo de catálogo |
 | `organizaciones_proteger_plataforma()` | Trigger | Nombre y estado de la organización, solo de la plataforma |
 | `oportunidad_licitacion_regla()` | Trigger antes de insertar o actualizar `etapa_id`/`estado`/`tipo` de `oportunidades` (0011) | Una licitación no pasa a ganada antes de su apertura (fecha de Argentina) ni sin datos |
+| `presupuesto_asignar_numero()` | Trigger antes de insertar en `presupuestos` (0012), `SECURITY DEFINER` | Número correlativo por organización con `insert ... on conflict do update ... returning` sobre `presupuesto_contadores` (serializa altas simultáneas; ignora el número del cliente) |
+| `presupuesto_proteger()` | Trigger antes de actualizar `presupuestos` (0012), `SECURITY DEFINER` | Un presupuesto emitido no se modifica; solo se completa `actividad_id`, una vez (o se suelta si borran la actividad) |
 | `set_updated_at()` | Trigger | `updated_at` de oportunidades, canchas y licitaciones |
 | `cambiar_etapa(op, etapa, observacion, motivo, fecha)` | RPC, `SECURITY INVOKER` | Cambia de etapa con observación, motivo y fecha. Ejecutable por `authenticated` y `service_role` |
 

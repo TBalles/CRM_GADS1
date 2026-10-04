@@ -117,7 +117,12 @@ usa aún, salvo donde se aclara:
 sugerido en la ficha de empresa, licitaciones en oportunidades y "Crear oportunidad de recambio" en `/alertas`. Mientras la
 base no tenga la 0011 esas secciones se esconden (`src/lib/esquema.ts`); el parque anda igual.
 
-**Planificado** (F6 a F8, hasta 2026-11-11): presupuesto imprimible, E2E y CI, IA opcional y manual.
+**Presupuesto imprimible, E2E y CI (F6, migración `0012` pendiente de aplicar a mano)**: `/oportunidades/[id]/presupuesto` arma e imprime el
+presupuesto con el logo y los datos del proveedor (nunca la marca de la plataforma), IVA según la condición del proveedor y numeración por
+organización (`N° 000042`, la asigna un trigger con contador). Mientras la base no tenga la 0012 se imprime como «Borrador» sin guardarse.
+Pruebas E2E con Playwright contra una organización dedicada (`supabase/seeds/e2e_tests.sql`) y CI en GitHub Actions.
+
+**Planificado** (F7 y F8, hasta 2026-11-11): IA opcional y manual.
 
 **Fuera de alcance según la consigna** (no agregar sin que el usuario lo pida): tareas, agenda,
 recordatorios, exportación, integraciones, API pública, importación, facturación, pagos,
@@ -221,7 +226,9 @@ src/
         OportunidadesView.tsx     Client: conmutador Tablero|Lista (?vista=), filtros por URL, columnas por etapa abierta
         OportunidadForm.tsx       Form de alta/edición (usado dentro del Drawer); tipo y datos de licitación (F4)
         [id]/page.tsx             Detalle (Server Component; notFound si no existe o la RLS la esconde)
-        [id]/OportunidadDetalle.tsx  Client: datos, acciones, línea de tiempo, auditoría, Reasignar
+        [id]/OportunidadDetalle.tsx  Client: datos, acciones (incluye "Presupuesto"), línea de tiempo, auditoría, Reasignar
+        [id]/presupuesto/         Presupuesto imprimible (F6): page.tsx (server: oportunidad, proveedor, logo firmado, catálogo, anteriores)
+                                   y PresupuestoView.tsx (client: editor de líneas, hoja `.hoja-presupuesto`, guardar, imprimir, actividad)
   components/
     ui/                        Primitivos del Sumar UI Kit — reusar, no reinventar
       UIComponents.tsx          cn, useModalAnimation, useAnchoredPortal, Card, Button, Input,
@@ -295,6 +302,7 @@ src/
     parque.ts                  Parque instalado: vence, días, estado y grupos (misma cuenta que la vista de alertas)
     canchas.ts                 Formatos, medidas y equipamiento sugerido (función pura)
     recambio.ts                Recambio en 1 clic: título, valor, origen, duplicados (función pura)
+    presupuesto.ts             Presupuesto (F6): cuentas en centavos, regla de IVA, validez, número `N° 000042`, validación (función pura)
     (cada uno con su .check.ts)
     supabase/
       client.ts                Cliente Supabase para Client Components (drawers, mutaciones)
@@ -325,14 +333,20 @@ supabase/
     0009_reglas_oportunidades.sql  Fecha de cierre no futura (hora de Argentina), empresa o contacto obligatorio (pendiente en la base viva)
     0010_indices_busqueda.sql   Índices para la búsqueda y la paginación del servidor, con un bloque opcional pg_trgm (pendiente en la base viva)
     0011_rubro.sql              Canchas, licitaciones, oportunidades.venta_item_id y la regla de la apertura (pendiente en la base viva)
+    0012_presupuestos.sql       Presupuestos numerados por organización (trigger + contador), inmutables y sin borrado (pendiente en la base viva)
   tests/                        SQL con rollback; devuelven "TODO OK" o fallan con "FALLA:"
     0005_permisos.sql           Aislamiento y permisos (correr DESPUÉS de la 0007)
     0007_reglas.sql             Reglas de la 0007 (correr después de aplicarla)
     0008_baja_logica.sql        Baja lógica y etapas de cierre (correr después de aplicar la 0008)
     0009_reglas_oportunidades.sql  Reglas de la 0009 (correr después de aplicarla)
     0011_rubro.sql              Canchas, licitaciones y la regla de la apertura (correr después de aplicar la 0011)
+    0012_presupuestos.sql       Numeración, aislamiento, inmutabilidad y sin borrado de presupuestos (correr después de aplicar la 0012)
     0007_reejecucion.sql        Re-ejecución de la 0007 (SOLO en una base sin la 0007)
   seeds/demo_catedra.sql        Organización "Cátedra UNLaM (demo)" con una cuenta por rol y datos
+  seeds/e2e_tests.sql           Organización "E2E Tuco & Nito" (admin y vendedor) para las pruebas E2E; nunca la demo
+e2e/                            Pruebas E2E de Playwright (F6): acceso.spec.ts, demo.spec.ts, navegacion.spec.ts, helpers.ts y su tsconfig
+playwright.config.ts            Config de Playwright (chromium, E2E_BASE_URL, se saltan sin E2E_EMAIL/E2E_PASSWORD)
+.github/workflows/ci.yml        CI: lint, tipos, self-checks y build en cada push/PR a main; job E2E aparte con secretos
 ```
 
 No hay rutas separadas para "nueva empresa": todo alta/edición pasa por el `Drawer`, desde la lista o
@@ -342,7 +356,7 @@ desde la ficha. Las fichas (`/empresas/[id]`, `/contactos/[id]`) son de F1b y el
 ### Modelo de datos (Postgres, esquema `public`)
 
 Resumen. El detalle completo (diagrama ER, columnas, FKs, RLS por tabla) está en
-[`docs/modelo-de-datos.md`](./docs/modelo-de-datos.md). 18 tablas (20 con la 0011) más la vista `alertas_vida_util`.
+[`docs/modelo-de-datos.md`](./docs/modelo-de-datos.md). 18 tablas (20 con la 0011, 22 con la 0012: `presupuestos` y `presupuesto_contadores`) más la vista `alertas_vida_util`.
 
 - **Plataforma**: `organizaciones` (un cliente = una fila; desde la 0007 también datos fiscales y
   `logo_path`), `perfiles` (espejo de `auth.users`: organización, rol, `activo`, `activado_at`,
@@ -380,7 +394,7 @@ Ya hay un proyecto de Supabase conectado y provisionado (organización `dgmoqhih
 proyecto `pdseuwdifzywpdgawbrl`, región `us-west-2`). Se armó vía el MCP de Supabase:
 
 - Las migraciones `0001` a `0007` están aplicadas (la `0007` el 2026-10-04, con sus pruebas SQL). La `0008`, la
-  `0009`, la `0010` (índices de F3, sin cambios de reglas) y la `0011` (rubro, F4) están en el repositorio pero **falta aplicarlas a mano** en el SQL Editor, en ese orden; hasta entonces
+  `0009`, la `0010` (índices de F3, sin cambios de reglas), la `0011` (rubro, F4) y la `0012` (presupuestos, F6) están en el repositorio pero **falta aplicarlas a mano** en el SQL Editor, en ese orden; hasta entonces
   la base no impone "fecha de cierre no futura" ni "empresa o contacto" (la interfaz de F2 sí las valida).
   Se aplican a mano en el SQL Editor, en orden; **aplicar y desplegar enseguida**, ver
   [`docs/deploy.md`](./docs/deploy.md).
@@ -467,17 +481,17 @@ Como el stack es Tailwind v4 (no v3 como el kit), los tokens se declaran con `@t
 ```bash
 npm run dev      # servidor de desarrollo (http://localhost:3000)
 npm run build    # build de producción
-npm run lint     # eslint
+npm run lint     # eslint src e2e playwright.config.ts --max-warnings=0 (sin advertencias)
+npm run typecheck  # tsc --noEmit sobre src y sobre e2e (e2e tiene su propio tsconfig)
 
-npx tsc --noEmit                     # tipos
-npx eslint src --max-warnings=0      # lint sin advertencias
-
-# Self-checks (sin framework, runner de Node): money, equipo, permisos, email/layout, alertas/plantillas, clientes, oportunidades...
-node --test "src/**/*.check.ts"      # 19 archivos, 167 pruebas
+# Self-checks (sin framework, runner de Node): money, equipo, permisos, email/layout, alertas/plantillas, clientes, oportunidades, presupuesto...
+npm test                             # node --test "src/**/*.check.ts": 20 archivos, 187 pruebas
 node --test src/lib/money.check.ts   # o uno solo
+
+npm run test:e2e   # Playwright (e2e/); necesita E2E_EMAIL, E2E_PASSWORD, E2E_EMAIL_VENDEDOR, E2E_PASSWORD_VENDEDOR y E2E_BASE_URL; sin credenciales se saltan
 ```
 
-Antes de pushear pasan `tsc`, `eslint`, los self-checks y `next build`. Las pruebas SQL de
+Antes de pushear pasan `lint`, `typecheck`, `test` y `next build` (la CI de `.github/workflows/ci.yml` corre lo mismo). Las pruebas SQL de
 `supabase/tests/` se pegan en el SQL Editor (hacen rollback); `0005_permisos.sql` y `0007_reglas.sql`
 se corren después de la 0007, y `0007_reejecucion.sql` solo en una base que no la tiene. Detalle en
 [`docs/pruebas.md`](./docs/pruebas.md).
