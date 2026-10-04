@@ -56,7 +56,7 @@ export const PERMISOS: DefPermiso[] = [
   { clave: "clientes.ver", grupo: "Clientes", etiqueta: "Ver clientes", descripcion: "Empresas y sus contactos.", requiere: [] },
   { clave: "clientes.ver_todos", grupo: "Clientes", etiqueta: "Ver la cartera de todos", descripcion: "Sin este permiso, solo los clientes y oportunidades asignados al usuario.", requiere: ["clientes.ver"] },
   { clave: "clientes.editar", grupo: "Clientes", etiqueta: "Crear y editar clientes", descripcion: "Alta y edición de empresas y contactos.", requiere: ["clientes.ver"] },
-  { clave: "clientes.asignar", grupo: "Clientes", etiqueta: "Asignar clientes", descripcion: "Elegir o cambiar el responsable de empresas y contactos.", requiere: ["clientes.editar"] },
+  { clave: "clientes.asignar", grupo: "Clientes", etiqueta: "Asignar clientes", descripcion: "Elegir o cambiar el responsable de empresas y contactos. Para asignar hay que ver la cartera de todos.", requiere: ["clientes.editar", "clientes.ver_todos"] },
   { clave: "bitacora.ver", grupo: "Bitácora", etiqueta: "Ver la bitácora", descripcion: "Historial de charlas, consultas y quejas.", requiere: ["clientes.ver"] },
   { clave: "bitacora.escribir", grupo: "Bitácora", etiqueta: "Escribir en la bitácora", descripcion: "Agregar entradas (no se pueden editar ni borrar).", requiere: ["bitacora.ver"] },
   { clave: "oportunidades.ver", grupo: "Oportunidades", etiqueta: "Ver oportunidades", descripcion: "El embudo comercial.", requiere: ["clientes.ver", "productos.ver"] },

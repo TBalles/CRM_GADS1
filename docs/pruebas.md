@@ -8,7 +8,7 @@ pegan en el SQL Editor de Supabase.
 
 | Verificación | Resultado |
 |---|---|
-| `node --test "src/**/*.check.ts"` | 37 pruebas, 37 pasan, 0 fallan |
+| `node --test "src/**/*.check.ts"` | 50 pruebas, 50 pasan, 0 fallan |
 | `npx tsc --noEmit` | Sin errores |
 | `npx eslint src --max-warnings=0` | Sin advertencias |
 | `npx next build` | No se ejecutó al escribir estas notas |
@@ -25,7 +25,7 @@ Contenido: [1. Resumen](#1-resumen) · [2. Self-checks](#2-self-checks-con-node-
 
 | Qué | Cómo se corre | Dónde | Qué prueba |
 |---|---|---|---|
-| Self-checks (5 archivos, 37 pruebas) | `node --test "src/**/*.check.ts"` | Terminal | Lógica pura: dinero, íconos, permisos, mails, mensajes |
+| Self-checks (8 archivos, 50 pruebas) | `node --test "src/**/*.check.ts"` | Terminal | Lógica pura: dinero, íconos, permisos, mails, mensajes, CUIT, sitio web, vocabulario de clientes |
 | Tipos | `npx tsc --noEmit` | Terminal | Que todo el TypeScript compile |
 | Lint | `npx eslint src --max-warnings=0` | Terminal | Estilo y errores comunes, sin tolerar advertencias |
 | Build | `npx next build` | Terminal | Que la aplicación se construya (incluye el chequeo de `server-only`) |

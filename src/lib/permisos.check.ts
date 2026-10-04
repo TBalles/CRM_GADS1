@@ -52,6 +52,12 @@ test("conDependencias agrega lo que hace falta, transitivamente", () => {
   assert.deepEqual(conDependencias([]), []);
 });
 
+test("asignar clientes implica ver la cartera de todos", () => {
+  // Sin ver_todos, el selector de responsable ofrecería a quien el que asigna no puede ver el resultado.
+  assert.ok(conDependencias(["clientes.asignar"]).includes("clientes.ver_todos"));
+  assert.ok(conDependencias(["clientes.asignar"]).includes("clientes.editar"));
+});
+
 test("el rol Administrador tiene TODOS los permisos", () => {
   const admin = ROLES_POR_DEFECTO.find((r) => r.esAdmin);
   assert.deepEqual([...(admin?.permisos ?? [])].sort(), [...CLAVES_PERMISOS].sort());

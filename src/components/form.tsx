@@ -43,7 +43,9 @@ export function Campo({
   placeholder,
   autoFocus,
   inputMode,
+  max,
 }: BaseProps & {
+  max?: string;
   type?: string;
   value: string;
   onChange: (value: string) => void;
@@ -61,6 +63,7 @@ export function Campo({
         name={id}
         type={type}
         inputMode={inputMode}
+        max={max}
         required={required}
         autoFocus={autoFocus}
         placeholder={placeholder}

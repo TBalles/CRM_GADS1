@@ -110,13 +110,14 @@ administrador vean todo. Ver la [decisión 0005](./decisiones/0005-cartera-propi
 | 4.3 | Lo que **cuelga** de una empresa se ve si se ve la empresa: ventas, ítems, alertas enviadas, actividades (y la vista `alertas_vida_util`, que hereda por ser `security_invoker`) | RLS (subconsulta a `empresas` con la RLS de quien consulta) | `0007` | Sí |
 | 4.4 | Las actividades también se ven si se ve su contacto o su oportunidad | RLS | `0007` | Sí |
 | 4.5 | Alta sin responsable: queda asignada a **quien la crea** (la app vieja manda `null` explícito, por eso no alcanza con un `default`) | Trigger `validar_responsable` | `0007` | Sí (efecto automático) |
-| 4.6 | Crear algo para otra persona, o **reasignar**, exige `clientes.asignar` (empresas y contactos) u `oportunidades.asignar` (oportunidades) ("No tenés permiso para asignar o reasignar el responsable.") | Trigger | `0007` | Parcial: el formulario de oportunidades permite elegir; sin pantalla para empresas y contactos |
+| 4.6 | Crear algo para otra persona, o **reasignar**, exige `clientes.asignar` (empresas y contactos) u `oportunidades.asignar` (oportunidades) ("No tenés permiso para asignar o reasignar el responsable.") | Trigger | `0007` | Sí: los formularios de empresa y contacto ofrecen el selector solo con `clientes.asignar` (sin él, solo lectura); el de oportunidades ya lo hacía |
 | 4.7 | El responsable tiene que ser un usuario de la **misma organización** | Trigger | `0007` | Sí |
 | 4.8 | Sin usuario (scripts, `service_role`) no se exige permiso de asignar | Trigger (`auth.uid() is null`) | `0007` | n/a |
 | 4.9 | Los roles que ya veían clientes antes de la 0007 reciben `clientes.ver_todos` (para no quedar ciegos); los únicos con cartera propia son los vendedores (`Ventas`, `Vendedor`) | Bloque de datos, una sola vez | `0007`, sección 1 | n/a |
 | 4.10 | Lo que no tiene responsable lo ven solo quienes tienen `clientes.ver_todos` | RLS | `0007` | Sí |
 | 4.11 | **Escribir** una actividad exige más que ver una referencia: la empresa, el contacto y la oportunidad que vengan tienen que ser visibles para quien escribe y coherentes entre sí (el contacto, de esa empresa; la oportunidad, de esa empresa o sin empresa). Evita colgar una actividad en el cliente de otro usando la propia oportunidad como llave | RLS (`with check`) | `0007` | Sí |
 | 4.12 | Reasignar la cartera existente: la empresa tomó el responsable de su oportunidad más reciente; el contacto, el de su oportunidad o el de su empresa. Una sola vez | Bloque de datos | `0007`, sección 7 | n/a |
+| 4.13 | Asignar (`clientes.asignar`) **implica** ver la cartera de todos (`clientes.ver_todos`): el editor de roles lo tilda solo. Es una regla de la app (`conDependencias`), no del CHECK de la base | `src/lib/permisos.ts` | F1b | Sí |
 
 ---
 
@@ -126,7 +127,7 @@ La consigna: los registros con información histórica no se eliminan; se cambia
 
 | Entidad | Cómo se da de baja | Qué impide el borrado | Interfaz |
 |---|---|---|---|
-| Empresa, contacto | `estado = 'inactivo'` (también `no_contactar`) | La interfaz no ofrece borrar y, desde la `0008`, **la base tampoco lo permite** a un usuario (sin política `borrar`: el `DELETE` afecta 0 filas). Solo el borrado de una organización entera (superadmin) arrastra todo por `on delete cascade` | Sin interfaz para cambiar el estado |
+| Empresa, contacto | `estado = 'inactivo'` (también `no_contactar`) | La interfaz no ofrece borrar y, desde la `0008`, **la base tampoco lo permite** a un usuario (sin política `borrar`: el `DELETE` afecta 0 filas). Solo el borrado de una organización entera (superadmin) arrastra todo por `on delete cascade` | Sí (F1b): "Dar de baja" y "Reactivar" con confirmación; las dadas de baja se esconden tras el chip "Ver dadas de baja" |
 | Oportunidad | Se marca perdida (con motivo) | **No hay política de borrar para nadie.** Su historial y auditoría la referencian sin cascada | Marcar perdida con motivo: sin interfaz |
 | Producto | `activo = false` | `venta_items.producto_id` es `on delete restrict` | Sí (`/productos`, "Dar de baja") |
 | Etapa, origen, motivo, tipo de actividad | `activo = false` (catálogos) | Las oportunidades y actividades viejas los referencian sin cascada | Sin interfaz |
@@ -145,10 +146,10 @@ La consigna: los registros con información histórica no se eliminan; se cambia
 | 6.1 | Una actividad es un hecho ya ocurrido. No hay tareas, agenda ni recordatorios | Diseño | consigna | Sí |
 | 6.2 | Es un log: se agrega y no se corrige | RLS (sin update ni delete) | `0005`, `0007` | Sí |
 | 6.3 | El autor es **siempre** quien la registra: se ignora un `autor_id` ajeno | Trigger `bitacora_defaults` | `0007` | Sí |
-| 6.4 | Tiene que pertenecer a una empresa o a un contacto (o ambos) | Restricción `bitacora_entradas_empresa_o_contacto` | `0007` | Sin interfaz para cliente individual |
-| 6.5 | Tipo de actividad de catálogo, obligatorio. La columna vieja `tipo` se traduce: si solo viene `tipo`, se busca el tipo por `codigo` (`consulta` pasa a "Otro"); si viene el tipo de catálogo, se completa el `tipo` viejo (los códigos fuera de los 6 históricos quedan como `nota`) | Trigger | `0007` | Compatibilidad: la pantalla usa el `tipo` viejo |
-| 6.6 | Puede vincularse a una oportunidad y llevar un resultado | Columnas | `0007` | Sin interfaz |
-| 6.7 | Los 9 tipos mínimos de la consigna están sembrados, más 3 del rubro (Visita a cancha, Entrega de equipamiento, Reclamo) | `crear_catalogos_iniciales()` | `0007` | Sin interfaz (la pantalla ofrece 7 tipos propios) |
+| 6.4 | Tiene que pertenecer a una empresa o a un contacto (o ambos) | Restricción `bitacora_entradas_empresa_o_contacto` | `0007` | Sí (F1b): desde la ficha del contacto, también el individual |
+| 6.5 | Tipo de actividad de catálogo, obligatorio. La columna vieja `tipo` se traduce: si solo viene `tipo`, se busca el tipo por `codigo` (`consulta` pasa a "Otro"); si viene el tipo de catálogo, se completa el `tipo` viejo (los códigos fuera de los 6 históricos quedan como `nota`) | Trigger | `0007` | Sí (F1b): la pantalla manda `tipo_actividad_id`; `tipo` lo completa el trigger |
+| 6.6 | Puede vincularse a una oportunidad y llevar un resultado | Columnas | `0007` | Sí (F1b): resultado y oportunidad en `ActividadForm` |
+| 6.7 | Los 9 tipos mínimos de la consigna están sembrados, más 3 del rubro (Visita a cancha, Entrega de equipamiento, Reclamo) | `crear_catalogos_iniciales()` | `0007` | Sí (F1b): la pantalla ofrece los tipos activos del catálogo de la organización |
 
 ---
 
@@ -222,6 +223,7 @@ Estas no las garantiza la base; son convenciones de la aplicación.
 
 | Regla | Dónde |
 |---|---|
+| Una actividad no puede tener fecha futura (es un hecho ya ocurrido); lo valida el formulario | `src/components/ActividadForm.tsx` |
 | Los montos se ingresan con `MoneyInput` y se leen con `parseMoney` (máscara es-AR), nunca con `type="number"` | `src/lib/money.ts`, `src/components/ui/MoneyInput.tsx` |
 | Cada pantalla se protege con `exigirPermiso()` y el menú solo muestra lo que el rol puede ver | `src/lib/sesion.ts`, `AppShell.tsx` |
 | El mensaje de WhatsApp es más corto que el del mail; el verbo concuerda con la cantidad | `src/app/(app)/alertas/plantillas.ts` |

@@ -29,9 +29,11 @@ Incluido:
 - **Acceso**: login con Supabase Auth, sin registro público. Los usuarios se invitan (superadmin y
   administradores), activan su cuenta definiendo una contraseña y pueden recuperarla (ver "Cuentas"
   más abajo).
-- **Empresas y contactos**: alta y edición de empresas en `/empresas`; cada empresa es
-  desplegable y muestra sus contactos anidados, con alta/edición de contacto ahí mismo (relación
-  contacto → empresa, opcional).
+- **Empresas y contactos** (F1b): listas `/empresas` y `/contactos` con filtros (estado, responsable
+  con `clientes.ver_todos`, origen, empresa/individual) y chip "Ver dadas de baja"; fichas
+  `/empresas/[id]` y `/contactos/[id]` (datos, contactos, oportunidades, ventas, línea de tiempo de
+  actividades). Estado, tipo de cliente, responsable (editable solo con `clientes.asignar`) y origen.
+  **Baja lógica**: "Dar de baja" / "Reactivar" (`estado`), nunca borrar.
 - **Landing pública** en `/` (sin sesión): presentación, funcionalidades, cómo funciona,
   nosotros, FAQ y contacto. Los datos de contacto salen de variables de entorno
   (`src/lib/contacto.ts`). Si hay sesión, el botón cambia de "Ingresar" a "Ir al CRM".
@@ -42,8 +44,9 @@ Incluido:
   fecha de entrega y una **copia** de la vida útil del catálogo al momento de vender.
 - **Alertas de recambio** en `/alertas`: equipos entregados que vencieron o vencen en los próximos
   60 días, con mensaje prearmado para enviar por mail o WhatsApp. Se registra cada envío.
-- **Bitácora de clientes**: desde el menú "⋮" de cada empresa en `/empresas`. Llamadas, reuniones,
-  consultas, quejas y observaciones, con fecha, autor y contacto opcional.
+- **Actividades** (la antigua bitácora): "Registrar actividad" desde la ficha de la empresa o del
+  contacto (`src/components/ActividadForm.tsx`), con tipo de catálogo, fecha y hora (no futura),
+  descripción, resultado y oportunidad opcional; se listan en la línea de tiempo de la ficha.
 - **Oportunidades**: alta y edición, relacionadas a una empresa y/o contacto, con responsable
   asignado (usuario del sistema) y producto/servicio seleccionado. Listado; el detalle es el panel
   de edición (no hay página de detalle todavía, F2).
@@ -54,7 +57,7 @@ Incluido:
   la base al instante con un `update` de `etapa_id` (todavía no usa la RPC `cambiar_etapa`).
 - **Etapas**: las crea el trigger al dar de alta una organización (embudo del rubro: Consulta
   recibida, Relevamiento de cancha, Presupuesto enviado, Negociación, Entregado, Perdida). La base
-  permite configurarlas (`configuracion.gestionar`), pero no hay pantalla todavía (F1).
+  se configuran en `/configuracion` (`configuracion.gestionar`, F1a).
 - **Modo oscuro**: toggle manual (ícono sol/luna en la barra superior), respeta `prefers-color-scheme`
   la primera vez y después queda guardado en `localStorage`.
 
@@ -74,7 +77,7 @@ Incluido:
 usa aún, salvo donde se aclara:
 
 - Estados (potencial, cliente, inactivo, no contactar), responsable y origen en empresas y contactos
-  (baja lógica = `inactivo`). Alta de la cartera: un alta sin responsable queda para quien la crea.
+  (baja lógica = `inactivo`); la interfaz los usa desde F1b. Un alta sin responsable queda para quien la crea.
 - Oportunidades con estado (abierta, ganada, perdida), fecha de cierre, motivo de pérdida, origen,
   probabilidad y tipo. **Reglas del embudo en el trigger `oportunidades_reglas`**: el estado sale del
   tipo de la etapa, ganada pone fecha de cierre, perdida exige motivo, reabrir exige
@@ -85,11 +88,10 @@ usa aún, salvo donde se aclara:
   fiscales del proveedor más el bucket privado `logos` (PNG/JPG/WebP, 1 MB, sin SVG).
 - **Cartera propia**: sin `clientes.ver_todos` solo se ve lo asignado. Esto **sí rige en pantalla**
   (la base devuelve menos filas). Las oportunidades ya **no se borran** (sin política de borrar).
-- Actividades (`bitacora_entradas`) con tipo de catálogo, oportunidad y resultado; la pantalla
-  todavía usa el campo `tipo` viejo (un trigger lo traduce).
+- Actividades (`bitacora_entradas`) con tipo de catálogo, oportunidad y resultado: desde F1b la
+  interfaz usa `tipo_actividad_id` (el `tipo` viejo lo completa el trigger).
 
-**Planificado** (F1 a F8, 2026-10-13 a 2026-11-11): `/configuracion`, detalles de empresa, contacto y
-oportunidad, cierre desde la UI, búsqueda/filtros/paginación en el servidor, funciones del rubro
+**Planificado** (F2 a F8, hasta 2026-11-11): detalle de oportunidad, cierre desde la UI, búsqueda/filtros/paginación en el servidor, funciones del rubro
 (canchas, parque instalado, licitaciones), presupuesto imprimible, E2E y CI, IA opcional y manual.
 
 **Fuera de alcance según la consigna** (no agregar sin que el usuario lo pida): tareas, agenda,
@@ -158,12 +160,14 @@ src/
       dashboard/                KPIs + distribución del embudo + rankings
         page.tsx                 Server Component: cuenta y agrega oportunidades por etapa/empresa
         charts.tsx               MagnitudeBars / ShareBar en CSS puro (sin librería de charts)
-      empresas/                 Empresas desplegables con sus contactos anidados
-        page.tsx                 Server Component: fetch de empresas + contactos
-        EmpresasList.tsx          Client: header+toolbar, búsqueda, acordeón, abre los drawers
+      empresas/                 Lista de empresas (filtros, baja lógica) y su ficha
+        page.tsx                 Server Component: fetch de empresas + contactos (mínimos) + catálogos
+        EmpresasList.tsx          Client: header+toolbar, filtros, tabla/cards, abre los drawers
         EmpresaForm.tsx           Form de alta/edición de empresa (usado dentro del Drawer)
-        ContactoForm.tsx          Form de alta/edición de contacto (idem)
-        BitacoraPanel.tsx         Bitácora de la empresa (lista + alta), dentro del Drawer
+        [id]/page.tsx             Ficha (Server Component; notFound si no existe o la RLS la esconde)
+        [id]/EmpresaDetalle.tsx   Client: datos, contactos, oportunidades, ventas, actividades
+      contactos/                Lista de contactos (de empresa e individuales) y su ficha
+        page.tsx / ContactosList.tsx / ContactoForm.tsx / [id]/page.tsx / [id]/ContactoDetalle.tsx
       productos/                 ABM del catálogo con vida útil
         page.tsx / ProductosList.tsx / ProductoForm.tsx
       ventas/                    Historial de compras (cabecera + ítems)
@@ -203,6 +207,11 @@ src/
     Drawer.tsx                   Panel lateral derecho para los formularios de alta/edición
     RowActions.tsx               Menú "⋮" portaled que usan las filas de cada lista
     ThemeToggle.tsx              Toggle de modo oscuro (localStorage + prefers-color-scheme)
+    ActividadForm.tsx           Alta reutilizable de actividad (empresa, contacto, luego oportunidad)
+    ActividadesTimeline.tsx     Línea de tiempo de actividades, la más reciente arriba
+    BajaCliente.tsx             BajaModal + useReactivar: baja lógica de empresas y contactos
+    ClienteCampos.tsx           CampoResponsable (solo lectura sin clientes.asignar) y CampoOrigen
+    cliente.tsx                 EstadoPill, Dato, Seccion, AvisoEstado, listas de oportunidades y ventas
     form.tsx                    <Campo>, <CampoTextarea>, <CampoSelect>, <CampoMoney>,
                                 <CampoGrupo>, <FormBanner>, <FormActions>
   lib/
@@ -214,6 +223,8 @@ src/
     permisos.check.ts          Self-check: el catálogo coincide con el CHECK de la 0007
     cuentas.ts                 Alta, activación, recuperación y límite de mails (solo servidor)
     email/                     enviar.ts (único punto de salida SMTP), layout.ts (HTML de mails), plantillas.ts
+    clientes.ts                Estados, tipos de cliente, errores de la base en palabras, fechas (horario AR)
+    clientes.check.ts          Self-check: node --test src/lib/clientes.check.ts
     money.ts                   Máscara/parseo es-AR + formatters de display
     money.check.ts             Self-check: node --test src/lib/money.check.ts
     equipo.ts                  tipoEquipo(): qué equipo es un producto, para su ícono
@@ -250,11 +261,9 @@ supabase/
   seeds/demo_catedra.sql        Organización "Cátedra UNLaM (demo)" con una cuenta por rol y datos
 ```
 
-No hay rutas separadas para "nueva empresa" o "detalle de oportunidad": todo alta/edición pasa
-por el `Drawer` desde la lista correspondiente. Tampoco hay una página de Contactos aparte — viven
-anidados dentro de cada empresa en `/empresas` (un contacto sin empresa existe en la base pero hoy
-no se lista; `/contactos` y los detalles son F1). Rutas planificadas: `/configuracion`,
-`/contactos`, `/empresas/[id]`, `/oportunidades/[id]`.
+No hay rutas separadas para "nueva empresa": todo alta/edición pasa por el `Drawer`, desde la lista o
+desde la ficha. Las fichas (`/empresas/[id]`, `/contactos/[id]`) son de F1b. Ruta planificada:
+`/oportunidades/[id]` (F2).
 
 ### Modelo de datos (Postgres, esquema `public`)
 
@@ -386,7 +395,7 @@ npx tsc --noEmit                     # tipos
 npx eslint src --max-warnings=0      # lint sin advertencias
 
 # Self-checks (sin framework, runner de Node): money, equipo, permisos, email/layout, alertas/plantillas
-node --test "src/**/*.check.ts"      # 5 archivos, 37 pruebas
+node --test "src/**/*.check.ts"      # 8 archivos, 50 pruebas
 node --test src/lib/money.check.ts   # o uno solo
 ```
 

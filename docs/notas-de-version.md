@@ -57,7 +57,7 @@ vencieron o vencen en 60 días para avisar al cliente.
 | Páginas (`page.tsx`) | 13 | `src/app` |
 | Route handlers | 2 (`/auth/confirm`, `/auth/signout`) | `src/app/auth` |
 | Server Actions (archivos) | 6 | `src/app/**/actions.ts` |
-| Self-checks (`node --test`) | 5 archivos, 37 pruebas, todas pasan | ver [pruebas](./pruebas.md) |
+| Self-checks (`node --test`) | 8 archivos, 50 pruebas, todas pasan | ver [pruebas](./pruebas.md) |
 | Verificación estática | `tsc --noEmit` y `eslint src --max-warnings=0` pasan al commit `cb7c251` | ejecutadas al escribir estas notas |
 
 `next build` no se ejecutó al escribir estas notas.
@@ -124,12 +124,23 @@ administrador verificado; en el login público ese link se descarta a propósito
 
 - `/empresas` lista las empresas como acordeón; al desplegar una se ven sus contactos, con alta y edición
   en un panel lateral (`Drawer`). Busca por nombre, CUIT, mail, teléfono o dirección de la empresa, y por nombre, apellido, mail o cargo de sus contactos.
-- Campos que hoy edita la interfaz: empresa (nombre, CUIT, teléfono, email, dirección, notas) y contacto
-  (nombre, apellido, empresa, cargo, email, teléfono, notas).
-- Desde el menú de cada empresa se abre la bitácora (ver [b.7](#b7-bitácora-de-clientes)).
-- La interfaz no ofrece borrar empresas ni contactos.
+- **F1b: implementado.** `/empresas` y `/contactos` son listas con filtros (estado, responsable si el rol
+  tiene `clientes.ver_todos`, origen, empresa o individual) y un chip "Ver dadas de baja": las empresas y
+  contactos `inactivo` o `no_contactar` quedan escondidos hasta pedirlos. Cada nombre es un link a su
+  ficha: `/empresas/[id]` (datos, contactos con alta y edición, oportunidades, ventas y línea de tiempo de
+  actividades) y `/contactos/[id]` (datos, empresa, oportunidades, ventas y actividades). Un id inexistente,
+  o de la cartera de otro vendedor (la RLS lo esconde), da 404.
+- Campos que edita la interfaz: empresa (razón social, CUIT con dígito verificador solo si cambió, tipo de
+  cliente, teléfono, email, dirección, sitio web, estado, origen, responsable, observaciones) y contacto
+  (nombre, apellido, documento, cargo, empresa opcional, email, teléfono, estado, origen, responsable,
+  observaciones). El responsable se elige solo con `clientes.asignar`; sin él se muestra de solo lectura y
+  el alta queda a nombre de quien la crea (lo garantiza el trigger).
+- **Baja lógica, sin borrar:** "Dar de baja" (`estado = 'inactivo'`, con confirmación) y "Reactivar"
+  (vuelve a `potencial`). La interfaz no ofrece borrar empresas ni contactos.
+- Si el cliente está en `no_contactar`, la ficha y el formulario de actividad muestran un aviso (no
+  bloquean). No se avisa al crear oportunidades o ventas: esas pantallas llegan en F2.
 
-**Qué agregó la base (migración 0007), sin pantalla todavía.**
+**Qué agregó la base (migración 0007); la interfaz la usa desde F1b.**
 
 - `estado` en empresas y contactos: `potencial`, `cliente`, `inactivo`, `no_contactar`. La baja lógica es
   pasar a `inactivo`.
@@ -146,10 +157,10 @@ ser del mismo cliente (organización).
 
 - Toda empresa o contacto creado hoy desde la interfaz queda con estado `potencial`, porque el formulario
   no envía el campo.
-- Los contactos sin empresa existen en la base, pero la lista de `/empresas` solo muestra contactos bajo
-  su empresa: hoy no hay forma de listarlos. Está planificado en F1 (`/contactos`).
-- No hay página de detalle de empresa ni de contacto; el acordeón y el panel de edición cumplen ese rol.
-  Planificado en F1 y F5.
+- Los contactos sin empresa (clientes individuales) se listan en `/contactos` desde F1b.
+- Las fichas de empresa y contacto existen desde F1b; la ficha 360 (indicadores, conversión) sigue
+  planificada en F5. El título de cada oportunidad en la ficha es texto: el detalle llega en F2.
+- Las listas siguen filtrando en el navegador sobre todo lo que devuelve la base (F3 las pasa al servidor).
 
 **Cómo probarlo.** Cuenta Vendedor del seed: `/empresas` muestra 4 de las 8 empresas (su cartera). Con
 la cuenta Administrador se ven las 8.
@@ -254,14 +265,16 @@ Se corrige junto con F2.
 
 | Aspecto | Detalle |
 |---|---|
-| Estado | Registro por empresa: **implementado**. Tipos de catálogo, vínculo a oportunidad, resultado y cliente individual: **base lista, sin interfaz** |
-| Dónde | `src/app/(app)/empresas/BitacoraPanel.tsx`, tabla `bitacora_entradas` |
+| Estado | **Implementado (F1b)** desde las fichas de empresa y de contacto: tipo de catálogo, fecha y hora, descripción, resultado, vínculo a oportunidad y cliente individual. El alta desde la ficha de la oportunidad llega en F2 |
+| Dónde | `src/components/ActividadForm.tsx` (alta reutilizable) y `src/components/ActividadesTimeline.tsx` (línea de tiempo); tabla `bitacora_entradas`. `BitacoraPanel.tsx` se eliminó |
 | Commits | `a72f794`; base: `a5c0135` |
 
-**Qué hace hoy.** Desde el menú de cada empresa se abre un panel con las entradas (más recientes primero)
-y el alta de una nueva: llamada, reunión, email, WhatsApp, consulta, queja o nota, con título, detalle,
-contacto opcional y fecha. Es un log: se agrega y no se corrige el pasado (no hay política de update ni
-delete).
+**Qué hace hoy.** En la ficha de la empresa y en la del contacto hay una línea de tiempo con las
+actividades (más recientes primero: tipo con ícono, fecha y hora en horario argentino, quien la registró,
+descripción, detalle, resultado y oportunidad) y el botón "Registrar actividad". El tipo sale del
+catálogo de la organización (solo los activos), la fecha no puede ser futura (una actividad es un hecho
+ya ocurrido) y el usuario lo completa la base. Es un log: se agrega y no se corrige el pasado (no hay
+política de update ni delete).
 
 **Qué agregó la 0007.**
 
@@ -269,8 +282,8 @@ delete).
   pide la consigna), vínculo opcional con una oportunidad, campo `resultado`, y la posibilidad de que la
   actividad sea solo de un contacto (cliente individual, sin empresa).
 - El autor es siempre quien la registra: el trigger `bitacora_defaults` ignora un `autor_id` ajeno.
-- Compatibilidad: la pantalla actual sigue enviando el campo viejo `tipo`; el trigger lo traduce al tipo
-  de catálogo (`consulta` pasa a "Otro").
+- Compatibilidad: el campo viejo `tipo` sigue existiendo; desde F1b la interfaz manda solo
+  `tipo_actividad_id` y el trigger completa `tipo` (los códigos fuera de los 6 históricos quedan como `nota`).
 
 **Regla de negocio.** Para escribir no alcanza con ver una referencia: la empresa, el contacto y la
 oportunidad tienen que ser visibles para quien escribe y coherentes entre sí. Así un Vendedor no puede
@@ -407,8 +420,9 @@ Antes de esos pases hubo ajustes de color y modo oscuro (`a86ccf4`, `0c65a35`, `
 |---|---|
 | Detalle | [docs/pruebas.md](./pruebas.md) |
 
-- **5 archivos `*.check.ts`, 37 pruebas**, ejecutables con `node --test` y sin framework:
-  `money` (10), `equipo` (3), `permisos` (6), `email/layout` (8) y `alertas/plantillas` (10).
+- **8 archivos `*.check.ts`, 50 pruebas**, ejecutables con `node --test` y sin framework:
+  `money` (10), `equipo` (3), `permisos` (7), `email/layout` (8), `alertas/plantillas` (10), `cuit` (3),
+  `sitioweb` (2) y `clientes` (7).
 - `permisos.check.ts` **lee la migración `0007`** y falla si el CHECK de `roles.permisos` o los roles por
   defecto divergen del catálogo de `src/lib/permisos.ts`.
 - **3 scripts SQL con rollback** (`supabase/tests/`): `0005_permisos.sql` (aislamiento y permisos),
@@ -447,13 +461,13 @@ poder ensayarla dentro de una transacción con el test.
 
 | Capacidad de la 0007 | Estado | Interfaz prevista |
 |---|---|---|
-| Catálogos `origenes`, `motivos_perdida`, `tipos_actividad`, etapas con tipo | Base lista, sin interfaz | `/configuracion`, F1 (2026-10-13) |
-| Datos del proveedor y logo | Base lista, sin interfaz | `/configuracion`, F1 |
-| Estado, responsable, origen, tipo de cliente en empresas y contactos | Base lista, sin interfaz | F1 |
+| Catálogos `origenes`, `motivos_perdida`, `tipos_actividad`, etapas con tipo | **Implementado** en `/configuracion` (F1a) | — |
+| Datos del proveedor y logo | **Implementado** en `/configuracion` (F1a) | — |
+| Estado, responsable, origen, tipo de cliente en empresas y contactos | **Implementado** (F1b) | — |
 | Estado, cierre, motivo, origen, probabilidad en oportunidades | Base lista, sin interfaz | F2 (2026-10-18) |
 | Historial de etapas y auditoría | Base lista; se escribe en cada arrastre | Mostrarlo: F2 |
 | `cambiar_etapa()` | Base lista; la interfaz todavía actualiza `etapa_id` directo | F2 |
-| Actividades con tipo de catálogo, resultado y oportunidad | Base lista; la pantalla sigue usando el campo `tipo` viejo | F2 |
+| Actividades con tipo de catálogo, resultado y oportunidad | **Implementado** en las fichas de empresa y contacto (F1b); falta ofrecerlo desde la oportunidad | F2 |
 | Cartera propia por responsable | **Implementado** (la base filtra; la pantalla muestra lo que la base devuelve) | — |
 | Roles Vendedor y Responsable comercial | **Implementado** | — |
 
@@ -538,7 +552,7 @@ lista, sin interfaz · **P** Planificado.
 | Historial comercial de empresas, contactos y oportunidades | I parcial + P | Bitácora de empresa: I. Línea de tiempo de contacto, oportunidad y empresa unificada: P (F2 y F5) |
 | Cierre de oportunidades ganadas o perdidas | B | Reglas en la base. Arrastrar a Entregado cierra como ganada; perdida exige el modal de F2 |
 | Registro de motivos de pérdida | B | Catálogo y regla en la base; sin pantalla |
-| Gestión de etapas, tipos de actividad, orígenes y motivos de pérdida | B | Tablas y políticas listas; `/configuracion` es F1 |
+| Gestión de etapas, tipos de actividad, orígenes y motivos de pérdida | I (F1a) | `/configuracion` |
 | Búsqueda, filtros y paginación | I parcial + P | Búsqueda en pantalla (sobre lo ya cargado) y filtros de etapa y de alertas: I. Búsqueda en servidor, filtros por responsable, estado y origen, y paginación: P (F3) |
 | Adaptación real a la industria | I + B + P | Vida útil, snapshot, alertas de recambio, ventas por entrega: I. Embudo, orígenes, motivos y tipos del rubro, `tipo_cliente`: B. Canchas, parque instalado, licitaciones: P (F4) |
 | Inteligencia artificial (opcional) | P | F7 |
@@ -548,13 +562,13 @@ lista, sin interfaz · **P** Planificado.
 | Rol y capacidad | Estado | Nota |
 |---|---|---|
 | Administrador: crea y modifica usuarios, asigna roles | I | `/usuarios` |
-| Administrador: configura etapas, tipos de actividad, motivos y orígenes | B | Permiso `configuracion.gestionar` listo; pantalla en F1 |
+| Administrador: configura etapas, tipos de actividad, motivos y orígenes | I (F1a) | `/configuracion`, con `configuracion.gestionar` |
 | Administrador: accede a toda la información | I | Rol con todos los permisos |
 | Administrador y Responsable comercial: asignan y reasignan oportunidades | I | Formulario de oportunidad |
 | Administrador y Responsable comercial: asignan y reasignan contactos | B | Sin pantalla |
 | Vendedor: registra empresas y contactos; consulta los asignados; crea y actualiza oportunidades | I | Cartera propia aplicada por la base |
 | Vendedor: cambia de etapa; registra actividades | I | Arrastre y bitácora |
-| Vendedor: consulta el historial comercial | I parcial | Solo la bitácora por empresa |
+| Vendedor: consulta el historial comercial | I parcial | Actividades en la ficha de empresa y de contacto; el historial de etapas, en F2 |
 | Vendedor: marca ganadas o perdidas | I parcial + B | Ganada por arrastre a Entregado; perdida con motivo: B |
 | Responsable comercial: consulta todo el equipo, supervisa abiertas, ve el embudo | I | Sin filtros por responsable en pantalla (F3) |
 | Responsable comercial: historial de cada negociación | B | Se registra; sin pantalla (F2) |
@@ -564,10 +578,10 @@ lista, sin interfaz · **P** Planificado.
 
 | Módulo | Estado | Observaciones |
 |---|---|---|
-| Módulo 1, empresa: datos mínimos | I (nombre, CUIT, email, teléfono, dirección, observaciones) · B (industria, sitio web, estado, responsable, origen) | |
-| Módulo 1, contacto: datos mínimos | I (nombre, apellido, cargo, email, teléfono, empresa, observaciones) · B (documento, responsable, estado, origen) | |
-| Estados potencial, cliente, inactivo, no contactar | B | CHECK en la base |
-| Baja lógica | B | Sin borrado en la interfaz; en la base ver [f](#f-seguridad-de-esta-versión) (límite sobre empresas) |
+| Módulo 1, empresa: datos mínimos | I (F1b: razón social, CUIT, tipo de cliente, email, teléfono, dirección, sitio web, estado, responsable, origen, observaciones) | |
+| Módulo 1, contacto: datos mínimos | I (F1b: nombre, apellido, documento, cargo, email, teléfono, empresa opcional, estado, responsable, origen, observaciones) | |
+| Estados potencial, cliente, inactivo, no contactar | I (F1b) | Pill con texto en listas y fichas; CHECK en la base |
+| Baja lógica | I (F1b) | "Dar de baja" y "Reactivar" con confirmación; sin borrado en la interfaz. Con la 0008 aplicada la base tampoco deja borrar; ver [f](#f-seguridad-de-esta-versión) |
 | Separación contacto / oportunidad | I | Entidades distintas |
 | Módulo 2, datos mínimos de oportunidad | I (título, empresa/contacto, responsable, producto, valor, etapa, observaciones) · B (probabilidad, fechas de cierre, origen, estado, motivo) | |
 | Estados abierta, ganada, perdida | B | Derivados del tipo de la etapa |
@@ -575,8 +589,8 @@ lista, sin interfaz · **P** Planificado.
 | Cambio de etapa desde el detalle o el tablero | Tablero I; detalle P | F2 |
 | Reglas del cambio de etapa (ocho condiciones) | B | Triggers y CHECK; probadas en `0007_reglas.sql` |
 | Módulo 3, tipos mínimos de actividad (9) | B (12 sembrados); la pantalla usa 7 tipos propios | F2 |
-| Módulo 3, datos mínimos de la actividad | I (tipo, fecha y hora, usuario, empresa, descripción) · B (contacto solo, oportunidad, resultado) | |
-| Historial cronológico en contacto, empresa y oportunidad | Empresa I; contacto y oportunidad P | F2 y F5 |
+| Módulo 3, datos mínimos de la actividad | I (F1b: tipo de catálogo, fecha y hora, usuario, empresa o contacto, descripción, resultado, oportunidad opcional) | |
+| Historial cronológico en contacto, empresa y oportunidad | Empresa y contacto I (F1b); oportunidad P | F2 |
 | Historial de etapas (oportunidad, anterior, nueva, fecha, usuario, observación) | B | `oportunidad_etapas_historial` |
 
 ### e.5 Lo construido que la consigna lista como fuera de alcance
@@ -631,7 +645,7 @@ luego F4 (licitaciones); nunca F0 a F3.
 | Fase | Contenido | Fecha objetivo | Estado |
 |---|---|---|---|
 | F0 | Migración `0007_entrega_final.sql` | 2026-10-08 | **Hecha** (aplicada el 2026-10-04) |
-| F1 | `/configuracion` (datos de la empresa y logo, etapas, tipos de actividad, orígenes, motivos de pérdida) y empresas/contactos completos (estado, responsable, origen, tipo de cliente; `/contactos`; detalles) | 2026-10-13 | Planificado |
+| F1 | `/configuracion` (datos de la empresa y logo, etapas, tipos de actividad, orígenes, motivos de pérdida) y empresas/contactos completos (estado, responsable, origen, tipo de cliente; `/contactos`; detalles) | 2026-10-13 | **Hecha** (F1a `/configuracion`, F1b empresas y contactos) |
 | F2 | Oportunidades completas: detalle, cerrar ganada/perdida con modal de motivo, reabrir, reasignar, kanban dinámico con `cambiar_etapa`, línea de tiempo; actividades genéricas | 2026-10-18 | Planificado |
 | F3 | Búsqueda, filtros y paginación en el servidor en todas las listas | 2026-10-22 | Planificado |
 | F4 | Rubro: recambio en un clic, parque instalado, ficha de canchas, licitaciones | 2026-10-28 | Planificado |
@@ -803,14 +817,17 @@ lectura (3).
 | `/definir-clave` | Con sesión | Elegir contraseña tras activar o recuperar |
 | `/auth/signout` | Con sesión | Cierra sesión (POST) |
 | `/dashboard` | `tablero.ver` | Tablero |
-| `/empresas` | `clientes.ver` | Empresas, contactos y bitácora |
+| `/empresas` | `clientes.ver` | Lista de empresas con filtros y baja lógica |
+| `/empresas/[id]` | `clientes.ver` | Ficha de la empresa: datos, contactos, oportunidades, ventas, actividades |
+| `/contactos` | `clientes.ver` | Lista de contactos (de empresa e individuales) |
+| `/contactos/[id]` | `clientes.ver` | Ficha del contacto |
 | `/oportunidades` | `oportunidades.ver` | Embudo y listado |
 | `/productos` | `productos.ver` | Catálogo |
 | `/ventas` | `ventas.ver` | Historial de ventas |
 | `/alertas` | `alertas.ver` | Recambios vencidos o por vencer |
 | `/usuarios` | `usuarios.gestionar` | Usuarios y roles del cliente |
+| `/configuracion` | `configuracion.gestionar` | Datos de la empresa y logo, etapas, tipos de actividad, orígenes y motivos de pérdida |
 | `/sin-permisos` | Con sesión | Destino cuando el rol no tiene secciones |
 | `/admin` | Superadmin | Panel de plataforma |
 
-Rutas planificadas, aún inexistentes: `/configuracion`, `/contactos`, `/empresas/[id]`,
-`/contactos/[id]`, `/oportunidades/[id]`, `/oportunidades/[id]/presupuesto`, `/tablero-comercial`.
+Rutas planificadas, aún inexistentes: `/oportunidades/[id]`, `/oportunidades/[id]/presupuesto`, `/tablero-comercial`.

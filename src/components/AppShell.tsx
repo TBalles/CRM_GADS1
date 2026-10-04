@@ -7,6 +7,7 @@ import {
   BellRing,
   Boxes,
   Building2,
+  Contact,
   Handshake,
   LayoutDashboard,
   LogOut,
@@ -35,6 +36,7 @@ import ThemeToggle from "./ThemeToggle";
 const NAV = [
   { href: "/dashboard", label: "Inicio", icon: LayoutDashboard, permiso: "tablero.ver" },
   { href: "/empresas", label: "Empresas", icon: Building2, permiso: "clientes.ver" },
+  { href: "/contactos", label: "Contactos", icon: Contact, permiso: "clientes.ver" },
   { href: "/oportunidades", label: "Oportunidades", icon: Handshake, permiso: "oportunidades.ver" },
   { href: "/productos", label: "Productos", icon: Boxes, permiso: "productos.ver" },
   { href: "/ventas", label: "Ventas", icon: Receipt, permiso: "ventas.ver" },

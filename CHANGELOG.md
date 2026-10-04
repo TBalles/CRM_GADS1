@@ -16,6 +16,17 @@ Todo lo de esta sección ya está en `main`. Lo que no está es la interfaz de b
 
 ### Agregado
 
+- F1b, empresas y contactos completos en la interfaz (sin commit todavía):
+  - `/empresas` con estado, tipo de cliente, responsable y origen; filtros por estado, responsable (con
+    `clientes.ver_todos`) y origen; chip "Ver dadas de baja".
+  - `/contactos` nueva (contactos de empresa y clientes individuales) con sus filtros, alta, edición y baja.
+  - Fichas `/empresas/[id]` y `/contactos/[id]`: datos, contactos de la empresa, oportunidades, ventas y
+    línea de tiempo de actividades. 404 si el id no existe o la RLS lo esconde.
+  - Baja lógica en la interfaz: "Dar de baja" y "Reactivar" con confirmación; ya no hay "Eliminar".
+  - `ActividadForm` y `ActividadesTimeline` reutilizables (tipo de catálogo, fecha y hora, descripción,
+    resultado, oportunidad). Reemplazan a `BitacoraPanel`.
+  - Responsable editable solo con `clientes.asignar`; sin él, de solo lectura. Errores de la base
+    traducidos a mensajes claros. `src/lib/clientes.ts` con su self-check.
 - Migración `0007_entrega_final.sql` (aplicada en Supabase el 2026-10-04) (`a5c0135`):
   - Catálogos configurables por organización: `origenes`, `motivos_perdida`, `tipos_actividad`.
   - Etapas con tipo (`abierta`, `ganada`, `perdida`) y embudo del rubro: Consulta recibida, Relevamiento de
@@ -67,8 +78,7 @@ Todo lo de esta sección ya está en `main`. Lo que no está es la interfaz de b
 
 ### Planificado (no implementado)
 
-Interfaz de `/configuracion`, estado y responsable en empresas y contactos, detalle y cierre de
-oportunidades, búsqueda y paginación en servidor, funciones del rubro (canchas, parque instalado,
+Detalle y cierre de oportunidades, búsqueda y paginación en servidor, funciones del rubro (canchas, parque instalado,
 licitaciones), presupuesto imprimible, E2E y CI, IA opcional y manual de usuario. Fases F1 a F8, del
 2026-10-13 al 2026-11-11, en [docs/notas-de-version.md](./docs/notas-de-version.md#g-pendiente-y-próximos-pasos).
 
