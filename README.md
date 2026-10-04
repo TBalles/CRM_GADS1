@@ -46,13 +46,17 @@ Producción: [crmgads1.vercel.app](https://crmgads1.vercel.app). Entrega final: 
 - **IA asistida opcional** (F7): borrador del aviso de recambio y resumen de cuenta, siempre revisados por una persona; se apaga
   quitando la clave. Probada contra un servidor simulado, **no contra la API real** ([docs/ia.md](./docs/ia.md)).
 
-### Hecho en el repositorio, pendiente de aplicar en la base viva
+### Aplicado en la base viva (verificación parcial)
 
 - **Migraciones `0008` a `0012`**: baja lógica garantizada por la base, fecha de cierre no futura, índices de búsqueda, **canchas y
-  licitaciones** (con el recambio en un clic) y **presupuestos numerados**. Se aplican con
-  [`supabase/aplicar/aplicar_0008_a_0012.sql`](./supabase/aplicar/LEEME.md) y se verifican con las pruebas SQL.
-- **Manual de usuario** en PDF: [`docs/Manual-de-usuario-Tuco-y-Nito.pdf`](./docs/Manual-de-usuario-Tuco-y-Nito.pdf) (89 páginas). Se
-  regenera con `npm run manual`; las figuras de las pantallas que dependen de esas migraciones salen como «Captura pendiente» hasta entonces.
+  licitaciones** (con el recambio en un clic) y **presupuestos numerados**. Se aplicaron con
+  [`supabase/aplicar/aplicar_0008_a_0012.sql`](./supabase/aplicar/LEEME.md). Verificado contra la base viva por la API: las tablas
+  `canchas`, `licitaciones` y `presupuestos` responden, `oportunidades.venta_item_id` existe y el Vendedor ve solo su cartera.
+  **Sin verificar todavía contra la base viva**: las reglas que se prueban escribiendo (borrado, fechas, etapas, numeración); ver
+  [notas de versión](./docs/notas-de-version.md).
+- **Manual de usuario** en PDF: [`docs/Manual-de-usuario-Tuco-y-Nito.pdf`](./docs/Manual-de-usuario-Tuco-y-Nito.pdf). Se
+  regenera con `npm run manual`. Quedan **4 figuras pendientes** (las dos de IA, que necesitan `ANTHROPIC_API_KEY`, y las dos del
+  panel de plataforma, que necesitan una cuenta de superadmin).
   Cómo funciona: [docs/manual/LEEME.md](./docs/manual/LEEME.md).
 - Pruebas E2E con Playwright y CI en GitHub Actions: escritas, **sin ejecutar completas**.
 

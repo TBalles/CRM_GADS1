@@ -48,8 +48,7 @@ npm run manual:capturas
 
 | Figuras | Qué falta |
 |---|---|
-| Canchas, licitación, recambio en 1 clic | Aplicar `supabase/aplicar/aplicar_0008_a_0012.sql` y cargar `supabase/seeds/demo_rubro.sql` |
-| Presupuesto guardado y numerado | Lo mismo (el seed guarda uno) |
+| Canchas, licitación, recambio en 1 clic, presupuesto guardado | **Ya capturadas** (base migrada y demo del rubro cargada). Para rehacerlas en otra base: `supabase/aplicar/aplicar_0008_a_0012.sql` y `supabase/seeds/demo_rubro.sql` (o `npm run demo:rubro` si no hay SQL Editor) |
 | Botones de IA | `ANTHROPIC_API_KEY` en el `.env` de la app (y reiniciarla) |
 | Panel de plataforma | `MANUAL_EMAIL_SUPERADMIN` y `MANUAL_PASSWORD_SUPERADMIN` |
 

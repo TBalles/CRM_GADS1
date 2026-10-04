@@ -34,17 +34,17 @@ recambio: cada producto tiene una vida útil, cada venta la congela, y una vista
 vencieron o vencen en 60 días para avisar al cliente.
 
 **Dónde está hoy.** Todas las fases (F0 a F8) están hechas y en `main`. El CRM cumple la consigna en la interfaz y en
-la base; lo que **falta es de operación, no de código**: aplicar a mano en Supabase las migraciones `0008` a `0012` (hay un
-kit de un solo archivo, [`supabase/aplicar/`](../supabase/aplicar/LEEME.md)) y, con eso, regenerar el manual para que se
-completen sus figuras pendientes. Hasta entonces la aplicación esconde las secciones que dependen de esas migraciones
-(canchas, licitaciones, recambio en un clic, numeración de presupuestos) y anda igual.
+la base; lo que queda **es de operación, no de código**. Las migraciones `0008` a `0012` ya se aplicaron en la base viva (kit
+[`supabase/aplicar/`](../supabase/aplicar/LEEME.md)) y la demo del rubro está cargada; el manual se regeneró con esas pantallas
+(ver [Verificación posterior a la migración](#verificación-posterior-a-la-migración-2026-10-04)). Quedan 4 figuras pendientes (IA y
+panel de plataforma) y las reglas de la base que se prueban escribiendo todavía no se ejercitaron contra la base viva.
 
 **Números, calculados del repositorio al cerrar la 1.0.0.**
 
 | Medida | Valor | Cómo se obtiene |
 |---|---|---|
 | Commits en `main` | 54 | `git log --oneline` |
-| Migraciones SQL | 12 (`0001` a `0012`); la base viva tiene hasta la `0007` | `supabase/migrations/` |
+| Migraciones SQL | 12 (`0001` a `0012`); aplicadas en la base viva (las tablas de la `0011` y la `0012` responden; ver la verificación) | `supabase/migrations/` |
 | Kit de migraciones | 1 archivo (`0008` a `0012`, 895 líneas, verificado en PGlite) | `supabase/aplicar/` |
 | Seeds | 3 (`demo_catedra.sql`, `demo_rubro.sql`, `e2e_tests.sql`) | `supabase/seeds/` |
 | Scripts de prueba SQL | 7 (`0005_permisos`, `0007_reglas`, `0007_reejecucion`, `0008`, `0009`, `0011`, `0012`) | `supabase/tests/` |
@@ -56,7 +56,7 @@ completen sus figuras pendientes. Hasta entonces la aplicación esconde las secc
 | Self-checks (`node --test`) | 25 archivos, 243 pruebas, todas pasan | `npm test`, ver [pruebas](./pruebas.md) |
 | E2E (Playwright) | 14 pruebas en 3 archivos; escritas, **sin ejecutar completas** | `e2e/` |
 | Verificación estática | `tsc --noEmit` (src y e2e), `eslint --max-warnings=0` y `next build` pasan | `npm run typecheck`, `npm run lint`, `npx next build` |
-| Manual de usuario | PDF A4 de 89 páginas (22 capítulos y 3 apéndices), 7,2 MB; 53 figuras con captura y 10 pendientes | `docs/Manual-de-usuario-Tuco-y-Nito.pdf` |
+| Manual de usuario | PDF A4 de 89 páginas (22 capítulos y 3 apéndices), 7,3 MB; 59 figuras con captura y 4 pendientes (IA sin clave y panel de plataforma sin superadmin) | `docs/Manual-de-usuario-Tuco-y-Nito.pdf` |
 
 ---
 
@@ -713,6 +713,28 @@ Resumen; el modelo completo está en [seguridad](./seguridad.md).
 
 ---
 
+## Verificación posterior a la migración (2026-10-04)
+
+Después de aplicar `aplicar_0008_a_0012.sql` se verificó la base viva **por la API, con las cuentas de la demo** (no hay acceso a la CLI de Supabase ni al panel).
+Este cuadro dice qué se corrió de verdad y qué no.
+
+| Qué | Cómo | Resultado |
+|---|---|---|
+| `canchas`, `licitaciones`, `presupuestos` existen | `select` como Administrador | Responden (sin `PGRST205`): 2 canchas, 1 licitación, 1 presupuesto (N° 000001, cargados por `demo_rubro.sql`) |
+| `oportunidades.venta_item_id` existe | `select` de la columna | Existe |
+| Cartera del Vendedor (`ventas@demo`) | `select count` con cada cuenta | Empresas 4 de 11, oportunidades 8 de 15, **licitaciones 0 de 1** (la licitación es del Administrador), presupuestos 1 de 1 (el de una oportunidad de su cartera), canchas 2 de 2 (las dos son de clientes suyos) |
+| Pantallas del rubro contra la base viva | `npm run manual:capturas`: ficha con canchas y equipamiento sugerido, alta de cancha, formulario y detalle de licitación, alertas con «Crear oportunidad de recambio», presupuesto guardado | Las 6 figuras se capturaron: 59 capturadas, 4 pendientes |
+| Reglas de la base que se prueban **escribiendo** (borrado de empresas/contactos sin efecto, oportunidad sin cliente → `23514`, fecha de cierre futura → `23514`, retipar la única etapa ganada/perdida, numeración y `UPDATE`/`DELETE` de presupuestos, licitación ganada antes de la apertura → `23514`) | Se preparó la prueba por la API; **no se ejecutó**: la sesión no tuvo autorización para escribir en la base viva | **Sin verificar**. Los textos de error que la app traduce (`src/lib/oportunidades.ts`) coinciden con los de los triggers, por lectura del código |
+| Humo en el navegador de los flujos que escriben (alta y baja de cancha, licitación, recambio en 1 clic, guardar e imprimir un presupuesto, Configuración) | No se ejecutó por la misma razón | **Sin verificar** contra la base viva |
+| Carga de `npm run demo:rubro` | Se ejecutó en modo `--dry` (solo lectura): detecta que canchas, licitación y presupuesto ya están y que solo falta vincular el recambio | La escritura real queda para quien tenga autorización |
+
+Hallazgos de la lectura: la demo del rubro ya estaba cargada; `presupuestos.creado_por` del N° 000001 es nulo (el seed corre sin usuario);
+el `.env` trae `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY`, una clave de servicio con el prefijo `NEXT_PUBLIC_` que el código no usa (la app lee
+`SUPABASE_SERVICE_ROLE_KEY`): conviene borrar esa variable y rotar la clave, porque con ese prefijo basta una referencia futura para que viaje al navegador.
+Se corrigió la figura `presupuesto-guardado` del manual, que fotografiaba el borrador y no la lista de presupuestos guardados.
+
+---
+
 ## g. Pendiente y próximos pasos
 
 Plan de trabajo vigente (hoy 2026-10-04, entrega 2026-11-12). Cada fase la implementa una persona con
@@ -734,9 +756,9 @@ luego F4 (licitaciones); nunca F0 a F3.
 
 **Pendiente inmediato (no es una fase).**
 
-1. **Aplicar `supabase/aplicar/aplicar_0008_a_0012.sql`** en el SQL Editor (pasos en [su LEEME](../supabase/aplicar/LEEME.md)) y correr las seis pruebas SQL.
-2. Regenerar `src/lib/supabase/types.ts` contra el proyecto real y volver a correr `npm run typecheck`.
-3. Cargar `supabase/seeds/demo_rubro.sql` (canchas, datos de licitación y un presupuesto guardado) y correr `npm run manual`: se completan las figuras pendientes (con `ANTHROPIC_API_KEY` y con las credenciales del superadmin, también las de IA y las del panel de plataforma).
+1. ~~Aplicar `aplicar_0008_a_0012.sql`~~ **Hecho** (confirmado por lectura: las tablas nuevas responden). Falta correr las seis pruebas SQL contra la base viva y ejercitar por la API las reglas que se prueban escribiendo (borrado, fecha de cierre futura, etapas, numeración, licitación antes de la apertura): la verificación posterior las dejó **sin ejecutar** (ver abajo).
+2. Regenerar `src/lib/supabase/types.ts` contra el proyecto real y volver a correr `npm run typecheck` (hoy el archivo se mantiene a mano; quien tenga la CLI de Supabase puede regenerarlo).
+3. ~~Cargar la demo del rubro y regenerar el manual~~ **Hecho** (la demo del rubro ya estaba cargada en la base viva; `npm run demo:rubro` es la alternativa sin SQL Editor). Para completar las 4 figuras que quedan: `ANTHROPIC_API_KEY` (IA) y las credenciales de un superadmin (panel de plataforma).
 4. Correr una vez la suite E2E y la CI en GitHub (hoy escritas pero sin ejecutar completas).
 5. Decidir la licencia del repositorio.
 

@@ -10,7 +10,18 @@ La versión larga, con explicación por área, está en [docs/notas-de-version.m
 
 ## Sin publicar
 
-Nada todavía.
+### Agregado
+
+- `npm run demo:rubro` (`scripts/demo/cargar-rubro.mjs`): carga la demo del rubro por la API con la cuenta de Administrador de la demo, para quien no tiene SQL Editor. Idempotente (clave natural), con `--dry` de solo lectura; vincula la oportunidad «Recambio de redes de fútbol 11» a su equipo entregado.
+
+### Cambiado
+
+- Las migraciones `0008` a `0012` están aplicadas en la base viva. Verificado por lectura: las tablas `canchas`, `licitaciones` y `presupuestos` responden, existe `oportunidades.venta_item_id` y el Vendedor ve solo su cartera. Las reglas que se prueban escribiendo siguen sin ejercitarse contra la base viva (ver [notas de versión](./docs/notas-de-version.md#verificación-posterior-a-la-migración-2026-10-04)).
+- Manual regenerado (89 páginas, 7,3 MB): 59 figuras con captura y 4 pendientes (IA sin `ANTHROPIC_API_KEY` y panel de plataforma sin superadmin).
+
+### Corregido
+
+- Manual: la figura `presupuesto-guardado` mostraba el borrador; ahora fotografía la lista «Presupuestos de esta oportunidad» con el N° 000001.
 
 ## 1.0.0 - Entrega final - 2026-10-04
 

@@ -16,6 +16,7 @@
     "manual:capturas": "node scripts/manual/capturas.mjs",
     "manual:pdf": "node scripts/manual/generar.mjs",
     "manual": "npm run manual:capturas && npm run manual:pdf",
+    "demo:rubro": "node --env-file-if-exists=.env scripts/demo/cargar-rubro.mjs",
     "migraciones:consolidar": "node scripts/migraciones/consolidar.mjs"
   },
   "dependencies": {

@@ -133,6 +133,25 @@ rol por defecto) y datos en todos los módulos. Requiere `0001` a `0007`.
   [límites de seguridad](./seguridad.md#6-límites-conocidos).
 - Después de aplicar la 0007 a una demo anterior, hay que volver a correr el seed.
 
+### Demo del rubro (canchas, licitación, presupuesto, recambio)
+
+Lo que viven en las migraciones `0011` y `0012` (dos canchas, los datos de la licitación, un presupuesto guardado y la
+oportunidad de recambio vinculada a un equipo) no lo trae `demo_catedra.sql`. Hay dos caminos equivalentes y los dos son
+idempotentes:
+
+- **Con SQL Editor:** pegar `supabase/seeds/demo_rubro.sql`. Requiere `demo_catedra.sql` y las migraciones.
+- **Sin SQL Editor** (por la API, con la cuenta de Administrador de la demo y respetando RLS y triggers):
+
+  ```bash
+  DEMO_PASSWORD=… npm run demo:rubro -- --dry   # solo lee y dice qué crearía
+  DEMO_PASSWORD=… npm run demo:rubro            # crea lo que falte
+  ```
+
+  `scripts/demo/cargar-rubro.mjs` busca cada cosa por su clave natural (empresa + nombre de cancha, oportunidad de la
+  licitación, oportunidad del presupuesto, equipo del recambio) y no duplica nada. Un presupuesto emitido no se puede
+  borrar: por eso, si la oportunidad ya tiene uno, no guarda otro. La contraseña (pública, en el comentario del seed) va por
+  entorno, nunca en un archivo.
+
 ### Organización de pruebas E2E
 
 `supabase/seeds/e2e_tests.sql` crea otra organización, **"E2E Tuco & Nito"**, con un Administrador y un Vendedor

@@ -97,6 +97,18 @@ que las figuras de canchas, licitaciones, recambio y presupuesto guardado salen 
 1. **Datos de la demo del rubro.** La demostración base no trae canchas, datos de licitación ni presupuestos
    guardados. Cargalos con el complemento (pegar y ejecutar en el SQL Editor):
    `supabase/seeds/demo_rubro.sql`. Es re-ejecutable, requiere `demo_catedra.sql` y estas migraciones.
+
+   **Sin acceso al SQL Editor**, la misma carga se hace por la API con la cuenta de Administrador de la demo:
+
+   ```bash
+   DEMO_PASSWORD=… npm run demo:rubro -- --dry   # solo lee: dice qué crearía
+   DEMO_PASSWORD=… npm run demo:rubro            # carga lo que falte
+   ```
+
+   (`scripts/demo/cargar-rubro.mjs`; lee la URL y la clave pública del `.env`, la contraseña va solo por entorno.)
+   Es idempotente: busca cada cosa por su clave natural y no duplica nada; sobre una base donde ya se cargó
+   `demo_rubro.sql` no crea canchas, licitación ni presupuesto. Lo único que agrega es vincular la oportunidad
+   «Recambio de redes de fútbol 11» al equipo entregado, para que la alerta muestre «Oportunidad abierta →».
 2. **Levantá la app** apuntando a esa base: `npm run dev` (o `npm run build && npm run start`).
 3. **Regenerá el manual** pasando las credenciales **por entorno, solo en la línea de comandos** (nunca en un
    archivo del repositorio):
