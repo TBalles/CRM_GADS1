@@ -44,9 +44,13 @@ Se aplican **en orden**, pegando cada archivo completo en **SQL Editor, New quer
 | 8 | `0008_baja_logica.sql` | Quita las políticas `borrar` de empresas y contactos y garantiza una etapa ganada y una perdida. Idempotente, sin `begin`/`commit` | Requiere la 0007. **Pendiente de aplicar en la base viva** |
 | 9 | `0009_reglas_oportunidades.sql` | Fecha de cierre no futura (fecha de Argentina), fecha de cierre por defecto de Argentina y "empresa o contacto" obligatorio en oportunidades. `create or replace` + trigger nuevo, idempotente, sin `begin`/`commit` | Requiere la 0008. **Pendiente de aplicar en la base viva.** Después, `supabase/tests/0009_reglas_oportunidades.sql` |
 | 10 | `0010_indices_busqueda.sql` | Índices para la búsqueda y la paginación del servidor (F3): btree por organización y orden de cada lista, y un bloque **opcional** de trigramas (`create extension pg_trgm`). Idempotente, sin `begin`/`commit`. Sin prueba SQL: solo agrega índices | Requiere la 0009. **Pendiente de aplicar en la base viva.** Mejora el tiempo con volumen; la app anda igual sin ella. Si el entorno no tiene `pg_trgm`, borrar el bloque entre `BLOQUE OPCIONAL: PG_TRGM` y `FIN BLOQUE OPCIONAL` |
+| 11 | `0011_rubro.sql` | Rubro (F4): tablas `canchas` y `licitaciones` con RLS multitenant, columna `oportunidades.venta_item_id` el índice único de una oportunidad abierta por equipo y el trigger que impide ganar una licitación antes de su apertura. Idempotente, sin `begin`/`commit` | Requiere la 0010. **Pendiente de aplicar en la base viva.** Después, `supabase/tests/0011_rubro.sql`. Hasta aplicarla, la app esconde canchas, licitaciones y el botón de recambio (no se rompe nada); el parque instalado anda igual |
 
 Cosas a saber:
 
+- **0011 (rubro, F4) también está pendiente.** Se pega después de la 0010. La app de F4 detecta que falta y esconde
+  lo que depende de ella, así que se puede desplegar antes; las secciones aparecen solas al aplicarla (recargar la página).
+  Al aplicarla conviene regenerar `src/lib/supabase/types.ts`, que hoy tiene esas tablas escritas a mano.
 - **0010 (índices de F3) también está pendiente.** Se pega en el SQL Editor después de la 0009; no cambia
   tablas, reglas ni políticas, así que se puede aplicar antes o después de desplegar F3.
 - **0008 y 0009 están en el repositorio pero no en la base viva.** Se aplican a mano, en ese orden, y se
@@ -88,7 +92,7 @@ Regenerarlo es previo a construir las pantallas de F1.
 
 Se ejecutan en el SQL Editor y terminan en `ROLLBACK` (no dejan nada). Detalle y qué prueba cada una en
 [pruebas](./pruebas.md). Después de la 0007: `0005_permisos.sql` y `0007_reglas.sql` tienen que devolver
-`TODO OK`; después de la 0008, `0008_baja_logica.sql`; después de la 0009, `0009_reglas_oportunidades.sql`. `0007_reejecucion.sql` es la excepción: solo funciona en una base **sin** la 0007.
+`TODO OK`; después de la 0008, `0008_baja_logica.sql`; después de la 0009, `0009_reglas_oportunidades.sql`; después de la 0011, `0011_rubro.sql`. `0007_reejecucion.sql` es la excepción: solo funciona en una base **sin** la 0007.
 
 ### Storage
 

@@ -16,7 +16,8 @@ Contenido: [1. Vida útil y alertas](#1-vida-útil-y-alertas) · [2. Embudo y ci
 [3. Historial y auditoría](#3-historial-y-auditoría) · [4. Asignación y cartera propia](#4-asignación-y-cartera-propia) ·
 [5. Baja lógica](#5-baja-lógica-y-lo-que-no-se-borra) · [6. Actividades](#6-actividades-bitácora) ·
 [7. Permisos y roles](#7-permisos-y-roles) · [8. Usuarios y cuentas](#8-usuarios-organizaciones-y-cuentas) ·
-[9. Logo y datos del proveedor](#9-logo-y-datos-del-proveedor) · [10. Reglas de interfaz](#10-reglas-de-interfaz)
+[9. Logo y datos del proveedor](#9-logo-y-datos-del-proveedor) · [10. Reglas de interfaz](#10-reglas-de-interfaz) ·
+[11. Reglas del rubro (F4)](#11-reglas-del-rubro-f4)
 
 ---
 
@@ -64,7 +65,7 @@ exigir y traducen sus errores (columna final); lo que se ve en pantalla está de
 | 2.10 | Si se cambia el resultado (ganada a perdida o al revés), la fecha de cierre es la del **nuevo** cierre: la que mande quien cierra o, si no hay, hoy. La fecha del cierre anterior no cuenta | Trigger | Sí (F2): "Cambiar resultado" (ver 2.19) |
 | 2.11 | Al **insertar**, el estado también se fuerza al tipo de la etapa: una oportunidad creada directamente en una etapa de cierre nace cerrada (y si es perdida exige motivo). Pedir un estado cerrado distinto al de la etapa es un error | Trigger (`tg_op = 'INSERT'`) | Sin interfaz |
 | 2.12 | La probabilidad, si se usa, está entre 0 y 100 | Restricción | Sí (F2): el formulario valida el entero de 0 a 100 |
-| 2.13 | El tipo de la oportunidad es `directa` o `licitacion`. **No hay todavía ninguna regla propia de licitaciones** (la regla "no se puede ganar antes de la fecha de apertura" es de F4, planificada) | Restricción | Planificado |
+| 2.13 | El tipo de la oportunidad es `directa` o `licitacion`. Las reglas propias de las licitaciones (no ganar antes de la apertura) están en la [sección 11](#11-reglas-del-rubro-f4) | Restricción | Sí (F4) |
 | 2.14 | **No se puede cambiar el tipo de una etapa que tiene oportunidades**: primero hay que moverlas ("La etapa ... tiene oportunidades: movelas antes de cambiarle el tipo.") | Trigger `etapas_validar_tipo` | Sin interfaz |
 | 2.15 | Sin usuario (scripts, `service_role`, SQL Editor) las reglas de estado y fecha **valen**, pero el permiso de reabrir no se exige: esos caminos son de confianza | Trigger (`auth.uid() is not null`) | n/a |
 | 2.16 | **La fecha real de cierre no puede ser futura** ("La fecha real de cierre no puede ser futura."). Se compara con la fecha de Argentina, no con la del servidor, y solo cuando la fecha cambia (o en un alta cerrada): editar otros campos de una cerrada ya guardada no la vuelve a juzgar | Trigger `oportunidad_reglas`, migración `0009` (pendiente de aplicar en la base viva) | Sí (F2): el modal no admite fecha futura y traduce el error |
@@ -239,3 +240,35 @@ Estas no las garantiza la base; son convenciones de la aplicación.
 | El mensaje de WhatsApp es más corto que el del mail; el verbo concuerda con la cantidad | `src/app/(app)/alertas/plantillas.ts` |
 | El ícono de cada producto se elige por nombre y después por categoría | `src/lib/equipo.ts` |
 | Tablas responsive en dos bloques (tarjetas en móvil, tabla en escritorio) | `docs/design-overrides.md` y regla #9 del kit |
+
+---
+
+## 11. Reglas del rubro (F4)
+
+Las cargan los proveedores sobre **sus** clientes (clubes, complejos, escuelas, predios municipales); los
+clientes no son usuarios del sistema. Todo lo de esta sección sale de la migración `0011`, que está en el
+repositorio y **todavía hay que aplicarla a mano en Supabase** (`docs/deploy.md`). Mientras no esté, la
+aplicación esconde estas secciones en vez de romperse: una lectura que falla porque falta la tabla o la columna
+se reconoce con `esErrorDeEsquema` (`src/lib/esquema.ts`) y la sección simplemente no se dibuja; solo quien tiene
+`configuracion.gestionar` ve un aviso "Se activa al aplicar la migración 0011". Prueba SQL:
+`supabase/tests/0011_rubro.sql`.
+
+| # | Regla | Dónde | Interfaz |
+|---|---|---|---|
+| 11.1 | **Ficha de canchas.** Una cancha pertenece a una empresa; tiene formato (`F5`, `F7`, `F9`, `F11`, `futsal`), superficie opcional (sintético, natural, cemento, parquet), cantidad (entero de 1 en adelante: una ficha puede representar varias canchas iguales) e iluminación | Tabla `canchas` y sus CHECK | Sí: sección "Canchas" de la ficha de empresa |
+| 11.2 | **Las canchas siguen la empresa.** Ver exige `clientes.ver`; crear y editar, `clientes.editar`; la cartera propia se hereda de la empresa (un Vendedor ve y carga canchas solo de sus empresas). Las dos organizaciones no se ven entre sí | RLS (subconsulta a `empresas`) y clave foránea compuesta `(organizacion_id, empresa_id)` | Sí |
+| 11.3 | **Las canchas no se borran**: se dan de baja con `activa = false` y se pueden reactivar. No hay política de borrar | RLS (sin `delete`) | Sí: "Dar de baja" y "Reactivar" |
+| 11.4 | **Equipamiento sugerido.** Por cada cancha activa: 2 arcos y una red por arco (F5 y futsal 3 × 2 m; F7 6 × 2,10 m; F9 y F11 7,32 × 2,44 m), por la cantidad de canchas. Se compara con el parque instalado de la empresa por medida del arco (la medida se lee del nombre del producto) y se muestra "Le faltan 4 arcos de 3 × 2 m (F5)" o "Equipamiento completo". Las pelotas (2 por cancha) son una reserva opcional y no cuentan para decir "completo". Los equipos vencidos no se cuentan como cubiertos | Función pura `equipamientoSugerido` (`src/lib/canchas.ts`, con self-check) | Sí. **Es una sugerencia con medidas estándar, no un diagnóstico**: no sabe qué compró el cliente a otros proveedores ni el estado real de la cancha, y supone una red por arco |
+| 11.5 | **Crear oportunidad desde la sugerencia**: título "Equipamiento para &lt;cancha&gt;" (o para la empresa si tiene varias fichas), origen "Visita a predio" si existe en el catálogo, responsable quien la crea, observaciones con lo que falta. Exige `oportunidades.editar` | UI + RLS de `oportunidades` | Sí |
+| 11.6 | **Una licitación por oportunidad.** `licitaciones` guarda expediente, organismo, fecha de apertura (obligatoria), monto oficial y garantía (texto libre). `oportunidad_id` es único | Tabla `licitaciones`, restricción `unique` | Sí: bloque "Licitación municipal" del formulario y del detalle |
+| 11.7 | **Las licitaciones siguen la oportunidad.** Ver: `oportunidades.ver`; crear y editar: `oportunidades.editar`; cartera propia heredada de la oportunidad. Sin política de borrar (se van con la organización) | RLS | Sí |
+| 11.8 | **Una licitación no puede pasar a ganada antes de su fecha de apertura.** Se compara con la fecha de Argentina; el mismo día de la apertura ya se puede ("No se puede marcar ganada una licitación antes de su apertura (fecha de apertura: dd/mm/aaaa)"). Se juzga solo en la transición a ganada: una licitación ya ganada se sigue pudiendo editar. Rige para todos los caminos (usuario, RPC `cambiar_etapa`, script) | Trigger `oportunidades_licitacion_regla` (separado de `oportunidad_reglas`; calcula el tipo de la etapa por su cuenta) | Sí: el detalle avisa "Abre en N días", y el modal de cierre bloquea "Marcar ganada" con el mismo mensaje |
+| 11.9 | **Una licitación sin datos tampoco se gana** ("Una licitación necesita sus datos (al menos la fecha de apertura)…"): no hay fecha contra la cual juzgarla. Vale también para una oportunidad que nace ya ganada | Trigger `oportunidades_licitacion_regla` | Sí: el detalle ofrece "Cargar datos" |
+| 11.10 | El tipo (`directa` o `licitacion`) se elige en el formulario solo cuando la base tiene las tablas del rubro; al marcar licitación se propone el origen "Licitación municipal" si no hay otro. La lista filtra por tipo con `?tipo=` en el servidor | UI | Sí |
+| 11.11 | **Recambio → oportunidad.** `oportunidades.venta_item_id` apunta al equipo entregado que origina la oportunidad (clave foránea compuesta a `venta_items`, `on delete set null`). Puede haber varias oportunidades por equipo a lo largo del tiempo, pero **una sola abierta**: lo garantiza la base con un índice único parcial (`oportunidades_venta_item_abierta_key` sobre `(organizacion_id, venta_item_id)` donde `estado = 'abierta'`, parte de la 0011); al cerrarse la primera se puede abrir otra. Error `23505` | Columna y FK | Sí |
+| 11.12 | **Recambio en 1 clic.** Cada alerta ofrece "Crear oportunidad de recambio": título "Recambio: &lt;producto&gt; — &lt;empresa&gt;", empresa, contacto de la venta, producto, valor = precio × cantidad (sin precio cargado queda vacío), origen "Recambio por vida útil", primera etapa abierta, responsable quien la crea. Si ya hay una oportunidad **abierta** para ese equipo no se crea otra: **la base lo garantiza** (índice único de la regla 11.11) y la pantalla lo chequea antes solo para dar el camino amable ("Ya había una oportunidad abierta", con el link), también si la otra se creó entre el chequeo y el insert; la alerta muestra "Oportunidad abierta →" (una ganada o perdida no cuenta). Exige `oportunidades.editar` (el catálogo no tiene un permiso `oportunidades.crear`) | UI + RLS de `oportunidades` (`src/lib/recambio.ts`) | Sí. Se esconde si falta la columna `venta_item_id` |
+| 11.13 | **Parque instalado.** La ficha de empresa lista lo que se le entregó (de `venta_items`), con el mismo reloj y la misma cuenta que `alertas_vida_util` (vence = entrega + vida útil; vencido si `vence <= hoy`; por vencer dentro de 60 días), agrupado en "Vencidos o que vencen hoy", por vencer, vigentes y sin seguimiento, con el total de unidades. Funciona con las tablas anteriores a la 0011. **Diferencia con la vista:** la vista usa `current_date` del servidor de la base (UTC en Supabase) y el parque, la fecha de Argentina; entre las 21:00 y las 24:00 un equipo que vence ese día puede figurar un día antes en `/alertas` que acá | Función pura `agruparParque` (`src/lib/parque.ts`) | Sí: exige `ventas.ver` |
+| 11.14 | Al volver una oportunidad de licitación a **directa**, su fila de `licitaciones` **se conserva** (no se borra: así no se pierden el expediente y la apertura si se vuelve a marcar licitación). Mientras sea directa, la pantalla no la muestra y la regla de la apertura no la mira | Diseño | Sí |
+
+**Límite conocido.** Si se cambia la fecha de apertura de una licitación que ya está ganada hacia el futuro, la base no
+lo impide (la regla se juzga al ganar, no después).

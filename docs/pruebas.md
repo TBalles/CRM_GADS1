@@ -8,7 +8,7 @@ pegan en el SQL Editor de Supabase.
 
 | Verificación | Resultado |
 |---|---|
-| `node --test "src/**/*.check.ts"` | 68 pruebas, 68 pasan, 0 fallan (**con F3, sin commit todavía: 10 archivos, 82 pruebas, 82 pasan**) |
+| `node --test "src/**/*.check.ts"` | **15 archivos, 116 pruebas, 116 pasan, 0 fallan** (con F4: se suman `esquema`, `licitaciones`, `parque`, `canchas` y `recambio`) |
 | `npx tsc --noEmit` | Sin errores |
 | `npx eslint src --max-warnings=0` | Sin advertencias |
 | `npx next build` | No se ejecutó al escribir estas notas |
@@ -25,7 +25,7 @@ Contenido: [1. Resumen](#1-resumen) · [2. Self-checks](#2-self-checks-con-node-
 
 | Qué | Cómo se corre | Dónde | Qué prueba |
 |---|---|---|---|
-| Self-checks (10 archivos, 82 pruebas) | `node --test "src/**/*.check.ts"` | Terminal | Lógica pura: dinero, íconos, permisos, mails, mensajes, CUIT, sitio web, vocabulario de clientes, reglas de oportunidades, paginación y búsqueda por URL |
+| Self-checks (15 archivos, 116 pruebas) | `node --test "src/**/*.check.ts"` | Terminal | Lógica pura: dinero, íconos, permisos, mails, mensajes, CUIT, sitio web, vocabulario de clientes, reglas de oportunidades, paginación y búsqueda por URL, errores de esquema faltante, licitaciones, parque instalado, equipamiento sugerido y recambio |
 | Tipos | `npx tsc --noEmit` | Terminal | Que todo el TypeScript compile |
 | Lint | `npx eslint src --max-warnings=0` | Terminal | Estilo y errores comunes, sin tolerar advertencias |
 | Build | `npx next build` | Terminal | Que la aplicación se construya (incluye el chequeo de `server-only`) |
@@ -33,6 +33,7 @@ Contenido: [1. Resumen](#1-resumen) · [2. Self-checks](#2-self-checks-con-node-
 | `0007_reglas.sql` | Pegar en el SQL Editor | Supabase | Reglas de la migración 0007 |
 | `0008_baja_logica.sql` | Pegar en el SQL Editor, con la 0008 aplicada | Supabase | Que borrar empresas o contactos afecte 0 filas y que la baja lógica (`estado = 'inactivo'`) funcione |
 | `0009_reglas_oportunidades.sql` | Pegar en el SQL Editor, con la 0009 aplicada | Supabase | Fecha de cierre no futura (fecha de Argentina), empresa o contacto obligatorio para usuarios (no para scripts ni para `on delete set null`), y que las reglas de la 0007 sigan en pie |
+| `0011_rubro.sql` | Pegar en el SQL Editor, con la 0011 aplicada | Supabase | Canchas y licitaciones: CHECK, aislamiento entre organizaciones, cartera propia del Vendedor, solo lectura, sin borrar; la regla de la apertura (por `update` y por `cambiar_etapa`, con fecha de Argentina); `venta_item_id` y una sola oportunidad abierta por equipo (la segunda falla con `23505`; al cerrar la primera se puede abrir otra) |
 | `0007_reejecucion.sql` | Pegar con la migración dos veces | Supabase | Que la 0007 se pueda re-ejecutar sin efectos |
 
 ---
@@ -135,6 +136,11 @@ Tres scripts en `supabase/tests/`. Todos:
 `0007_reglas.sql` y `0008_baja_logica.sql` en PGlite (la 0009 aplicada dos veces, para comprobar que es
 idempotente); sin la 0009 la prueba falla, como corresponde. Una prueba de la 0007 que creaba una oportunidad
 sin empresa para probar el responsable ajeno ahora lleva empresa, porque la 0009 lo exige a los usuarios.
+
+`0011_rubro.sql` se corre **después** de aplicar la 0011. Se ensayó en PGlite junto con `0005_permisos.sql`,
+`0007_reglas.sql`, `0008_baja_logica.sql` y `0009_reglas_oportunidades.sql` (migraciones `0001` a `0011`, la 0011
+aplicada dos veces para comprobar que es idempotente). Se hizo una prueba de mutación: sin el trigger
+`oportunidades_licitacion_regla`, o sin el índice único de una abierta por equipo, o con una política `ver` de canchas sin la cartera, la prueba falla.
 
 **Si re-ejecutás la 0007, re-ejecutá la 0008 después.** La 0007 de este repositorio ya no recrea las
 políticas `borrar` de `empresas` y `contactos`, pero una copia vieja de la 0007 sí lo haría.

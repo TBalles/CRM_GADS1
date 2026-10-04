@@ -219,3 +219,23 @@ test("titulos del historial: alta, registro inicial, cambio, cierre, reapertura 
   assert.equal(t({ hayAnterior: true, anteriorTipo: "ganada", nuevaTipo: "ganada" }), "Cambio de etapa");
   assert.equal(t({ hayAnterior: true, nuevaTipo: "perdida" }), "Cierre");
 });
+
+test("errores de la 0011: licitacion antes de la apertura y sin datos", () => {
+  const g = "genérico";
+  assert.equal(
+    mensajeErrorOportunidad({ code: "23514", message: "No se puede marcar ganada una licitación antes de su apertura (fecha de apertura: 15/12/2026)." }, g),
+    "No se puede marcar ganada antes de la apertura (15/12/2026).",
+  );
+  assert.match(
+    mensajeErrorOportunidad({ code: "23514", message: "Una licitación necesita sus datos (al menos la fecha de apertura) antes de poder marcarse como ganada." }, g),
+    /Cargá los datos de la licitación/,
+  );
+});
+
+test("error de la 0011: segunda oportunidad abierta para el mismo equipo", () => {
+  assert.equal(
+    mensajeErrorOportunidad({ code: "23505", message: 'duplicate key value violates unique constraint "oportunidades_venta_item_abierta_key"' }, "genérico"),
+    "Ya hay una oportunidad abierta para este equipo.",
+  );
+  assert.equal(mensajeErrorOportunidad({ code: "23505", message: "otra restriccion" }, "genérico"), "genérico");
+});

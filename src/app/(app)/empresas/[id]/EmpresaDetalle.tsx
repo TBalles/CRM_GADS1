@@ -28,6 +28,8 @@ import {
   type OportunidadFila,
   type VentaFila,
 } from "@/components/cliente";
+import { AvisoMigracion } from "@/components/AvisoMigracion";
+import { ParqueInstalado } from "@/components/ParqueInstalado";
 import { Avatar, AvatarFallback, Button, Card, Pill, initials } from "@/components/ui/UIComponents";
 import {
   estaDeBaja,
@@ -38,14 +40,17 @@ import {
   type OrigenOpcion,
   type PerfilOpcion,
 } from "@/lib/clientes";
+import type { GrupoParque } from "@/lib/parque";
 import ContactoForm from "../../contactos/ContactoForm";
 import EmpresaForm from "../EmpresaForm";
+import CanchasSeccion from "./CanchasSeccion";
 import type { Tables } from "@/lib/supabase/types";
 
 type Empresa = Tables<"empresas">;
 type Contacto = Tables<"contactos">;
 type Actividad = Tables<"bitacora_entradas">;
 type Tipo = Pick<Tables<"tipos_actividad">, "id" | "nombre" | "codigo" | "activo" | "orden">;
+type Cancha = Tables<"canchas">;
 
 type DrawerState =
   | { tipo: "empresa" }
@@ -62,6 +67,10 @@ export default function EmpresaDetalle({
   tipos,
   perfiles,
   origenes,
+  parque,
+  canchas,
+  mostrarAvisoMigracion,
+  puedeCrearOportunidad,
   yoId,
   puedeEditar,
   puedeAsignar,
@@ -73,12 +82,19 @@ export default function EmpresaDetalle({
   empresa: Empresa;
   contactos: Contacto[];
   oportunidades: OportunidadFila[];
-  etapas: Pick<Tables<"etapas">, "id" | "nombre">[];
+  etapas: Pick<Tables<"etapas">, "id" | "nombre" | "tipo" | "orden">[];
   ventas: VentaFila[];
   actividades: Actividad[];
   tipos: Tipo[];
   perfiles: PerfilOpcion[];
   origenes: OrigenOpcion[];
+  /** Equipamiento entregado, agrupado por urgencia. `null` si el rol no puede ver ventas. */
+  parque: GrupoParque[] | null;
+  /** Canchas de la empresa. `null` si la base todavia no tiene la tabla (migracion 0011). */
+  canchas: Cancha[] | null;
+  /** Falta la migracion 0011 y quien mira administra la configuracion: se le avisa. */
+  mostrarAvisoMigracion: boolean;
+  puedeCrearOportunidad: boolean;
   yoId: string;
   /** Permisos del rol. Solo UX: la base exige cada uno igual. */
   puedeEditar: boolean;
@@ -248,6 +264,26 @@ export default function EmpresaDetalle({
           )}
         </dl>
       </Card>
+
+      {/* RUBRO (F4): las canchas del cliente y lo que ya tiene instalado */}
+      <AvisoMigracion visible={mostrarAvisoMigracion} que="la ficha de canchas y el equipamiento sugerido" />
+      {(canchas || parque) && (
+        <div className="grid items-start gap-4 lg:grid-cols-2">
+          {canchas && (
+            <CanchasSeccion
+              empresa={{ id: empresa.id, nombre: empresa.nombre }}
+              canchas={canchas}
+              parque={parque}
+              etapas={etapas}
+              origenes={origenes}
+              yoId={yoId}
+              puedeEditar={puedeEditar}
+              puedeCrearOportunidad={puedeCrearOportunidad && puedeVerOportunidades}
+            />
+          )}
+          {parque && <ParqueInstalado grupos={parque} />}
+        </div>
+      )}
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-4">

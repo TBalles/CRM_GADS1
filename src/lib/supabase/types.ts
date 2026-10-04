@@ -20,6 +20,9 @@
 // esas migraciones en Supabase, REGENERAR este
 // archivo y pisar esta seccion — el generador es la fuente de verdad, esto es
 // solo un puente para que el build compile mientras tanto.
+//
+// 0011 (F4, rubro): canchas, licitaciones y oportunidades.venta_item_id tambien
+// estan escritos a mano (la migracion se aplica a mano, despues). Regenerar al aplicarla.
 
 export type Json =
   | string
@@ -326,6 +329,7 @@ export type Database = {
           tipo: string
           titulo: string
           updated_at: string
+          venta_item_id: string | null
         }
         Insert: {
           organizacion_id?: string
@@ -347,6 +351,7 @@ export type Database = {
           tipo?: string
           titulo: string
           updated_at?: string
+          venta_item_id?: string | null
         }
         Update: {
           organizacion_id?: string
@@ -368,6 +373,7 @@ export type Database = {
           tipo?: string
           titulo?: string
           updated_at?: string
+          venta_item_id?: string | null
         }
         Relationships: [
           {
@@ -411,6 +417,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "productos"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "oportunidades_venta_item_id_fkey"
+            columns: ["organizacion_id", "venta_item_id"]
+            isOneToOne: false
+            referencedRelation: "venta_items"
+            referencedColumns: ["organizacion_id", "id"]
           },
           {
             foreignKeyName: "oportunidades_responsable_id_fkey"
@@ -919,6 +932,110 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "venta_items"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      canchas: {
+        Row: {
+          activa: boolean
+          cantidad: number
+          created_at: string
+          empresa_id: string
+          formato: string
+          id: string
+          iluminacion: boolean
+          nombre: string
+          notas: string | null
+          organizacion_id: string
+          superficie: string | null
+          updated_at: string
+        }
+        Insert: {
+          activa?: boolean
+          cantidad?: number
+          created_at?: string
+          empresa_id: string
+          formato: string
+          id?: string
+          iluminacion?: boolean
+          nombre: string
+          notas?: string | null
+          organizacion_id?: string
+          superficie?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activa?: boolean
+          cantidad?: number
+          created_at?: string
+          empresa_id?: string
+          formato?: string
+          id?: string
+          iluminacion?: boolean
+          nombre?: string
+          notas?: string | null
+          organizacion_id?: string
+          superficie?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canchas_empresa_id_fkey"
+            columns: ["organizacion_id", "empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["organizacion_id", "id"]
+          },
+        ]
+      }
+      licitaciones: {
+        Row: {
+          created_at: string
+          expediente: string | null
+          fecha_apertura: string
+          garantia: string | null
+          id: string
+          monto_oficial: number | null
+          notas: string | null
+          oportunidad_id: string
+          organismo: string | null
+          organizacion_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expediente?: string | null
+          fecha_apertura: string
+          garantia?: string | null
+          id?: string
+          monto_oficial?: number | null
+          notas?: string | null
+          oportunidad_id: string
+          organismo?: string | null
+          organizacion_id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expediente?: string | null
+          fecha_apertura?: string
+          garantia?: string | null
+          id?: string
+          monto_oficial?: number | null
+          notas?: string | null
+          oportunidad_id?: string
+          organismo?: string | null
+          organizacion_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "licitaciones_oportunidad_id_fkey"
+            columns: ["organizacion_id", "oportunidad_id"]
+            // Escrito a mano: es 1 a 1 por el unique de `oportunidad_id` (0011). Regenerar al aplicar la migracion.
+            isOneToOne: true
+            referencedRelation: "oportunidades"
+            referencedColumns: ["organizacion_id", "id"]
           },
         ]
       }

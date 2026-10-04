@@ -42,6 +42,7 @@ import { AnuncioResultados, BarraPendiente, CajaBusqueda, FiltroSelect, useFiltr
 import { Paginacion } from "@/components/Paginacion";
 import { cambiarEtapa } from "@/lib/cambiarEtapa";
 import { formatFecha, type OrigenOpcion, type PerfilOpcion } from "@/lib/clientes";
+import { datosApertura } from "@/lib/licitaciones";
 import { formatMoney, formatMoneyCompact } from "@/lib/money";
 import {
   accionesDisponibles,
@@ -59,6 +60,7 @@ import type { Tables } from "@/lib/supabase/types";
 type Etapa = Tables<"etapas">;
 type Oportunidad = Tables<"oportunidades">;
 type Motivo = Pick<Tables<"motivos_perdida">, "id" | "nombre" | "activo" | "orden">;
+type Licitacion = Tables<"licitaciones">;
 
 export type OportunidadRow = Oportunidad & {
   empresa: { id: string; nombre: string } | null;
@@ -112,6 +114,8 @@ export default function OportunidadesView({
   puedeAsignar,
   puedeReabrir,
   puedeVerTodos,
+  licitacionesActivas,
+  licitaciones,
 }: {
   /** Tablero o lista: vive en la URL (`?vista=`). */
   vista: Vista;
@@ -145,6 +149,10 @@ export default function OportunidadesView({
   puedeReabrir: boolean;
   /** `clientes.ver_todos`: sin el, la RLS ya deja solo la cartera propia y filtrar por responsable no tiene sentido. */
   puedeVerTodos: boolean;
+  /** Las tablas del rubro (migracion 0011) existen en la base. Sin ellas no se ofrece el tipo "Licitacion". */
+  licitacionesActivas: boolean;
+  /** Datos de las licitaciones de lo que se ve, por id de oportunidad. */
+  licitaciones: Record<string, Licitacion>;
 }) {
   const router = useRouter();
   const filtros = useFiltrosUrl();
@@ -249,7 +257,8 @@ export default function OportunidadesView({
       acciones.push({
         label: ACCION_CAMBIO[modo].label,
         icon: ACCION_CAMBIO[modo].icon,
-        onClick: () => cierre.abrir({ modo, oportunidad: o }),
+        onClick: () =>
+          cierre.abrir({ modo, oportunidad: o, licitacion: datosApertura(o.tipo, licitacionesActivas, licitaciones[o.id]) }),
       });
     }
     return acciones;
@@ -346,6 +355,17 @@ export default function OportunidadesView({
             ]}
           />
         )}
+        <FiltroSelect
+          filtros={filtros}
+          param="tipo"
+          etiqueta="Filtrar por tipo"
+          className="w-[calc(50%-0.25rem)] sm:w-40"
+          opciones={[
+            { value: "", label: "Todos los tipos" },
+            { value: "directa", label: "Directas" },
+            { value: "licitacion", label: "Licitaciones" },
+          ]}
+        />
         <FiltroSelect
           filtros={filtros}
           param="origen"
@@ -718,6 +738,8 @@ export default function OportunidadesView({
           <OportunidadForm
             key={target === "new" ? "nueva" : target.id}
             oportunidad={target === "new" ? undefined : target}
+            licitacion={target === "new" ? undefined : licitaciones[target.id]}
+            licitacionesActivas={licitacionesActivas}
             empresas={empresas}
             contactos={contactos}
             productos={productos}

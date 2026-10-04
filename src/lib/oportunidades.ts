@@ -198,6 +198,14 @@ export function mensajeErrorOportunidad(
     if (/motivo de p[ée]rdida/i.test(msg) || /estado_coherente/i.test(msg)) {
       return "Para marcarla como perdida hay que indicar el motivo de pérdida.";
     }
+    // 0011: reglas de las licitaciones (trigger `oportunidades_licitacion_regla`).
+    if (/antes de su apertura/i.test(msg)) {
+      const fecha = /(\d{2}\/\d{2}\/\d{4})/.exec(msg)?.[1];
+      return `No se puede marcar ganada antes de la apertura${fecha ? ` (${fecha})` : ""}.`;
+    }
+    if (/licitaci[oó]n necesita sus datos/i.test(msg)) {
+      return "Cargá los datos de la licitación (al menos la fecha de apertura) antes de marcarla ganada.";
+    }
     // 0009: antes de la regla general de la fecha, que comparte el texto "fecha real de cierre".
     if (/no puede ser futura/i.test(msg)) return "La fecha de cierre no puede ser futura.";
     if (/empresa o de un contacto/i.test(msg)) return "Elegí una empresa o un contacto: toda oportunidad es de alguien.";
@@ -207,6 +215,8 @@ export function mensajeErrorOportunidad(
     if (/probabilidad/i.test(msg)) return "La probabilidad es un número entero de 0 a 100.";
     return generico;
   }
+  // 0011: una sola oportunidad abierta por equipo (indice unico parcial).
+  if (code === "23505" && /venta_item_abierta/i.test(msg)) return "Ya hay una oportunidad abierta para este equipo.";
   if (code === "23503") {
     return "Algo de lo que elegiste (empresa, contacto, producto, origen, etapa o motivo) ya no existe. Recargá la página y probá de nuevo.";
   }

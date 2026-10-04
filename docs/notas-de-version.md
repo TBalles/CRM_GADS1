@@ -354,7 +354,7 @@ contacto obligatorio. La `0009_reglas_oportunidades.sql` las agrega (ver
 propias validaciones. Mientras no se aplique, la base viva sigue aceptando una fecha de cierre futura y una
 oportunidad sin cliente por la API.
 
-**Otros límites conocidos.** La tabla de licitaciones y sus reglas son F4: hoy `licitacion` es solo una insignia. Las reaperturas también quedan en
+**Otros límites conocidos.** La tabla de licitaciones y sus reglas son de F4 (migración `0011`, pendiente de aplicar): sin ella `licitacion` es solo una insignia. Las reaperturas también quedan en
 "Cambios después del cierre", porque la base audita todo cambio de una oportunidad que estaba cerrada.
 
 **Cómo verlo.** Cuenta Administrador: en `/oportunidades` arrastrá una tarjeta de "Negociación" a
@@ -488,7 +488,8 @@ Antes de esos pases hubo ajustes de color y modo oscuro (`a86ccf4`, `0c65a35`, `
   (`?tab=roles`).
 - **Paginación accesible.** `nav` con `aria-label`, "Anterior/Siguiente" y números con "…", la página actual
   con `aria-current="page"`, extremos deshabilitados con `aria-disabled`, links reales (`?page=N`) que
-  funcionan sin JavaScript, y el texto "Mostrando 21–40 de 134" anunciado como `role="status"`.
+  funcionan sin JavaScript, el texto visible "Mostrando 21–40 de 134" y una línea `sr-only` con
+  `role="status"` (`AnuncioResultados`) que anuncia "N resultados" o "Sin resultados".
 - **Estado "pendiente".** Mientras el servidor recalcula, la lista tiene `aria-busy` y una línea de progreso.
 - **Después de una alta, edición, baja o cambio de etapa** la lista se vuelve a pedir (`router.refresh()`).
 - **Sin resultados.** "afuera" con la búsqueda entre «», o el vacío "cancha" si de verdad no hay nada.
@@ -624,7 +625,7 @@ lista, sin interfaz · **P** Planificado.
 | Gestión completa de empresas y contactos | I parcial + B | Alta y edición básicas: I. Estado, responsable, origen, industria, sitio web, documento: B (F1) |
 | Gestión de productos o servicios | I | `/productos`. No distingue producto de servicio |
 | Asignación de responsables comerciales | I parcial + B | Oportunidades: I (formulario). Empresas y contactos: B (se asignan al creador; sin pantalla para elegir o reasignar) |
-| Gestión completa de oportunidades | I (F2) | Alta, edición, estado, fechas, origen, motivo, probabilidad, detalle. El tipo licitación es solo una insignia hasta F4 |
+| Gestión completa de oportunidades | I (F2, F4) | Alta, edición, estado, fechas, origen, motivo, probabilidad, detalle. El tipo licitación, con sus datos y la regla de la apertura, es de F4 (requiere la `0011`) |
 | Embudo comercial configurable | I (F1a, F2) | Etapas en `/configuracion`; el tablero genera sus columnas con las etapas abiertas configuradas |
 | Cambio de etapas con historial | I (F2) | `cambiar_etapa` con observación; el historial se ve en el detalle |
 | Registro de actividades realizadas | I (F1b, F2) | Catálogo de tipos, resultado, oportunidad y cliente individual; también desde el detalle de la oportunidad |
@@ -633,7 +634,7 @@ lista, sin interfaz · **P** Planificado.
 | Registro de motivos de pérdida | I (F1a, F2) | Catálogo en `/configuracion`; el modal de pérdida lo exige |
 | Gestión de etapas, tipos de actividad, orígenes y motivos de pérdida | I (F1a) | `/configuracion` |
 | Búsqueda, filtros y paginación | I (F3) | Las seis listas (empresas, contactos, oportunidades, productos, ventas, usuarios) buscan, filtran y paginan **en el servidor**, con el estado en la URL; 10, 20 o 50 por página. Filtros por responsable, estado, etapa y origen donde corresponde. Las alertas siguen filtrando en el navegador. Los índices de apoyo (`0010`) están en el repositorio, **pendientes de aplicar** |
-| Adaptación real a la industria | I + B + P | Vida útil, snapshot, alertas de recambio, ventas por entrega: I. Embudo, orígenes, motivos y tipos del rubro, `tipo_cliente`: B. Canchas, parque instalado, licitaciones: P (F4) |
+| Adaptación real a la industria | I + B + P | Vida útil, snapshot, alertas de recambio, ventas por entrega: I. Embudo, orígenes, motivos y tipos del rubro, `tipo_cliente`: B. Parque instalado: I (F4, anda hoy). Canchas, equipamiento sugerido, licitaciones y recambio en un clic: I (F4) pero **requieren aplicar la `0011`** |
 | Inteligencia artificial (opcional) | P | F7 |
 
 ### e.3 Usuarios del sistema (consigna, pp. 5 y 6)
@@ -725,9 +726,9 @@ luego F4 (licitaciones); nunca F0 a F3.
 |---|---|---|---|
 | F0 | Migración `0007_entrega_final.sql` | 2026-10-08 | **Hecha** (aplicada el 2026-10-04) |
 | F1 | `/configuracion` (datos de la empresa y logo, etapas, tipos de actividad, orígenes, motivos de pérdida) y empresas/contactos completos (estado, responsable, origen, tipo de cliente; `/contactos`; detalles) | 2026-10-13 | **Hecha** (F1a `/configuracion`, F1b empresas y contactos) |
-| F2 | Oportunidades completas: detalle, cerrar ganada/perdida con modal de motivo, reabrir, reasignar, kanban dinámico con `cambiar_etapa`, línea de tiempo; actividades genéricas | 2026-10-18 | **Hecha** (sin commit todavía) |
-| F3 | Búsqueda, filtros y paginación en el servidor en todas las listas | 2026-10-22 | **Hecha** (sin commit todavía; la migración `0010` de índices está pendiente de aplicar) |
-| F4 | Rubro: recambio en un clic, parque instalado, ficha de canchas, licitaciones | 2026-10-28 | Planificado |
+| F2 | Oportunidades completas: detalle, cerrar ganada/perdida con modal de motivo, reabrir, reasignar, kanban dinámico con `cambiar_etapa`, línea de tiempo; actividades genéricas | 2026-10-18 | **Hecha** (`891d663`) |
+| F3 | Búsqueda, filtros y paginación en el servidor en todas las listas | 2026-10-22 | **Hecha** (`1ccb553`; la migración `0010` de índices está pendiente de aplicar) |
+| F4 | Rubro: recambio en un clic, parque instalado, ficha de canchas, licitaciones | 2026-10-28 | **Hecha** (sin commit todavía; la migración `0011` está pendiente de aplicar a mano y, hasta entonces, canchas, licitaciones y el botón de recambio no se muestran) |
 | F5 | Ficha 360, tablero del responsable, conversión del embudo, búsqueda global Ctrl+K | 2026-11-02 | Planificado |
 | F6 | Presupuesto imprimible; pruebas E2E con Playwright y CI en GitHub Actions | 2026-11-05 | Planificado |
 | F7 | IA opcional: aviso de recambio y resumen de cuenta | 2026-11-08 | Planificado |
@@ -911,3 +912,37 @@ lectura (3).
 | `/admin` | Superadmin | Panel de plataforma |
 
 Rutas planificadas, aún inexistentes: `/oportunidades/[id]/presupuesto`, `/tablero-comercial`.
+
+---
+
+## b.15 Rubro: recambio en un clic, parque instalado, canchas y licitaciones (F4)
+
+| | |
+|---|---|
+| Estado | **Implementado (F4)**; la migración `0011_rubro.sql` está **pendiente de aplicar a mano** en Supabase |
+| Qué anda hoy sin la 0011 | El **parque instalado** de la ficha de empresa (usa `ventas`, `venta_items` y `productos`) y el filtro **Tipo** de la lista de oportunidades (`tipo` es de la 0007) |
+| Qué se activa al aplicarla | Ficha de **canchas** y equipamiento sugerido; **licitaciones** (tipo, datos, regla de la apertura); **recambio en un clic** |
+| Si falta la 0011 | Ninguna pantalla se rompe: la sección no se dibuja y quien tiene `configuracion.gestionar` ve un aviso "Se activa al aplicar la migración 0011" |
+
+- **Recambio en un clic** (`/alertas`). Cada alerta tiene "Crear oportunidad de recambio" (primera acción): crea la
+  oportunidad directo, sin formulario, y avisa con un link ("Ver la oportunidad →"). Después la alerta muestra
+  "Oportunidad abierta →". No duplica: la base lo garantiza con un índice único parcial (una abierta por equipo) y la
+  pantalla chequea antes para enlazar la existente con un mensaje amable. Lógica pura y con
+  self-check en `src/lib/recambio.ts`.
+- **Parque instalado** (ficha de empresa). Lo entregado, agrupado en vencidos (o que vencen hoy), por vencer, vigentes y sin seguimiento,
+  con el total de unidades y el mismo reloj de recambio que `/alertas` (`RelojRecambio`, ahora un componente
+  compartido). Cuenta en `src/lib/parque.ts`.
+- **Canchas** (ficha de empresa). Alta, edición y baja lógica en un panel lateral. El **equipamiento sugerido**
+  (`src/lib/canchas.ts`) compara las medidas estándar con el parque y dice "Le faltan 4 arcos de 3 × 2 m (F5)" o
+  "Equipamiento completo", con el botón "Crear oportunidad". Es una **sugerencia, no un diagnóstico**.
+- **Licitaciones**. El formulario de oportunidad ofrece "Directa | Licitación municipal" y, para licitación, organismo,
+  expediente, fecha de apertura, monto oficial y garantía. El detalle muestra el bloque y avisa cuánto falta para la
+  apertura; "Marcar ganada" queda bloqueada hasta entonces (en pantalla y en la base). La lista filtra por tipo.
+- **Cambios de interfaz compartidos**: el aviso (toast) admite un link; `RelojRecambio` salió de `AlertasView`;
+  `diasEntre` y `origenPorNombre` viven en `src/lib/clientes.ts`.
+
+**Límites conocidos.** El permiso para crear oportunidades de recambio es `oportunidades.editar` (no existe
+`oportunidades.crear`). La sugerencia supone una red por arco y no reconoce la medida de un producto cuyo nombre no la
+dice (lo trata como comodín). Cambiar la fecha de apertura de una licitación ya ganada no se controla. El parque usa la fecha de Argentina y la vista de
+alertas el `current_date` de la base (UTC): entre las 21:00 y las 24:00 pueden diferir un día. Al pasar una licitación a directa
+se conserva su fila de datos.

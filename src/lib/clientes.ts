@@ -51,6 +51,14 @@ export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export type PerfilOpcion = { id: string; nombre: string; activo: boolean };
 export type OrigenOpcion = { id: string; nombre: string; activo: boolean };
 
+const sinTildes = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+
+/** Id del origen activo con ese nombre (sin mirar tildes ni mayusculas); null si la organizacion lo renombro o lo dio de baja. */
+export function origenPorNombre(origenes: readonly OrigenOpcion[], nombre: string): string | null {
+  const buscado = sinTildes(nombre);
+  return origenes.find((o) => o.activo && sinTildes(o.nombre) === buscado)?.id ?? null;
+}
+
 /**
  * Fecha y hora fijas en horario argentino: la pantalla se renderiza en el
  * servidor (UTC) y se hidrata en el navegador; con la zona del equipo los dos
@@ -81,6 +89,13 @@ export function formatFechaAlta(iso: string): string {
 export function formatFecha(ymd: string): string {
   const [y, m, d] = ymd.slice(0, 10).split("-");
   return y && m && d ? `${d}/${m}/${y}` : ymd;
+}
+
+/** Dias de `desde` a `hasta` (`aaaa-mm-dd`); negativo si `hasta` es anterior. Sin pasar por la zona horaria. */
+export function diasEntre(desde: string, hasta: string): number {
+  const [y1, m1, d1] = desde.split("-").map(Number);
+  const [y2, m2, d2] = hasta.split("-").map(Number);
+  return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86_400_000);
 }
 
 /** Link seguro para un sitio web ya validado: dominio pelado -> https://dominio. Otro esquema -> null. */

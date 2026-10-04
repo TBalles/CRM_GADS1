@@ -1,6 +1,8 @@
 # Modelo de datos
 
-Esquema `public` de Postgres (Supabase) tal como queda después de aplicar las migraciones `0001` a `0007`.
+Esquema `public` de Postgres (Supabase) tal como queda después de aplicar las migraciones `0001` a `0007`
+(más la `0008` a la `0011`, que están en el repositorio y **se aplican a mano**; la `0011` agrega `canchas`,
+`licitaciones` y `oportunidades.venta_item_id`, ver [Rubro](#rubro-0011-f4)).
 La fuente de verdad son los archivos de `supabase/migrations/`; este documento los resume.
 
 **Estado de cada parte.** Las tablas, columnas y reglas de este documento existen en la base de producción
@@ -45,6 +47,9 @@ erDiagram
     ventas ||--|{ venta_items : "venta_id"
     productos ||--o{ venta_items : "producto_id"
     venta_items ||--o{ alertas_enviadas : "venta_item_id"
+    venta_items |o--o{ oportunidades : "venta_item_id (0011)"
+    empresas ||--o{ canchas : "empresa_id (0011)"
+    oportunidades ||--o| licitaciones : "oportunidad_id (0011)"
 
     empresas |o--o{ bitacora_entradas : "empresa_id"
     contactos |o--o{ bitacora_entradas : "contacto_id"
@@ -139,6 +144,19 @@ erDiagram
         uuid id PK
         uuid venta_item_id FK
         text canal "email whatsapp"
+    }
+    canchas {
+        uuid id PK
+        uuid empresa_id FK
+        text formato "F5 F7 F9 F11 futsal"
+        int cantidad
+        boolean activa
+    }
+    licitaciones {
+        uuid id PK
+        uuid oportunidad_id FK "unico"
+        date fecha_apertura
+        numeric monto_oficial
     }
     oportunidad_etapas_historial {
         uuid id PK
@@ -308,6 +326,35 @@ de la fila (para lo que cuelga de una empresa, poder ver la empresa). "Org" sign
 | Columnas | `venta_item_id` (cascade), `canal` (`email`, `whatsapp`), `destinatario`, `mensaje`, `enviado_por`, `enviado_at` |
 | RLS | Ver: `alertas.ver` y Cartera. Crear: `alertas.enviar`. Sin update ni delete |
 
+### Rubro (0011, F4)
+
+Las cargan los proveedores sobre sus clientes. Se aplican a mano; mientras falten, la aplicación esconde las
+secciones (ver [reglas, sección 11](./reglas-de-negocio.md#11-reglas-del-rubro-f4)).
+
+#### `canchas`
+
+| | |
+|---|---|
+| Propósito | Ficha de canchas de un cliente. Alimenta el equipamiento sugerido |
+| Columnas | `empresa_id` (obligatoria, FK compuesta, cascade), `nombre`, `formato` (`F5`, `F7`, `F9`, `F11`, `futsal`), `superficie` (nula, o sintetico/natural/cemento/parquet), `cantidad` (mayor o igual a 1), `iluminacion`, `notas`, `activa`, `created_at`, `updated_at` |
+| RLS | Ver: `clientes.ver`; crear y editar: `clientes.editar`; cartera por la empresa. **Sin política de borrar**: baja lógica con `activa = false` |
+
+#### `licitaciones`
+
+| | |
+|---|---|
+| Propósito | Datos de una oportunidad de tipo licitación |
+| Columnas | `oportunidad_id` (**único**, FK compuesta, cascade), `expediente`, `organismo`, `fecha_apertura` (obligatoria), `monto_oficial` (mayor o igual a 0), `garantia` (texto libre), `notas`, `created_at`, `updated_at` |
+| RLS | Ver: `oportunidades.ver`; crear y editar: `oportunidades.editar`; cartera por la oportunidad. Sin política de borrar |
+| Regla | El trigger `oportunidades_licitacion_regla` (sobre `oportunidades`) impide pasar a ganada antes de `fecha_apertura` o sin esta fila |
+
+#### `oportunidades.venta_item_id`
+
+Columna nula, FK compuesta `(organizacion_id, venta_item_id)` a `venta_items`, `on delete set null`, índice parcial y un
+**índice único parcial** `oportunidades_venta_item_abierta_key` (`organizacion_id, venta_item_id` donde `estado = 'abierta'`): un equipo
+tiene a lo sumo una oportunidad de recambio abierta.
+Es el equipo entregado del que sale una oportunidad de recambio.
+
 ### Actividad e historial
 
 #### `bitacora_entradas` (las "actividades")
@@ -387,7 +434,8 @@ es la clave estable de los tipos de sistema y mapea los valores viejos de `bitac
 | `etapas_validar_tipo()` | Trigger, `SECURITY DEFINER` | No cambiar el tipo de una etapa con oportunidades |
 | `bitacora_defaults()` | Trigger | Autor y tipo de catálogo |
 | `organizaciones_proteger_plataforma()` | Trigger | Nombre y estado de la organización, solo de la plataforma |
-| `set_updated_at()` | Trigger | `updated_at` de oportunidades |
+| `oportunidad_licitacion_regla()` | Trigger antes de insertar o actualizar `etapa_id`/`estado`/`tipo` de `oportunidades` (0011) | Una licitación no pasa a ganada antes de su apertura (fecha de Argentina) ni sin datos |
+| `set_updated_at()` | Trigger | `updated_at` de oportunidades, canchas y licitaciones |
 | `cambiar_etapa(op, etapa, observacion, motivo, fecha)` | RPC, `SECURITY INVOKER` | Cambia de etapa con observación, motivo y fecha. Ejecutable por `authenticated` y `service_role` |
 
 Detalle de cada regla en [reglas de negocio](./reglas-de-negocio.md).

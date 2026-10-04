@@ -1,6 +1,8 @@
 import "server-only";
 import type { createClient } from "@/lib/supabase/server";
 import { nombreCompleto, type OrigenOpcion, type PerfilOpcion } from "@/lib/clientes";
+import { esErrorDeEsquema } from "@/lib/esquema";
+import type { Tables } from "@/lib/supabase/types";
 import type { OpcionContacto, OpcionEmpresa, OpcionProducto } from "@/lib/oportunidades";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
@@ -51,3 +53,26 @@ export async function cargarOpciones(supabase: Supabase) {
 }
 
 export type Opciones = Awaited<ReturnType<typeof cargarOpciones>>;
+
+type Licitacion = Tables<"licitaciones">;
+
+/**
+ * Las licitaciones de unas oportunidades (F4, tabla de la migracion 0011). `activas: false` = la base todavia
+ * no tiene la tabla: las pantallas esconden todo lo de licitaciones en vez de romperse. Con `ids` vacio igual se
+ * consulta (una fila) para saber si la tabla existe, porque el formulario de alta tiene que saberlo.
+ */
+export async function cargarLicitaciones(
+  supabase: Supabase,
+  ids: string[],
+): Promise<{ activas: boolean; porOportunidad: Record<string, Licitacion> }> {
+  const consulta = supabase.from("licitaciones").select("*");
+  const { data, error } = ids.length ? await consulta.in("oportunidad_id", ids) : await consulta.limit(1);
+  if (error) {
+    if (esErrorDeEsquema(error)) return { activas: false, porOportunidad: {} };
+    throw new Error(`No se pudieron leer las licitaciones: ${error.message}`);
+  }
+  return {
+    activas: true,
+    porOportunidad: ids.length ? Object.fromEntries((data ?? []).map((l) => [l.oportunidad_id, l])) : {},
+  };
+}

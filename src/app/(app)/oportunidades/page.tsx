@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { exigirPermiso } from "@/lib/sesion";
 import { ESTADOS_OPORTUNIDAD } from "@/lib/oportunidades";
+import { TIPOS_OPORTUNIDAD } from "@/lib/licitaciones";
+import { AvisoMigracion } from "@/components/AvisoMigracion";
 import {
   condicionIn,
   filtroOr,
@@ -15,7 +17,7 @@ import {
   type ParamsUrl,
 } from "@/lib/paginacion";
 import OportunidadesView from "./OportunidadesView";
-import { cargarOpciones } from "./datos";
+import { cargarLicitaciones, cargarOpciones } from "./datos";
 
 export const metadata = { title: "Oportunidades" };
 
@@ -45,9 +47,11 @@ export default async function OportunidadesPage({ searchParams }: { searchParams
   const estado = vista === "lista" ? opcionParam(sp.estado, [...ESTADOS_OPORTUNIDAD.map((e) => e.value), "todos"] as const) || "abierta" : "abierta";
   const etapa = uuidParam(sp.etapa);
   const origen = uuidParam(sp.origen);
+  // `tipo` es una columna de la 0007: este filtro anda aunque las tablas del rubro (0011) no esten.
+  const tipo = opcionParam(sp.tipo, TIPOS_OPORTUNIDAD.map((t) => t.value));
   // Sin clientes.ver_todos la RLS ya deja solo la cartera propia: filtrar por responsable no tiene sentido.
   const responsable = puedeVerTodos ? (sp.responsable === SIN_RESPONSABLE ? SIN_RESPONSABLE : uuidParam(sp.responsable)) : "";
-  const hayFiltros = Boolean(q || etapa || origen || responsable || (vista === "lista" && estado !== "abierta"));
+  const hayFiltros = Boolean(q || etapa || origen || tipo || responsable || (vista === "lista" && estado !== "abierta"));
 
   // La búsqueda alcanza al título y también al cliente (empresa o contacto) y al producto.
   // ponytail: tope de IDS_MAX por tipo; una búsqueda muy corta ("a") puede dejar afuera oportunidades que solo coinciden
@@ -81,6 +85,7 @@ export default async function OportunidadesPage({ searchParams }: { searchParams
     if (responsable === SIN_RESPONSABLE) query = query.is("responsable_id", null);
     else if (responsable) query = query.eq("responsable_id", responsable);
     if (origen) query = query.eq("origen_id", origen);
+    if (tipo) query = query.eq("tipo", tipo);
     if (filtroTexto) query = query.or(filtroTexto);
     // `id` desempata: sin un orden total, una fila podría repetirse o faltar entre dos páginas.
     return query.order("created_at", { ascending: false }).order("id").range(desde, hasta);
@@ -101,12 +106,19 @@ export default async function OportunidadesPage({ searchParams }: { searchParams
   if (tablero?.error) throw new Error(`No se pudo leer el tablero: ${tablero.error.message}`);
 
   const filas = lista ? lista.filas : (tablero?.data ?? []);
+  // Datos de las licitaciones de lo que se ve (apertura para bloquear "Marcar ganada", y para editarlas).
+  const licitaciones = await cargarLicitaciones(
+    supabase,
+    filas.filter((o) => o.tipo === "licitacion").map((o) => o.id),
+  );
   const total = lista ? lista.total : (tablero?.count ?? filas.length);
 
   // The header and toolbar live inside the view: the title shares a row with
   // the search and the filters (DESIGN.md §4.4).
   return (
-    <OportunidadesView
+    <div className="flex w-full flex-col gap-4">
+      <AvisoMigracion visible={!licitaciones.activas && sesion.puede("configuracion.gestionar")} que="el tipo «Licitación municipal» con sus datos" />
+      <OportunidadesView
       vista={vista}
       etapas={opciones.etapas}
       oportunidades={filas}
@@ -134,6 +146,9 @@ export default async function OportunidadesPage({ searchParams }: { searchParams
       puedeAsignar={sesion.puede("oportunidades.asignar")}
       puedeReabrir={sesion.puede("oportunidades.reabrir")}
       puedeVerTodos={puedeVerTodos}
+      licitacionesActivas={licitaciones.activas}
+      licitaciones={licitaciones.porOportunidad}
     />
+    </div>
   );
 }

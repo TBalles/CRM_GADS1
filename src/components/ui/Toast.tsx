@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import { X, AlertCircle, CheckCircle2, AlertTriangle, Info } from "lucide-react";
 
@@ -11,10 +12,17 @@ interface Toast {
   message: string;
   type: ToastType;
   duration: number;
+  accion?: ToastAccion;
+}
+
+/** Un link dentro del aviso ("Ver la oportunidad →"). */
+export interface ToastAccion {
+  label: string;
+  href: string;
 }
 
 interface ToastContextType {
-  showToast: (message: string, type?: ToastType, duration?: number) => void;
+  showToast: (message: string, type?: ToastType, duration?: number, accion?: ToastAccion) => void;
 }
 
 const ToastContext = React.createContext<ToastContextType | undefined>(undefined);
@@ -51,18 +59,38 @@ const ICON_COLORS: Record<ToastType, string> = {
 
 const ToastItem: React.FC<{ toast: Toast; onRemove: (id: string) => void }> = ({ toast, onRemove }) => {
   const Icon = ICONS[toast.type];
+  // Con el mouse encima o el foco adentro (el link del aviso) no se cierra solo; al salir, vuelve a correr el tiempo.
+  const [pausado, setPausado] = React.useState(false);
   React.useEffect(() => {
+    if (pausado) return;
     const t = setTimeout(() => onRemove(toast.id), toast.duration);
     return () => clearTimeout(t);
-  }, [toast.id, toast.duration, onRemove]);
+  }, [toast.id, toast.duration, onRemove, pausado]);
 
   return (
     <div
       role="status"
+      onMouseEnter={() => setPausado(true)}
+      onMouseLeave={() => setPausado(false)}
+      onFocus={() => setPausado(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setPausado(false);
+      }}
       className={`flex max-w-md items-start gap-3 rounded-lg border px-4 py-3 shadow-lg animate-in slide-in-from-top-2 fade-in duration-200 ${STYLES[toast.type]}`}
     >
       <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${ICON_COLORS[toast.type]}`} />
-      <p className="flex-1 text-sm font-medium">{toast.message}</p>
+      <div className="flex-1">
+        <p className="text-sm font-medium">{toast.message}</p>
+        {toast.accion && (
+          <Link
+            href={toast.accion.href}
+            onClick={() => onRemove(toast.id)}
+            className="mt-1 inline-block rounded-sm text-sm font-semibold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {toast.accion.label}
+          </Link>
+        )}
+      </div>
       <button
         onClick={() => onRemove(toast.id)}
         aria-label="Cerrar notificación"
@@ -85,9 +113,9 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const showToast = React.useCallback(
-    (message: string, type: ToastType = "info", duration = 4000) => {
+    (message: string, type: ToastType = "info", duration = 4000, accion?: ToastAccion) => {
       const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      setToasts((prev) => [...prev, { id, message, type, duration }]);
+      setToasts((prev) => [...prev, { id, message, type, duration, accion }]);
     },
     [],
   );

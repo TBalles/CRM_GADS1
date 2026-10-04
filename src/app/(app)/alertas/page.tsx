@@ -1,9 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { getRemitente } from "@/lib/contacto";
 import { exigirPermiso } from "@/lib/sesion";
-import AlertasView from "./AlertasView";
+import { esErrorDeEsquema } from "@/lib/esquema";
+import { abiertasPorItem, etapaInicialId, origenRecambioId } from "@/lib/recambio";
+import { AvisoMigracion } from "@/components/AvisoMigracion";
+import AlertasView, { type DatosRecambio } from "./AlertasView";
 
 export const metadata = { title: "Alertas" };
+
+/** Tope de oportunidades de recambio abiertas que se consultan; las que queden afuera igual quedan protegidas por el indice unico de la 0011. */
+const LIMITE_ABIERTAS = 1000;
 
 /**
  * Las alertas no se guardan: se calculan. `alertas_vida_util` es una vista que
@@ -20,12 +26,58 @@ export default async function AlertasPage() {
     // Lo mas urgente primero: lo que hace mas tiempo que vencio.
     .order("dias_restantes", { ascending: true });
 
+  // Recambio en 1 clic (F4): crear la oportunidad exige oportunidades.editar. Si a la base le falta la
+  // columna `oportunidades.venta_item_id` (migracion 0011 sin aplicar) la funcion se esconde, no se rompe.
+  let recambio: DatosRecambio | null = null;
+  let faltaMigracion = false;
+  let errorRecambio = false;
+  if (sesion.puede("oportunidades.editar")) {
+    // Todas las oportunidades de recambio ABIERTAS (sin pasar listas de ids por la URL): son pocas por definicion.
+    const [abiertas, etapas, origenes] = await Promise.all([
+      supabase
+        .from("oportunidades")
+        .select("id, venta_item_id, estado")
+        .eq("estado", "abierta")
+        .not("venta_item_id", "is", null)
+        .limit(LIMITE_ABIERTAS),
+      supabase.from("etapas").select("id, tipo, orden"),
+      supabase.from("origenes").select("id, nombre, activo"),
+    ]);
+    faltaMigracion = esErrorDeEsquema(abiertas.error);
+    const fallo = [abiertas.error, etapas.error, origenes.error].find((e) => e && !esErrorDeEsquema(e));
+    if (fallo) {
+      // Un error de verdad (no "falta la migracion"): se registra en el log del servidor y se avisa en pantalla.
+      console.error("[alertas] no se pudieron leer los datos del recambio:", fallo.message);
+      errorRecambio = true;
+    } else if (!abiertas.error) {
+      recambio = {
+        etapaId: etapaInicialId(etapas.data ?? []),
+        origenId: origenRecambioId(origenes.data ?? []),
+        yoId: sesion.user.id,
+        abiertas: Object.fromEntries(abiertasPorItem(abiertas.data ?? [])),
+      };
+    }
+  }
+
   // Solo viaja el booleano al cliente, nunca las credenciales.
   return (
-    <AlertasView
-      alertas={alertas ?? []}
-      enviaDesdeServidor={getRemitente() !== null}
-      puedeEnviar={sesion.puede("alertas.enviar")}
-    />
+    <div className="flex w-full flex-col gap-4">
+      <AvisoMigracion
+        visible={faltaMigracion && sesion.puede("configuracion.gestionar")}
+        que="el botón «Crear oportunidad de recambio»"
+      />
+      {errorRecambio && (
+        <p role="status" className="rounded-lg border border-border bg-secondary p-3 text-sm text-muted-foreground">
+          <strong className="font-semibold text-foreground">No pudimos consultar las oportunidades de recambio.</strong> Por ahora el
+          botón «Crear oportunidad de recambio» no está disponible; recargá la página para reintentar.
+        </p>
+      )}
+      <AlertasView
+        alertas={alertas ?? []}
+        enviaDesdeServidor={getRemitente() !== null}
+        puedeEnviar={sesion.puede("alertas.enviar")}
+        recambio={recambio}
+      />
+    </div>
   );
 }

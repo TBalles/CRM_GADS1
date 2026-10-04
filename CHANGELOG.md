@@ -16,7 +16,25 @@ Todo lo de esta sección ya está en `main`. Lo que no está es la interfaz de b
 
 ### Agregado
 
-- F3, búsqueda, filtros y paginación en el servidor (sin commit todavía):
+- F4, funciones del rubro (sin commit todavía; la migración `0011` está pendiente de aplicar a mano):
+  - **Recambio en un clic**: cada alerta de `/alertas` ofrece "Crear oportunidad de recambio" (título, empresa,
+    contacto, producto, valor = precio × cantidad, origen "Recambio por vida útil", primera etapa abierta,
+    responsable quien la crea y `venta_item_id`). Avisa con un link y no duplica: la base lo garantiza con un índice
+    único parcial (una oportunidad abierta por equipo) y la pantalla enlaza la existente con un mensaje amable. La alerta
+    pasa a mostrar "Oportunidad abierta →". Lógica pura en `src/lib/recambio.ts`.
+  - **Parque instalado** en la ficha de empresa: lo entregado, agrupado en vencidos, por vencer, vigentes y sin
+    seguimiento, con el total de unidades y el reloj de recambio (ahora el componente compartido `RelojRecambio`).
+  - **Ficha de canchas** en la ficha de empresa (alta, edición y baja lógica) y **equipamiento sugerido** con medidas
+    estándar por formato (`src/lib/canchas.ts`): "Le faltan 4 arcos de 3 × 2 m (F5)" o "Equipamiento completo", con
+    "Crear oportunidad". Es una sugerencia, no un diagnóstico.
+  - **Licitaciones**: tipo "Directa | Licitación municipal" en el formulario, con expediente, organismo, fecha de
+    apertura, monto oficial y garantía; bloque en el detalle con aviso de la apertura; "Marcar ganada" bloqueada
+    antes de la apertura (modal y base); filtro "Tipo" en la lista (`?tipo=`).
+  - Migración `0011_rubro.sql` (tablas `canchas` y `licitaciones`, `oportunidades.venta_item_id` con su índice único
+    parcial de una abierta por equipo, trigger `oportunidades_licitacion_regla`) y su prueba `supabase/tests/0011_rubro.sql`.
+  - Las secciones que dependen de la 0011 se esconden mientras falte (`src/lib/esquema.ts`); un administrador ve el aviso.
+  - El aviso (toast) admite un link y no se cierra mientras el mouse o el foco están encima.
+- F3, búsqueda, filtros y paginación en el servidor (`1ccb553`):
   - Empresas, contactos, oportunidades (vista Lista), productos, ventas y usuarios piden al servidor solo la
     página que se ve (`.range()` y `count: "exact"`), en lugar de traer todo y filtrar en el navegador
     (PostgREST cortaba en silencio en 1000 filas).
@@ -36,7 +54,7 @@ Todo lo de esta sección ya está en `main`. Lo que no está es la interfaz de b
     `src/components/Paginacion.tsx` y `src/app/(app)/error.tsx` (aviso si la base no responde).
   - Migración `0010_indices_busqueda.sql` (índices por organización y orden de cada lista, y un bloque
     opcional de trigramas `pg_trgm`); **pendiente de aplicar a mano en la base viva**.
-- F2, oportunidades completas en la interfaz (sin commit todavía):
+- F2, oportunidades completas en la interfaz (`891d663`):
   - Tablero con una columna por **etapa abierta** configurada (scroll horizontal con imán en pantallas
     chicas); mover una tarjeta usa la RPC `cambiar_etapa`, con actualización optimista, vuelta atrás y aviso
     claro si la base lo rechaza.
@@ -61,7 +79,7 @@ Todo lo de esta sección ya está en `main`. Lo que no está es la interfaz de b
   ser futura (fecha de Argentina), la fecha de cierre por defecto es la de Argentina y una oportunidad tiene
   que ser de una empresa o de un contacto (solo para usuarios: no para scripts, `service_role` ni
   `on delete set null`).
-- F1b, empresas y contactos completos en la interfaz (sin commit todavía):
+- F1b, empresas y contactos completos en la interfaz (`ed5b149`):
   - `/empresas` con estado, tipo de cliente, responsable y origen; filtros por estado, responsable (con
     `clientes.ver_todos`) y origen; chip "Ver dadas de baja".
   - `/contactos` nueva (contactos de empresa y clientes individuales) con sus filtros, alta, edición y baja.

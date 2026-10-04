@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { exigirPermiso } from "@/lib/sesion";
 import { esUuid } from "@/lib/clientes";
+import { esErrorDeEsquema } from "@/lib/esquema";
+import { hoyAR } from "@/lib/oportunidades";
 import { cargarOpciones } from "../datos";
 import OportunidadDetalle from "./OportunidadDetalle";
 
@@ -21,7 +23,7 @@ export default async function OportunidadPage({ params }: { params: Promise<{ id
   const puedeVerActividades = sesion.puede("bitacora.ver");
   const nada = Promise.resolve({ data: null });
 
-  const [opciones, { data: historial }, { data: auditoria }, { data: actividades }, { data: tipos }] = await Promise.all([
+  const [opciones, { data: historial }, { data: auditoria }, { data: actividades }, { data: tipos }, licitacionRes] = await Promise.all([
     cargarOpciones(supabase),
     supabase.from("oportunidad_etapas_historial").select("*").eq("oportunidad_id", id).order("cambiado_en", { ascending: false }),
     supabase.from("oportunidad_auditoria").select("*").eq("oportunidad_id", id).order("cambiado_en", { ascending: false }),
@@ -29,7 +31,13 @@ export default async function OportunidadPage({ params }: { params: Promise<{ id
       ? supabase.from("bitacora_entradas").select("*").eq("oportunidad_id", id).order("ocurrido_en", { ascending: false })
       : nada,
     supabase.from("tipos_actividad").select("id, nombre, codigo, activo, orden").order("orden").order("nombre"),
+    // F4: la tabla es de la migracion 0011. Si todavia no esta aplicada, el bloque de licitacion no se muestra.
+    supabase.from("licitaciones").select("*").eq("oportunidad_id", id).maybeSingle(),
   ]);
+  const licitacionesActivas = !esErrorDeEsquema(licitacionRes.error);
+  if (licitacionRes.error && licitacionesActivas) {
+    throw new Error(`No se pudo leer la licitación: ${licitacionRes.error.message}`);
+  }
 
   return (
     <OportunidadDetalle
@@ -39,6 +47,9 @@ export default async function OportunidadPage({ params }: { params: Promise<{ id
       actividades={actividades ?? []}
       tipos={tipos ?? []}
       opciones={opciones}
+      licitacion={licitacionRes.data ?? null}
+      licitacionesActivas={licitacionesActivas}
+      hoy={hoyAR()}
       yoId={sesion.user.id}
       puedeEditar={sesion.puede("oportunidades.editar")}
       puedeAsignar={sesion.puede("oportunidades.asignar")}

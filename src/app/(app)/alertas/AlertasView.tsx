@@ -1,18 +1,24 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Building2,
   CheckCircle2,
+  Handshake,
   Mail,
   MessageCircle,
   Search,
 } from "lucide-react";
-import { Badge, Button, Card, Input, PageHeader, Pill } from "@/components/ui/UIComponents";
+import { Badge, Button, Card, Input, PageHeader, Pill, buttonClass } from "@/components/ui/UIComponents";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MarcasCancha } from "@/components/Cancha";
 import { IconoEquipo } from "@/components/Equipamiento";
+import { RelojRecambio } from "@/components/RelojRecambio";
+import { createClient } from "@/lib/supabase/client";
+import { mensajeErrorOportunidad } from "@/lib/oportunidades";
+import { oportunidadDeRecambio } from "@/lib/recambio";
 import { useToast } from "@/components/ui/Toast";
 import { OverlayCarga } from "@/components/ui/OverlayCarga";
 import { cn } from "@/lib/utils";
@@ -30,6 +36,18 @@ import type { Tables } from "@/lib/supabase/types";
 
 type Alerta = Tables<"alertas_vida_util">;
 
+/**
+ * Lo que hace falta para crear la oportunidad de recambio. `null` = la funcion esta apagada (el rol no puede
+ * crear oportunidades, o la base todavia no tiene `oportunidades.venta_item_id`, migracion 0011).
+ */
+export type DatosRecambio = {
+  etapaId: string | null;
+  origenId: string | null;
+  yoId: string;
+  /** Equipo -> id de la oportunidad ABIERTA que ya sale de el. */
+  abiertas: Record<string, string>;
+};
+
 type Filtro = "todas" | "vencido" | "por_vencer" | "sin_avisar";
 
 const FILTROS: { value: Filtro; label: string }[] = [
@@ -39,64 +57,11 @@ const FILTROS: { value: Filtro; label: string }[] = [
   { value: "sin_avisar", label: "Sin avisar" },
 ];
 
-/**
- * El reloj del recambio: la vida util del equipo como una linea que va de la
- * entrega al vencimiento, con los ultimos 60 dias (la ventana de aviso)
- * marcados en ambar y un punto donde esta hoy. Es la idea del producto
- * dibujada con los datos de la fila.
- *
- * Usa `dias_restantes` de la vista y no `new Date()`: la cuenta la hace la
- * base, asi que servidor y cliente dibujan lo mismo (sin desfasaje de
- * hidratacion) y la barra nunca contradice a la pastilla "Vence en N d".
- * Decorativa (`aria-hidden`): la linea de texto de arriba ya dice las fechas.
- * Ancho FIJO, no relativo al texto de la tarjeta: asi las barras de distintas
- * alertas se comparan entre si de un vistazo.
- */
-function RelojRecambio({
-  entrega,
-  vence,
-  dias,
-  vencida,
-}: {
-  entrega: string | null;
-  vence: string | null;
-  dias: number;
-  vencida: boolean;
-}) {
-  if (!entrega || !vence) return null;
-  const total = (Date.parse(vence) - Date.parse(entrega)) / 86_400_000;
-  if (!(total > 0)) return null;
-  const hoy = Math.min(100, Math.max(0, ((total - dias) / total) * 100));
-  const aviso = Math.min(100, (60 / total) * 100);
-
-  return (
-    <div aria-hidden="true" className="mt-3 w-72 max-w-full sm:w-80">
-      <div className="relative h-1.5 rounded-full bg-muted">
-        <div className="absolute inset-y-0 right-0 rounded-r-full bg-amber-500/30" style={{ width: `${aviso}%` }} />
-        <div
-          className={cn("absolute inset-y-0 left-0 rounded-full", vencida ? "bg-destructive" : "bg-brand")}
-          style={{ width: `${hoy}%` }}
-        />
-        <span
-          className={cn(
-            "absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-card",
-            vencida ? "bg-destructive" : "bg-brand",
-          )}
-          style={{ left: `${hoy}%` }}
-        />
-      </div>
-      <div className="mt-1.5 flex justify-between font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-        <span>Entrega</span>
-        <span>Recambio</span>
-      </div>
-    </div>
-  );
-}
-
 export default function AlertasView({
   alertas,
   enviaDesdeServidor,
   puedeEnviar,
+  recambio,
 }: {
   alertas: Alerta[];
   /**
@@ -108,11 +73,15 @@ export default function AlertasView({
   enviaDesdeServidor: boolean;
   /** Sin `alertas.enviar`: se ven las alertas pero no se mandan. */
   puedeEnviar: boolean;
+  recambio: DatosRecambio | null;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [filtro, setFiltro] = useState<Filtro>("todas");
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [creandoOportunidad, setCreandoOportunidad] = useState(false);
+  // Oportunidades creadas desde esta pantalla: se suman a las que ya venian del servidor.
+  const [creadas, setCreadas] = useState<Record<string, string>>({});
   const [, startTransition] = useTransition();
   const { showToast } = useToast();
 
@@ -198,9 +167,80 @@ export default function AlertasView({
     startTransition(() => router.refresh());
   }
 
+  /**
+   * Recambio en 1 clic: la oportunidad se crea directo, sin formulario. El aviso lleva el link para verla.
+   * Si ya hay una abierta para el mismo equipo (doble clic, o creada en otra pestaña) no se duplica: se enlaza.
+   */
+  async function handleRecambio(a: Alerta) {
+    if (!recambio || !a.venta_item_id || pendingId) return;
+    const ventaItemId = a.venta_item_id;
+    if (!recambio.etapaId) {
+      showToast("El embudo no tiene una etapa abierta donde crear la oportunidad. Revisá Configuración.", "error");
+      return;
+    }
+
+    setCreandoOportunidad(true);
+    setPendingId(ventaItemId);
+    const supabase = createClient();
+    const yaHay = (previaId: string) => {
+      setPendingId(null);
+      setCreandoOportunidad(false);
+      setCreadas((prev) => ({ ...prev, [ventaItemId]: previaId }));
+      showToast("Ya había una oportunidad abierta para este equipo.", "info", 8000, {
+        label: "Abrirla →",
+        href: `/oportunidades/${previaId}`,
+      });
+    };
+    const buscarAbierta = async () =>
+      (
+        await supabase
+          .from("oportunidades")
+          .select("id")
+          .eq("venta_item_id", ventaItemId)
+          .eq("estado", "abierta")
+          .limit(1)
+          .maybeSingle()
+      ).data;
+
+    // Camino amable: si ya hay una abierta (otra pestaña, doble clic) se enlaza. La garantia real es el indice unico de la 0011.
+    const previa = await buscarAbierta();
+    if (previa) return yaHay(previa.id);
+
+    // El precio no viaja en la vista de alertas: se pide solo del equipo elegido (sin listas de ids en la URL).
+    const { data: item } = await supabase.from("venta_items").select("precio_unitario").eq("id", ventaItemId).maybeSingle();
+    const fila = oportunidadDeRecambio({
+      alerta: a,
+      precioUnitario: item?.precio_unitario,
+      etapaId: recambio.etapaId,
+      origenId: recambio.origenId,
+      responsableId: recambio.yoId,
+    });
+    if (!fila) {
+      setPendingId(null);
+      setCreandoOportunidad(false);
+      showToast("No se pudo armar la oportunidad de recambio. Recargá la página e intentá de nuevo.", "error");
+      return;
+    }
+
+    const { data, error } = await supabase.from("oportunidades").insert(fila).select().single();
+    if (error?.code === "23505" && /venta_item_abierta/i.test(error.message ?? "")) {
+      // Otra persona la creó entre el chequeo y el insert: la base lo impidió; se enlaza la que ganó.
+      const ganadora = await buscarAbierta();
+      if (ganadora) return yaHay(ganadora.id);
+    }
+    setPendingId(null);
+    setCreandoOportunidad(false);
+    if (error || !data) {
+      showToast(mensajeErrorOportunidad(error, "No se pudo crear la oportunidad de recambio. Intentá de nuevo."), "error");
+      return;
+    }
+    setCreadas((prev) => ({ ...prev, [ventaItemId]: data.id }));
+    showToast(`Creamos «${data.titulo}».`, "success", 8000, { label: "Ver la oportunidad →", href: `/oportunidades/${data.id}` });
+  }
+
   return (
     <div className="flex w-full flex-col gap-4">
-      <OverlayCarga visible={pendingId !== null} texto="Enviando…" />
+      <OverlayCarga visible={pendingId !== null} texto={creandoOportunidad ? "Creando la oportunidad…" : "Enviando…"} />
       <PageHeader
         titulo="Alertas de recambio"
         eyebrow="Llegá antes que nadie"
@@ -284,6 +324,7 @@ export default function AlertasView({
             const vencida = a.estado === "vencido";
             const busy = pendingId === a.venta_item_id;
             const dias = a.dias_restantes ?? 0;
+            const abiertaId = a.venta_item_id ? (creadas[a.venta_item_id] ?? recambio?.abiertas[a.venta_item_id]) : undefined;
 
             return (
               <Card
@@ -305,7 +346,7 @@ export default function AlertasView({
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="truncate text-sm font-semibold">{a.producto_nombre}</p>
                         <Pill tono={vencida ? "rojo" : "ambar"}>
-                          {vencida ? `Vencido hace ${Math.abs(dias)} d` : `Vence en ${dias} d`}
+                          {dias === 0 ? "Vence hoy" : vencida ? `Vencido hace ${Math.abs(dias)} d` : `Vence en ${dias} d`}
                         </Pill>
                         {a.cantidad != null && a.cantidad > 1 && (
                           <Badge variant="outline" className="tabular-nums">
@@ -344,27 +385,54 @@ export default function AlertasView({
                     </div>
                   </div>
 
-                  {puedeEnviar && <div className="flex shrink-0 gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={busy}
-                      onClick={() => handleEmail(a)}
-                      className="flex-1 gap-1.5 sm:flex-none"
-                    >
-                      <Mail className="h-3.5 w-3.5" />
-                      Mail
-                    </Button>
-                    <Button
-                      size="sm"
-                      disabled={busy}
-                      onClick={() => handleWhatsapp(a)}
-                      className="flex-1 gap-1.5 sm:flex-none"
-                    >
-                      <MessageCircle className="h-3.5 w-3.5" />
-                      WhatsApp
-                    </Button>
-                  </div>}
+                  {(puedeEnviar || recambio) && (
+                    <div className="flex shrink-0 flex-col gap-2 sm:items-end">
+                      {recambio &&
+                        (abiertaId ? (
+                          <Link
+                            href={`/oportunidades/${abiertaId}`}
+                            className={buttonClass({ variant: "outline", size: "sm", className: "w-full gap-1.5 sm:w-auto" })}
+                          >
+                            <Handshake aria-hidden="true" className="h-3.5 w-3.5" />
+                            Oportunidad abierta →
+                          </Link>
+                        ) : (
+                          <Button
+                            size="sm"
+                            disabled={busy}
+                            onClick={() => handleRecambio(a)}
+                            className="w-full gap-1.5 sm:w-auto"
+                          >
+                            <Handshake aria-hidden="true" className="h-3.5 w-3.5" />
+                            Crear oportunidad de recambio
+                          </Button>
+                        ))}
+                      {puedeEnviar && (
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={busy}
+                            onClick={() => handleEmail(a)}
+                            className="flex-1 gap-1.5 sm:flex-none"
+                          >
+                            <Mail className="h-3.5 w-3.5" />
+                            Mail
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={recambio ? "outline" : "default"}
+                            disabled={busy}
+                            onClick={() => handleWhatsapp(a)}
+                            className="flex-1 gap-1.5 sm:flex-none"
+                          >
+                            <MessageCircle className="h-3.5 w-3.5" />
+                            WhatsApp
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </Card>
             );

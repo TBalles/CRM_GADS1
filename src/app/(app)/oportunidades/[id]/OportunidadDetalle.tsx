@@ -9,6 +9,7 @@ import {
   CircleCheck,
   CircleX,
   FileClock,
+  Gavel,
   Handshake,
   History,
   NotebookPen,
@@ -23,11 +24,12 @@ import CierreModal, { ACCION_CAMBIO, useCierre } from "@/components/CierreModal"
 import { Dato, Seccion } from "@/components/cliente";
 import { CampoSelect, FormActions, FormBanner } from "@/components/form";
 import { EstadoOportunidadPill, EtapaBadge, TipoOportunidadBadge } from "@/components/oportunidades";
-import { Button, Card } from "@/components/ui/UIComponents";
+import { Button, Card, Pill } from "@/components/ui/UIComponents";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { createClient } from "@/lib/supabase/client";
 import { formatFecha, formatFechaAlta, formatMomento } from "@/lib/clientes";
+import { bloqueoGanada, datosApertura, textoApertura } from "@/lib/licitaciones";
 import { formatMoney } from "@/lib/money";
 import {
   accionesDisponibles,
@@ -46,6 +48,7 @@ type Historial = Tables<"oportunidad_etapas_historial">;
 type Auditoria = Tables<"oportunidad_auditoria">;
 type Actividad = Tables<"bitacora_entradas">;
 type Tipo = Pick<Tables<"tipos_actividad">, "id" | "nombre" | "codigo" | "activo" | "orden">;
+type Licitacion = Tables<"licitaciones">;
 
 type DrawerState = "editar" | "actividad" | "reasignar";
 
@@ -56,6 +59,9 @@ export default function OportunidadDetalle({
   actividades: actividadesIniciales,
   tipos,
   opciones,
+  licitacion: licitacionInicial,
+  licitacionesActivas,
+  hoy,
   yoId,
   puedeEditar,
   puedeAsignar,
@@ -70,6 +76,12 @@ export default function OportunidadDetalle({
   actividades: Actividad[];
   tipos: Tipo[];
   opciones: Opciones;
+  /** Datos de la licitacion (F4); null si todavia no se cargaron. */
+  licitacion: Licitacion | null;
+  /** Las tablas del rubro (migracion 0011) existen en la base. */
+  licitacionesActivas: boolean;
+  /** Hoy en Argentina, calculado en el servidor (asi no cambia entre el render del servidor y el del cliente). */
+  hoy: string;
   yoId: string;
   /** Permisos del rol. Solo UX: la base exige cada uno igual. */
   puedeEditar: boolean;
@@ -81,6 +93,7 @@ export default function OportunidadDetalle({
 }) {
   const { etapas, empresas, contactos, productos, perfiles, origenes, motivos } = opciones;
   const [oportunidad, setOportunidad] = useState(oportunidadInicial);
+  const [licitacion, setLicitacion] = useState(licitacionInicial);
   const [historial, setHistorial] = useState(historialInicial);
   const [auditoria, setAuditoria] = useState(auditoriaInicial);
   const [actividades, setActividades] = useState(actividadesIniciales);
@@ -108,6 +121,10 @@ export default function OportunidadDetalle({
   // o el rol no tiene `clientes.ver`. No se afirma cual de las dos.
   const sinAcceso = puedeVerClientes ? "De otra cartera" : "Sin acceso";
   const modos = accionesDisponibles(oportunidad.estado, { puedeEditar, puedeReabrir });
+  const esLicitacion = licitacionesActivas && oportunidad.tipo === "licitacion";
+  const apertura = datosApertura(oportunidad.tipo, licitacionesActivas, licitacion);
+  // Mientras una licitacion abierta no llegue a su apertura (o no tenga datos), no se puede ganar.
+  const avisoApertura = oportunidad.estado === "abierta" ? bloqueoGanada(apertura, hoy) : null;
 
   /** Historial y auditoria vuelven de la base: son lo que escribieron los triggers, no una copia armada a mano. */
   async function recargarHistorial() {
@@ -120,8 +137,9 @@ export default function OportunidadDetalle({
     if (a.data) setAuditoria(a.data);
   }
 
-  function guardada(saved: Oportunidad) {
+  function guardada(saved: Oportunidad, lic?: Licitacion | null) {
     setOportunidad(saved);
+    if (lic) setLicitacion(lic);
     setOpen(false);
     void recargarHistorial();
   }
@@ -196,7 +214,7 @@ export default function OportunidadDetalle({
                 key={modo}
                 variant="outline"
                 className="gap-1.5"
-                onClick={() => cierre.abrir({ modo, oportunidad })}
+                onClick={() => cierre.abrir({ modo, oportunidad, licitacion: apertura })}
               >
                 <Icon aria-hidden="true" className="h-4 w-4" /> {ACCION_CAMBIO[modo].label}
               </Button>
@@ -235,6 +253,15 @@ export default function OportunidadDetalle({
             )}
             Está cerrada: corregirla queda registrado en la auditoría
             {puedeReabrir ? ", y podés reabrirla." : ". Reabrirla lo hace quien tiene ese permiso."}
+          </p>
+        </div>
+      )}
+
+      {avisoApertura && licitacion && (
+        <div role="status" className="flex items-start gap-2 rounded-lg border border-border bg-secondary p-3 text-sm">
+          <Gavel aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+          <p>
+            <strong>{textoApertura(licitacion.fecha_apertura, hoy)}.</strong> {avisoApertura}
           </p>
         </div>
       )}
@@ -292,6 +319,44 @@ export default function OportunidadDetalle({
           )}
         </dl>
       </Card>
+
+      {/* LICITACION (F4): solo si la oportunidad es una licitacion y la base tiene la tabla */}
+      {esLicitacion && (
+        <Seccion
+          icon={Gavel}
+          titulo="Licitación"
+          accion={
+            puedeEditar ? (
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => abrir("editar")}>
+                <Pencil aria-hidden="true" className="h-3.5 w-3.5" /> {licitacion ? "Editar datos" : "Cargar datos"}
+              </Button>
+            ) : undefined
+          }
+        >
+          {licitacion ? (
+            <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Dato label="Organismo">{licitacion.organismo}</Dato>
+              <Dato label="Expediente">{licitacion.expediente}</Dato>
+              <Dato label="Fecha de apertura">
+                <span className="flex flex-wrap items-center gap-2">
+                  <span className="tabular-nums">{formatFecha(licitacion.fecha_apertura)}</span>
+                  {oportunidad.estado === "abierta" && (
+                    <Pill tono={licitacion.fecha_apertura > hoy ? "ambar" : "verde"}>{textoApertura(licitacion.fecha_apertura, hoy)}</Pill>
+                  )}
+                </span>
+              </Dato>
+              <Dato label="Monto oficial">
+                {licitacion.monto_oficial != null && <span className="font-mono tabular-nums">{formatMoney(Number(licitacion.monto_oficial))}</span>}
+              </Dato>
+              <Dato label="Garantía de oferta">{licitacion.garantia}</Dato>
+            </dl>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Todavía no se cargaron los datos de la licitación. Sin la fecha de apertura no se puede marcar ganada.
+            </p>
+          )}
+        </Seccion>
+      )}
 
       {/* LINEA DE TIEMPO: actividades y cambios de etapa, lo ultimo arriba */}
       <Seccion
@@ -384,6 +449,8 @@ export default function OportunidadDetalle({
           <OportunidadForm
             key={`editar-${oportunidad.id}`}
             oportunidad={oportunidad}
+            licitacion={licitacion}
+            licitacionesActivas={licitacionesActivas}
             empresas={empresas}
             contactos={contactos}
             productos={productos}

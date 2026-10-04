@@ -9,6 +9,7 @@ import { useModalAnimation } from "@/components/ui/overlay";
 import { backdropClose } from "@/components/ui/backdropClose";
 import { useToast } from "@/components/ui/Toast";
 import { cambiarEtapa } from "@/lib/cambiarEtapa";
+import { bloqueoGanada, type DatosApertura } from "@/lib/licitaciones";
 import {
   etapasParaModo,
   hoyAR,
@@ -27,6 +28,11 @@ type Motivo = Pick<Tables<"motivos_perdida">, "id" | "nombre" | "activo" | "orde
 export type CierreTarget = {
   modo: ModoCambio;
   oportunidad: Pick<Oportunidad, "id" | "titulo" | "etapa_id" | "estado" | "fecha_cierre">;
+  /**
+   * Solo licitaciones (F4): su fecha de apertura. Mientras no abrió, "Marcar ganada" queda bloqueada con el mismo
+   * mensaje de la base (trigger `oportunidades_licitacion_regla`). `undefined` = no es una licitación.
+   */
+  licitacion?: DatosApertura;
 };
 
 /** Nombre e ícono de cada acción, para los menús y botones que abren el modal. */
@@ -80,6 +86,11 @@ export function useCierre() {
     },
     modalProps: { open, target, onClose: () => setOpen(false) },
   };
+}
+
+/** Si el cambio termina en una etapa de tipo ganada (marcar ganada, o cambiar el resultado de una perdida). */
+function terminaEnGanada(modo: ModoCambio, destinoTipo: string): boolean {
+  return modo === "ganada" || (modo === "resultado" && destinoTipo === "ganada");
 }
 
 const FOCUSABLE =
@@ -212,6 +223,8 @@ function Contenido({
   const siguiente = modo === "etapa" ? (destinos.find((e) => e.orden > (actual?.orden ?? 0)) ?? destinos[0]) : destinos[0];
 
   const [hoy] = useState(hoyAR);
+  // Una licitación no se gana antes de su apertura (ni cambiando el resultado de una perdida a ganada).
+  const bloqueoLicitacion = terminaEnGanada(modo, destinoTipo) ? bloqueoGanada(target.licitacion, hoy) : null;
   const [etapaId, setEtapaId] = useState(siguiente?.id ?? "");
   const [motivoId, setMotivoId] = useState("");
   const [fecha, setFecha] = useState(hoy);
@@ -240,7 +253,7 @@ function Contenido({
 
   async function confirmar(e: React.FormEvent) {
     e.preventDefault();
-    if (saving) return;
+    if (saving || bloqueoLicitacion) return;
     const nuevos = validarCambio({
       modo,
       etapaId,
@@ -336,6 +349,7 @@ function Contenido({
           <p className="text-sm text-muted-foreground">{copy.bajada}</p>
 
           {error && <FormBanner message={error} />}
+          {bloqueoLicitacion && <FormBanner message={bloqueoLicitacion} />}
           {!destinos.length && (
             <FormBanner
               message={
@@ -428,7 +442,7 @@ function Contenido({
           <Button type="button" variant="outline" onClick={onClose} disabled={saving} className="w-full sm:w-auto">
             Cancelar
           </Button>
-          <Button type="submit" disabled={saving || !destinos.length} className="w-full gap-2 sm:w-auto sm:min-w-[140px]">
+          <Button type="submit" disabled={saving || !destinos.length || Boolean(bloqueoLicitacion)} className="w-full gap-2 sm:w-auto sm:min-w-[140px]">
             {saving && <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />}
             {saving ? "Guardando…" : copy.confirmar}
           </Button>

@@ -54,8 +54,8 @@ Incluido:
   ganada/perdida, Reabrir y Cambiar resultado con `oportunidades.reabrir`, Reasignar con `oportunidades.asignar`
   (que exige `clientes.ver_todos`),
   Registrar actividad), línea de tiempo unificada de actividades y cambios de etapa, y la auditoría de
-  lo editado tras el cierre. 404 si no existe o la RLS la esconde. `tipo = licitacion` es solo una
-  insignia hasta F4.
+  lo editado tras el cierre. 404 si no existe o la RLS la esconde. `tipo = licitacion` lleva sus datos
+  (`licitaciones`) y la regla "no se gana antes de la apertura" desde F4 (migración `0011`, pendiente de aplicar).
 - **Embudo comercial**: `/oportunidades` con conmutador **Tablero | Lista**. El tablero arma una
   columna por **etapa abierta** configurada (orden de `/configuracion`), con scroll horizontal e
   imán en pantallas chicas, y muestra solo oportunidades abiertas. Mover de etapa (arrastre HTML5
@@ -107,8 +107,11 @@ usa aún, salvo donde se aclara:
 - Actividades (`bitacora_entradas`) con tipo de catálogo, oportunidad y resultado: desde F1b la
   interfaz usa `tipo_actividad_id` (el `tipo` viejo lo completa el trigger).
 
-**Planificado** (F4 a F8, hasta 2026-11-11): funciones del rubro
-(canchas, parque instalado, licitaciones), presupuesto imprimible, E2E y CI, IA opcional y manual.
+**Rubro (F4, migración `0011` pendiente de aplicar a mano)**: parque instalado y ficha de canchas con equipamiento
+sugerido en la ficha de empresa, licitaciones en oportunidades y "Crear oportunidad de recambio" en `/alertas`. Mientras la
+base no tenga la 0011 esas secciones se esconden (`src/lib/esquema.ts`); el parque anda igual.
+
+**Planificado** (F5 a F8, hasta 2026-11-11): ficha 360 y búsqueda global, presupuesto imprimible, E2E y CI, IA opcional y manual.
 
 **Fuera de alcance según la consigna** (no agregar sin que el usuario lo pida): tareas, agenda,
 recordatorios, exportación, integraciones, API pública, importación, facturación, pagos,
@@ -186,7 +189,9 @@ src/
         EmpresasList.tsx          Client: header+toolbar, filtros por URL, tabla/cards, paginación, abre los drawers
         EmpresaForm.tsx           Form de alta/edición de empresa (usado dentro del Drawer)
         [id]/page.tsx             Ficha (Server Component; notFound si no existe o la RLS la esconde)
-        [id]/EmpresaDetalle.tsx   Client: datos, contactos, oportunidades, ventas, actividades
+        [id]/EmpresaDetalle.tsx   Client: datos, canchas, parque instalado, contactos, oportunidades, ventas, actividades
+        [id]/CanchasSeccion.tsx   Client (F4): lista de canchas, baja lógica y equipamiento sugerido + "Crear oportunidad"
+        [id]/CanchaForm.tsx       Form de alta/edición de cancha (Drawer)
       contactos/                Lista de contactos (de empresa e individuales) y su ficha
         page.tsx / ContactosList.tsx / ContactoForm.tsx / [id]/page.tsx / [id]/ContactoDetalle.tsx
       productos/                 ABM del catálogo con vida útil
@@ -194,8 +199,8 @@ src/
       ventas/                    Historial de compras (cabecera + ítems)
         page.tsx / VentasList.tsx / VentaForm.tsx
       alertas/                   Recambios vencidos o por vencer
-        page.tsx                 Lee la vista alertas_vida_util
-        AlertasView.tsx          Client: KPIs, filtros, envío por mail/WhatsApp
+        page.tsx                 Lee la vista alertas_vida_util (+ datos del recambio en 1 clic si la 0011 está)
+        AlertasView.tsx          Client: KPIs, filtros, "Crear oportunidad de recambio", envío por mail/WhatsApp
         actions.ts               Server Actions: envío por SMTP/Gmail (o mailto) + registro
         plantillas.ts            Mensajes prearmados — funciones puras
         plantillas.check.ts      Self-check: node --test "src/app/(app)/alertas/plantillas.check.ts"
@@ -203,7 +208,7 @@ src/
         page.tsx                 Server Component: fetch de oportunidades + catálogos
         datos.ts                 cargarOpciones(): etapas, clientes, productos, perfiles, orígenes, motivos
         OportunidadesView.tsx     Client: conmutador Tablero|Lista (?vista=), filtros por URL, columnas por etapa abierta
-        OportunidadForm.tsx       Form de alta/edición (usado dentro del Drawer)
+        OportunidadForm.tsx       Form de alta/edición (usado dentro del Drawer); tipo y datos de licitación (F4)
         [id]/page.tsx             Detalle (Server Component; notFound si no existe o la RLS la esconde)
         [id]/OportunidadDetalle.tsx  Client: datos, acciones, línea de tiempo, auditoría, Reasignar
   components/
@@ -233,6 +238,9 @@ src/
     ConfirmModal.tsx            Alert dialog centrado (lo usa el logout)
     CierreModal.tsx             Cambiar etapa / Marcar ganada / Marcar perdida / Reabrir / Cambiar resultado, por `cambiar_etapa`
     oportunidades.tsx           EtapaBadge, EstadoOportunidadPill, TipoOportunidadBadge (server-safe)
+    RelojRecambio.tsx           La barra entrega-vencimiento (alertas y parque instalado)
+    ParqueInstalado.tsx         Parque instalado de una empresa, agrupado por urgencia (server-safe)
+    AvisoMigracion.tsx          Aviso para administradores: "Se activa al aplicar la migración 0011"
     Drawer.tsx                   Panel lateral derecho para los formularios de alta/edición
     RowActions.tsx               Menú "⋮" portaled que usan las filas de cada lista
     ThemeToggle.tsx              Toggle de modo oscuro (localStorage + prefers-color-scheme)
@@ -263,6 +271,12 @@ src/
     money.check.ts             Self-check: node --test src/lib/money.check.ts
     equipo.ts                  tipoEquipo(): qué equipo es un producto, para su ícono
     equipo.check.ts            Self-check: node --test src/lib/equipo.check.ts
+    esquema.ts                 esErrorDeEsquema(): reconoce "falta la tabla o la columna" (migración sin aplicar)
+    licitaciones.ts            Tipo de oportunidad, validación del formulario y la regla "no ganada antes de la apertura"
+    parque.ts                  Parque instalado: vence, días, estado y grupos (misma cuenta que la vista de alertas)
+    canchas.ts                 Formatos, medidas y equipamiento sugerido (función pura)
+    recambio.ts                Recambio en 1 clic: título, valor, origen, duplicados (función pura)
+    (cada uno con su .check.ts)
     supabase/
       client.ts                Cliente Supabase para Client Components (drawers, mutaciones)
       server.ts                Cliente Supabase para Server Components/Actions (usa cookies())
@@ -291,11 +305,13 @@ supabase/
     0008_baja_logica.sql        Sin DELETE en empresas/contactos; siempre una etapa ganada y una perdida (pendiente en la base viva)
     0009_reglas_oportunidades.sql  Fecha de cierre no futura (hora de Argentina), empresa o contacto obligatorio (pendiente en la base viva)
     0010_indices_busqueda.sql   Índices para la búsqueda y la paginación del servidor, con un bloque opcional pg_trgm (pendiente en la base viva)
+    0011_rubro.sql              Canchas, licitaciones, oportunidades.venta_item_id y la regla de la apertura (pendiente en la base viva)
   tests/                        SQL con rollback; devuelven "TODO OK" o fallan con "FALLA:"
     0005_permisos.sql           Aislamiento y permisos (correr DESPUÉS de la 0007)
     0007_reglas.sql             Reglas de la 0007 (correr después de aplicarla)
     0008_baja_logica.sql        Baja lógica y etapas de cierre (correr después de aplicar la 0008)
     0009_reglas_oportunidades.sql  Reglas de la 0009 (correr después de aplicarla)
+    0011_rubro.sql              Canchas, licitaciones y la regla de la apertura (correr después de aplicar la 0011)
     0007_reejecucion.sql        Re-ejecución de la 0007 (SOLO en una base sin la 0007)
   seeds/demo_catedra.sql        Organización "Cátedra UNLaM (demo)" con una cuenta por rol y datos
 ```
@@ -307,7 +323,7 @@ desde la ficha. Las fichas (`/empresas/[id]`, `/contactos/[id]`) son de F1b y el
 ### Modelo de datos (Postgres, esquema `public`)
 
 Resumen. El detalle completo (diagrama ER, columnas, FKs, RLS por tabla) está en
-[`docs/modelo-de-datos.md`](./docs/modelo-de-datos.md). 18 tablas más la vista `alertas_vida_util`.
+[`docs/modelo-de-datos.md`](./docs/modelo-de-datos.md). 18 tablas (20 con la 0011) más la vista `alertas_vida_util`.
 
 - **Plataforma**: `organizaciones` (un cliente = una fila; desde la 0007 también datos fiscales y
   `logo_path`), `perfiles` (espejo de `auth.users`: organización, rol, `activo`, `activado_at`,
@@ -320,6 +336,8 @@ Resumen. El detalle completo (diagrama ER, columnas, FKs, RLS por tabla) está e
   `activo`), `etapas` (con `tipo` abierta/ganada/perdida), `oportunidades` (con `estado`,
   `fecha_cierre`, `motivo_perdida_id`, `origen_id`, `probabilidad`, `tipo` directa/licitacion;
   **no se borran**).
+- **Rubro (0011)**: `canchas` (de una empresa; baja lógica con `activa`) y `licitaciones` (una por oportunidad);
+  `oportunidades.venta_item_id` liga una oportunidad de recambio con el equipo entregado.
 - **Ventas y recambio**: `ventas` (hecho consumado, distinto de la oportunidad) y `venta_items`
   (`fecha_entrega` propia y `vida_util_meses` **copiada** del producto por trigger: snapshot).
   `alertas_enviadas` guarda solo lo enviado; las pendientes las calcula la vista
@@ -343,7 +361,7 @@ Ya hay un proyecto de Supabase conectado y provisionado (organización `dgmoqhih
 proyecto `pdseuwdifzywpdgawbrl`, región `us-west-2`). Se armó vía el MCP de Supabase:
 
 - Las migraciones `0001` a `0007` están aplicadas (la `0007` el 2026-10-04, con sus pruebas SQL). La `0008`, la
-  `0009` y la `0010` (índices de F3, sin cambios de reglas) están en el repositorio pero **falta aplicarlas a mano** en el SQL Editor, en ese orden; hasta entonces
+  `0009`, la `0010` (índices de F3, sin cambios de reglas) y la `0011` (rubro, F4) están en el repositorio pero **falta aplicarlas a mano** en el SQL Editor, en ese orden; hasta entonces
   la base no impone "fecha de cierre no futura" ni "empresa o contacto" (la interfaz de F2 sí las valida).
   Se aplican a mano en el SQL Editor, en orden; **aplicar y desplegar enseguida**, ver
   [`docs/deploy.md`](./docs/deploy.md).
@@ -436,7 +454,7 @@ npx tsc --noEmit                     # tipos
 npx eslint src --max-warnings=0      # lint sin advertencias
 
 # Self-checks (sin framework, runner de Node): money, equipo, permisos, email/layout, alertas/plantillas, clientes, oportunidades...
-node --test "src/**/*.check.ts"      # 10 archivos, 82 pruebas
+node --test "src/**/*.check.ts"      # 15 archivos, 116 pruebas
 node --test src/lib/money.check.ts   # o uno solo
 ```
 
