@@ -1,0 +1,46 @@
+<section class="cap apendice" id="apendice-c" data-num="C" data-parte="Apéndices" data-titulo="Límites conocidos" data-bajada="Lo que esta versión no hace o hace con salvedades. Está acá para que no lo descubras de golpe.">
+
+<h2>Lo que no está en el sistema</h2>
+<p>Quedan <strong>fuera del alcance</strong> de esta versión: tareas, agenda y recordatorios; exportación e importación de datos; integraciones y API pública; facturación, pagos, contabilidad y stock; campañas de marketing. Tampoco hay <strong>envío automático</strong> de avisos: cada uno lo confirma una persona.</p>
+
+<h2>Cosas que se hacen distinto a lo esperado</h2>
+<table class="tabla compacta">
+  <thead><tr><th style="width:52mm">Tema</th><th>Qué pasa</th></tr></thead>
+  <tbody>
+    <tr><td>Usuarios</td><td>No se editan el nombre ni el email de un usuario: solo su rol y su estado.</td></tr>
+    <tr><td>Ventas</td><td>Una venta guardada no se edita desde la pantalla. La cabecera y los ítems se guardan en dos pasos (no es una transacción): si falla el segundo, se intenta deshacer el primero y la pantalla lo avisa.</td></tr>
+    <tr><td>Estado «Cliente»</td><td>No cambia solo al registrar una venta: se edita a mano.</td></tr>
+    <tr><td>Borrador de presupuesto</td><td>No se guarda mientras se escribe; si se cierra la pestaña, se pierde.</td></tr>
+    <tr><td>Presupuestos: IVA y moneda</td><td>Solo IVA 21 % (sin alícuotas reducidas), sin descuento global y solo en pesos.</td></tr>
+    <tr><td>Presupuestos: datos que se leen en vivo</td><td>El logo y los datos del cliente y del contacto no están en la «foto» del presupuesto: si cambian, el presupuesto reimpreso muestra los nuevos.</td></tr>
+    <tr><td>Licitaciones</td><td>Si se cambia la fecha de apertura de una licitación ya ganada hacia el futuro, el sistema no lo controla.</td></tr>
+    <tr><td>Equipamiento sugerido</td><td>Es una sugerencia con medidas estándar y una red por arco; no sabe qué compró el cliente a otros proveedores ni reconoce la medida de un arco que no la dice en el nombre.</td></tr>
+    <tr><td>Horarios</td><td>El parque instalado usa la fecha de Argentina; la vista de Alertas, la del servidor (UTC). Entre las 21:00 y las 24:00 puede haber un día de diferencia en un vencimiento.</td></tr>
+  </tbody>
+</table>
+
+<h2>Búsquedas, listas y topes</h2>
+<table class="tabla compacta">
+  <thead><tr><th style="width:52mm">Tema</th><th>Qué pasa</th></tr></thead>
+  <tbody>
+    <tr><td>Tildes</td><td>La búsqueda no distingue mayúsculas pero sí tildes («perez» no encuentra «Pérez»).</td></tr>
+    <tr><td>Búsquedas entre pantallas</td><td>Buscar una empresa por el nombre de sus contactos (y al revés) se hace en dos pasos con un tope de 100 resultados por paso: una búsqueda muy corta («a») puede dejar afuera coincidencias que existen solo por la otra tabla.</td></tr>
+    <tr><td>El asterisco</td><td>Un <span class="mono">*</span> escrito en el buscador vale por un carácter cualquiera.</td></tr>
+    <tr><td>Selectores de empresas y contactos</td><td>Dentro de un formulario, traen la lista entera con un tope de 1000. Con más de 1000 empresas haría falta un buscador dentro del selector.</td></tr>
+    <tr><td>Tablero de oportunidades</td><td>Muestra hasta 500 abiertas, con un aviso si hay más. El pie de la lista suma la página, no todo el filtro.</td></tr>
+    <tr><td>Historia de la cuenta</td><td>Trae lo más reciente de cada tipo hasta un tope (200; 100 oportunidades); si una cuenta lo supera, lo avisa con el número real.</td></tr>
+    <tr><td>Tablero comercial</td><td>Lee las actividades de los últimos 120 días y hasta 1000 oportunidades; si se tocan los topes, lo avisa y deja aparte las que no se pudieron comprobar.</td></tr>
+    <tr><td>Conversión del embudo</td><td>Es una foto de hoy sobre una cohorte, sin series en el tiempo ni comparación entre períodos.</td></tr>
+    <tr><td>Productos en la búsqueda global</td><td>No tienen ficha: el resultado lleva al catálogo con el nombre buscado.</td></tr>
+  </tbody>
+</table>
+
+<h2>Sobre la inteligencia artificial</h2>
+<div class="nota atencion">
+  <p>La IA es opcional y siempre la revisa una persona. En esta versión sus textos fueron <strong>probados contra un servidor simulado</strong> de la API, no contra el servicio real: la calidad de los borradores y el costo medido todavía hay que verificarlos con uso real. <strong>Leé siempre lo que genera antes de usarlo.</strong> El límite es de 10 borradores cada 10 minutos por persona.</p>
+</div>
+
+<h2>Cuentas de demostración</h2>
+<p>La organización de demostración de la cátedra trae cuatro cuentas, una por rol, con una contraseña pública y compartida. No las uses con datos reales, y si la demostración quedó cargada en la misma base que la producción, esas cuentas existen ahí.</p>
+
+</section>

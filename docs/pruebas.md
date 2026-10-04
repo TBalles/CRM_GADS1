@@ -4,15 +4,17 @@ Todo lo que se puede ejecutar para comprobar que el proyecto está sano, cómo c
 leer el resultado. No hay framework de pruebas: los self-checks usan el runner de Node y las pruebas SQL se
 pegan en el SQL Editor de Supabase.
 
-**Estado con F6** (ejecutado al cerrar la fase, 2026-10-04):
+**Estado con la 1.0.0 (F8)** (ejecutado al cerrar la entrega, 2026-10-04):
 
 | Verificación | Resultado |
 |---|---|
-| `npm test` (`node --test "src/**/*.check.ts"`) | **23 archivos, 233 pruebas, 233 pasan, 0 fallan** (F6 sumó `presupuesto.check.ts`: 20 pruebas; F7 suma los tres de `src/lib/ia/`: 46) |
+| `npm test` (`node --test "src/**/*.check.ts"`) | **25 archivos, 243 pruebas, 243 pasan, 0 fallan** (F8 sumó `migraciones.check.ts`: 4 y `manual.check.ts`: 6) |
 | `npm run typecheck` (`tsc --noEmit` sobre `src` y sobre `e2e`) | Sin errores |
 | `npm run lint` (`eslint src e2e playwright.config.ts --max-warnings=0`) | Sin advertencias |
-| `npx next build` (con las variables públicas de relleno que usa la CI) | Compila; `/oportunidades/[id]/presupuesto` figura entre las rutas |
-| Pruebas SQL `0005`, `0007`, `0008`, `0009`, `0011` y `0012` | Todas `TODO OK` en PGlite (migraciones `0001` a `0012`, la `0012` aplicada dos veces). **No se corrieron contra la base viva**: la `0012` no está aplicada ahí |
+| `npx next build` (con las variables públicas de relleno que usa la CI) | Compila. El listado de rutas de `next build` tiene **25 entradas**: las 21 páginas (`page.tsx`, con la landing, el acceso y `/admin`), los 2 route handlers (`/auth/confirm` y `/auth/signout`), `/_not-found` e `/icon.svg`; `/oportunidades/[id]/presupuesto` está entre ellas (la línea "Generating static pages (22/22)" cuenta otra cosa: páginas generadas, no rutas) |
+| Pruebas SQL `0005`, `0007`, `0008`, `0009`, `0011` y `0012` | Todas `TODO OK` en PGlite con `0001` a `0007` y después **solo** el kit `supabase/aplicar/aplicar_0008_a_0012.sql` (aplicado dos veces). **No se corrieron contra la base viva**: las migraciones `0008` a `0012` no están aplicadas ahí |
+| Kit de migraciones | Las 24 verificaciones del `select` final dicen `OK` y el `TOTAL`, `TODO OK`, también con el bloque `pg_trgm` encendido; sobre una base solo con la `0007` dice `HAY 22 FALTANTES` (prueba negativa) |
+| Manual de usuario | `npm run manual:pdf`: 89 páginas, 7,2 MB; el índice coincide con las páginas del PDF completo y se revisó página por página (portada, índice, tablas, figuras y última página) |
 | `npx playwright test --list` | 14 pruebas en 3 archivos compilan. **La suite E2E no se ejecutó contra una base real**: la organización de pruebas todavía no existe (ver [§5](#5-pruebas-e2e-con-playwright)) |
 | `.github/workflows/ci.yml` | El YAML se parseó (PyYAML). **No se ejecutó en GitHub Actions** |
 
@@ -28,7 +30,7 @@ Contenido: [1. Resumen](#1-resumen) · [2. Self-checks](#2-self-checks-con-node-
 
 | Qué | Cómo se corre | Dónde | Qué prueba |
 |---|---|---|---|
-| Self-checks (23 archivos, 233 pruebas) | `npm test` (= `node --test "src/**/*.check.ts"`) | Terminal | Lógica pura: dinero, íconos, permisos, mails, mensajes, CUIT, sitio web, vocabulario de clientes, reglas de oportunidades, paginación y búsqueda por URL, errores de esquema faltante, licitaciones, parque instalado, equipamiento sugerido, recambio, ficha 360, tablero del responsable, conversión del embudo, búsqueda global, cuentas del presupuesto y la IA asistida (contexto sin datos personales, errores, límite) |
+| Self-checks (25 archivos, 243 pruebas) | `npm test` (= `node --test "src/**/*.check.ts"`) | Terminal | Lógica pura: dinero, íconos, permisos, mails, mensajes, CUIT, sitio web, vocabulario de clientes, reglas de oportunidades, paginación y búsqueda por URL, errores de esquema faltante, licitaciones, parque instalado, equipamiento sugerido, recambio, ficha 360, tablero del responsable, conversión del embudo, búsqueda global, cuentas del presupuesto, la IA asistida (contexto sin datos personales, errores, límite), que el kit de migraciones esté al día con las migraciones (`migraciones.check.ts`) y que las figuras del manual de usuario existan y los scripts no lleven contraseñas (`manual.check.ts`) |
 | Tipos | `npm run typecheck` (= `tsc --noEmit && tsc --noEmit -p e2e`) | Terminal | Que todo el TypeScript compile, `src` y las pruebas E2E |
 | Lint | `npm run lint` (= `eslint src e2e playwright.config.ts --max-warnings=0`) | Terminal | Estilo y errores comunes, sin tolerar advertencias |
 | E2E | `npm run test:e2e` (= `playwright test`) | Terminal, contra una app y la organización de pruebas | La demo de punta a punta, los roles, la paginación por URL, Ctrl+K y la hoja del presupuesto. Se saltan sin credenciales |

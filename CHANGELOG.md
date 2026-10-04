@@ -1,22 +1,41 @@
 # Changelog
 
 Todos los cambios relevantes de Tuco & Nito se documentan acá. El formato sigue
-[Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). El proyecto no usa números de versión
-semánticos todavía (`package.json` está en `0.1.0` y no se modificó): las secciones se agrupan por hito y
-fecha.
+[Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Con la entrega final el proyecto pasa a la versión
+**1.0.0** (`package.json`); antes de eso las secciones se agrupan por hito y fecha.
 
 Las etiquetas de hito ("primera entrega", "segunda entrega") están inferidas del historial de git y de
 `CLAUDE.md`, porque el repositorio no tiene etiquetas (`git tag` vacío). Cada línea cita el commit.
 La versión larga, con explicación por área, está en [docs/notas-de-version.md](./docs/notas-de-version.md).
 
-## Sin publicar - hacia la entrega final (2026-11-12)
+## Sin publicar
 
-Todo lo de esta sección ya está en `main`. Lo que no está es la interfaz de buena parte de la base nueva
-(ver "Planificado" al final de la sección).
+Nada todavía.
+
+## 1.0.0 - Entrega final - 2026-10-04
+
+Todo lo de esta sección está en `main`. Las migraciones `0008` a `0012` están en el repositorio y **falta aplicarlas a mano en la
+base viva** (kit de un solo archivo en `supabase/aplicar/`); la aplicación esconde lo que depende de ellas hasta entonces.
 
 ### Agregado
 
-- F7, IA asistida opcional (sin commit todavía; sin migración; probada contra un servidor simulado, **no contra la API real**):
+- F8, manual de usuario en PDF y kit de entrega:
+  - Los marcadores (outline) del PDF se reescriben con los títulos reales de los capítulos (`scripts/manual/outline.py`, PyMuPDF), porque Chromium perdía el espacio de los títulos que ocupan dos renglones.
+  - **Manual de usuario** `docs/Manual-de-usuario-Tuco-y-Nito.pdf` (A4, 89 páginas, 7,2 MB): 22 capítulos y 3 apéndices en español rioplatense, para el
+    personal del proveedor, con capturas de pantalla, pasos numerados, las reglas que hace cumplir el sistema y qué ve cada rol. La matriz de
+    permisos y la tabla de pantallas por rol se arman leyendo `src/lib/permisos.ts` y `src/lib/navegacion.ts`.
+  - **Se regenera con un comando**: `npm run manual` (capturas con Playwright, solo navegación, más PDF con Chromium con fuentes locales y índice con
+    números de página reales verificados). Las figuras que no se pueden capturar todavía (migraciones sin aplicar, IA sin clave, sin
+    superadmin) salen como «Captura pendiente» y se completan solas en la próxima corrida; la lista está en `docs/manual/pendientes.json`.
+    Scripts `manual:capturas`, `manual:pdf` y `manual`; sin dependencias nuevas.
+  - **Kit de migraciones** `supabase/aplicar/aplicar_0008_a_0012.sql`, generado por `npm run migraciones:consolidar` (cartel por migración,
+    bloque opcional de `pg_trgm` apagado y un `select` final que confirma las 24 piezas), con su `LEEME.md`. Validado en PGlite: `0001` a
+    `0007` y después solo el kit, dos veces seguidas; las pruebas `0005`, `0007`, `0008`, `0009`, `0011` y `0012` dan `TODO OK`.
+  - `supabase/seeds/demo_rubro.sql`: canchas, datos de la licitación y un presupuesto guardado para la demostración (requiere las migraciones).
+  - Pruebas nuevas en `npm test` (243 en 25 archivos): `migraciones.check.ts` falla si el kit quedó desactualizado respecto de las
+    migraciones y `manual.check.ts` cuida que las figuras de los capítulos y de `figuras.mjs` coincidan, que cada una tenga su captura o figure en `pendientes.json`, y que los scripts no lleven contraseñas.
+  - `package.json` pasa a la versión 1.0.0.
+- F7, IA asistida opcional (sin migración; probada contra un servidor simulado, **no contra la API real**):
   - **Aviso de recambio con IA** en `/alertas` ("Redactar con IA"): borrador editable en un panel lateral, con la etiqueta de IA, "Volver a
     la plantilla", "Regenerar", "Copiar" y "Abrir en WhatsApp" / "Abrir en mail" (se abre el WhatsApp o el correo de la persona y se registra
     el aviso; la IA no envía nada). Si la IA falla, el cuadro queda con la plantilla fija de siempre.
@@ -31,7 +50,7 @@ Todo lo de esta sección ya está en `main`. Lo que no está es la interfaz de b
     (`alertas/actions.ts`, solo registra). Excepción documentada a "mutaciones desde el cliente": hace falta un secreto.
   - 46 self-checks nuevos (`npm test`: 233 pruebas en 23 archivos). Docs: [`docs/ia.md`](./docs/ia.md) (las siete condiciones de la
     consigna, datos, costo estimado) y la [decisión 0013](./docs/decisiones/0013-ia-asistida.md).
-- F6, presupuesto imprimible, pruebas E2E y CI (sin commit todavía; la migración `0012` está pendiente de aplicar a mano):
+- F6, presupuesto imprimible, pruebas E2E y CI (la migración `0012` está pendiente de aplicar a mano):
   - **Presupuesto imprimible** en `/oportunidades/[id]/presupuesto` (botón "Presupuesto" en el detalle; `oportunidades.ver`, 404 si la
     RLS esconde la oportunidad): encabezado con el **logo y los datos del proveedor** (nunca la marca de la plataforma), cliente y
     contacto, líneas editables (agregar, quitar, reordenar; del catálogo con precio o texto libre; cantidad, precio, descuento %),
@@ -56,7 +75,7 @@ Todo lo de esta sección ya está en `main`. Lo que no está es la interfaz de b
   - Imprimir no se puede disparar dos veces a la vez (doble clic): una sola actividad «Envío de propuesta»; si falla el vínculo se avisa y no se repite. El logo se vuelve a firmar al volver a la pestaña, cada 50 minutos y antes de imprimir.
   - **Repositorio público**: `supabase/seeds/e2e_tests.sql` ya no trae contraseña (hay que elegirla antes de ejecutarlo; se corta si queda el valor de ejemplo, es corta o los correos no son `@e2e.tuconito.com.ar`). En CI las trazas, capturas y videos están apagados y solo se sube un `junit.xml` con los secretos tachados (nada de reporte HTML).
   - Se agregan `data-app-shell`, `data-app-chrome` y `data-app-main` al shell (para ocultarlo al imprimir).
-- F5, pantallas del responsable y búsqueda (sin commit todavía; **no necesita migración**):
+- F5, pantallas del responsable y búsqueda (**no necesita migración**):
   - **Ficha 360** en `/empresas/[id]` y `/contactos/[id]`: "Resumen de la cuenta" (primera compra de toda la cuenta, total comprado, última
     compra, oportunidades abiertas y días desde el último contacto, con ámbar + ícono + frase, nunca solo color) e
     "Historia de la cuenta": actividades, altas y cambios de etapa, compras y avisos de recambio enviados en una línea de
@@ -74,7 +93,7 @@ Todo lo de esta sección ya está en `main`. Lo que no está es la interfaz de b
     persona (`src/app/(app)/buscar/actions.ts`); la RLS limita lo que aparece. `src/lib/paleta.ts` (10 pruebas).
   - Menú lateral con el grupo **Equipo** (tablero comercial y conversión) y la lista única de pantallas y permisos en
     `src/lib/navegacion.ts`.
-- F4, funciones del rubro (sin commit todavía; la migración `0011` está pendiente de aplicar a mano):
+- F4, funciones del rubro (la migración `0011` está pendiente de aplicar a mano):
   - **Recambio en un clic**: cada alerta de `/alertas` ofrece "Crear oportunidad de recambio" (título, empresa,
     contacto, producto, valor = precio × cantidad, origen "Recambio por vida útil", primera etapa abierta,
     responsable quien la crea y `venta_item_id`). Avisa con un link y no duplica: la base lo garantiza con un índice
@@ -209,12 +228,11 @@ Todo lo de esta sección ya está en `main`. Lo que no está es la interfaz de b
 - El test de la 0007 no borra de `storage.objects` (Supabase lo prohíbe); verifica la definición de la
   política en `pg_policies` (`cb7c251`).
 
-### Planificado (no implementado)
+### Pendiente (no es código)
 
-Funciones del rubro (canchas, parque instalado,
-licitaciones), presupuesto imprimible, E2E y CI, IA opcional y manual de usuario (las del rubro, el presupuesto, E2E/CI y la IA ya están
-arriba en "Agregado"). Fases F1 a F8, del
-2026-10-13 al 2026-11-11, en [docs/notas-de-version.md](./docs/notas-de-version.md#g-pendiente-y-próximos-pasos).
+Aplicar las migraciones `0008` a `0012` en la base viva y regenerar el manual (`npm run manual`) para completar sus figuras; regenerar
+`src/lib/supabase/types.ts`; ejecutar una vez la suite E2E y la CI; decidir la licencia. Detalle en
+[docs/notas-de-version.md](./docs/notas-de-version.md#g-pendiente-y-próximos-pasos).
 
 ## Segunda entrega - 2026-09-18 a 2026-09-24
 

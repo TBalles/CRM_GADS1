@@ -1,0 +1,36 @@
+<section class="cap" id="cap-18" data-num="18" data-parte="Supervisión y administración" data-titulo="Panel de plataforma (superadmin)" data-bajada="El panel del equipo que opera Tuco &amp; Nito: dar de alta clientes nuevos, con su primer Administrador, y suspenderlos o reactivarlos. No es parte del trabajo diario de un proveedor.">
+
+<p>Tuco &amp; Nito es <strong>multitenant</strong>: muchos proveedores usan la misma plataforma y cada uno ve únicamente sus propios datos. Cada proveedor es una <strong>organización</strong> (o «cliente» de la plataforma). El panel <span class="mono">/admin</span> lo usa el <strong>superadmin</strong>, la cuenta del equipo que opera la plataforma, para gestionar esas organizaciones.</p>
+<div class="nota atencion">
+  <p>Este capítulo es solo de referencia: <strong>si trabajás en un proveedor, no tenés ni vas a ver este panel</strong>. Si abrís <span class="mono">/admin</span> con una cuenta de proveedor, el sistema te devuelve a tu pantalla inicial.</p>
+</div>
+
+<h2>Qué es el superadmin</h2>
+<p>El superadmin <strong>no pertenece a ninguna organización</strong>. Por eso <strong>no ve datos comerciales de ningún cliente</strong>: ni sus empresas, ni sus ventas. Opera la plataforma, no el negocio de cada proveedor. Al iniciar sesión, es llevado directamente a <span class="mono">/admin</span> y no puede entrar al CRM.</p>
+
+<h2>El panel</h2>
+<figure class="fig" data-fig="admin-panel"><figcaption>El panel de plataforma: la lista de clientes (organizaciones), cada uno con su estado y sus administradores.</figcaption></figure>
+<p>Cada cliente aparece con su nombre, si está <strong>activo</strong> o <strong>de baja</strong>, y sus administradores (con el estado de su invitación). El menú <span class="mono">⋮</span> de cada cliente permite <span class="ui">Agregar administrador</span> y <span class="ui">Suspender</span> o <span class="ui">Reactivar</span>; al lado de una invitación pendiente hay un botón <span class="ui">Reenviar invitación</span>.</p>
+
+<h2>Dar de alta un cliente nuevo</h2>
+<ol class="pasos">
+  <li>Tocá <span class="ui">Nuevo cliente</span>.</li>
+  <li>Escribí el <strong>Nombre del cliente</strong> (el de la organización).</li>
+  <li>En <strong>Administrador del cliente</strong> completá el <strong>Nombre y apellido</strong> y el <strong>Email</strong> de la primera persona: recibe un mail para elegir su contraseña y entra con el rol <strong>Administrador</strong>, desde donde invita al resto de su equipo.</li>
+  <li>Confirmá. El sistema crea la organización con sus <strong>cuatro roles</strong> (Administrador, Vendedor, Responsable comercial y Solo lectura), las <strong>seis etapas del embudo del rubro</strong> y los catálogos iniciales (orígenes, motivos de pérdida y tipos de actividad).</li>
+</ol>
+<figure class="fig" data-fig="admin-nuevo"><figcaption>El panel para dar de alta un cliente, con los datos de su primer Administrador.</figcaption></figure>
+
+<h2>Suspender y reactivar</h2>
+<div class="nota regla">
+  <ul>
+    <li><strong>Suspender</strong> un cliente corta el acceso de <strong>todos sus usuarios</strong> en la siguiente consulta: ven la pantalla «Sin acceso». Sus datos no se tocan.</li>
+    <li><strong>Reactivar</strong> lo devuelve todo a como estaba.</li>
+    <li>Un cliente no se borra desde el panel. El Administrador de un cliente <strong>no puede cambiar el nombre ni el estado</strong> de su propia organización.</li>
+  </ul>
+</div>
+
+<h2>Cuentas y mails</h2>
+<p>Igual que en el resto del sistema, no hay registro público: las cuentas se crean desde el panel o desde <strong>Usuarios</strong>. Si el envío de mails no está configurado, el panel muestra el enlace de activación para compartirlo a mano (capítulo 16).</p>
+
+</section>

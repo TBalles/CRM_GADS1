@@ -1,0 +1,70 @@
+<section class="cap" id="cap-16" data-num="16" data-parte="Supervisión y administración" data-titulo="Usuarios y roles" data-bajada="Invitar al equipo, cambiarle el rol, darlo de baja y armar roles a medida. Es la pantalla del Administrador.">
+
+<p>La pantalla <strong>Usuarios</strong> (permiso «Gestionar usuarios y roles», hoy solo del Administrador) tiene dos pestañas: <span class="ui">Usuarios</span> y <span class="ui">Roles</span>.</p>
+
+<h2>La lista de usuarios</h2>
+<figure class="fig" data-fig="usuarios-lista"><figcaption>Los usuarios de la organización con su rol y su estado. Tu propio usuario lleva «(vos)» y no tiene menú de acciones: no podés cambiarte el rol ni darte de baja.</figcaption></figure>
+<ul>
+  <li>Buscador por <strong>nombre, email o rol</strong>; filtros <span class="ui">Todos los roles</span> y <span class="ui">Todos los estados</span>.</li>
+  <li>Estados: <span class="pill verde">Activo</span>, <span class="pill ambar">Invitación pendiente</span> (todavía no eligió su contraseña) y <span class="pill gris">De baja</span>.</li>
+</ul>
+
+<h2>Invitar a un usuario</h2>
+<ol class="pasos">
+  <li>Tocá <span class="ui">Invitar usuario</span>.</li>
+  <li>Escribí el <strong>Nombre y apellido</strong> y el <strong>Email</strong> (los dos obligatorios).</li>
+  <li>Elegí el <strong>Rol</strong> (por defecto, Vendedor). Mirá el capítulo 3 si dudás.</li>
+  <li>Tocá <span class="ui">Enviar invitación</span>. A la persona le llega un mail para elegir su contraseña y activar la cuenta. Hasta que lo haga, figura como <em>invitación pendiente</em>.</li>
+</ol>
+<figure class="fig" data-fig="usuario-invitar"><figcaption>El panel para invitar a un usuario.</figcaption></figure>
+<div class="nota tip">
+  <p>Si ves el aviso <em>«El envío de mails no está configurado»</em>, el sistema no puede mandar mails por sí mismo. En ese caso, después de invitar, la pantalla te muestra el <strong>enlace de activación</strong> para que se lo pases a la persona por WhatsApp o como prefieras. Es un enlace de un solo uso: no lo publiques.</p>
+</div>
+
+<h2>Cambiar el rol, reenviar, dar de baja y reactivar</h2>
+<p>En el menú <span class="mono">⋮</span> de cada usuario:</p>
+<table class="tabla compacta">
+  <thead><tr><th style="width:40mm">Acción</th><th>Qué hace</th></tr></thead>
+  <tbody>
+    <tr><td><span class="ui">Cambiar rol</span></td><td>Le asigna otro rol. Rige desde su próxima consulta.</td></tr>
+    <tr><td><span class="ui">Reenviar invitación</span></td><td>Vuelve a mandar el mail de activación (solo para invitaciones pendientes). Máximo un mail por minuto y cinco por hora a cada casilla.</td></tr>
+    <tr><td><span class="ui">Dar de baja</span></td><td>Corta su acceso: en la siguiente consulta ve la pantalla «Sin acceso», aunque tenga la sesión abierta. Sus datos y su historia se conservan. Pide confirmación.</td></tr>
+    <tr><td><span class="ui">Reactivar</span></td><td>Le devuelve el acceso.</td></tr>
+  </tbody>
+</table>
+<div class="nota regla">
+  <ul>
+    <li><strong>Nadie</strong> cambia su propio rol, se da de baja a sí mismo ni le quita a su rol la gestión de usuarios.</li>
+    <li>Al crear un usuario, el rol tiene que ser de <strong>tu</strong> organización. Los usuarios no se borran: se dan de baja.</li>
+    <li><strong>No se editan el nombre ni el email</strong> de un usuario existente: solo su rol y su estado.</li>
+  </ul>
+</div>
+
+<h2>Roles a medida</h2>
+<p>La pestaña <span class="ui">Roles</span> muestra los roles de tu organización, cada uno con sus permisos y cuántas personas lo tienen. El <strong>Administrador</strong> aparece como <em>Fijo</em>: no se puede modificar.</p>
+<figure class="fig" data-fig="usuarios-roles"><figcaption>La pestaña Roles con los cuatro roles por defecto. Los permisos se agrupan por color según su tema (clientes, oportunidades, ventas…).</figcaption></figure>
+
+<h3>Crear o editar un rol</h3>
+<ol class="pasos">
+  <li>Tocá <span class="ui">Nuevo rol</span> (o <span class="ui">Editar</span> en el menú de uno existente).</li>
+  <li>Poné un <strong>nombre</strong> («Administrativa», «Vendedor senior») y una descripción.</li>
+  <li>Tildá los <strong>permisos</strong>, agrupados por tema. El panel te los explica uno por uno.</li>
+  <li>Guardá. Al guardar, <strong>el sistema agrega los permisos que hacen falta</strong>: si tildás «Registrar ventas», se agregan «Ver ventas», «Ver clientes» y «Ver el catálogo».</li>
+</ol>
+<div class="nota regla">
+  <ul>
+    <li>Un rol <strong>con usuarios asignados no se borra</strong>: antes pasá a esas personas a otro rol.</li>
+    <li>No se puede crear otro rol «Administrador» ni editar el existente.</li>
+    <li>Un rol que puede <em>asignar</em> tiene que poder también <em>ver la cartera de todos</em>: el panel lo tilda solo.</li>
+    <li>Si quitás un permiso a un rol <strong>ya en uso</strong>, quienes lo tienen lo pierden de inmediato.</li>
+  </ul>
+</div>
+<figure class="fig" data-fig="rol-form"><figcaption>El panel de un rol: nombre, descripción y los permisos para tildar.</figcaption></figure>
+<div class="nota atencion">
+  <p>Antes de borrar o recortar un rol, mirá cuántas personas lo tienen (se ve en la tarjeta). Y no edites roles <em>mientras se está actualizando el sistema</em>: una versión vieja de la aplicación no conoce los permisos nuevos y los descartaría al guardar.</p>
+</div>
+
+<h2>Qué ve cada rol</h2>
+<p>Solo el <strong>Administrador</strong> tiene esta pantalla por defecto. Cualquier otro rol personalizado puede tenerla si se le da el permiso «Gestionar usuarios y roles».</p>
+
+</section>

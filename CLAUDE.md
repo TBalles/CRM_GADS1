@@ -14,7 +14,7 @@ gestionar oportunidades comerciales. La **segunda entrega** (2026-09-18 a 09-24)
 pública, catálogo con vida útil, historial de ventas, alertas de recambio, bitácora, multitenancy,
 roles con permisos y cuentas. Se trabaja hacia la **entrega final (2026-11-12)**: la migración
 `0007_entrega_final.sql` ya está aplicada (la base cumple casi todo el módulo comercial de la
-consigna) y la interfaz de esas capacidades se construye en las fases F1 a F8. El estado real,
+consigna) y la interfaz de esas capacidades se construyó en las fases F1 a F8 (hechas; versión 1.0.0). El estado real,
 requisito por requisito, está en [`docs/notas-de-version.md`](./docs/notas-de-version.md); el resto
 de la documentación se indexa en [`docs/README.md`](./docs/README.md).
 
@@ -127,7 +127,11 @@ como respaldo ante cualquier falla) y "Resumir con IA" en la ficha 360 de empres
 redacta**: no envía, no guarda, no cambia datos; una persona revisa todo. Se enciende con `ANTHROPIC_API_KEY` (sin ella no hay botones) y
 se prueba solo contra un servidor simulado: **no se llamó a la API real**. Detalle, datos y costo en [`docs/ia.md`](./docs/ia.md).
 
-**Planificado** (F8, hasta 2026-11-11): manual de usuario en PDF.
+**Manual de usuario y kit de entrega (F8, versión 1.0.0)**: `docs/Manual-de-usuario-Tuco-y-Nito.pdf` (A4, 89 páginas), fuente en `docs/manual/` y
+scripts en `scripts/manual/`; `npm run manual` saca las capturas (Playwright, solo navegación, credenciales por entorno `MANUAL_*`, nunca en el
+repo) y arma el PDF. Las figuras que no se pueden capturar todavía quedan en `docs/manual/pendientes.json` y salen como «Captura pendiente».
+Las migraciones `0008` a `0012` se aplican con **un solo archivo**, `supabase/aplicar/aplicar_0008_a_0012.sql` (generado por
+`npm run migraciones:consolidar`; `npm test` falla si quedó viejo). Si cambiás una pantalla, revisá su capítulo del manual.
 
 **Fuera de alcance según la consigna** (no agregar sin que el usuario lo pida): tareas, agenda,
 recordatorios, exportación, integraciones, API pública, importación, facturación, pagos,
@@ -353,8 +357,14 @@ supabase/
     0011_rubro.sql              Canchas, licitaciones y la regla de la apertura (correr después de aplicar la 0011)
     0012_presupuestos.sql       Numeración, aislamiento, inmutabilidad y sin borrado de presupuestos (correr después de aplicar la 0012)
     0007_reejecucion.sql        Re-ejecución de la 0007 (SOLO en una base sin la 0007)
+    (src/lib/migraciones.check.ts y manual.check.ts: el kit está al día y las figuras del manual existen)
+  aplicar/                      Kit: aplicar_0008_a_0012.sql (las cinco migraciones pendientes en un archivo, con select de verificación) y LEEME.md
   seeds/demo_catedra.sql        Organización "Cátedra UNLaM (demo)" con una cuenta por rol y datos
+  seeds/demo_rubro.sql          Complemento de la demo (0011 y 0012): canchas, datos de la licitación y un presupuesto guardado
   seeds/e2e_tests.sql           Organización "E2E Tuco & Nito" (admin y vendedor) para las pruebas E2E; nunca la demo
+scripts/manual/                 Manual de usuario: figuras.mjs (lista de figuras), capturas.mjs (Playwright) y generar.mjs (PDF con Chromium); fuentes.mjs
+scripts/migraciones/consolidar.mjs  Arma el kit de migraciones
+docs/manual/                    Fuente del manual: manual.html, manual.css, capitulos/, capturas/, fuentes/, pendientes.json y LEEME.md
 e2e/                            Pruebas E2E de Playwright (F6): acceso.spec.ts, demo.spec.ts, navegacion.spec.ts, helpers.ts y su tsconfig
 playwright.config.ts            Config de Playwright (chromium, E2E_BASE_URL, se saltan sin E2E_EMAIL/E2E_PASSWORD)
 .github/workflows/ci.yml        CI: lint, tipos, self-checks y build en cada push/PR a main; job E2E aparte con secretos
@@ -405,7 +415,7 @@ Ya hay un proyecto de Supabase conectado y provisionado (organización `dgmoqhih
 proyecto `pdseuwdifzywpdgawbrl`, región `us-west-2`). Se armó vía el MCP de Supabase:
 
 - Las migraciones `0001` a `0007` están aplicadas (la `0007` el 2026-10-04, con sus pruebas SQL). La `0008`, la
-  `0009`, la `0010` (índices de F3, sin cambios de reglas), la `0011` (rubro, F4) y la `0012` (presupuestos, F6) están en el repositorio pero **falta aplicarlas a mano** en el SQL Editor, en ese orden; hasta entonces
+  `0009`, la `0010` (índices de F3, sin cambios de reglas), la `0011` (rubro, F4) y la `0012` (presupuestos, F6) están en el repositorio pero **falta aplicarlas a mano** en el SQL Editor (en un solo archivo: `supabase/aplicar/aplicar_0008_a_0012.sql`); hasta entonces
   la base no impone "fecha de cierre no futura" ni "empresa o contacto" (la interfaz de F2 sí las valida).
   Se aplican a mano en el SQL Editor, en orden; **aplicar y desplegar enseguida**, ver
   [`docs/deploy.md`](./docs/deploy.md).
@@ -495,9 +505,12 @@ npm run build    # build de producción
 npm run lint     # eslint src e2e playwright.config.ts --max-warnings=0 (sin advertencias)
 npm run typecheck  # tsc --noEmit sobre src y sobre e2e (e2e tiene su propio tsconfig)
 
-# Self-checks (sin framework, runner de Node): money, equipo, permisos, email/layout, alertas/plantillas, clientes, oportunidades, presupuesto, ia...
-npm test                             # node --test "src/**/*.check.ts": 23 archivos, 233 pruebas
+# Self-checks (sin framework, runner de Node): money, equipo, permisos, email/layout, alertas/plantillas, clientes, oportunidades, presupuesto, ia, migraciones, manual...
+npm test                             # node --test "src/**/*.check.ts": 25 archivos, 243 pruebas
 node --test src/lib/money.check.ts   # o uno solo
+
+npm run manual              # manual de usuario: capturas (app + MANUAL_EMAIL…) y PDF; `manual:capturas` y `manual:pdf` por separado
+npm run migraciones:consolidar   # regenera supabase/aplicar/aplicar_0008_a_0012.sql
 
 npm run test:e2e   # Playwright (e2e/); necesita E2E_EMAIL, E2E_PASSWORD, E2E_EMAIL_VENDEDOR, E2E_PASSWORD_VENDEDOR y E2E_BASE_URL; sin credenciales se saltan
 ```

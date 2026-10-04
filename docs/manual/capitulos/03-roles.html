@@ -1,0 +1,52 @@
+<section class="cap" id="cap-03" data-num="3" data-parte="Para empezar" data-titulo="Roles y permisos" data-bajada="Qué puede hacer cada persona del equipo. Las tablas de este capítulo se arman leyendo el mismo catálogo que usa el sistema, así que siempre dicen la verdad.">
+
+<h2>Cómo funciona</h2>
+<p>El sistema define <strong>qué se puede hacer</strong> con un catálogo fijo de 19 <strong>permisos</strong> (por ejemplo «Ver clientes» o «Reabrir oportunidades»). Cada empresa que usa el CRM arma sus <strong>roles</strong> como combinaciones de esos permisos. Cada persona tiene <strong>un solo rol</strong>.</p>
+<p>Al crear una organización nueva, el sistema le prepara cuatro roles ya armados. Con ellos se trabaja bien desde el primer día, y el Administrador puede crear otros o ajustar los suyos (capítulo 16).</p>
+
+<!--ROLES_RESUMEN-->
+
+<div class="nota regla">
+  <p>Los permisos no son un adorno de la pantalla: <strong>la base de datos los exige en cada operación</strong>. Que un botón no aparezca es comodidad; aunque alguien intentara saltearse la pantalla, la base respondería que no.</p>
+</div>
+
+<h2>Qué pantalla ve cada rol</h2>
+<p>El menú arma su lista según estos permisos. Es la primera consulta cuando alguien dice «a mí no me aparece tal pantalla».</p>
+<!--TABLA_PANTALLAS-->
+<p>Además de las pantallas del menú, quien puede ver una oportunidad puede abrir su <strong>detalle</strong> y su <strong>presupuesto</strong>, y quien puede ver clientes puede abrir sus <strong>fichas</strong>. El panel <strong>/admin</strong> no es de ningún rol: es del equipo que opera la plataforma (capítulo 18).</p>
+
+<h2>La cartera propia</h2>
+<p>Es la diferencia de fondo entre un Vendedor y un Responsable comercial. Quien <strong>no</strong> tiene el permiso «Ver la cartera de todos» ve únicamente las empresas, contactos y oportunidades <strong>de las que es responsable</strong>, y lo que cuelga de ellas: ventas, alertas, actividades, canchas, presupuestos. Hoy eso le pasa al <strong>Vendedor</strong>.</p>
+<figure class="fig" data-fig="empresas-vendedor"><figcaption>La lista de empresas de un Vendedor: solo las de su cartera (acá, 4 de las 8 de la demostración). El Administrador y el Responsable comercial ven las 8.</figcaption></figure>
+<ul>
+  <li>Una empresa o un contacto <strong>nuevo queda asignado a quien lo crea</strong>. Asignarlo a otra persona, o reasignarlo después, requiere un permiso especial (más abajo).</li>
+  <li>Lo que <strong>no tiene responsable</strong> lo ven solo quienes ven toda la cartera, hasta que alguien lo asigne.</li>
+  <li>Si abrís el enlace de algo que no es de tu cartera, ves «no encontrado»: para vos no existe.</li>
+</ul>
+
+<h2>Todos los permisos</h2>
+<p>La tabla que sigue es el catálogo completo, con lo que cada rol por defecto tiene. Si tu empresa modificó un rol o creó otro, mirá la pestaña <em>Roles</em> de <span class="ui">Usuarios</span>.</p>
+<!--MATRIZ_PERMISOS-->
+
+<h2>Los permisos que se piden entre sí</h2>
+<p>Algunos permisos no tienen sentido solos. Para <em>registrar ventas</em> hace falta poder <em>ver clientes y productos</em> (el formulario los ofrece). Para <em>enviar alertas</em>, poder <em>verlas</em>. Al guardar un rol, el sistema <strong>tilda solo lo que falta</strong>. Dos casos que conviene recordar:</p>
+<ul>
+  <li><strong>Asignar</strong> (clientes u oportunidades) exige <strong>ver la cartera de todos</strong>: si alguien reasignara una cuenta y dejara de verla, el resultado le desaparecería y el selector no tendría a quién ofrecer.</li>
+  <li><strong>Reabrir oportunidades</strong> exige poder <strong>gestionarlas</strong>.</li>
+</ul>
+
+<h2>Reglas de las cuentas</h2>
+<div class="nota regla">
+  <ul>
+    <li>El rol <strong>Administrador</strong> tiene todos los permisos, no se puede editar ni borrar y no se puede crear otro con esa marca.</li>
+    <li><strong>Nadie</strong> puede cambiar su propio rol, darse de baja ni quitarle a su rol la gestión de usuarios: así la organización nunca se queda sin quien la administre.</li>
+    <li>Un rol con personas asignadas <strong>no se borra</strong>: primero hay que pasarlas a otro rol.</li>
+    <li>Un usuario dado de baja, o de un cliente suspendido, <strong>no tiene ningún permiso</strong>, aunque tenga la sesión abierta: se corta en la siguiente consulta.</li>
+  </ul>
+</div>
+
+<div class="nota tip">
+  <p><strong>¿Qué rol le pongo a cada uno?</strong> Al equipo de calle, <em>Vendedor</em>. A quien supervisa y reparte las cuentas, <em>Responsable comercial</em>. A quien solo necesita consultar clientes y catálogo (un contador, un socio), <em>Solo lectura</em>. Reservá <em>Administrador</em> para una o dos personas.</p>
+</div>
+
+</section>

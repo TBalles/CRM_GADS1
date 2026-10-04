@@ -1,0 +1,60 @@
+<section class="cap" id="cap-12" data-num="12" data-parte="El trabajo de todos los días" data-titulo="Ventas y parque instalado" data-bajada="Registrar lo que entregaste es lo que pone a andar el reloj del recambio. Cómo cargar una venta y qué pasa después con cada ítem.">
+
+<p>Una <strong>venta</strong> es un hecho consumado: algo que ya entregaste (o estás entregando). No es lo mismo que una oportunidad, que es un negocio posible. La pantalla <strong>Ventas</strong> es el historial de entregas, y <strong>de acá salen las alertas de recambio</strong>.</p>
+<figure class="fig" data-fig="ventas-lista"><figcaption>El historial de ventas. Cada fila se despliega (la flecha de la izquierda) para ver sus ítems; a la derecha, los íconos de lo entregado y el total.</figcaption></figure>
+
+<h2>Leer el historial</h2>
+<ul>
+  <li>Cada fila es una venta: cliente, fecha, comprobante, los íconos de los productos y el total con la cantidad de ítems.</li>
+  <li>Buscador por <strong>comprobante, cliente o producto</strong>; filtros por <strong>cliente</strong> y por rango de fechas (<span class="ui">Desde</span> y <span class="ui">Hasta</span>).</li>
+</ul>
+
+<h2>Registrar una venta</h2>
+<ol class="pasos">
+  <li>Tocá <span class="ui">Nueva venta</span>.</li>
+  <li>Elegí el <strong>Cliente</strong> (obligatorio) y, si querés, el <strong>Contacto</strong> de esa empresa: el selector se llena cuando elegís el cliente.</li>
+  <li>Confirmá la <strong>Fecha</strong> de la venta (obligatoria) y escribí el <strong>Comprobante</strong> (número de remito o factura).</li>
+  <li>En <strong>Productos entregados</strong>, elegí el producto, la <strong>Cantidad</strong>, el <strong>Precio unitario</strong> y la fecha de <strong>Entrega</strong> de <em>ese</em> producto. Con <span class="ui">Agregar producto</span> sumás más ítems.</li>
+  <li>Anotá lo que haga falta en <strong>Notas</strong> y tocá <span class="ui">Registrar venta</span>.</li>
+</ol>
+<figure class="fig" data-fig="venta-form"><figcaption>El panel de una venta. La fecha de entrega de cada ítem es la que arranca el reloj de la vida útil.</figcaption></figure>
+<p>Al guardar, si algún producto tiene vida útil, el aviso dice <em>«Venta registrada. Arrancó el reloj del recambio»</em>. Si ningún producto la tiene, solo dice «Venta registrada».</p>
+
+<div class="nota atencion">
+  <p>La <strong>fecha de entrega</strong> es la que cuenta, no la de la factura. Si entregás en partes, cargá cada ítem con su fecha real. Si todavía no entregaste algo, dejá la fecha real prevista: la alerta caerá cuando corresponda. Si no cargás la fecha de un ítem, hereda la de la venta.</p>
+</div>
+
+<h2>Qué pasa con cada ítem: el snapshot de la vida útil</h2>
+<p>Al guardar un ítem, el sistema <strong>copia</strong> la vida útil del producto en ese momento. Esa copia (el «snapshot») es la que se usa para calcular el vencimiento, <em>no</em> la vida útil actual del catálogo:</p>
+<div class="nota regla">
+  <ul>
+    <li><strong>Vence el</strong> = fecha de entrega + vida útil copiada.</li>
+    <li>Si después cambiás la vida útil en el catálogo, <strong>lo ya entregado no se mueve</strong>: vence con lo que prometiste cuando lo vendiste.</li>
+    <li>Un producto sin vida útil <strong>no genera seguimiento</strong>.</li>
+    <li>Cada ítem tiene su <strong>propia fecha de entrega</strong>: una venta puede entregarse en partes.</li>
+  </ul>
+</div>
+
+<h2>El parque instalado</h2>
+<p>Las ventas de un cliente forman su <strong>parque instalado</strong>: la lista de equipos que tiene en uso, ordenada por urgencia. Se ve en la ficha de la empresa (capítulo 7) y es la fuente de las alertas (capítulo 13). La regla es siempre la misma: vencido si <em>vence ≤ hoy</em>; por vencer si vence dentro de los próximos 60 días.</p>
+
+<h2>Reglas y límites</h2>
+<div class="nota regla">
+  <p>Una venta <strong>no se corrige desde la pantalla</strong> una vez guardada: no hay botón para editarla. Si cargaste algo mal, avisá a quien administra el sistema.</p>
+</div>
+<div class="nota atencion">
+  <p>La cabecera y los ítems de una venta se guardan en dos pasos. Si fallan los ítems, el sistema borra la cabecera para no dejar una venta vacía; si también eso falla, la pantalla te avisa que <strong>quedó una venta vacía</strong> con su comprobante, y hay que borrarla a mano antes de volver a intentar.</p>
+</div>
+
+<h2>Qué ve cada rol</h2>
+<table class="tabla compacta">
+  <thead><tr><th>Rol</th><th>Ventas</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Administrador</strong></td><td>Ver todas y registrar.</td></tr>
+    <tr><td><strong>Vendedor</strong></td><td>Ver y registrar las de su cartera.</td></tr>
+    <tr><td><strong>Responsable comercial</strong></td><td>Ver todas. <strong>No</strong> registra ventas.</td></tr>
+    <tr><td><strong>Solo lectura</strong></td><td>No ve ventas.</td></tr>
+  </tbody>
+</table>
+
+</section>

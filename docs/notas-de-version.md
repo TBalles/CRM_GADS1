@@ -1,7 +1,7 @@
-# Notas de la versión: entrega final (en construcción)
+# Notas de la versión: entrega final (1.0.0)
 
-Estas notas cuentan todo lo que se agregó al proyecto desde la primera versión funcional hasta el
-commit `cb7c251` (2026-10-04), organizado por área. Cada punto dice qué hace, dónde vive, qué regla de
+Estas notas cuentan todo lo que se agregó al proyecto desde la primera versión funcional hasta la entrega final
+(versión 1.0.0, 2026-10-04), organizado por área. Cada punto dice qué hace, dónde vive, qué regla de
 negocio aplica, cómo verlo o probarlo y en qué commit entró.
 
 > **Cómo leer el estado de cada punto.** Todo el documento distingue tres estados y los nombra siempre
@@ -33,34 +33,30 @@ Software II); la entrega final es el 2026-11-12. Lo que lo distingue de un CRM g
 recambio: cada producto tiene una vida útil, cada venta la congela, y una vista calcula qué equipos
 vencieron o vencen en 60 días para avisar al cliente.
 
-**Dónde está hoy.**
+**Dónde está hoy.** Todas las fases (F0 a F8) están hechas y en `main`. El CRM cumple la consigna en la interfaz y en
+la base; lo que **falta es de operación, no de código**: aplicar a mano en Supabase las migraciones `0008` a `0012` (hay un
+kit de un solo archivo, [`supabase/aplicar/`](../supabase/aplicar/LEEME.md)) y, con eso, regenerar el manual para que se
+completen sus figuras pendientes. Hasta entonces la aplicación esconde las secciones que dependen de esas migraciones
+(canchas, licitaciones, recambio en un clic, numeración de presupuestos) y anda igual.
 
-- La base de datos ya cumple casi todo el módulo comercial de la consigna (estados, cierre, motivos,
-  historial, auditoría, cartera propia, catálogos). La migración `0007` está aplicada y probada.
-- La interfaz de esas capacidades **todavía no está**: el plan la reparte en las fases F1 a F8 (hasta
-  el 2026-11-11). Hasta entonces la aplicación en producción es la de la segunda entrega, que convive
-  con la base nueva (ver [d](#d-cambios-que-alteran-el-comportamiento)).
-
-**Números, calculados del repositorio al commit `cb7c251`.**
+**Números, calculados del repositorio al cerrar la 1.0.0.**
 
 | Medida | Valor | Cómo se obtiene |
 |---|---|---|
-| Commits en `main` | 45 (del 2026-09-17 al 2026-10-04) | `git log --oneline` |
-| Migraciones SQL | 7 (`0001` a `0007`) | `supabase/migrations/` |
-| Seeds | 1 (`demo_catedra.sql`) | `supabase/seeds/` |
-| Scripts de prueba SQL | 3 (`0005_permisos`, `0007_reglas`, `0007_reejecucion`) | `supabase/tests/` |
-| Tablas en `public` | 18, más la vista `alertas_vida_util` y el bucket de Storage `logos` | migraciones |
-| Funciones en `public` | 18 (de las cuales 3 revocadas a usuarios finales) | migraciones |
-| Triggers vigentes | 13 | migraciones |
-| Permisos del catálogo | 19, en 8 grupos | `src/lib/permisos.ts` |
-| Roles por defecto por cliente | 4 | `ROLES_POR_DEFECTO` |
-| Páginas (`page.tsx`) | 13 | `src/app` |
+| Commits en `main` | 54 | `git log --oneline` |
+| Migraciones SQL | 12 (`0001` a `0012`); la base viva tiene hasta la `0007` | `supabase/migrations/` |
+| Kit de migraciones | 1 archivo (`0008` a `0012`, 895 líneas, verificado en PGlite) | `supabase/aplicar/` |
+| Seeds | 3 (`demo_catedra.sql`, `demo_rubro.sql`, `e2e_tests.sql`) | `supabase/seeds/` |
+| Scripts de prueba SQL | 7 (`0005_permisos`, `0007_reglas`, `0007_reejecucion`, `0008`, `0009`, `0011`, `0012`) | `supabase/tests/` |
+| Tablas en `public` | 18 con la `0007`; 20 con la `0011` (canchas, licitaciones); 22 con la `0012` (presupuestos y su contador); más la vista `alertas_vida_util` y el bucket `logos` | migraciones |
+| Permisos del catálogo | 19, en 8 grupos; 4 roles por defecto | `src/lib/permisos.ts` |
+| Páginas (`page.tsx`) | 21 (incluye la landing, el acceso y `/admin`); `next build` lista 25 rutas (esas 21, 2 route handlers, `/_not-found` e `/icon.svg`) | `src/app` |
 | Route handlers | 2 (`/auth/confirm`, `/auth/signout`) | `src/app/auth` |
-| Server Actions (archivos) | 6 | `src/app/**/actions.ts` |
-| Self-checks (`node --test`) | 8 archivos, 50 pruebas, todas pasan | ver [pruebas](./pruebas.md) |
-| Verificación estática | `tsc --noEmit` y `eslint src --max-warnings=0` pasan al commit `cb7c251` | ejecutadas al escribir estas notas |
-
-`next build` no se ejecutó al escribir estas notas.
+| Server Actions (archivos) | 8 | `src/**/actions.ts` |
+| Self-checks (`node --test`) | 25 archivos, 243 pruebas, todas pasan | `npm test`, ver [pruebas](./pruebas.md) |
+| E2E (Playwright) | 14 pruebas en 3 archivos; escritas, **sin ejecutar completas** | `e2e/` |
+| Verificación estática | `tsc --noEmit` (src y e2e), `eslint --max-warnings=0` y `next build` pasan | `npm run typecheck`, `npm run lint`, `npx next build` |
+| Manual de usuario | PDF A4 de 89 páginas (22 capítulos y 3 apéndices), 7,2 MB; 53 figuras con captura y 10 pendientes | `docs/Manual-de-usuario-Tuco-y-Nito.pdf` |
 
 ---
 
@@ -296,7 +292,7 @@ colgar una actividad en el cliente de otro usando su propia oportunidad.
 |---|---|
 | Estado | **Implementado (F2)**: alta y edición completas, tablero dinámico, lista con filtros, detalle, cierre ganada/perdida con motivo, reapertura, reasignación, historial de etapas y auditoría |
 | Dónde | `src/app/(app)/oportunidades/` (`OportunidadesView.tsx`, `OportunidadForm.tsx`, `datos.ts`, `[id]/`), `src/components/CierreModal.tsx`, `src/components/oportunidades.tsx`, `src/lib/oportunidades.ts`, `src/lib/cambiarEtapa.ts` |
-| Commits | `65d5b4a`, `9aa5e7d`, `95f5273`, `7e8f775` (arrastre), `de6b9cd`; base: `a5c0135`; F2 sin commit todavía |
+| Commits | `65d5b4a`, `9aa5e7d`, `95f5273`, `7e8f775` (arrastre), `de6b9cd`; base: `a5c0135` |
 
 **Qué hace.**
 
@@ -452,12 +448,10 @@ Antes de esos pases hubo ajustes de color y modo oscuro (`a86ccf4`, `0c65a35`, `
 |---|---|
 | Detalle | [docs/pruebas.md](./pruebas.md) |
 
-- **10 archivos `*.check.ts`, 82 pruebas**, ejecutables con `node --test` y sin framework:
-  `money` (10), `equipo` (3), `permisos` (8), `email/layout` (8), `alertas/plantillas` (10), `cuit` (3),
-  `sitioweb` (2), `clientes` (7), `oportunidades` (17) y `paginacion` (14, de F3).
+- **25 archivos `*.check.ts`, 243 pruebas**, ejecutables con `node --test` y sin framework (el detalle por archivo está en [pruebas](./pruebas.md)). Algunos cuidan que el repositorio no se desarme: `permisos.check.ts` (el catálogo coincide con el CHECK de la 0007), `migraciones.check.ts` (el kit de migraciones coincide con las migraciones, no lleva `begin`/`commit` y tiene apagado el bloque de `pg_trgm`) y `manual.check.ts` verifica seis cosas: que cada capítulo declare id, número y título; que los id sean únicos y los capítulos se numeren sin saltos; que las figuras de los capítulos y las de `scripts/manual/figuras.mjs` sean las mismas; que **cada figura tenga su captura en `docs/manual/capturas/` o, si no, figure en `docs/manual/pendientes.json` (y nunca las dos cosas)**; que `pendientes.json` no nombre figuras que ya no existen; y que los scripts del manual no lleven contraseñas.
 - `permisos.check.ts` **lee la migración `0007`** y falla si el CHECK de `roles.permisos` o los roles por
   defecto divergen del catálogo de `src/lib/permisos.ts`.
-- **3 scripts SQL con rollback** (`supabase/tests/`): `0005_permisos.sql` (aislamiento y permisos),
+- **7 scripts SQL con rollback** (`supabase/tests/`; los de la 0007 y los que se sumaron con las migraciones siguientes): `0005_permisos.sql` (aislamiento y permisos),
   `0007_reglas.sql` (cartera propia, reglas del embudo, historial, auditoría, catálogos, logo) y
   `0007_reejecucion.sql` (que la migración se pueda correr dos veces). Los casos negativos verifican el
   código y el mensaje del error, no solo que falle. El usuario ejecutó la migración y estas pruebas el
@@ -472,7 +466,7 @@ Antes de esos pases hubo ajustes de color y modo oscuro (`a86ccf4`, `0c65a35`, `
 | Estado | **Implementado (F3)** |
 | Dónde | `src/lib/paginacion.ts` (lógica pura, con `paginacion.check.ts`), `src/components/FiltrosUrl.tsx` (`useFiltrosUrl`, `CajaBusqueda`, `FiltroSelect`, `FiltroChip`, `FiltroFecha`, `BarraPendiente`), `src/components/Paginacion.tsx`, y el `page.tsx` + `*List.tsx`/`*View.tsx` de empresas, contactos, oportunidades, productos, ventas y usuarios. `src/app/(app)/error.tsx` avisa si la base no responde |
 | Base | `supabase/migrations/0010_indices_busqueda.sql`: índices por organización y orden de cada lista, y un bloque **opcional** de trigramas (`pg_trgm`). **Pendiente de aplicar a mano en la base viva**; la app funciona igual sin ella |
-| Commits | Sin commit todavía |
+| Commits | En `main` |
 
 **Qué hace.**
 
@@ -606,7 +600,7 @@ lista, sin interfaz · **P** Planificado.
 | Crear y modificar empresas | I | `EmpresaForm.tsx` |
 | Crear y modificar contactos | I | `ContactoForm.tsx` |
 | Consultar listados | I | `EmpresasList.tsx` |
-| Consultar detalles | I parcial | Acordeón y panel de edición; sin página de detalle (F1) |
+| Consultar detalles | I (F1b, F5) | Fichas `/empresas/[id]` y `/contactos/[id]` (ficha 360) |
 | Relacionar contactos con empresas | I | `contactos.empresa_id` |
 | Productos o servicios | I | ABM completo en `/productos` |
 | Crear y modificar oportunidades; empresa o contacto; responsable; producto | I | `OportunidadForm.tsx` |
@@ -623,21 +617,22 @@ lista, sin interfaz · **P** Planificado.
 | Gestión de usuarios | I parcial | Invitar, cambiar rol, baja, reactivar, reenviar. No se editan nombre ni email |
 | Roles administrador, vendedor y responsable comercial | I | Roles por defecto en `src/lib/permisos.ts` y en la 0007, aplicados en producción |
 | Permisos según el rol | I | 19 permisos; RLS por permiso; `0005_permisos.sql` |
-| Gestión completa de empresas y contactos | I parcial + B | Alta y edición básicas: I. Estado, responsable, origen, industria, sitio web, documento: B (F1) |
+| Gestión completa de empresas y contactos | I (F1b, F3) | Alta, edición, estado, responsable, origen, tipo de cliente (industria), sitio web, documento, baja lógica, listas con filtros y fichas |
 | Gestión de productos o servicios | I | `/productos`. No distingue producto de servicio |
-| Asignación de responsables comerciales | I parcial + B | Oportunidades: I (formulario). Empresas y contactos: B (se asignan al creador; sin pantalla para elegir o reasignar) |
+| Asignación de responsables comerciales | I (F1b, F2) | Empresas, contactos y oportunidades: se elige en el formulario (con `clientes.asignar` / `oportunidades.asignar`) y "Reasignar" en el detalle de la oportunidad |
 | Gestión completa de oportunidades | I (F2, F4) | Alta, edición, estado, fechas, origen, motivo, probabilidad, detalle. El tipo licitación, con sus datos y la regla de la apertura, es de F4 (requiere la `0011`) |
 | Embudo comercial configurable | I (F1a, F2) | Etapas en `/configuracion`; el tablero genera sus columnas con las etapas abiertas configuradas |
 | Cambio de etapas con historial | I (F2) | `cambiar_etapa` con observación; el historial se ve en el detalle |
 | Registro de actividades realizadas | I (F1b, F2) | Catálogo de tipos, resultado, oportunidad y cliente individual; también desde el detalle de la oportunidad |
-| Historial comercial de empresas, contactos y oportunidades | I parcial + P | Empresa y contacto: actividades (F1b). Oportunidad: actividades y cambios de etapa unificados (F2). Historial integral del cliente (actividades, etapas, ventas y avisos): I (F5, "Historia de la cuenta") |
+| Historial comercial de empresas, contactos y oportunidades | I (F1b, F2, F5) | Empresa y contacto: actividades y, desde F5, "Historia de la cuenta" (actividades, etapas, ventas y avisos). Oportunidad: actividades y cambios de etapa unificados |
 | Cierre de oportunidades ganadas o perdidas | I (F2) | `CierreModal`: fecha de cierre, motivo y observación; reabrir con permiso |
 | Registro de motivos de pérdida | I (F1a, F2) | Catálogo en `/configuracion`; el modal de pérdida lo exige |
 | Gestión de etapas, tipos de actividad, orígenes y motivos de pérdida | I (F1a) | `/configuracion` |
 | Búsqueda, filtros y paginación | I (F3) | Las seis listas (empresas, contactos, oportunidades, productos, ventas, usuarios) buscan, filtran y paginan **en el servidor**, con el estado en la URL; 10, 20 o 50 por página. Filtros por responsable, estado, etapa y origen donde corresponde. Las alertas siguen filtrando en el navegador. Los índices de apoyo (`0010`) están en el repositorio, **pendientes de aplicar** |
 | Adaptación real a la industria | I + B + P | Vida útil, snapshot, alertas de recambio, ventas por entrega: I. Embudo, orígenes, motivos y tipos del rubro, `tipo_cliente`: B. Parque instalado: I (F4, anda hoy). Canchas, equipamiento sugerido, licitaciones y recambio en un clic: I (F4) pero **requieren aplicar la `0011`** |
 | Presupuesto imprimible | I (F6) | `/oportunidades/[id]/presupuesto`: encabezado del proveedor con su logo, cliente, líneas editables (catálogo o texto libre), IVA según la condición del proveedor, validez y condiciones, numeración por organización, «Imprimir / Guardar PDF» y registro de la actividad «Envío de propuesta». **Guardar y numerar requiere aplicar la `0012`**; sin ella se imprime como «Borrador» |
-| Pruebas E2E y CI | I (F6) | Playwright (`e2e/`, `npm run test:e2e`) contra una organización de pruebas dedicada (`supabase/seeds/e2e_tests.sql`) y GitHub Actions (`.github/workflows/ci.yml`: lint, tipos, self-checks y build). Escritas; **todavía sin ejecutar completas** (ver [pruebas](./pruebas.md)) |
+| Pruebas E2E y CI | I (F6), sin ejecutar | Playwright (`e2e/`, `npm run test:e2e`) contra una organización de pruebas dedicada (`supabase/seeds/e2e_tests.sql`) y GitHub Actions (`.github/workflows/ci.yml`: lint, tipos, self-checks y build). Escritas; **todavía sin ejecutar completas** (ver [pruebas](./pruebas.md)) |
+| Manual de usuario | I (F8) | PDF de 89 páginas generado con un comando (`npm run manual`); 10 figuras de pantallas que dependen de las migraciones `0011` y `0012`, de la clave de IA o del superadmin salen como «Captura pendiente» hasta regenerarlo con la base migrada |
 | Inteligencia artificial (opcional) | I (F7) | Aviso de recambio y resumen de cuenta, siempre revisados por una persona; se apaga quitando `ANTHROPIC_API_KEY`. Cumple las siete condiciones de la consigna (ver [ia](./ia.md)). **Probada contra un servidor simulado, no contra la API real** |
 
 ### e.3 Usuarios del sistema (consigna, pp. 5 y 6)
@@ -648,7 +643,7 @@ lista, sin interfaz · **P** Planificado.
 | Administrador: configura etapas, tipos de actividad, motivos y orígenes | I (F1a) | `/configuracion`, con `configuracion.gestionar` |
 | Administrador: accede a toda la información | I | Rol con todos los permisos |
 | Administrador y Responsable comercial: asignan y reasignan oportunidades | I | Formulario y "Reasignar" en el detalle (F2) |
-| Administrador y Responsable comercial: asignan y reasignan contactos | B | Sin pantalla |
+| Administrador y Responsable comercial: asignan y reasignan contactos | I (F1b) | Selector de responsable en el formulario del contacto (con `clientes.asignar`) |
 | Vendedor: registra empresas y contactos; consulta los asignados; crea y actualiza oportunidades | I | Cartera propia aplicada por la base |
 | Vendedor: cambia de etapa; registra actividades | I | Tablero, detalle y bitácora |
 | Vendedor: consulta el historial comercial | I | Actividades en las fichas y, en el detalle de la oportunidad, actividades y cambios de etapa (F2) |
@@ -671,7 +666,7 @@ lista, sin interfaz · **P** Planificado.
 | Vistas: lista, individual, tablero; filtros por responsable, etapa, estado y origen | I (F2, F3): lista, tablero e individual; filtros y paginación en el servidor | La lista se pagina; el tablero muestra hasta 500 abiertas con aviso |
 | Cambio de etapa desde el detalle o el tablero | I (F2) | |
 | Reglas del cambio de etapa (ocho condiciones) | I (F2) | Triggers y CHECK; probadas en `0007_reglas.sql`; la interfaz las pide y traduce los errores |
-| Módulo 3, tipos mínimos de actividad (9) | B (12 sembrados); la pantalla usa 7 tipos propios | F2 |
+| Módulo 3, tipos mínimos de actividad (9) | I (F1b): 12 sembrados por organización, de los cuales 9 son los de la consigna; el formulario ofrece los activos del catálogo | Editables en `/configuracion` |
 | Módulo 3, datos mínimos de la actividad | I (F1b: tipo de catálogo, fecha y hora, usuario, empresa o contacto, descripción, resultado, oportunidad opcional) | |
 | Historial cronológico en contacto, empresa y oportunidad | I (F1b, F2) | |
 | Historial de etapas (oportunidad, anterior, nueva, fecha, usuario, observación) | I (F2) | `oportunidad_etapas_historial`, visible en el detalle |
@@ -731,18 +726,19 @@ luego F4 (licitaciones); nunca F0 a F3.
 | F1 | `/configuracion` (datos de la empresa y logo, etapas, tipos de actividad, orígenes, motivos de pérdida) y empresas/contactos completos (estado, responsable, origen, tipo de cliente; `/contactos`; detalles) | 2026-10-13 | **Hecha** (F1a `/configuracion`, F1b empresas y contactos) |
 | F2 | Oportunidades completas: detalle, cerrar ganada/perdida con modal de motivo, reabrir, reasignar, kanban dinámico con `cambiar_etapa`, línea de tiempo; actividades genéricas | 2026-10-18 | **Hecha** (`891d663`) |
 | F3 | Búsqueda, filtros y paginación en el servidor en todas las listas | 2026-10-22 | **Hecha** (`1ccb553`; la migración `0010` de índices está pendiente de aplicar) |
-| F4 | Rubro: recambio en un clic, parque instalado, ficha de canchas, licitaciones | 2026-10-28 | **Hecha** (sin commit todavía; la migración `0011` está pendiente de aplicar a mano y, hasta entonces, canchas, licitaciones y el botón de recambio no se muestran) |
-| F5 | Ficha 360, tablero del responsable, conversión del embudo, búsqueda global Ctrl+K | 2026-11-02 | **Hecha** (sin commit todavía; no necesita migración) |
-| F6 | Presupuesto imprimible; pruebas E2E con Playwright y CI en GitHub Actions | 2026-11-05 | **Hecha** (sin commit todavía; la migración `0012` está pendiente de aplicar a mano y, hasta entonces, el presupuesto se imprime como «Borrador» sin guardarse; la suite E2E y la CI **no se ejecutaron** contra una base real ni en GitHub, ver [pruebas](./pruebas.md)) |
-| F7 | IA opcional: aviso de recambio y resumen de cuenta | 2026-11-08 | **Hecha** (sin commit todavía; sin migración; necesita `ANTHROPIC_API_KEY`, que alguien tiene que aportar, y no se probó contra la API real, ver [ia](./ia.md)) |
-| F8 | Documentación (este conjunto, ya escrito) y manual de usuario en PDF | 2026-11-11 | En curso |
+| F4 | Rubro: recambio en un clic, parque instalado, ficha de canchas, licitaciones | 2026-10-28 | **Hecha** (la migración `0011` está pendiente de aplicar a mano y, hasta entonces, canchas, licitaciones y el botón de recambio no se muestran) |
+| F5 | Ficha 360, tablero del responsable, conversión del embudo, búsqueda global Ctrl+K | 2026-11-02 | **Hecha** (no necesita migración) |
+| F6 | Presupuesto imprimible; pruebas E2E con Playwright y CI en GitHub Actions | 2026-11-05 | **Hecha** (la migración `0012` está pendiente de aplicar a mano y, hasta entonces, el presupuesto se imprime como «Borrador» sin guardarse; la suite E2E y la CI **no se ejecutaron** contra una base real ni en GitHub, ver [pruebas](./pruebas.md)) |
+| F7 | IA opcional: aviso de recambio y resumen de cuenta | 2026-11-08 | **Hecha** (sin migración; necesita `ANTHROPIC_API_KEY`, que alguien tiene que aportar, y no se probó contra la API real, ver [ia](./ia.md)) |
+| F8 | Documentación y manual de usuario en PDF, con el kit de migraciones y las pruebas que los cuidan | 2026-11-11 | **Hecha** (adelantada al 2026-10-04; ver [b.19](#b19-manual-de-usuario-y-kit-de-migraciones-f8)) |
 
 **Pendiente inmediato (no es una fase).**
 
-- Regenerar `src/lib/supabase/types.ts` contra el proyecto real.
-- Volver a correr `supabase/seeds/demo_catedra.sql` si la demo de producción es anterior a la 0007.
-- Corregir el tablero para que no cuente oportunidades cerradas como abiertas.
-- Decidir la licencia del repositorio.
+1. **Aplicar `supabase/aplicar/aplicar_0008_a_0012.sql`** en el SQL Editor (pasos en [su LEEME](../supabase/aplicar/LEEME.md)) y correr las seis pruebas SQL.
+2. Regenerar `src/lib/supabase/types.ts` contra el proyecto real y volver a correr `npm run typecheck`.
+3. Cargar `supabase/seeds/demo_rubro.sql` (canchas, datos de licitación y un presupuesto guardado) y correr `npm run manual`: se completan las figuras pendientes (con `ANTHROPIC_API_KEY` y con las credenciales del superadmin, también las de IA y las del panel de plataforma).
+4. Correr una vez la suite E2E y la CI en GitHub (hoy escritas pero sin ejecutar completas).
+5. Decidir la licencia del repositorio.
 
 **Pendiente de confirmar.**
 
@@ -959,7 +955,7 @@ se conserva su fila de datos.
 
 | | |
 |---|---|
-| Estado | **Implementado (F5)**, sin commit todavía |
+| Estado | **Implementado (F5)** |
 | Migraciones | **Ninguna.** Todo se calcula con tablas que ya existen (`0001` a `0007`); no hace falta aplicar nada para que ande |
 | Qué se esconde sin la `0008` a `0011` | Nada de esto depende de ellas |
 
@@ -1019,7 +1015,7 @@ devuelve solo su cartera.
 
 | | |
 |---|---|
-| Estado | **Implementado (F6)**, sin commit todavía. La migración `0012_presupuestos.sql` está **pendiente de aplicar a mano** en Supabase |
+| Estado | **Implementado (F6)**. La migración `0012_presupuestos.sql` está **pendiente de aplicar a mano** en Supabase |
 | Qué anda hoy sin la 0012 | Armar el presupuesto (líneas, totales, validez, condiciones) e **imprimirlo o guardarlo como PDF**, siempre como «Borrador» |
 | Qué se activa al aplicarla | **Guardar** el presupuesto con su número correlativo por organización, listar los anteriores, reabrirlos para reimprimir y registrar la actividad «Envío de propuesta» al imprimir |
 | Si falta la 0012 | Nada se rompe: "Guardar presupuesto" explica que se activa al aplicar la migración, y quien tiene `configuracion.gestionar` ve el aviso "Se activa al aplicar la migración 0012" |
@@ -1061,7 +1057,7 @@ devuelve solo su cartera.
 
 | | |
 |---|---|
-| Estado | **Implementado (F7)**, sin commit todavía. Sin migración. **Opcional: se enciende con `ANTHROPIC_API_KEY`** |
+| Estado | **Implementado (F7)**. Sin migración. **Opcional: se enciende con `ANTHROPIC_API_KEY`** |
 | Qué hace | "Redactar con IA" en `/alertas` (borrador editable del aviso de recambio) y "Resumir con IA" en la ficha 360 de empresa y de contacto (resumen de solo lectura) |
 | Sin la clave | Nada: ningún botón, ninguna llamada, el CRM igual que antes. `/configuracion` dice "IA: desactivada" |
 | Verificación | Self-checks, tipos, lint, build y navegador contra un **servidor simulado** de la API. **No se llamó a la API real**: la calidad de los textos y el costo medido están sin verificar |
@@ -1081,3 +1077,48 @@ devuelve solo su cartera.
 - **Límite por persona** de 10 borradores cada 10 minutos, en memoria y por instancia del servidor.
 - **Pendiente.** Quién aporta la clave y el presupuesto; leer borradores reales y ajustar `prompts.ts`; fijar un tope de gasto en la consola de Anthropic.
 
+## b.19 Manual de usuario y kit de migraciones (F8)
+
+| | |
+|---|---|
+| Estado | **Implementado (F8)**. Sin migración nueva; el kit solo junta las existentes |
+| Manual | `docs/Manual-de-usuario-Tuco-y-Nito.pdf`: A4, 89 páginas, 7,2 MB. Fuente en `docs/manual/` (`manual.html`, `manual.css`, `capitulos/`, `capturas/`, `fuentes/`) |
+| Scripts | `scripts/manual/capturas.mjs` (Playwright, solo navegación), `generar.mjs` (PDF con Chromium) y `figuras.mjs` (la lista de figuras). `npm run manual:capturas`, `manual:pdf` y `manual` |
+| Kit de migraciones | `supabase/aplicar/aplicar_0008_a_0012.sql` (generado por `scripts/migraciones/consolidar.mjs`) y `supabase/aplicar/LEEME.md`. `npm run migraciones:consolidar` |
+| Demo del rubro | `supabase/seeds/demo_rubro.sql`: canchas, datos de la licitación y un presupuesto guardado, para completar el manual |
+
+### Cómo regenerar el manual
+
+```bash
+MANUAL_BASE_URL=http://localhost:3000 \
+MANUAL_EMAIL=… MANUAL_PASSWORD=… MANUAL_EMAIL_VENDEDOR=… MANUAL_PASSWORD_VENDEDOR=… \
+npm run manual          # capturas + PDF
+npm run manual:pdf      # solo el PDF (sin la app ni internet, salvo la primera vez por las fuentes)
+```
+
+- Las credenciales **solo por entorno** (el repositorio es público). Las de la demo están en el comentario de `demo_catedra.sql`.
+- Cada figura tiene un `esperar`: si la pantalla no está (migración sin aplicar, IA sin clave, sin credenciales de superadmin), queda en
+  `docs/manual/pendientes.json` y el PDF muestra «Captura pendiente»; la próxima corrida la llena sola.
+- La matriz de permisos y la tabla de pantallas por rol se arman leyendo `src/lib/permisos.ts` y `src/lib/navegacion.ts`; el índice usa los
+  números de página reales (se imprime cada capítulo por separado y se comprueba que la suma coincide con el PDF).
+- Más detalle en [`docs/manual/LEEME.md`](./manual/LEEME.md).
+
+### Cumplimiento final, verificado contra el código
+
+Lo que sigue es la reverificación de la tabla de [e](#e-estado-frente-a-la-consigna) al cerrar la 1.0.0, con `rg` sobre `src/app` y los
+comandos de `package.json`:
+
+| Bloque | Estado real |
+|---|---|
+| Acceso, usuarios, roles y permisos | Implementado y en producción. No se editan nombre ni email de un usuario |
+| Empresas, contactos, productos, ventas, alertas, actividades | Implementado y en producción |
+| Oportunidades, embudo configurable, cierre y reapertura, historial y auditoría | Implementado y en producción; el filtro de fecha futura y "empresa o contacto" los exige la base solo con la `0009` |
+| Baja lógica sin borrado | Interfaz: sí. Base: la `0008` quita las políticas de borrado (**pendiente en la base viva**) |
+| Búsqueda, filtros y paginación en el servidor | Implementado; los índices de la `0010` están **pendientes** (la app anda igual) |
+| Rubro: parque instalado | Implementado y en producción |
+| Rubro: canchas, equipamiento sugerido, licitaciones, recambio en un clic | Implementado en la app; **se activa al aplicar la `0011`** |
+| Presupuesto imprimible | Implementado; imprime como «Borrador» hasta aplicar la `0012` (que habilita guardar y numerar) |
+| Ficha 360, tablero comercial, conversión del embudo, Ctrl+K | Implementado y en producción (sin migración) |
+| IA opcional | Implementada; **probada solo contra un servidor simulado**, no contra la API real |
+| E2E y CI | Escritas; **no se ejecutaron completas** |
+| Manual de usuario | Hecho; 10 figuras pendientes de las migraciones, de la clave de IA y del superadmin |

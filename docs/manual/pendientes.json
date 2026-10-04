@@ -1,0 +1,64 @@
+{
+  "pendientes": [
+    {
+      "id": "cancha-form",
+      "capitulo": 7,
+      "titulo": "Alta de una cancha",
+      "motivo": "Se activa al aplicar la migración 0011"
+    },
+    {
+      "id": "ficha-canchas",
+      "capitulo": 7,
+      "titulo": "Canchas del cliente y equipamiento sugerido",
+      "motivo": "Se activa al aplicar la migración 0011"
+    },
+    {
+      "id": "ia-resumen",
+      "capitulo": 7,
+      "titulo": "El botón «Resumir con IA» en la historia de la cuenta",
+      "motivo": "Se activa al cargar ANTHROPIC_API_KEY en el servidor"
+    },
+    {
+      "id": "lic-detalle",
+      "capitulo": 9,
+      "titulo": "El detalle de una licitación: organismo, expediente y apertura",
+      "motivo": "Se activa al aplicar la migración 0011"
+    },
+    {
+      "id": "lic-form",
+      "capitulo": 9,
+      "titulo": "El formulario de oportunidad con los datos de la licitación",
+      "motivo": "Se activa al aplicar la migración 0011"
+    },
+    {
+      "id": "alerta-ia",
+      "capitulo": 13,
+      "titulo": "El botón «Redactar con IA» en una alerta",
+      "motivo": "Se activa al cargar ANTHROPIC_API_KEY en el servidor"
+    },
+    {
+      "id": "alerta-recambio",
+      "capitulo": 13,
+      "titulo": "«Crear oportunidad de recambio» en una alerta",
+      "motivo": "Se activa al aplicar la migración 0011"
+    },
+    {
+      "id": "presupuesto-guardado",
+      "capitulo": 14,
+      "titulo": "Un presupuesto guardado y numerado (N° 000042)",
+      "motivo": "Se activa al aplicar la migración 0012"
+    },
+    {
+      "id": "admin-nuevo",
+      "capitulo": 18,
+      "titulo": "Dar de alta a un cliente nuevo",
+      "motivo": "Hace falta la cuenta de superadmin (MANUAL_EMAIL_SUPERADMIN y MANUAL_PASSWORD_SUPERADMIN); la demo no la incluye"
+    },
+    {
+      "id": "admin-panel",
+      "capitulo": 18,
+      "titulo": "El panel de plataforma: clientes del CRM",
+      "motivo": "Hace falta la cuenta de superadmin (MANUAL_EMAIL_SUPERADMIN y MANUAL_PASSWORD_SUPERADMIN); la demo no la incluye"
+    }
+  ]
+}

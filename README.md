@@ -11,9 +11,10 @@ vendedor avise al cliente por mail o WhatsApp antes que nadie.
 Trabajo práctico de *Gestión Aplicada al Desarrollo de Software II* (Ingeniería en Informática, UNLaM).
 Producción: [crmgads1.vercel.app](https://crmgads1.vercel.app). Entrega final: 2026-11-12.
 
-> **Estado en una línea.** La base de datos ya cumple casi todo el módulo comercial de la consigna (migración
-> `0007`, aplicada); la interfaz de esas capacidades se está construyendo en las fases F1 a F8 (hasta el
-> 2026-11-11). Este README distingue siempre lo que ya funciona de lo que no.
+> **Estado en una línea.** Versión 1.0.0 (entrega final): el CRM está completo (fases F0 a F8). Falta aplicar a mano en
+> Supabase las migraciones `0008` a `0012` (hay un [kit de un solo archivo](./supabase/aplicar/LEEME.md)); mientras tanto la
+> aplicación esconde canchas, licitaciones, recambio en un clic y la numeración de presupuestos, y anda igual. Este README
+> distingue siempre lo que ya funciona de lo que no.
 
 ## Qué hace hoy, por estado
 
@@ -45,17 +46,15 @@ Producción: [crmgads1.vercel.app](https://crmgads1.vercel.app). Entrega final: 
 - **IA asistida opcional** (F7): borrador del aviso de recambio y resumen de cuenta, siempre revisados por una persona; se apaga
   quitando la clave. Probada contra un servidor simulado, **no contra la API real** ([docs/ia.md](./docs/ia.md)).
 
-### Base lista, sin interfaz (migración 0007)
+### Hecho en el repositorio, pendiente de aplicar en la base viva
 
-Reglas del embudo en la base (ganada con fecha, perdida con motivo, reabrir con permiso), cuya interfaz
-llegó en F2, y todo lo que la 0007 agregó y las fases F1 y F2 ya muestran. Detalle en
-[docs/notas-de-version.md](./docs/notas-de-version.md).
-
-### Planificado
-
-Manual de usuario en PDF. La **IA opcional** (F7) ya está implementada y se enciende con `ANTHROPIC_API_KEY` (ver [docs/ia.md](./docs/ia.md)). Ya están en el repositorio las funciones del rubro (F4, migración `0011`) y el
-presupuesto imprimible, las pruebas E2E y la CI (F6, migración `0012`); las dos migraciones se aplican a mano (ver
-[docs/deploy.md](./docs/deploy.md)).
+- **Migraciones `0008` a `0012`**: baja lógica garantizada por la base, fecha de cierre no futura, índices de búsqueda, **canchas y
+  licitaciones** (con el recambio en un clic) y **presupuestos numerados**. Se aplican con
+  [`supabase/aplicar/aplicar_0008_a_0012.sql`](./supabase/aplicar/LEEME.md) y se verifican con las pruebas SQL.
+- **Manual de usuario** en PDF: [`docs/Manual-de-usuario-Tuco-y-Nito.pdf`](./docs/Manual-de-usuario-Tuco-y-Nito.pdf) (89 páginas). Se
+  regenera con `npm run manual`; las figuras de las pantallas que dependen de esas migraciones salen como «Captura pendiente» hasta entonces.
+  Cómo funciona: [docs/manual/LEEME.md](./docs/manual/LEEME.md).
+- Pruebas E2E con Playwright y CI en GitHub Actions: escritas, **sin ejecutar completas**.
 
 ## Stack
 
@@ -105,12 +104,14 @@ CRM. La lista completa de variables (mails, contacto, `SITE_URL`) está en
 1. Creá un proyecto en [supabase.com](https://supabase.com/) (Postgres 15 o superior).
 2. Creá en **Authentication, Users** la cuenta que va a ser el **superadmin**, con *Auto Confirm User*.
 3. En **SQL Editor**, pegá y ejecutá **en orden** los archivos de `supabase/migrations/`:
-   `0001`, `0002`, `0003`, `0004`, `0005`, `0006` y `0007`.
+   `0001`, `0002`, `0003`, `0004`, `0005`, `0006` y `0007`; después, **un solo archivo** con las cinco restantes:
+   `supabase/aplicar/aplicar_0008_a_0012.sql` (pasos y verificación en [su LEEME](./supabase/aplicar/LEEME.md)).
    - Antes de la `0004`, cambiá el email de la línea marcada con `>>>` por el del superadmin.
    - La `0007` no es solo aditiva (renombra roles y etapas, cierra oportunidades): leé su encabezado, y
      desplegá la aplicación inmediatamente después de aplicarla.
-4. Verificá: ejecutá `supabase/tests/0005_permisos.sql` y `supabase/tests/0007_reglas.sql`. Cada uno tiene que
-   devolver una fila `TODO OK` y no deja nada en la base (hacen rollback).
+4. Verificá: el kit termina con una tabla (todo `OK` y un `TODO OK` final); además corré las pruebas de `supabase/tests/`
+   (`0005`, `0007`, `0008`, `0009`, `0011` y `0012`). Cada una tiene que devolver una fila `TODO OK` y no deja nada en la base
+   (hacen rollback).
 5. En **Authentication, Sign In / Providers, Email**, desactivá **Allow new users to sign up**.
 6. Opcional: cargá los datos de demostración con `supabase/seeds/demo_catedra.sql` (ver abajo).
 
@@ -120,7 +121,7 @@ Después de cambiar el esquema, regenerá los tipos:
 npx supabase gen types typescript --project-id TU_PROJECT_ID > src/lib/supabase/types.ts
 ```
 
-(`src/lib/supabase/types.ts` todavía refleja el esquema anterior a la `0007`.) El paso a paso completo, con
+(`src/lib/supabase/types.ts` todavía refleja el esquema anterior a la `0007`: regeneralo después de aplicar el kit y volvé a correr `npm run typecheck`.) El paso a paso completo, con
 advertencias y problemas frecuentes, está en [docs/deploy.md](./docs/deploy.md).
 
 ### Mails
@@ -165,8 +166,11 @@ npm run build                        # build de producción
 npm run start                        # sirve el build de producción
 npm run lint                         # eslint src e2e playwright.config.ts --max-warnings=0 (sin advertencias)
 npm run typecheck                    # tsc --noEmit sobre src y sobre e2e
-npm test                             # self-checks: node --test "src/**/*.check.ts" (233 pruebas en 23 archivos)
+npm test                             # self-checks: node --test "src/**/*.check.ts" (243 pruebas en 25 archivos)
 npm run test:e2e                     # pruebas de extremo a extremo (Playwright); sin credenciales E2E_* se saltan
+npm run manual                       # manual de usuario: capturas (necesita la app y MANUAL_EMAIL…) + PDF en docs/
+npm run manual:pdf                   # solo el PDF (sin la app ni internet, salvo la primera vez por las fuentes)
+npm run migraciones:consolidar       # regenera supabase/aplicar/aplicar_0008_a_0012.sql (npm test lo verifica)
 ```
 
 `lint`, `typecheck`, `test` y `build` son los pasos de la integración continua (`.github/workflows/ci.yml`). Las
@@ -188,10 +192,12 @@ src/
   lib/                  sesion, permisos, cuentas, email, ia (F7), supabase (3 clientes), money, equipo
   proxy.ts              Refresca la sesión y exige login
 supabase/
-  migrations/           0001 a 0009 (se aplican en orden; la 0008 y la 0009 faltan en la base viva)
+  migrations/           0001 a 0012 (se aplican en orden; de la 0008 en adelante faltan en la base viva)
+  aplicar/              Kit: las migraciones 0008 a 0012 en un solo archivo, con verificación, y su LEEME
   tests/                Pruebas SQL con rollback
-  seeds/                demo_catedra.sql
-docs/                   Documentación (ver abajo)
+  seeds/                demo_catedra.sql, demo_rubro.sql (canchas, licitación, presupuesto) y e2e_tests.sql
+scripts/                manual/ (capturas y PDF del manual) y migraciones/ (el kit consolidado)
+docs/                   Documentación (ver abajo) y el manual de usuario (docs/manual/ y el PDF)
 design-system/          Sistema de diseño de la marca
 ```
 
@@ -201,6 +207,8 @@ La estructura detallada está en [CLAUDE.md](./CLAUDE.md).
 
 | Documento | Contenido |
 |---|---|
+| [Manual de usuario (PDF)](./docs/Manual-de-usuario-Tuco-y-Nito.pdf) | Para el personal del proveedor: 22 capítulos, capturas y reglas. Cómo se arma: [docs/manual/LEEME.md](./docs/manual/LEEME.md) |
+| [supabase/aplicar/LEEME.md](./supabase/aplicar/LEEME.md) | Aplicar las migraciones 0008 a 0012 en Supabase, verificarlas y regenerar tipos y manual |
 | [docs/README.md](./docs/README.md) | Índice de toda la documentación |
 | [docs/notas-de-version.md](./docs/notas-de-version.md) | Todo lo agregado desde la primera entrega, por área, con el estado frente a la consigna |
 | [CHANGELOG.md](./CHANGELOG.md) | Cambios por hito y fecha |
@@ -225,10 +233,9 @@ mano y **antes** del deploy cuando la aplicación vieja no es compatible. Resume
 | Entrega | Fecha | Estado |
 |---|---|---|
 | Primera: login, empresas y contactos, oportunidades, embudo | 2026-09-24 | Alcance cubierto por la aplicación, que además ya incluye multitenencia, roles, ventas y alertas |
-| Final: CRM completo según la consigna | 2026-11-12 | En curso. Base de datos lista (`0007`); interfaz en F1 a F8 |
+| Final: CRM completo según la consigna | 2026-11-12 | Hecho (1.0.0): interfaz y base completas; falta aplicar las migraciones `0008` a `0012` en la base viva |
 
-Plan de fases (F1 2026-10-13, F2 2026-10-18, F3 2026-10-22, F4 2026-10-28, F5 2026-11-02, F6 2026-11-05,
-F7 2026-11-08, F8 2026-11-11) y requisito por requisito frente a la consigna en
+Las fases F0 a F8 están hechas; el plan y el requisito por requisito frente a la consigna están en
 [docs/notas-de-version.md](./docs/notas-de-version.md#e-estado-frente-a-la-consigna).
 
 ## Equipo y licencia

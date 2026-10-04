@@ -1,0 +1,88 @@
+<section class="cap" id="cap-14" data-num="14" data-parte="El trabajo de todos los días" data-titulo="Presupuestos" data-bajada="Armá el presupuesto de una oportunidad, con tu logo y tus datos, calculá el IVA según tu condición y guardalo como PDF. Cada presupuesto guardado lleva su número.">
+
+<p>Desde el detalle de una oportunidad, el botón <span class="ui">Presupuesto</span> abre una pantalla para <strong>armar, numerar, imprimir y guardar como PDF</strong> el presupuesto de ese negocio. El documento es <strong>tuyo</strong>: lleva el logo y los datos de tu empresa, nunca la marca de Tuco &amp; Nito.</p>
+<figure class="fig" data-fig="presupuesto-editor"><figcaption>El editor del presupuesto. Arriba, <em>Guardar presupuesto</em> e <em>Imprimir / Guardar PDF</em>; abajo, las líneas, la validez y las condiciones. Un título largo se parte en dos renglones.</figcaption></figure>
+
+<h2>Armar un presupuesto</h2>
+<ol class="pasos">
+  <li>Abrí la oportunidad y tocá <span class="ui">Presupuesto</span>.</li>
+  <li>El borrador arranca con <strong>el producto de la oportunidad</strong> (o, si no tiene, su valor estimado). Editá esa línea o agregá más.</li>
+  <li><strong>Del catálogo</strong>: en <span class="ui">Agregar del catálogo</span> elegí un producto; se carga con su descripción y su precio de lista, que podés cambiar. <strong>Libre</strong>: <span class="ui">Agregar línea libre</span> para algo que no está en el catálogo (flete, instalación).</li>
+  <li>En cada línea completá <strong>Descripción</strong> (obligatoria), <strong>Cantidad</strong> (mayor que cero), <strong>Precio unitario</strong> y, si querés, el <strong>Dto. %</strong> (de 0 a 100). El <strong>Importe</strong> se calcula solo.</li>
+  <li>Con las flechas subís o bajás una línea de lugar; el tacho la quita. Podés cargar hasta 200 líneas.</li>
+  <li>Revisá la <strong>Validez (días)</strong>, las <strong>Condiciones</strong> y las <strong>Observaciones</strong>. La validez y las condiciones arrancan con lo que configuró tu empresa (capítulo 17); acá las cambiás <em>solo para este presupuesto</em>.</li>
+</ol>
+
+<h2>Cómo se calculan los números</h2>
+<div class="nota regla">
+  <ul>
+    <li>Las cuentas se hacen en <strong>centavos enteros</strong>, redondeando al centavo (medio hacia arriba): <span class="mono">1,005 → 1,01</span>. No hay sumas de decimales que dejen diferencias.</li>
+    <li><strong>Importe de la línea</strong> = cantidad × precio unitario − el descuento de esa línea.</li>
+    <li><strong>IVA según tu condición.</strong> Si tu empresa es <strong>Responsable Inscripto</strong>, los precios se cargan <strong>sin IVA</strong> y la hoja muestra Subtotal, Descuentos, Neto gravado, <strong>IVA 21 %</strong> (sobre el neto total) y Total. Con <strong>Monotributo</strong>, <strong>Exento</strong> o sin condición cargada, <strong>no se discrimina IVA</strong>: el total es el neto y la hoja lo aclara con una leyenda.</li>
+    <li>El sistema solo maneja IVA 21 %: no hay alícuotas reducidas (10,5 %), descuento global ni otras monedas que el peso.</li>
+    <li><strong>Válido hasta</strong> = fecha de emisión + días de validez (de 1 a 365).</li>
+  </ul>
+</div>
+<div class="nota atencion">
+  <p>Si tu empresa es Responsable Inscripto pero el texto de las <em>Condiciones</em> dice «IVA incluido» (como en la demostración), la hoja se contradice a sí misma: calcula el IVA <em>sobre</em> el neto. Corregí el texto en <span class="ui">Configuración</span> («más IVA»).</p>
+</div>
+
+<h2>La hoja que se imprime</h2>
+<p>Debajo del editor se ve el <strong>papel</strong>: es blanco con texto oscuro en cualquier modo (claro u oscuro), porque representa una hoja impresa.</p>
+<figure class="fig" data-fig="presupuesto-hoja"><figcaption>La hoja del presupuesto: encabezado con los datos de tu empresa, cliente y contacto, las líneas, los totales, la validez y las condiciones. Este es un borrador: todavía no tiene número.</figcaption></figure>
+<ul>
+  <li><strong>Encabezado</strong>: tu logo (si lo subiste) y tus datos: razón social, CUIT, condición frente al IVA, dirección, teléfono, mail y web. Sin logo se imprime tu razón social en texto. <strong>Nunca</strong> la marca de Tuco &amp; Nito.</li>
+  <li><strong>Cliente</strong>: razón social, CUIT, dirección, teléfono y mail de la empresa de la oportunidad, y el contacto como «Atención». Sin empresa se usa el contacto; sin ninguno, «A definir».</li>
+  <li>A la derecha de «PRESUPUESTO» se lee el <strong>número</strong>, la fecha y el «Válido hasta».</li>
+</ul>
+<div class="nota tip">
+  <p>Si tu empresa todavía no cargó sus datos, el Administrador ve un aviso (que no se imprime) con el enlace a <span class="ui">Configuración</span>. Cargá la razón social, el CUIT y el logo antes del primer presupuesto real (capítulo 17).</p>
+</div>
+
+<h2>Guardar y numerar</h2>
+<p>Un presupuesto empieza como <strong>borrador</strong>. Cuando <span class="ui">Guardar presupuesto</span>, la base de datos le asigna un <strong>número correlativo propio de tu empresa</strong>: <span class="mono">N° 000042</span>. Un borrador sin guardar se imprime con la leyenda <strong>«Borrador»</strong>, sin número y sin dejar rastro.</p>
+<figure class="fig" data-fig="presupuesto-guardado"><figcaption>Un presupuesto guardado: lleva su número y aparece en la lista «Presupuestos de esta oportunidad», con su fecha, su total y si ya quedó registrado en el historial.</figcaption></figure>
+<div class="nota regla">
+  <ul>
+    <li><strong>La numeración la pone el sistema</strong>, siempre correlativa por empresa (1, 2, 3…), sin duplicados ni saltos aunque dos personas guarden a la vez. Vos no elegís el número.</li>
+    <li><strong>Un presupuesto emitido no se modifica ni se borra.</strong> Si hay que corregirlo, armás otro: con <span class="ui">Usar como base de uno nuevo</span> se copian las líneas, la validez y las condiciones a un borrador.</li>
+    <li>El presupuesto guarda una <strong>foto de tu empresa</strong> (condición frente al IVA, razón social, CUIT, dirección, teléfono, mail y web). Si después cambiás esos datos, los presupuestos viejos se reimprimen como se emitieron. El <strong>logo</strong> y los datos del cliente se leen en vivo.</li>
+    <li>No es una factura: no lleva punto de venta ni CAE.</li>
+  </ul>
+</div>
+<div class="nota pendiente">
+  <p>Guardar y numerar se activa cuando la plataforma tiene aplicada la última versión de la base de datos. Hasta entonces el presupuesto se arma e imprime como «Borrador». Si <span class="ui">Guardar presupuesto</span> te explica que todavía no está disponible, avisá a quien administra el sistema.</p>
+</div>
+
+<h2>Imprimir o guardar como PDF</h2>
+<ol class="pasos">
+  <li>Tocá <span class="ui">Imprimir / Guardar PDF</span>. El botón renueva el logo y abre el diálogo de impresión del navegador.</li>
+  <li>En <strong>Destino</strong>, elegí <em>Guardar como PDF</em> (para mandarlo por mail) o tu impresora.</li>
+  <li>Dejá <strong>A4, vertical</strong> y la escala por defecto. El menú, los botones y los avisos no salen: solo la hoja. Si el presupuesto es largo, el encabezado de la tabla se repite en cada página y una línea nunca se corta.</li>
+  <li>El nombre sugerido del archivo es «Presupuesto N° … - cliente».</li>
+</ol>
+<div class="nota atencion">
+  <p>Usá el <strong>botón</strong> y no <kbd>Ctrl</kbd> + <kbd>P</kbd>. El logo se muestra con un enlace temporal que el botón renueva; si dejaste la pestaña abierta mucho rato en segundo plano y usás <kbd>Ctrl</kbd> + <kbd>P</kbd>, el logo puede salir roto.</p>
+</div>
+<div class="nota regla">
+  <p><strong>Imprimir un presupuesto guardado registra la actividad «Envío de propuesta»</strong> en el historial de la oportunidad, la empresa y el contacto, <em>una sola vez</em> por presupuesto (reimprimirlo no la repite, ni siquiera otro día). Se registra solo si podés escribir actividades y editar la oportunidad; un borrador no registra nada. Si el registro falla, el PDF se genera igual y se avisa.</p>
+</div>
+
+<h2>Límites</h2>
+<ul>
+  <li>El borrador <strong>no se guarda mientras escribís</strong>: si cerrás la pestaña antes de guardarlo, se pierde.</li>
+  <li>En el celular la hoja se desplaza horizontalmente dentro de su caja (es un A4 en miniatura): se edita e imprime bien, pero no se lee de corrido.</li>
+</ul>
+
+<h2>Qué ve cada rol</h2>
+<table class="tabla compacta">
+  <thead><tr><th>Rol</th><th>Presupuestos</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Administrador</strong></td><td>Ver, armar, guardar e imprimir los de toda la organización.</td></tr>
+    <tr><td><strong>Responsable comercial</strong></td><td>Ver, armar, guardar e imprimir los de toda la organización.</td></tr>
+    <tr><td><strong>Vendedor</strong></td><td>Ver, armar, guardar e imprimir los de sus oportunidades.</td></tr>
+    <tr><td><strong>Solo lectura</strong></td><td>No ve oportunidades ni presupuestos.</td></tr>
+  </tbody>
+</table>
+
+</section>

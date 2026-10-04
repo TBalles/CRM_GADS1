@@ -1,0 +1,53 @@
+<section class="cap" id="cap-11" data-num="11" data-parte="El trabajo de todos los días" data-titulo="Productos y vida útil" data-bajada="Tu catálogo. El dato más importante de cada producto no es el precio: es cuánto dura.">
+
+<p>El <strong>catálogo de productos</strong> es la lista de lo que vendés: arcos, redes, pelotas, pecheras, conos, vallas. Cada producto tiene, además de su nombre y su precio, una <strong>vida útil estimada en meses</strong>. Ese número es el que alimenta todo el sistema de alertas de recambio (capítulo 13).</p>
+<figure class="fig" data-fig="productos-lista"><figcaption>El catálogo, filtrado por «Activos». Cada producto muestra el ícono de su equipo y una barra de vida útil relativa al resto del catálogo. El kit de mantenimiento está «Sin seguimiento» a propósito.</figcaption></figure>
+
+<h2>Leer la lista</h2>
+<ul>
+  <li><strong>Producto</strong>: nombre y marca, con el ícono del equipo (arco, red, pelota, cono, pechera, banderín, escalera, valla…).</li>
+  <li><strong>Categoría</strong>: una etiqueta de color (Arcos, Redes, Pelotas, Entrenamiento…).</li>
+  <li><strong>Precio</strong> de lista.</li>
+  <li><strong>Vida útil</strong>: una barra y el plazo en años o meses. <em>Sin seguimiento</em> significa que no tiene vida útil cargada y no genera alertas.</li>
+  <li><strong>Estado</strong>: <span class="pill verde">Activo</span> o <span class="pill gris">De baja</span>.</li>
+  <li>Filtros: <span class="ui">Todas las categorías</span> y <span class="ui">Activos y de baja</span> / <span class="ui">Activos</span> / <span class="ui">De baja</span>; buscador por nombre.</li>
+</ul>
+
+<h2>Cargar un producto</h2>
+<ol class="pasos">
+  <li>Tocá <span class="ui">Nuevo producto</span> (necesitás el permiso para editar el catálogo: hoy es del Administrador).</li>
+  <li>Escribí el <strong>Nombre</strong> (obligatorio y único en tu organización), la <strong>Marca</strong> y la <strong>Categoría</strong>.</li>
+  <li>Cargá el <strong>Precio de lista</strong> (formato argentino, <span class="mono">450.000,00</span>).</li>
+  <li>En <strong>Seguimiento de recambio</strong> poné la <strong>Duración estimada (meses)</strong>: una red de fútbol 11, 18; un arco, 60; una pelota, 12. <strong>Dejalo vacío</strong> si el producto no se recambia.</li>
+  <li>Agregá una <strong>Descripción</strong> si querés (material, medidas) y tocá <span class="ui">Guardar</span>.</li>
+</ol>
+<figure class="fig" data-fig="producto-form"><figcaption>El panel de alta de un producto. El bloque «Seguimiento de recambio» explica cómo se usa la duración.</figcaption></figure>
+
+<div class="nota regla">
+  <ul>
+    <li>La vida útil es opcional, en <strong>meses</strong> y mayor que cero.</li>
+    <li>Cambiar la vida útil de un producto <strong>no mueve</strong> el vencimiento de lo que ya vendiste: cada venta guardó su propia copia (capítulo 12).</li>
+    <li><strong>Un producto no se borra, se da de baja.</strong> Si ya se vendió, borrarlo rompería el historial de ventas. Un producto de baja no se ofrece en ventas nuevas, pero sigue en las viejas.</li>
+  </ul>
+</div>
+
+<h2>Editar, dar de baja y reactivar</h2>
+<p>En el menú <span class="mono">⋮</span> de la fila: <span class="ui">Editar</span>, y <span class="ui">Dar de baja</span> (con confirmación) o <span class="ui">Reactivar</span>. Un producto de baja se ve atenuado y con la etiqueta «De baja».</p>
+
+<div class="nota tip">
+  <p>El sistema elige el <strong>ícono</strong> de cada producto leyendo su <em>nombre</em> («Red para arco…» muestra una red, «Pelota…» una pelota) y, si no lo reconoce, su categoría. Si ponés nombres claros, el catálogo se lee mejor de un vistazo.</p>
+</div>
+<div class="nota tip">
+  <p>Para el <strong>equipamiento sugerido</strong> de una cancha (capítulo 7), el sistema reconoce la medida de un arco <em>leyéndola del nombre</em>: «Arco de fútbol 11 (7,32 x 2,44 m)». Si un arco no dice su medida, queda como comodín.</p>
+</div>
+
+<h2>Qué ve cada rol</h2>
+<table class="tabla compacta">
+  <thead><tr><th>Rol</th><th>Catálogo</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Administrador</strong></td><td>Ver y editar: alta, edición, baja y reactivación.</td></tr>
+    <tr><td><strong>Responsable comercial</strong>, <strong>Vendedor</strong>, <strong>Solo lectura</strong></td><td>Ver el catálogo (productos, precios y vida útil). No lo editan.</td></tr>
+  </tbody>
+</table>
+
+</section>

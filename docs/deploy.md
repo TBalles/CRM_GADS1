@@ -40,12 +40,19 @@ Se aplican **en orden**, pegando cada archivo completo en **SQL Editor, New quer
 | 5 | `0005_roles_permisos.sql` | Roles con permisos por organización, RLS por permiso. `begin`/`commit` | Requiere la 0004 |
 | 6 | `0006_superadmin_sin_organizacion.sql` | El superadmin deja de pertenecer a la organización demo | Requiere la 0005. Se puede correr más de una vez |
 | 7 | `0007_entrega_final.sql` | Entrega final (ver [notas de versión](./notas-de-version.md#c-la-base-de-datos-de-la-entrega-final-migración-0007)) | Requiere 0001 a 0006. **Leer la regla de orden de abajo** |
-
 | 8 | `0008_baja_logica.sql` | Quita las políticas `borrar` de empresas y contactos y garantiza una etapa ganada y una perdida. Idempotente, sin `begin`/`commit` | Requiere la 0007. **Pendiente de aplicar en la base viva** |
 | 9 | `0009_reglas_oportunidades.sql` | Fecha de cierre no futura (fecha de Argentina), fecha de cierre por defecto de Argentina y "empresa o contacto" obligatorio en oportunidades. `create or replace` + trigger nuevo, idempotente, sin `begin`/`commit` | Requiere la 0008. **Pendiente de aplicar en la base viva.** Después, `supabase/tests/0009_reglas_oportunidades.sql` |
 | 10 | `0010_indices_busqueda.sql` | Índices para la búsqueda y la paginación del servidor (F3): btree por organización y orden de cada lista, y un bloque **opcional** de trigramas (`create extension pg_trgm`). Idempotente, sin `begin`/`commit`. Sin prueba SQL: solo agrega índices | Requiere la 0009. **Pendiente de aplicar en la base viva.** Mejora el tiempo con volumen; la app anda igual sin ella. Si el entorno no tiene `pg_trgm`, borrar el bloque entre `BLOQUE OPCIONAL: PG_TRGM` y `FIN BLOQUE OPCIONAL` |
 | 11 | `0011_rubro.sql` | Rubro (F4): tablas `canchas` y `licitaciones` con RLS multitenant, columna `oportunidades.venta_item_id` el índice único de una oportunidad abierta por equipo y el trigger que impide ganar una licitación antes de su apertura. Idempotente, sin `begin`/`commit` | Requiere la 0010. **Pendiente de aplicar en la base viva.** Después, `supabase/tests/0011_rubro.sql`. Hasta aplicarla, la app esconde canchas, licitaciones y el botón de recambio (no se rompe nada); el parque instalado anda igual |
 | 12 | `0012_presupuestos.sql` | Presupuesto imprimible (F6): tabla `presupuestos` (numerada por organización, inmutable, sin borrado) y su contador `presupuesto_contadores` con el trigger `presupuestos_numero`; agrega `bitacora_entradas_org_id_key` (UNIQUE `(organizacion_id, id)`) para la FK compuesta de la actividad. Idempotente, sin `begin`/`commit` | Requiere la 0011. **Pendiente de aplicar en la base viva.** Después, `supabase/tests/0012_presupuestos.sql`. Hasta aplicarla, `/oportunidades/[id]/presupuesto` arma e imprime el presupuesto como «Borrador» (sin número, sin guardar y sin registrar la actividad) y un administrador ve el aviso "Se activa al aplicar la migración 0012" |
+
+**Las migraciones 0008 a 0012 se aplican de una vez con un solo archivo:**
+[`supabase/aplicar/aplicar_0008_a_0012.sql`](../supabase/aplicar/LEEME.md). Es la concatenación de las cinco, en orden, sin `begin`/`commit`
+(ninguna usa sentencias que no puedan correr en una transacción), con el bloque opcional de `pg_trgm` **apagado** y un `select` final que
+confirma las 24 piezas (todo `OK` y un `TODO OK`). Se genera con `npm run migraciones:consolidar` y `npm test` falla si quedó viejo.
+Se validó en PGlite: `0001` a `0007` y después **solo** el kit, dos veces seguidas, con las pruebas `0005`, `0007`, `0008`, `0009`,
+`0011` y `0012` en `TODO OK`. Pasos, qué hacer si falla y cómo regenerar tipos y manual: [LEEME del kit](../supabase/aplicar/LEEME.md).
+Los archivos individuales siguen siendo la fuente; el kit es solo comodidad.
 
 Cosas a saber:
 

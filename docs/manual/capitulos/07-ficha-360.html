@@ -1,0 +1,101 @@
+<section class="cap" id="cap-07" data-num="7" data-parte="El trabajo de todos los días" data-titulo="La ficha 360 de la cuenta" data-bajada="Todo lo que sabés de un cliente en una sola pantalla: quién es, qué compró, qué le vence, qué se habló y qué negocios hay abiertos.">
+
+<p>Al tocar el nombre de una empresa o de un contacto llegás a su <strong>ficha</strong>. Es la pantalla que conviene abrir <em>antes</em> de llamar a un cliente: te ahorra preguntar lo que ya sabés. Se llama «360» porque junta en un solo lugar los datos, las compras, los equipos instalados, las canchas, las oportunidades y toda la historia.</p>
+<figure class="fig" data-fig="ficha-resumen"><figcaption>La parte de arriba de la ficha de una empresa: los datos del cliente y el «Resumen de la cuenta».</figcaption></figure>
+
+<h2>Cómo está armada</h2>
+<table class="tabla">
+  <thead><tr><th style="width:42mm">Sección</th><th>Qué contiene</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Encabezado</strong></td><td>El nombre, el estado y el tipo. Los botones <span class="ui">Registrar actividad</span>, <span class="ui">Editar</span> y <span class="ui">Dar de baja</span> (o <span class="ui">Reactivar</span>).</td></tr>
+    <tr><td><strong>Datos</strong></td><td>CUIT, teléfono, mail, sitio web, dirección, responsable, origen, fecha de alta y observaciones.</td></tr>
+    <tr><td><strong>Resumen de la cuenta</strong></td><td>Primera compra, total comprado, última compra, oportunidades abiertas y último contacto.</td></tr>
+    <tr><td><strong>Parque instalado</strong></td><td>Lo que le entregaste, ordenado por urgencia de recambio.</td></tr>
+    <tr><td><strong>Canchas</strong></td><td>Las canchas del cliente y el equipamiento que le falta (empresas).</td></tr>
+    <tr><td><strong>Contactos</strong></td><td>Las personas de la empresa, con alta (<span class="ui">Agregar</span>) y edición (el lápiz).</td></tr>
+    <tr><td><strong>Oportunidades y Ventas</strong></td><td>Los negocios y las compras de la cuenta, cada uno con enlace a su detalle.</td></tr>
+    <tr><td><strong>Historia de la cuenta</strong></td><td>Todo lo que pasó, en una línea de tiempo.</td></tr>
+  </tbody>
+</table>
+
+<h2>El resumen de la cuenta</h2>
+<p>Son cinco cifras que se calculan <strong>con lo que está cargado en el sistema, sin estimaciones</strong>:</p>
+<ul>
+  <li><strong>Primera compra</strong>: la fecha de la primera venta registrada. No es la fecha de alta del cliente.</li>
+  <li><strong>Total comprado</strong>: la suma de cantidad × precio de todos los ítems vendidos.</li>
+  <li><strong>Última compra</strong>: la venta más reciente.</li>
+  <li><strong>Oportunidades abiertas</strong>: cuántas y cuánto dinero representan.</li>
+  <li><strong>Último contacto</strong>: cuántos días pasaron desde la última actividad registrada.</li>
+</ul>
+<div class="nota atencion">
+  <p>El <strong>último contacto</strong> se marca en ámbar cuando pasaron <strong>31 días o más</strong> («Hace 45 días: conviene retomar») y dice «<strong>la cuenta se enfrió</strong>» desde los 91 días. El color nunca va solo: siempre hay una frase. Si tu rol no puede ver las actividades, el sistema no afirma nada sobre el contacto.</p>
+</div>
+
+<h2>Parque instalado</h2>
+<p>El <strong>parque instalado</strong> es todo lo que le vendiste a ese cliente y sigue en uso. Se agrupa por urgencia, para que lo primero que veas sea lo que hay que recambiar:</p>
+<figure class="fig" data-fig="ficha-parque"><figcaption>El parque instalado de un club: dos redes vencidas (rojo) y dos arcos vigentes. La barra va de la entrega al recambio, con la ventana de aviso de 60 días marcada al final.</figcaption></figure>
+<table class="tabla compacta">
+  <thead><tr><th style="width:48mm">Grupo</th><th>Qué significa</th></tr></thead>
+  <tbody>
+    <tr><td><span class="pill rojo">Vencidos o que vencen hoy</span></td><td>La fecha de vencimiento es hoy o ya pasó. Hay que avisar.</td></tr>
+    <tr><td><span class="pill ambar">Por vencer</span></td><td>Vencen dentro de los próximos 60 días.</td></tr>
+    <tr><td><span class="pill verde">Vigentes</span></td><td>Todavía les queda más de 60 días.</td></tr>
+    <tr><td><span class="pill gris">Sin seguimiento</span></td><td>Productos sin vida útil cargada: el sistema no los controla.</td></tr>
+  </tbody>
+</table>
+<p>Arriba del parque se lee el total («4 unidades entregadas · 2 para recambiar ya»). La cuenta es la misma que la de la pantalla <strong>Alertas</strong> (capítulo 13): vence = fecha de entrega + vida útil. El parque aparece si tu rol puede ver ventas.</p>
+
+<h2>Canchas y equipamiento sugerido</h2>
+<p>En la ficha de una <em>empresa</em> podés cargar sus <strong>canchas</strong>, y el sistema te dice qué equipamiento le falta según lo que ya le vendiste.</p>
+<figure class="fig" data-fig="ficha-canchas"><figcaption>La sección de canchas: el equipamiento sugerido compara las medidas estándar con el parque instalado y ofrece crear una oportunidad.</figcaption></figure>
+<ol class="pasos">
+  <li>En la sección <span class="ui">Canchas</span> tocá <span class="ui">Agregar</span>.</li>
+  <li>Poné un <strong>Nombre</strong> («Canchas de fútbol 5»), elegí el <strong>Formato</strong> (Fútbol 5, 7, 9, 11 o Futsal) y la <strong>Cantidad de canchas</strong> (una ficha puede representar varias canchas iguales).</li>
+  <li>Si lo sabés, completá la <strong>Superficie</strong> (césped sintético, césped natural, cemento o parquet), tildá <strong>Iluminación</strong> y escribí <strong>Observaciones</strong>.</li>
+  <li>Guardá. La sección te muestra una frase como <em>«Le faltan 4 arcos de 3 × 2 m (F5)»</em> o <em>«Equipamiento completo»</em>, con el botón <span class="ui">Crear oportunidad</span>.</li>
+</ol>
+<figure class="fig" data-fig="cancha-form"><figcaption>El panel de alta de una cancha.</figcaption></figure>
+<div class="nota regla">
+  <ul>
+    <li><strong>Cómo se calcula lo sugerido.</strong> Por cada cancha activa: 2 arcos y una red por arco, con la medida estándar del formato (F5 y futsal 3 × 2 m; F7 6 × 2,10 m; F9 y F11 7,32 × 2,44 m). Se compara con el parque instalado por medida del arco, que el sistema lee del nombre del producto. Los equipos <strong>vencidos no cuentan como cubiertos</strong>. Las pelotas (2 por cancha) son una reserva opcional y no cuentan para decir «completo».</li>
+    <li><strong>Es una sugerencia, no un diagnóstico.</strong> No sabe qué le compró el cliente a otros proveedores ni el estado real de la cancha, y supone una red por arco. Confirmalo con una visita.</li>
+    <li>Las canchas <strong>no se borran</strong>: se dan de baja (<em>Dar de baja</em>) y se pueden reactivar.</li>
+    <li>Siguen la cartera de la empresa: un Vendedor ve y carga canchas solo de sus empresas.</li>
+  </ul>
+</div>
+<div class="nota pendiente">
+  <p>La sección de canchas se activa cuando la plataforma tiene aplicada la última versión de la base de datos. Si no la ves en tu ficha, avisá a quien administra el sistema.</p>
+</div>
+
+<h2>Historia de la cuenta</h2>
+<p>La <strong>historia</strong> junta, en una sola línea de tiempo y <strong>mes por mes</strong>, todo lo que pasó con la cuenta, con lo más reciente arriba:</p>
+<ul>
+  <li><strong>Actividades</strong>: llamadas, reuniones, visitas… (capítulo 10);</li>
+  <li><strong>Etapas</strong>: altas de oportunidades y cambios de etapa, cierres y reaperturas;</li>
+  <li><strong>Ventas</strong>: cada compra con su comprobante y su importe;</li>
+  <li><strong>Avisos</strong>: cada aviso de recambio enviado, con su canal (Mail o WhatsApp).</li>
+</ul>
+<figure class="fig" data-fig="ficha-historia"><figcaption>La historia de una cuenta. Los chips de arriba filtran por tipo (con su cantidad). «Registrar» agrega una actividad.</figcaption></figure>
+<ul>
+  <li>Los <strong>chips</strong> «Todo / Actividades / Etapas / Ventas / Avisos» filtran lo que ves.</li>
+  <li>Si hay más de 30 hechos, el botón <span class="ui">Ver 30 más</span> muestra el resto.</li>
+  <li>Las horas son <strong>horario argentino</strong>: un hecho de las 22:00 del 30 de septiembre queda en septiembre.</li>
+  <li>La historia trae lo más reciente de cada tipo, hasta 200 (100 en oportunidades). Si una cuenta tiene más, la pantalla lo avisa con el número real.</li>
+</ul>
+
+<h2>Resumir con IA</h2>
+<p>Si tu instalación tiene la <strong>inteligencia artificial</strong> activada, en la historia aparece el botón <span class="ui">Resumir con IA</span>. Genera un <strong>resumen de solo lectura</strong> de tres bloques: qué pasó, equipamiento instalado y qué ofrecerle ahora. Sirve para ponerse al día de una cuenta que te asignaron o antes de hablar con el cliente.</p>
+<figure class="fig" data-fig="ia-resumen"><figcaption>El botón «Resumir con IA» dentro de la historia de la cuenta.</figcaption></figure>
+<div class="nota regla">
+  <ul>
+    <li>La IA <strong>solo redacta</strong>: no guarda el resumen, no lo agrega a la historia ni cambia ningún dato.</li>
+    <li>Todo texto de IA lleva la etiqueta <em>«Generado con IA: revisalo antes de usarlo, puede tener errores»</em>. Las cifras confiables son las del «Resumen de la cuenta».</li>
+    <li>Se mandan lo mínimo de datos: <strong>no se envían mails, teléfonos, CUIT ni documentos</strong>, y de las personas, solo el nombre de pila. Lo que tu rol no puede ver (compras, actividades, oportunidades) tampoco se envía.</li>
+    <li>El panel del resumen ofrece <span class="ui">Copiar</span>, <span class="ui">Regenerar</span> y <span class="ui">Cerrar</span>. Hay un límite de 10 pedidos cada 10 minutos por persona.</li>
+  </ul>
+</div>
+
+<h2>Qué ve cada rol</h2>
+<p>Cada parte de la ficha se muestra <strong>solo si tu rol puede verla</strong>: sin permiso de ventas no ves compras ni parque; sin oportunidades, esa sección desaparece; sin bitácora, la historia no trae actividades. Un Vendedor entra únicamente a las fichas de su cartera.</p>
+
+</section>

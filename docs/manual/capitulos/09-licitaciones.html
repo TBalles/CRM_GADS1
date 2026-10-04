@@ -1,0 +1,51 @@
+<section class="cap" id="cap-09" data-num="9" data-parte="El trabajo de todos los días" data-titulo="Licitaciones" data-bajada="Cuando el cliente es un municipio, el negocio se rige por un expediente y una fecha de apertura. Cómo cargarla, seguirla y por qué el sistema no te deja darla por ganada antes de tiempo.">
+
+<p>Los predios municipales suelen comprar por <strong>licitación</strong>: un trámite formal, con un número de <strong>expediente</strong>, un <strong>organismo</strong> que convoca y una <strong>fecha de apertura</strong> de las ofertas. Para esos casos, una oportunidad puede ser de <strong>tipo «Licitación municipal»</strong> en lugar de «Directa». Sigue siendo una oportunidad (mismo embudo, misma lista, mismo detalle), pero lleva sus datos propios y una regla extra.</p>
+
+<h2>Cómo cargar una licitación</h2>
+<ol class="pasos">
+  <li>Tocá <span class="ui">Nueva oportunidad</span> (o <span class="ui">Editar</span> una existente).</li>
+  <li>En <strong>Tipo</strong> elegí <span class="ui">Licitación municipal</span>. Aparece el bloque de datos de la licitación y, si no hay otro, se propone el origen <em>«Licitación municipal»</em>.</li>
+  <li>Completá la <strong>Fecha de apertura</strong> (<strong>obligatoria</strong>: contra ella se juzgan las reglas), el <strong>Organismo</strong>, el <strong>Expediente</strong>, el <strong>Monto oficial</strong> y la <strong>Garantía de oferta</strong> (texto libre: «Seguro de caución por el 5 %»).</li>
+  <li>Guardá.</li>
+</ol>
+<figure class="fig" data-fig="lic-form"><figcaption>El formulario de oportunidad con el tipo «Licitación municipal» elegido: abajo se despliegan los datos propios de la licitación.</figcaption></figure>
+
+<h2>El detalle de una licitación</h2>
+<p>En el detalle aparece un bloque <strong>Licitación</strong> con el organismo, el expediente, la apertura, el monto oficial y la garantía. Arriba te avisa <strong>cuánto falta para la apertura</strong> («Abre en 12 días»). Si la oportunidad todavía no tiene datos, el bloque ofrece <span class="ui">Cargar datos</span>; después, <span class="ui">Editar datos</span>.</p>
+<figure class="fig" data-fig="lic-detalle"><figcaption>El detalle de una licitación, con su bloque de datos y el aviso de cuánto falta para la apertura.</figcaption></figure>
+
+<h2>La regla de la apertura</h2>
+<div class="nota regla">
+  <ul>
+    <li><strong>Una licitación no puede pasar a ganada antes de su fecha de apertura.</strong> El botón <span class="ui">Marcar ganada</span> queda bloqueado con el mensaje «No se puede marcar ganada una licitación antes de su apertura (fecha de apertura: dd/mm/aaaa)». <strong>El mismo día de la apertura ya se puede.</strong></li>
+    <li><strong>Una licitación sin datos tampoco se gana</strong>: sin fecha de apertura no hay contra qué compararla. Primero usá <span class="ui">Cargar datos</span>.</li>
+    <li>La regla vale <strong>para cualquier camino</strong>: el menú, el detalle o un cambio de etapa. No es solo un bloqueo de pantalla; la hace cumplir la base de datos.</li>
+    <li>Se compara con la <strong>fecha de Argentina</strong>, no con la del servidor.</li>
+  </ul>
+</div>
+
+<h2>Filtrar y volver a «Directa»</h2>
+<p>En la lista de oportunidades, el filtro <span class="ui">Tipo</span> separa las licitaciones de las directas. En el tablero se reconocen por la insignia <span class="pill azul">Licitación</span>.</p>
+<figure class="fig" data-fig="lic-lista"><figcaption>La lista filtrada por tipo «Licitaciones».</figcaption></figure>
+<p>Si una oportunidad deja de ser licitación y vuelve a «Directa», <strong>los datos de la licitación se conservan</strong> (no se borran), por si volvés a marcarla. Mientras sea directa no se muestran y la regla de la apertura no los mira.</p>
+
+<h2>Cómo se lleva una licitación</h2>
+<ol class="pasos">
+  <li>Cargala apenas sale el pliego, con el expediente y la apertura. Pasá por <em>Relevamiento de cancha</em> si hay que medir.</li>
+  <li>Armá el <strong>presupuesto</strong> desde el detalle (capítulo 14) y registrá una <em>actividad</em> cuando lo presentes.</li>
+  <li>El día de la apertura mirá el resultado. Si adjudican, <span class="ui">Marcar ganada</span>; si no, <span class="ui">Marcar perdida</span> con el motivo (por ejemplo «Competencia»).</li>
+</ol>
+
+<h2>Límites a tener en cuenta</h2>
+<div class="nota atencion">
+  <p>Si <strong>cambiás la fecha de apertura</strong> de una licitación que <em>ya está ganada</em> hacia el futuro, el sistema no lo impide: la regla se juzga al ganar, no después. Evitalo.</p>
+</div>
+<div class="nota pendiente">
+  <p>Las licitaciones con sus datos se activan cuando la plataforma tiene aplicada la última versión de la base de datos. Sin ella, «Licitación» es solo una insignia en la lista y no ves el bloque de datos. Si no lo ves, avisá a quien administra el sistema.</p>
+</div>
+
+<h2>Qué ve cada rol</h2>
+<p>Las licitaciones siguen a la oportunidad: las ve quien ve la oportunidad y las carga o edita quien la puede editar (Administrador, Responsable comercial y Vendedor, este último solo las suyas). Solo lectura no ve oportunidades.</p>
+
+</section>

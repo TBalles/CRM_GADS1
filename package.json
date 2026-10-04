@@ -1,6 +1,6 @@
 {
   "name": "crm-gads1",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "engines": {
     "node": ">=22.18"
@@ -12,7 +12,11 @@
     "lint": "eslint src e2e playwright.config.ts --max-warnings=0",
     "typecheck": "tsc --noEmit && tsc --noEmit -p e2e",
     "test": "node --test \"src/**/*.check.ts\"",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "manual:capturas": "node scripts/manual/capturas.mjs",
+    "manual:pdf": "node scripts/manual/generar.mjs",
+    "manual": "npm run manual:capturas && npm run manual:pdf",
+    "migraciones:consolidar": "node scripts/migraciones/consolidar.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.131.0",

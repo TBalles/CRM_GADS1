@@ -1,0 +1,95 @@
+<section class="cap" id="cap-05" data-num="5" data-parte="El trabajo de todos los días" data-titulo="Empresas" data-bajada="Tus clientes: clubes, complejos, escuelas, colegios y predios. Cómo cargarlos, buscarlos, ordenarlos y darlos de baja sin perder su historia.">
+
+<p>La pantalla <strong>Empresas</strong> es el listado de todos los clientes de tu cartera. Desde acá das de alta empresas nuevas y entrás a la ficha de cada una (capítulo 7).</p>
+<figure class="fig" data-fig="empresas-lista"><figcaption>La lista de empresas. Cada nombre lleva a la ficha; el menú ⋮ de la derecha reúne las acciones de la fila.</figcaption></figure>
+
+<h2>Leer la lista</h2>
+<table class="tabla compacta">
+  <thead><tr><th style="width:30mm">Columna</th><th>Qué es</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Empresa</strong></td><td>La razón social, con el mail y el teléfono debajo.</td></tr>
+    <tr><td><strong>Tipo</strong></td><td>Club, Complejo de fútbol 5, Escuela de fútbol, Predio municipal, Colegio u Otro.</td></tr>
+    <tr><td><strong>Estado</strong></td><td>Potencial, Cliente, Inactivo o No contactar (ver más abajo).</td></tr>
+    <tr><td><strong>Responsable</strong></td><td>La persona del equipo a cargo de la cuenta.</td></tr>
+    <tr><td><strong>Origen</strong></td><td>De dónde llegó el cliente: web, referido, redes, torneo, licitación…</td></tr>
+    <tr><td><strong>Contactos</strong></td><td>Cuántas personas tiene cargadas.</td></tr>
+  </tbody>
+</table>
+
+<h2>Buscar y filtrar</h2>
+<ul>
+  <li>El buscador mira la razón social, el CUIT, el mail, el teléfono y la dirección de la empresa, <strong>y también el nombre, apellido, mail y cargo de sus contactos</strong>. Buscar «Martín» encuentra la empresa donde trabaja Martín.</li>
+  <li><strong>Filtros</strong>: estado, tipo de cliente, responsable (solo si tu rol ve la cartera de todos) y origen.</li>
+  <li>El botón <span class="ui">Ver dadas de baja</span> (con su cantidad) muestra también las empresas inactivas o «No contactar», que normalmente están escondidas.</li>
+</ul>
+<figure class="fig" data-fig="empresas-filtros-baja"><figcaption>Con <em>Ver dadas de baja</em> activado, la lista incluye también las empresas inactivas o «No contactar», y el menú ⋮ de cada una ofrece Reactivar.</figcaption></figure>
+<div class="nota tip">
+  <p>La búsqueda no distingue mayúsculas, pero <strong>sí tildes</strong>: «perez» no encuentra «Pérez». Si no aparece, probá con la grafía exacta.</p>
+</div>
+
+<h2>Los estados de una empresa</h2>
+<table class="tabla compacta">
+  <thead><tr><th style="width:32mm">Estado</th><th>Cuándo se usa</th></tr></thead>
+  <tbody>
+    <tr><td><span class="pill azul">Potencial</span></td><td>Todavía no te compró. Es el estado con el que nace toda empresa nueva.</td></tr>
+    <tr><td><span class="pill verde">Cliente</span></td><td>Ya te compró. Lo cambiás vos al editar la empresa: el sistema <strong>no</strong> la pasa a «Cliente» solo al registrar una venta.</td></tr>
+    <tr><td><span class="pill gris">Inactivo</span></td><td>La <strong>baja</strong>: dejó de ser cliente o se cargó por error. Se esconde de la lista.</td></tr>
+    <tr><td><span class="pill rojo">No contactar</span></td><td>Pidió que no la llamen. La ficha y los formularios te lo avisan; no te bloquean, pero respetalo.</td></tr>
+  </tbody>
+</table>
+
+<h2>Dar de alta una empresa</h2>
+<ol class="pasos">
+  <li>En <span class="ui">Empresas</span> tocá <span class="ui">Nueva empresa</span> (arriba a la derecha). Se abre el panel lateral.</li>
+  <li>Completá la <strong>Razón social</strong> (es lo único obligatorio) y todo lo que sepas.</li>
+  <li>Si cargás el <strong>CUIT</strong>, el sistema verifica que sea válido: 11 dígitos, con su dígito verificador. Escribilo como <span class="mono">30-12345678-9</span>.</li>
+  <li>Elegí el <strong>Tipo de cliente</strong> y el <strong>Origen</strong>: sirven después para filtrar y para la conversión del embudo.</li>
+  <li>Tocá <span class="ui">Guardar</span>. La empresa aparece en la lista.</li>
+</ol>
+<figure class="fig" data-fig="empresa-form"><figcaption>El panel de alta de una empresa. «Responsable» se puede elegir solo si tu rol tiene permiso para asignar; si no, la empresa queda a tu nombre.</figcaption></figure>
+
+<h3>Los campos</h3>
+<table class="tabla compacta">
+  <thead><tr><th style="width:34mm">Campo</th><th>Para qué sirve</th></tr></thead>
+  <tbody>
+    <tr><td>Razón social *</td><td>El nombre del cliente. Se usa en listas, presupuestos y avisos.</td></tr>
+    <tr><td>CUIT</td><td>Se valida solo cuando lo cargás o lo cambiás. Va en el presupuesto.</td></tr>
+    <tr><td>Tipo de cliente</td><td>La «industria» del cliente: club, complejo, escuela, predio, colegio u otro.</td></tr>
+    <tr><td>Teléfono, Email</td><td>Los datos de la institución. Para los avisos de recambio se prefiere el mail y el teléfono de la <em>persona</em>; los de la empresa son el respaldo.</td></tr>
+    <tr><td>Dirección, Sitio web</td><td>Informativos.</td></tr>
+    <tr><td>Estado</td><td>Por defecto, Potencial.</td></tr>
+    <tr><td>Origen</td><td>De dónde llegó. Las opciones salen del catálogo de Configuración.</td></tr>
+    <tr><td>Responsable</td><td>Quién lleva la cuenta (ver «La cartera»).</td></tr>
+    <tr><td>Observaciones</td><td>Contexto libre: preferencias, historia, cómo conviene tratarlos.</td></tr>
+  </tbody>
+</table>
+
+<h2>Editar, dar de baja y reactivar</h2>
+<ol class="pasos">
+  <li><strong>Editar</strong>: menú ⋮ de la fila (o el botón de la ficha) → <span class="ui">Editar</span>. Se abre el mismo panel con los datos cargados.</li>
+  <li><strong>Dar de baja</strong>: menú ⋮ → <span class="ui">Dar de baja</span>. Te pide confirmación. La empresa pasa a <em>Inactivo</em> y se esconde de la lista.</li>
+  <li><strong>Reactivar</strong>: activá el filtro <span class="ui">Ver dadas de baja</span>, abrí el menú ⋮ de la empresa y elegí <span class="ui">Reactivar</span>. Vuelve como <em>Potencial</em>.</li>
+</ol>
+<div class="nota regla">
+  <p><strong>Una empresa no se borra nunca.</strong> La interfaz no tiene el botón y, una vez aplicadas las últimas migraciones, la base de datos tampoco lo permite. Es una decisión de diseño: una empresa tiene ventas, actividades y oportunidades, y borrarla rompería esa historia. La baja es solo cambiar su estado, y siempre se puede revertir.</p>
+</div>
+
+<h2>La cartera: quién ve y quién asigna</h2>
+<ul>
+  <li>Una empresa nueva <strong>queda asignada a quien la crea</strong>. El Responsable comercial y el Administrador pueden elegir otro responsable en el formulario; para un Vendedor el campo se muestra de solo lectura.</li>
+  <li>Un Vendedor ve <strong>únicamente sus empresas</strong>; para él las del resto del equipo no existen (capítulo 3).</li>
+  <li>Si cambiás el responsable de una empresa, el sistema <em>no</em> reasigna sola sus oportunidades: cada una tiene su propio responsable.</li>
+</ul>
+
+<h2>Qué ve cada rol</h2>
+<table class="tabla compacta">
+  <thead><tr><th>Rol</th><th>Qué puede hacer con las empresas</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Administrador</strong></td><td>Ver todas, crear, editar, asignar, dar de baja y reactivar.</td></tr>
+    <tr><td><strong>Responsable comercial</strong></td><td>Ver todas, crear, editar, asignar, dar de baja y reactivar.</td></tr>
+    <tr><td><strong>Vendedor</strong></td><td>Ver y editar las suyas; crear nuevas (quedan a su nombre). No asigna.</td></tr>
+    <tr><td><strong>Solo lectura</strong></td><td>Ver todas. No crea ni edita.</td></tr>
+  </tbody>
+</table>
+
+</section>

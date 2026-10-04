@@ -1,0 +1,75 @@
+<section class="cap" id="cap-17" data-num="17" data-parte="Supervisión y administración" data-titulo="Configuración" data-bajada="Dónde se ajusta el sistema a tu empresa: tus datos y tu logo, las etapas del embudo, y las listas de tipos de actividad, orígenes y motivos de pérdida.">
+
+<p>La pantalla <strong>Configuración</strong> (permiso «Configurar el CRM», hoy del Administrador) tiene cinco pestañas. Debajo del título, una línea indica el nombre de tu organización y si la <strong>IA</strong> está <em>activa</em> o <em>desactivada</em> en tu instalación.</p>
+
+<h2>Datos de la empresa y logo</h2>
+<p>Son los datos que salen en tus <strong>presupuestos</strong> y en los mails de aviso. Cargalos antes de emitir el primero.</p>
+<figure class="fig" data-fig="config-datos"><figcaption>Los datos de la empresa, el logo y, a la derecha, una vista previa de cómo se ve el encabezado de tus presupuestos.</figcaption></figure>
+<table class="tabla compacta">
+  <thead><tr><th style="width:42mm">Campo</th><th>Para qué sirve</th></tr></thead>
+  <tbody>
+    <tr><td>Razón social</td><td>El nombre legal que firma el presupuesto. Si no hay logo, es lo que se imprime en el encabezado.</td></tr>
+    <tr><td>CUIT</td><td>Se valida (11 dígitos con su dígito verificador) solo si lo cambiás.</td></tr>
+    <tr><td>Condición frente al IVA</td><td><strong>Responsable Inscripto</strong>, <strong>Monotributo</strong> o <strong>Exento</strong>. Decide cómo se calcula el IVA en los presupuestos (capítulo 14).</td></tr>
+    <tr><td>Dirección, Teléfono, Mail, Sitio web</td><td>Salen en el encabezado del presupuesto.</td></tr>
+    <tr><td>Presupuestos: Validez (días)</td><td>Cuántos días vale un presupuesto desde que se emite (1 a 365; por defecto 15).</td></tr>
+    <tr><td>Presupuestos: Condiciones</td><td>El texto de condiciones que arranca en cada presupuesto («Más IVA. Entrega en 10 días hábiles…»). Cada presupuesto lo puede cambiar.</td></tr>
+  </tbody>
+</table>
+
+<h3>Subir el logo</h3>
+<ol class="pasos">
+  <li>Tocá <span class="ui">Subir logo</span> y elegí el archivo.</li>
+  <li>Tiene que ser <strong>PNG, JPG o WebP</strong> de hasta <strong>1 MB</strong>. Funciona mejor con fondo transparente o blanco.</li>
+  <li>Se guarda y la vista previa «Así va a verse en tus presupuestos» se actualiza.</li>
+</ol>
+<div class="nota regla">
+  <p><strong>El SVG no se acepta, a propósito:</strong> un SVG subido por un usuario puede traer código que se ejecute. El logo se guarda en un espacio <strong>privado</strong> de tu organización y solo lo ven las personas de tu organización (y quien recibe el PDF).</p>
+</div>
+<div class="nota atencion">
+  <p>Cuando cambian tus datos fiscales, <strong>los presupuestos ya emitidos no cambian</strong> (guardan una foto de cómo eran). El logo sí se lee en vivo: un presupuesto viejo reimpreso muestra el logo nuevo.</p>
+</div>
+
+<h2>Etapas del embudo</h2>
+<p>Son los pasos por los que va una oportunidad, de izquierda a derecha en el tablero.</p>
+<ul>
+  <li><span class="ui">Nueva etapa</span>: elegí un <strong>nombre</strong>, un <strong>color</strong> y un <strong>tipo</strong>. <em>Abierta</em>: la oportunidad sigue en juego. <em>Ganada</em>: la cierra como ganada. <em>Perdida</em>: la cierra como perdida y pide el motivo.</li>
+  <li>Las flechas <span class="mono">^</span> y <span class="mono">v</span> cambian el <strong>orden</strong>; el orden del tablero es este.</li>
+  <li>El menú <span class="mono">⋮</span> permite <strong>Editar</strong> (renombrar, cambiar el color) o <strong>Borrar</strong>.</li>
+</ul>
+<figure class="fig" data-fig="config-etapas"><figcaption>Las seis etapas del rubro. Cada una tiene un <em>tipo</em> (Abierta, Ganada o Perdida) y un orden que se cambia con las flechas.</figcaption></figure>
+<div class="nota regla">
+  <ul>
+    <li><strong>Tiene que haber al menos una etapa Ganada y una Perdida.</strong> No se puede borrar ni cambiar de tipo la última de cada una: la pantalla lo avisa («Creá otra de tipo ganada antes de…»).</li>
+    <li>No se puede <strong>cambiar el tipo</strong> de una etapa con oportunidades dentro: primero hay que moverlas.</li>
+    <li>Solo se puede <strong>borrar</strong> una etapa que <em>nunca</em> tuvo oportunidades. Si ya se usó, <strong>renombrala</strong>: el historial de las oportunidades que pasaron por ahí no puede perderse.</li>
+    <li>Sin etapas abiertas no se pueden cargar oportunidades.</li>
+  </ul>
+</div>
+
+<h2>Tipos de actividad, orígenes y motivos de pérdida</h2>
+<p>Son tres listas que alimentan los desplegables del resto del sistema. Funcionan igual: <span class="ui">Nuevo …</span> agrega un ítem, las flechas lo ordenan, y el menú <span class="mono">⋮</span> permite <strong>Editar</strong> y <strong>Desactivar</strong> / <strong>Reactivar</strong>.</p>
+<div class="fig-par">
+<figure class="fig" data-fig="config-tipos" data-ancho="par"><figcaption>Tipos de actividad: lo que elegís al anotar algo en un cliente.</figcaption></figure>
+<figure class="fig" data-fig="config-origenes" data-ancho="par"><figcaption>Orígenes: de dónde llegó la consulta. Sirve para saber qué canal te trae clientes.</figcaption></figure>
+</div>
+<figure class="fig" data-fig="config-motivos"><figcaption>Motivos de pérdida: lo que se elige al marcar una oportunidad como perdida. Alimentan el ranking «Por qué se pierde» del Tablero comercial.</figcaption></figure>
+<table class="tabla compacta">
+  <thead><tr><th style="width:38mm">Lista</th><th>Valores iniciales y uso</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Tipos de actividad</strong></td><td>12 iniciales: Llamada, Correo electrónico, Mensaje, Reunión presencial, Reunión virtual, Demostración, Envío de propuesta, Visita a cancha, Entrega de equipamiento, Reclamo, Nota interna y Otro. Se eligen al registrar una actividad (capítulo 10).</td></tr>
+    <tr><td><strong>Orígenes</strong></td><td>7 iniciales: Recambio por vida útil, Referido de otro club, Licitación municipal, Redes sociales, Web, Visita a predio y Torneo / feria. Se eligen en empresas, contactos y oportunidades.</td></tr>
+    <tr><td><strong>Motivos de pérdida</strong></td><td>7 iniciales: Precio, Eligió otro proveedor, Sin presupuesto del club, Licitación adjudicada a otro, Plazo de entrega, Pospone a la próxima temporada y Dato histórico sin motivo. Se eligen al marcar una oportunidad como perdida (capítulo 8).</td></tr>
+  </tbody>
+</table>
+<div class="nota regla">
+  <p><strong>Nada de estas listas se borra: se desactiva.</strong> Las oportunidades y actividades viejas que usaron un valor lo siguen mostrando. Un valor desactivado deja de ofrecerse en los formularios nuevos. El nombre es único dentro de su lista.</p>
+</div>
+<div class="nota tip">
+  <p>Si tu rubro tiene un canal que no está (por ejemplo «Feria de la UEFA Futsal»), agregalo como origen. Cuanto mejor cargado esté ese catálogo, más te dice la <strong>Conversión del embudo</strong> (filtrando por origen).</p>
+</div>
+
+<h2>La IA, en una línea</h2>
+<p>El encabezado de la pantalla dice <em>«IA: activa»</em> o <em>«IA: desactivada»</em>. La IA es <strong>opcional</strong>: depende de que tu instalación tenga una clave cargada y no se enciende desde esta pantalla. Si está desactivada, no hay botones de IA en ningún lado y el CRM funciona igual.</p>
+
+</section>

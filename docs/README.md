@@ -22,6 +22,9 @@
 | Revisar o reportar seguridad | [seguridad.md](./seguridad.md) y [SECURITY.md](../SECURITY.md) |
 | Aportar código | [CONTRIBUTING.md](../CONTRIBUTING.md) |
 | Ver el historial por hito | [CHANGELOG.md](../CHANGELOG.md) |
+| Aprender a usar el sistema (para el personal del proveedor) | [Manual de usuario (PDF)](./Manual-de-usuario-Tuco-y-Nito.pdf) |
+| Aplicar las migraciones pendientes en Supabase | [supabase/aplicar/LEEME.md](../supabase/aplicar/LEEME.md) |
+| Regenerar el manual | [manual/LEEME.md](./manual/LEEME.md) |
 
 ## Entender el proyecto
 
@@ -39,6 +42,7 @@
 | Documento | Para qué sirve |
 |---|---|
 | [deploy.md](./deploy.md) | Runbook de Supabase y Vercel, orden de migraciones, seed, SMTP, variables de entorno y lista de verificación |
+| [Manual-de-usuario-Tuco-y-Nito.pdf](./Manual-de-usuario-Tuco-y-Nito.pdf) | El manual para el personal del proveedor (89 páginas). Su fuente y cómo regenerarlo con `npm run manual`: [manual/LEEME.md](./manual/LEEME.md) |
 | [pruebas.md](./pruebas.md) | Self-checks, verificación estática, pruebas SQL (cuál va antes o después de la `0007`), pruebas E2E con Playwright, la CI y cómo leer un resultado |
 | [seguridad.md](./seguridad.md) | Modelo de amenazas y controles, secretos, límites conocidos |
 
@@ -55,9 +59,12 @@
 | Archivo | Contenido |
 |---|---|
 | [`CLAUDE.md`](../CLAUDE.md) | Contexto del proyecto para sesiones de IA y para quien se suma: estructura, convenciones, comandos |
-| [`supabase/migrations/`](../supabase/migrations) | Las siete migraciones SQL, en orden |
+| [`supabase/migrations/`](../supabase/migrations) | Las doce migraciones SQL, en orden |
+| [`supabase/aplicar/`](../supabase/aplicar/LEEME.md) | El kit con las migraciones 0008 a 0012 en un solo archivo, con verificación |
 | [`supabase/tests/`](../supabase/tests) | Pruebas SQL con rollback |
 | [`supabase/seeds/demo_catedra.sql`](../supabase/seeds/demo_catedra.sql) | Datos de demostración y cuentas por rol |
+| [`supabase/seeds/demo_rubro.sql`](../supabase/seeds/demo_rubro.sql) | Complemento de la demo: canchas, datos de licitación y un presupuesto guardado (requiere las migraciones 0011 y 0012) |
+| [`scripts/`](../scripts) | `manual/` (capturas y PDF del manual) y `migraciones/` (genera el kit consolidado) |
 | `.github/` | Plantillas de pull request y de issues |
 | `Guia-demostracion-Tuco-y-Nito.pdf` | PDF en la raíz que, por su nombre, es una guía de demostración. No se revisó su contenido y al escribir este índice no estaba versionado en git |
 
