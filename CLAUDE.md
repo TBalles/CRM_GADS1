@@ -231,7 +231,7 @@ src/
         actions.ts               Server Actions: envío por SMTP/Gmail (o mailto) + registro
         BorradorIA.tsx           Client (F7): panel del aviso con IA (useBorradorIA + Drawer), plantilla como respaldo
         plantillas.ts            Mensajes prearmados — funciones puras
-        plantillas.check.ts      Self-check: node --test "src/app/(app)/alertas/plantillas.check.ts"
+        plantillas.check.ts      Self-check: node --test "src/app/(app)/(legacy)/alertas/plantillas.check.ts"
       oportunidades/             Tablero (kanban con drag & drop) y lista en una sola página, y el detalle
         page.tsx                 Server Component: fetch de oportunidades + catálogos
         datos.ts                 cargarOpciones(): etapas, clientes, productos, perfiles, orígenes, motivos

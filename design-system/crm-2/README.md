@@ -23,7 +23,7 @@ de imports; si un archivo nuevo entra a esa clausura, hay que sumarlo a `ARCHIVO
 
 **Consecuencia importante:** `.cesped`, `MarcasCancha`, los tokens `--pitch*` y todo el bloque `LANDING` de
 `globals.css` **no se borran ni se editan**, aunque CRM 2.0 deje de usarlos dentro del CRM (el login y la landing
-los siguen usando). Dejar de usarlos en `AppShell` está bien; borrarlos de `globals.css` o `Cancha.tsx` rompe la guarda.
+los siguen usando). Dejar de usarlos en el shell del CRM está bien (el `AppShell` anterior se retiró en la Etapa 2); borrarlos de `globals.css` o `Cancha.tsx` rompe la guarda.
 
 ## Reglas para el trabajo de CRM 2.0
 
@@ -43,8 +43,12 @@ los siguen usando). Dejar de usarlos en `AppShell` está bien; borrarlos de `glo
 6. **Portales solo a `#crm-portal`**: contenedor vacío dentro de `[data-crm]`, así los overlays nuevos heredan los
    `--crm-*`. Los overlays legacy siguen yendo a `body`. Lo portalizado debe ir con `position: fixed`.
 7. **Fuentes IBM Plex** solo en `CrmRoot` (usado por los layouts de `(app)` y `admin`): `--font-crm-sans` y
-   `--font-crm-mono` en el wrapper. La landing no las descarga. Hoy `preload: false`; pasar a `true` al aplicarlas.
-8. Los route groups `(legacy)` / `(crm2)` llegan en la Etapa 2.
+   `--font-crm-mono` en el wrapper. La landing no las descarga. Desde la Etapa 2, Sans con `preload: true` (el chrome la usa en
+   todo el CRM) y Mono con `preload: false` (ver el comentario de `CrmRoot`).
+8. **Route groups** (Etapa 2): `src/app/(app)/(legacy)/` tiene las pantallas no migradas (su `layout.tsx` les da el padding y el
+   ancho de antes, más su `loading.tsx`/`error.tsx` legacy); `src/app/(app)/(crm2)/` las migradas (su layout no impone nada; trae `loading.tsx`/`error.tsx` de CRM 2.0).
+   Migrar = `git mv` de `(legacy)` a `(crm2)`; las URLs no cambian. `buscar/` e `ia/` (Server Actions compartidas, no pantallas)
+   quedan en `(app)/`.
 
 ## Sistema de diseño y primitivos (Etapa 1)
 
@@ -64,10 +68,11 @@ contratos de accesibilidad y la definición de terminado de una pantalla migrada
   `title=` (el TooltipHost legacy lo reescribe y rompe la hidratación); spec en MASTER §10; si suma un par de color, agregarlo a
   `PARES` en `src/lib/contrasteCrm.ts` (`npm test` lo mide); una muestra en el laboratorio.
 - **Laboratorio:** `/crm-lab` (solo `next dev`; en producción da 404; no enlazado). Muestra cada primitivo en sus estados, en claro
-  y oscuro. Es el **único** consumidor de `components/crm` en esta etapa y se borra antes de lanzar la 2.0.
-- **Fuentes:** `CrmRoot` sigue con `preload: false` a propósito: en esta etapa Plex solo se aplica en el laboratorio y con
-  `preload: true` cada pantalla legacy del CRM precarga 4 archivos que no usa (Chrome avisa "preloaded but not used"). Pasa a
-  `true` cuando el shell de la Etapa 2 aplique Plex en todo el CRM.
+  y oscuro. Vive en `(crm2)` y se borra antes de lanzar la 2.0. Desde la Etapa 2 el shell (`components/crm/shell/`) también usa
+  los primitivos.
+- **Fuentes:** desde la Etapa 2 el chrome usa Plex Sans en toda pantalla del CRM: `preload: true` en Sans (next/font precarga un
+  archivo, el de 400, que el shell usa en todo ancho); Mono sigue con `preload: false`. **Pendiente:** `/admin` también monta
+  `CrmRoot` y todavía no usa Plex: ahí la precarga de Sans 400 queda sin uso hasta que el admin pase al marco nuevo.
 
 ### Cómo es el wrapper
 

@@ -6,8 +6,11 @@ import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
  * Contrato: design-system/crm-2/README.md.
  *
  * - `[data-crm]` es `display: contents` (ver crm.css): no genera caja, no cambia layout, scroll ni impresión.
- * - Las fuentes IBM Plex quedan expuestas como variables CSS en el wrapper (`--font-crm-sans`, `--font-crm-mono`)
- *   y NO se aplican a nada todavía. `preload: false`: sin uso, que no se descarguen; pasar a `true` cuando se apliquen.
+ * - Las fuentes IBM Plex quedan expuestas como variables CSS en el wrapper (`--font-crm-sans`, `--font-crm-mono`).
+ *   Desde la Etapa 2 el chrome del shell (rail, topbar, capas) usa Plex Sans en toda pantalla del CRM: Sans va con
+ *   `preload: true` (next/font precarga UN archivo, el de 400; el shell garantiza texto en 400 en todo ancho con el link
+ *   "Saltar al contenido"). Mono queda con `preload: false`: el chrome solo la usa en el atajo "Ctrl K", que en mobile
+ *   no se dibuja, y precargarla daría "preloaded but not used" ahí (se descarga al usarse, con `swap`).
  * - `#crm-portal` está DENTRO del wrapper para que lo portalizado herede los tokens `--crm-*`.
  */
 const plexSans = IBM_Plex_Sans({
@@ -15,7 +18,7 @@ const plexSans = IBM_Plex_Sans({
   subsets: ["latin"],
   variable: "--font-crm-sans",
   display: "swap",
-  preload: false,
+  preload: true,
 });
 
 const plexMono = IBM_Plex_Mono({

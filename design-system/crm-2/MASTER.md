@@ -342,7 +342,7 @@ los pares de las barras y bordes indicadores; el par más justo es el foco sobre
 
 Los de §10.1–§10.10 están construidos en `src/components/crm/` y se ven en `/crm-lab` (solo desarrollo). Los marcados **(server-safe)**
 no tienen `"use client"` ni hooks y se pueden usar desde server components (el laboratorio dibuja una DataTable con links y
-tooltips de recorte desde su página servidor); los demás son de cliente. Los de §10.11 en adelante son **especificación** para
+tooltips de recorte desde su página servidor); los demás son de cliente. §10.11 es el shell (Etapa 2, construido); §10.12 en adelante es **especificación** para
 las Etapas 2 y 3.
 
 ### 10.1 Button, IconButton, FilterChip — `Button.tsx` (server-safe)
@@ -366,13 +366,15 @@ las Etapas 2 y 3.
 ### 10.3 Menu, Popover — `Menu.tsx`, `Popover.tsx`
 - `Menu`: `⋮` (nombre = `label`, p. ej. "Acciones de Complejo La Tablada") o botón con texto ("Más acciones"). `role="menu"` +
   `menuitem`; destructivo en danger y último; deshabilitado con `aria-disabled`. Panel ≥ 176 px, items de 32; item activo con
-  tinte y barra de acento.
+  tinte y barra de acento. Con texto: `triggerLabel` (nombre si el contenido no lo da), `variant`, `triggerClassName`; `header` =
+  bloque de solo lectura arriba de los items (UserMenu: nombre, rol · organización), que el teclado saltea.
 - `Popover`: panel no modal `role="dialog"` con nombre; para FilterChip y ayudas con controles. Ancho 288.
 
 ### 10.4 Tooltip — `Tooltip.tsx`
 - Texto corto, `--crm-inverse`, 12 px, máx. 288 px. Hover 250 ms o foco; Escape lo cierra **solo a él** (`preventDefault`: el
   drawer o diálogo de abajo sigue abierto hasta el siguiente Escape); se puede pasar el mouse encima (WCAG 1.4.13).
-  `onlyWhenTruncated` para celdas recortadas. Nunca información que no esté en otro lado.
+  `onlyWhenTruncated` para celdas recortadas; `disabled` (no aparece, mismo markup) y `side="right"` (rail colapsado). Nunca
+  información que no esté en otro lado.
 
 ### 10.5 StatusDot, StatusBadge, Tag, Avatar — `Status.tsx` (server-safe)
 - `StatusDot`: punto 8 + palabra (tono semántico) o cuadradito + palabra (`color` de la organización). El uso por defecto.
@@ -404,8 +406,7 @@ las Etapas 2 y 3.
 - `Toast` (`CrmToastProvider` + `useCrmToast`, misma firma que `useToast`): abajo a la derecha, 360 px, panel con borde y sombra,
   padding 12 × 8; tono por ícono. **Dos regiones vivas siempre montadas** (vacías desde la hidratación): `role="status"`
   `aria-live="polite"` (éxito/info/atención) y `role="alert"` `aria-live="assertive"` (error); el aviso se inserta adentro y no
-  lleva rol propio. 4 s, pausa con hover/foco; link opcional; "Cerrar notificación". Lo monta el shell en la Etapa 2 (hoy solo
-  el laboratorio).
+  lleva rol propio. 4 s, pausa con hover/foco; link opcional; "Cerrar notificación". Lo monta el shell (`AppFrame`) para todo el CRM.
 
 ### 10.9 Skeleton, LoadingStatus, InlineBanner, EmptyState — `Feedback.tsx` (server-safe)
 - `Skeleton`: barra `--crm-skeleton` con pulso lento, `aria-hidden`; la región lleva `aria-busy` y un `LoadingStatus`
@@ -425,19 +426,48 @@ las Etapas 2 y 3.
 - `Pagination`: contrato idéntico a `Paginacion` (ver §13.2), con `ir` para transiciones y `pageSizeControl` para "Filas por
   página"; la página actual con texto y borde de acento.
 
-### 10.11 Especificaciones para la Etapa 2 (shell)
-- **Rail** (216 / 52, persistente en `localStorage`): grupos Comercial · Operación · Análisis · Administración (fuente única
-  `lib/navegacion.ts`, mismos permisos). `nav aria-label="Secciones"` con links por nombre. Ítem de 32: ícono 16 + texto 14; activo
-  con barra izquierda de 2 px en acento, texto `--crm-text` 500 y fondo `--crm-selected`. Fondo `--crm-panel`, borde derecho. Logo
-  arriba (48), botón de colapso abajo con `aria-expanded`. Colapsado: solo íconos con Tooltip.
-- **Topbar** (48, `--crm-panel`, borde inferior): breadcrumb a la izquierda; búsqueda global al centro (Ctrl+K, mismo
-  comportamiento y ARIA de `PaletaBusqueda`: diálogo "Buscar en el CRM", combobox "Buscar"); tema + UserMenu a la derecha.
-- **UserMenu**: `Menu` con disparador Avatar + nombre; muestra nombre, rol y organización; ítems Tema y "Cerrar sesión" (con la
-  confirmación de hoy). En mobile también (hoy no hay tema ni logout en mobile).
-- **Breadcrumb**: `nav aria-label="Ruta"` + `ol`; 13 px, separador `›` decorativo, último ítem `aria-current="page"` sin link,
-  truncado al medio con tooltip. Solo en fichas (`Empresas › Complejo La Tablada`).
-- **Mobile**: topbar con hamburguesa; el rail como drawer izquierdo; el mismo UserMenu.
-- Al montar el shell: `CrmToastProvider` en el shell y `preload: true` en `CrmRoot` (ver README).
+### 10.11 Shell (Etapa 2, construido) — `src/components/crm/shell/`
+`AppFrame` (lo monta `(app)/layout.tsx` para TODO el CRM) = `Rail` + `Topbar` (con `UserMenu`) + `Crumbs` + `CommandPalette`; la
+lógica pura (cookie del rail, ruta → migas) está en `logica.ts` (probada en `logica.check.ts`).
+- **Raíz:** grilla `[rail | topbar / main]` de alto `100dvh`; `data-app-shell` en la grilla, `data-app-chrome` en rail, topbar, cajón,
+  paleta, avisos y el link de salto, `data-app-main` en el `<main id="contenido">` que scrollea. Sin envoltorios entre la grilla y el
+  main: las reglas `@media print` de `globals.css` siguen alcanzando. Plex se aplica solo al chrome (`UI_ROOT` en rail, topbar y capas);
+  el contenido legacy conserva la fuente global. Primer enfocable: "Saltar al contenido" (aparece con el foco).
+- **Rail** (216 / 52): fondo `--crm-panel`, borde derecho; marca arriba en 48 (GoalMark en acento + "Tuco & Nito" 15/600 y, debajo, el nombre de la organización en 12 secundario —el que ya trae la
+  sesión—; link a `/`).
+  Secciones Comercial · Operación · Análisis · Administración desde `lib/navegacion.ts` (`seccionesVisibles`, mismos permisos; una
+  sección vacía no aparece), rótulo 12/500 secundario (colapsado: un divisor), `role="group"` con `aria-label`. `nav
+  aria-label="Secciones"`; cada link lleva `aria-label` con su nombre (así el nombre accesible no cambia al colapsar) y
+  `aria-current="page"`. Ítem de 32: ícono 16 en una columna de 36 + texto 14; activo = fondo `--crm-selected` + texto
+  `--crm-accent-text` 500 + barra izquierda de 2 px en acento; hover tonal. Sin contadores. Colapsar/expandir ARRIBA: un `IconButton` "Colapsar menú" /
+  "Expandir menú" (`aria-expanded`, `aria-controls` = el `aside`) en la franja de la marca (expandido) o en su fila debajo
+  (colapsado); es el mismo elemento, así que el foco del teclado no se pierde al alternar. Colapsado: solo íconos con
+  `Tooltip side="right"`.
+- **Persistencia del rail:** cookie `crm-rail=collapsed|expanded` (1 año, `SameSite=Lax`), escrita al alternar y **leída en el
+  servidor** por `(app)/layout.tsx`: el primer pintado ya sale bien, sin parpadeo ni diferencia de hidratación (con `localStorage` el
+  servidor no la sabría). Cualquier otro valor = expandido.
+- **Estados de `(crm2)`:** `(crm2)/loading.tsx` (esqueleto de barra + grilla, `aria-busy`, `LoadingStatus` "Cargando…") y
+  `(crm2)/error.tsx` (`InlineBanner` danger con "Reintentar" → `retry`), dentro del área de trabajo: el shell sigue usable.
+  Un error en el propio layout de `(app)` (sesión, shell) no tiene boundary propio: cae en el de Next (igual que antes).
+- **Responsive:** ≥ 1280 la preferencia; 768–1279 siempre 52 (sin botón de colapso); < 768 el rail no está y se abre como cajón
+  izquierdo desde la hamburguesa ("Abrir menú"; `dialog` "Menú", foco atrapado, Escape y fondo cierran, el foco vuelve; cualquier
+  cambio de ruta lo cierra —link, atrás del navegador, gesto de Android—; si la ventana crece a ≥ 768 se cierra solo). Todo el ancho lo resuelve CSS (el HTML del servidor es igual en cualquier ancho).
+- **Topbar** (48, `--crm-panel`, borde inferior): migas (o el nombre de la pantalla) a la izquierda; a la derecha, juntas, las
+  herramientas globales: búsqueda (botón con forma de campo de 224/288, "Buscar…" + `Ctrl K`/`⌘ K`, nombre "Buscar",
+  `aria-keyshortcuts`), tema ("Modo claro. Cambiar a modo oscuro", mismo mecanismo:
+  clase `dark` + `localStorage.theme`) + UserMenu a la derecha. Mobile: hamburguesa, nombre de la sección, búsqueda (ícono) y UserMenu.
+- **UserMenu:** `Menu` con disparador Avatar (+ nombre desde `lg`), nombre "Menú de usuario (<nombre>)" y descripción
+  accesible "rol · organización"; arriba del menú, FUERA del `role="menu"` y referenciado por `aria-describedby`, nombre y
+  "rol · organización"; ítems "Cambiar a modo oscuro/claro" y "Cerrar sesión" (danger) → `ConfirmDialog` "Cerrar sesión" (mismo texto de
+  siempre) → POST a `/auth/signout`. Igual en mobile (que antes no tenía tema ni salir).
+- **Breadcrumb:** `nav aria-label="Ruta de navegación"` + `ol`; 13 px, separador `›` decorativo, la última miga `aria-current="page"`
+  sin link; recorte con tooltip. En una pantalla de primer nivel (una sola miga) no hay trail: solo su nombre como título
+  discreto (14/500, `aria-current="page"`, sin `nav`). Las migas salen de la ruta (`migas()`); la
+  página aporta solo el nombre de su ficha con `<CrumbLabel>{nombre}</CrumbLabel>` (server-safe de usar: no dibuja nada); sin él la
+  ficha dice "Ficha". El nombre llega con la hidratación y queda recordado por href.
+- **Búsqueda global (`CommandPalette`):** mismo comportamiento y contrato ARIA que la paleta anterior (ver §13.2), lógica de
+  `lib/paleta.ts` y Server Action `buscarGlobal`; en `#crm-portal`. Ctrl/Cmd+K se ignora con otro `aria-modal` abierto y con `repeat`.
+- `CrmToastProvider` montado en el shell; `CrmRoot` precarga Plex Sans (README).
 
 ### 10.12 Especificaciones para la Etapa 3 (composiciones)
 - **PageBar** (48): breadcrumb opcional · h1 20/600 · contador en mono secundario · acción primaria a la derecha. Sin descripción.

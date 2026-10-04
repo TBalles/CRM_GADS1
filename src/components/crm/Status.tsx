@@ -127,7 +127,8 @@ export function Avatar({ name, size = "sm", className }: { name: string; size?: 
         className,
       )}
     >
-      {initials(name)}
+      {/* Sin signos sueltos: "Demo · Administrador" → "DA" (no "D·"). */}
+      {initials(name.replace(/[^\p{L}\p{N}\s]/gu, " "))}
     </span>
   );
 }

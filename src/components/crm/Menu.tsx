@@ -5,7 +5,7 @@ import { MoreVertical } from "lucide-react";
 import { CrmPortal } from "./portal";
 import { useAnchor, useLayer, useTypeahead } from "./overlay";
 import { buscarPorTexto, moverIndice, pasoDeTecla } from "./teclado";
-import { Button, IconButton } from "./Button";
+import { Button, IconButton, type ButtonVariant } from "./Button";
 import { FLOATING, ITEM, UI_ROOT, cn } from "./cx";
 
 export type MenuItem = {
@@ -26,6 +26,10 @@ export type MenuItem = {
  *   disparador. Clic afuera cierra sin mover el foco.
  * - Al elegir, el foco vuelve al disparador ANTES de correr la acción: si la acción abre un diálogo, el diálogo
  *   devuelve el foco ahí al cerrarse.
+ * - Con `children`: `triggerLabel` le da nombre accesible al disparador cuando su contenido no lo tiene (un avatar
+ *   decorativo, el menú de usuario), `variant` y `triggerClassName` lo ajustan, `triggerDescription` lo describe.
+ *   `header` es un bloque de solo lectura arriba de los items (nombre, rol): va FUERA del `role="menu"` y lo describe
+ *   (`aria-describedby`); el teclado lo saltea.
  */
 export function Menu({
   label,
@@ -33,12 +37,23 @@ export function Menu({
   children,
   align = "end",
   size = "md",
+  header,
+  triggerLabel,
+  variant,
+  triggerClassName,
+  triggerDescription,
 }: {
   label: string;
   items: MenuItem[];
   children?: React.ReactNode;
   align?: "start" | "end";
   size?: "sm" | "md";
+  header?: React.ReactNode;
+  triggerLabel?: string;
+  variant?: ButtonVariant;
+  triggerClassName?: string;
+  /** Descripción accesible del disparador (p. ej. "Administrador · Cátedra"): la lee el lector junto al nombre. */
+  triggerDescription?: string;
 }) {
   const [abierto, setAbierto] = React.useState(false);
   const [activo, setActivo] = React.useState(-1);
@@ -46,6 +61,8 @@ export function Menu({
   const panel = React.useRef<HTMLDivElement>(null);
   const itemsRef = React.useRef<(HTMLButtonElement | null)[]>([]);
   const menuId = React.useId();
+  const headerId = React.useId();
+  const descId = React.useId();
   const pos = useAnchor(trigger, panel, abierto, { align });
   const off = (i: number) => Boolean(items[i]?.disabled);
   const tipeo = useTypeahead();
@@ -111,10 +128,50 @@ export function Menu({
     onKeyDown: onTriggerKey,
   };
 
+  const flotante = cn(UI_ROOT, FLOATING, "z-(--crm-z-popover) min-w-44 max-w-72 p-1");
+  const lista = items.map((item, i) => {
+    const Icon = item.icon;
+    return (
+      <button
+        key={i}
+        ref={(el) => {
+          itemsRef.current[i] = el;
+        }}
+        type="button"
+        role="menuitem"
+        tabIndex={-1}
+        aria-disabled={item.disabled || undefined}
+        data-active={i === activo}
+        onPointerMove={() => !item.disabled && i !== activo && setActivo(i)}
+        onClick={(e) => {
+          e.stopPropagation();
+          elegir(i);
+        }}
+        className={cn(ITEM, item.variant === "danger" && "text-(--crm-danger)")}
+      >
+        {Icon && <Icon aria-hidden="true" strokeWidth={1.75} className="size-4 shrink-0" />}
+        <span className="truncate">{item.label}</span>
+      </button>
+    );
+  });
+  const menuProps = { id: menuId, role: "menu" as const, "aria-label": label, onKeyDown: onMenuKey };
+
   return (
     <>
+      {triggerDescription && (
+        <span id={descId} hidden>
+          {triggerDescription}
+        </span>
+      )}
       {children ? (
-        <Button size={size} {...triggerProps}>
+        <Button
+          size={size}
+          variant={variant}
+          aria-label={triggerLabel}
+          aria-describedby={triggerDescription ? descId : undefined}
+          className={cn(triggerClassName, abierto && "bg-(--crm-pressed)")}
+          {...triggerProps}
+        >
           {children}
         </Button>
       ) : (
@@ -122,41 +179,21 @@ export function Menu({
       )}
       {abierto && (
         <CrmPortal>
-          <div
-            ref={panel}
-            id={menuId}
-            role="menu"
-            aria-label={label}
-            onKeyDown={onMenuKey}
-            style={{ position: "fixed", ...pos }}
-            className={cn(UI_ROOT, FLOATING, "z-(--crm-z-popover) min-w-44 max-w-72 p-1")}
-          >
-            {items.map((item, i) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={i}
-                  ref={(el) => {
-                    itemsRef.current[i] = el;
-                  }}
-                  type="button"
-                  role="menuitem"
-                  tabIndex={-1}
-                  aria-disabled={item.disabled || undefined}
-                  data-active={i === activo}
-                  onPointerMove={() => !item.disabled && i !== activo && setActivo(i)}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    elegir(i);
-                  }}
-                  className={cn(ITEM, item.variant === "danger" && "text-(--crm-danger)")}
-                >
-                  {Icon && <Icon aria-hidden="true" strokeWidth={1.75} className="size-4 shrink-0" />}
-                  <span className="truncate">{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
+          {header ? (
+            // El bloque de arriba queda FUERA del role="menu" (un menú solo tiene ítems) y lo describe.
+            <div ref={panel} style={{ position: "fixed", ...pos }} className={flotante}>
+              <div id={headerId} className="-mx-1 -mt-1 mb-1 border-b border-(--crm-border) px-3 py-2">
+                {header}
+              </div>
+              <div {...menuProps} aria-describedby={headerId}>
+                {lista}
+              </div>
+            </div>
+          ) : (
+            <div ref={panel} {...menuProps} style={{ position: "fixed", ...pos }} className={flotante}>
+              {lista}
+            </div>
+          )}
         </CrmPortal>
       )}
     </>

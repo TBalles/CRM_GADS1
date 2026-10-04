@@ -2,8 +2,8 @@
 // "@/...". Motivo: este modulo se ejecuta tal cual con `node --test` desde
 // plantillas.check.ts, y Node no lee los "paths" del tsconfig — un alias lo
 // rompe con ERR_MODULE_NOT_FOUND. El precio de poder probarlo sin bundler.
-import { APP_NAME } from "../../../lib/brand.ts";
-import type { ContenidoEmail } from "../../../lib/email/layout.ts";
+import { APP_NAME } from "../../../../lib/brand.ts";
+import type { ContenidoEmail } from "../../../../lib/email/layout.ts";
 
 /**
  * Armado de los mensajes prearmados de recambio.

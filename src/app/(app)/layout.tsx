@@ -1,8 +1,10 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { Ban, LogOut } from "lucide-react";
-import AppShell from "@/components/AppShell";
 import AuthCard from "@/components/AuthCard";
 import CrmRoot from "@/components/crm/CrmRoot";
+import AppFrame from "@/components/crm/shell/AppFrame";
+import { RAIL_COOKIE, railColapsado } from "@/components/crm/shell/logica";
 import { getSesion } from "@/lib/sesion";
 import "./crm.css";
 
@@ -41,16 +43,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     );
   }
 
+  // La preferencia del rail se lee acá para que el primer pintado ya salga colapsado o expandido (sin parpadeo).
+  const rail = (await cookies()).get(RAIL_COOKIE)?.value;
+
   return (
     <CrmRoot>
-      <AppShell
+      <AppFrame
         nombre={sesion.perfil?.nombre ?? sesion.user.email ?? ""}
         organizacion={sesion.organizacion?.nombre ?? null}
         rol={sesion.rol?.nombre ?? null}
         permisos={sesion.permisos}
+        railColapsado={railColapsado(rail)}
       >
         {children}
-      </AppShell>
+      </AppFrame>
     </CrmRoot>
   );
 }

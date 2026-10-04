@@ -8,6 +8,7 @@ import { agruparParque, type GrupoParque, type ItemParque } from "@/lib/parque";
 import { leerCuenta360 } from "@/lib/cuenta360";
 import { iaDisponible } from "@/lib/ia/config";
 import EmpresaDetalle from "./EmpresaDetalle";
+import { CrumbLabel } from "@/components/crm/shell/Crumbs";
 
 export const metadata = { title: "Empresa" };
 
@@ -86,35 +87,38 @@ export default async function EmpresaPage({ params }: { params: Promise<{ id: st
   if (canchasRes.error && !faltaMigracion) throw new Error(`No se pudieron leer las canchas: ${canchasRes.error.message}`);
 
   return (
-    <EmpresaDetalle
-      empresa={empresa}
-      contactos={contactos ?? []}
-      oportunidades={cuenta.oportunidades}
-      etapas={cuenta.etapas}
-      ventas={cuenta.ventas}
-      actividades={cuenta.actividades}
-      cambios={cuenta.cambios}
-      avisos={cuenta.avisos}
-      truncado={cuenta.truncado}
-      primeraCompra={cuenta.primeraCompra}
-      parqueTruncado={parqueTruncado}
-      hoy={hoyAR()}
-      tipos={tipos ?? []}
-      perfiles={(perfiles ?? []).map((p) => ({ id: p.id, nombre: p.nombre ?? p.email ?? "Usuario", activo: p.activo }))}
-      origenes={origenes ?? []}
-      parque={parque}
-      canchas={faltaMigracion ? null : (canchasRes.data ?? [])}
-      mostrarAvisoMigracion={faltaMigracion && sesion.puede("configuracion.gestionar")}
-      puedeCrearOportunidad={sesion.puede("oportunidades.editar")}
-      yoId={sesion.user.id}
-      puedeEditar={sesion.puede("clientes.editar")}
-      puedeAsignar={sesion.puede("clientes.asignar")}
-      puedeVerOportunidades={puedeVerOportunidades}
-      puedeVerVentas={puedeVerVentas}
-      puedeVerActividades={puedeVerActividades}
-      puedeVerAvisos={puedeVerAvisos}
-      puedeEscribirActividad={sesion.puede("bitacora.escribir")}
-      iaDisponible={iaDisponible()}
-    />
+    <>
+      <CrumbLabel>{empresa.nombre}</CrumbLabel>
+      <EmpresaDetalle
+        empresa={empresa}
+        contactos={contactos ?? []}
+        oportunidades={cuenta.oportunidades}
+        etapas={cuenta.etapas}
+        ventas={cuenta.ventas}
+        actividades={cuenta.actividades}
+        cambios={cuenta.cambios}
+        avisos={cuenta.avisos}
+        truncado={cuenta.truncado}
+        primeraCompra={cuenta.primeraCompra}
+        parqueTruncado={parqueTruncado}
+        hoy={hoyAR()}
+        tipos={tipos ?? []}
+        perfiles={(perfiles ?? []).map((p) => ({ id: p.id, nombre: p.nombre ?? p.email ?? "Usuario", activo: p.activo }))}
+        origenes={origenes ?? []}
+        parque={parque}
+        canchas={faltaMigracion ? null : (canchasRes.data ?? [])}
+        mostrarAvisoMigracion={faltaMigracion && sesion.puede("configuracion.gestionar")}
+        puedeCrearOportunidad={sesion.puede("oportunidades.editar")}
+        yoId={sesion.user.id}
+        puedeEditar={sesion.puede("clientes.editar")}
+        puedeAsignar={sesion.puede("clientes.asignar")}
+        puedeVerOportunidades={puedeVerOportunidades}
+        puedeVerVentas={puedeVerVentas}
+        puedeVerActividades={puedeVerActividades}
+        puedeVerAvisos={puedeVerAvisos}
+        puedeEscribirActividad={sesion.puede("bitacora.escribir")}
+        iaDisponible={iaDisponible()}
+      />
+    </>
   );
 }

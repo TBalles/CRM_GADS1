@@ -50,7 +50,7 @@ export default async function CrmLabPage({ searchParams }: { searchParams: Promi
   const sel = uuidParam(params.sel);
 
   return (
-    <div className={cn(UI_ROOT, "-m-3 -mt-1 flex flex-col gap-6 rounded-(--crm-radius) border border-(--crm-border) bg-(--crm-canvas) p-4 md:-m-4 md:p-6")}>
+    <div className={cn(UI_ROOT, "flex min-h-full flex-col gap-6 bg-(--crm-canvas) p-4 xl:p-6")}>
       <header className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">

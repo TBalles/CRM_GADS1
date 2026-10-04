@@ -12,7 +12,7 @@ import { Tooltip } from "@/components/crm/Tooltip";
 import { SegmentedControl, TabPanel, Tabs, type TabItem } from "@/components/crm/Tabs";
 import { Drawer, FormSection } from "@/components/crm/Drawer";
 import { ConfirmDialog } from "@/components/crm/Dialog";
-import { CrmToastProvider, useCrmToast } from "@/components/crm/Toast";
+import { useCrmToast } from "@/components/crm/Toast";
 import { Pagination } from "@/components/crm/Pagination";
 import { EmptyState, InlineBanner } from "@/components/crm/Feedback";
 import { DefinitionList } from "@/components/crm/Panel";
@@ -37,12 +37,9 @@ import { FOCUS, TYPE, cn } from "@/components/crm/cx";
 
 type Props = { tab: string; tabs: TabItem[]; page: number; sel: string; params: ParamsUrl };
 
+/** Los avisos los da el `CrmToastProvider` del shell (Etapa 2). */
 export default function CrmLab(props: Props) {
-  return (
-    <CrmToastProvider>
-      <Lab {...props} />
-    </CrmToastProvider>
-  );
+  return <Lab {...props} />;
 }
 
 function Seccion({ id, titulo, children }: { id: string; titulo: string; children: React.ReactNode }) {

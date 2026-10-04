@@ -8,7 +8,7 @@ import { Button, TONOS, Textarea, cn } from "@/components/ui/UIComponents";
 import { useToast } from "@/components/ui/Toast";
 import { MAX_MENSAJE_BORRADOR, MENSAJES_IA } from "@/lib/ia/config";
 import type { Tables } from "@/lib/supabase/types";
-import { redactarAvisoRecambio, type ResultadoBorrador } from "../ia/actions";
+import { redactarAvisoRecambio, type ResultadoBorrador } from "@/app/(app)/ia/actions";
 import { registrarEnvioConBorrador } from "./actions";
 import { asunto, cuerpoWhatsapp, desdeFila, linkMailto, linkWhatsapp } from "./plantillas";
 

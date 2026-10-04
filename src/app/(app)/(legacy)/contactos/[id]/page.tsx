@@ -6,6 +6,7 @@ import { leerCuenta360 } from "@/lib/cuenta360";
 import { hoyAR } from "@/lib/oportunidades";
 import { iaDisponible } from "@/lib/ia/config";
 import ContactoDetalle from "./ContactoDetalle";
+import { CrumbLabel } from "@/components/crm/shell/Crumbs";
 
 export const metadata = { title: "Contacto" };
 
@@ -43,31 +44,34 @@ export default async function ContactoPage({ params }: { params: Promise<{ id: s
   const empresaVisible = (empresas ?? []).find((e) => e.id === contacto.empresa_id) ?? null;
 
   return (
-    <ContactoDetalle
-      contacto={contacto}
-      empresa={empresaVisible}
-      empresas={empresas ?? []}
-      oportunidades={cuenta.oportunidades}
-      etapas={cuenta.etapas}
-      ventas={cuenta.ventas}
-      actividades={cuenta.actividades}
-      cambios={cuenta.cambios}
-      avisos={cuenta.avisos}
-      truncado={cuenta.truncado}
-      primeraCompra={cuenta.primeraCompra}
-      hoy={hoyAR()}
-      tipos={tipos ?? []}
-      perfiles={(perfiles ?? []).map((p) => ({ id: p.id, nombre: p.nombre ?? p.email ?? "Usuario", activo: p.activo }))}
-      origenes={origenes ?? []}
-      yoId={sesion.user.id}
-      puedeEditar={sesion.puede("clientes.editar")}
-      puedeAsignar={sesion.puede("clientes.asignar")}
-      puedeVerOportunidades={puedeVerOportunidades}
-      puedeVerVentas={puedeVerVentas}
-      puedeVerActividades={puedeVerActividades}
-      puedeVerAvisos={puedeVerAvisos}
-      puedeEscribirActividad={sesion.puede("bitacora.escribir")}
-      iaDisponible={iaDisponible()}
-    />
+    <>
+      <CrumbLabel>{[contacto.nombre, contacto.apellido].filter(Boolean).join(" ")}</CrumbLabel>
+      <ContactoDetalle
+        contacto={contacto}
+        empresa={empresaVisible}
+        empresas={empresas ?? []}
+        oportunidades={cuenta.oportunidades}
+        etapas={cuenta.etapas}
+        ventas={cuenta.ventas}
+        actividades={cuenta.actividades}
+        cambios={cuenta.cambios}
+        avisos={cuenta.avisos}
+        truncado={cuenta.truncado}
+        primeraCompra={cuenta.primeraCompra}
+        hoy={hoyAR()}
+        tipos={tipos ?? []}
+        perfiles={(perfiles ?? []).map((p) => ({ id: p.id, nombre: p.nombre ?? p.email ?? "Usuario", activo: p.activo }))}
+        origenes={origenes ?? []}
+        yoId={sesion.user.id}
+        puedeEditar={sesion.puede("clientes.editar")}
+        puedeAsignar={sesion.puede("clientes.asignar")}
+        puedeVerOportunidades={puedeVerOportunidades}
+        puedeVerVentas={puedeVerVentas}
+        puedeVerActividades={puedeVerActividades}
+        puedeVerAvisos={puedeVerAvisos}
+        puedeEscribirActividad={sesion.puede("bitacora.escribir")}
+        iaDisponible={iaDisponible()}
+      />
+    </>
   );
 }

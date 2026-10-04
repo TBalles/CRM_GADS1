@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import * as React from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Boxes, Building2, Contact, CornerDownLeft, Handshake, Loader2, Search, X } from "lucide-react";
 import { buscarGlobal } from "@/app/(app)/buscar/actions";
 import { backdropClose } from "@/components/ui/backdropClose";
-import { useModalAnimation } from "@/components/ui/overlay";
 import {
   DEBOUNCE_MS,
   GRUPOS,
@@ -21,7 +19,10 @@ import {
   type GrupoResultados,
   type RespuestaBusqueda,
 } from "@/lib/paleta";
-import { cn } from "@/lib/utils";
+import { CrmPortal } from "../portal";
+import { usePresence } from "../overlay";
+import { IconButton } from "../Button";
+import { TYPE, UI_ROOT, cn } from "../cx";
 
 const ICONO_GRUPO: Record<GrupoClave | "ir", React.ElementType> = {
   empresas: Building2,
@@ -34,63 +35,55 @@ const ICONO_GRUPO: Record<GrupoClave | "ir", React.ElementType> = {
 type Resultado = { consulta: string; grupos: GrupoResultados[]; error: string | null };
 
 /**
- * Búsqueda global (Ctrl/Cmd+K): un diálogo con el patrón combobox + listbox de ARIA.
+ * Búsqueda global (Ctrl/Cmd+K) con la piel de CRM 2.0. MISMO comportamiento y contrato ARIA que la paleta anterior
+ * (`PaletaBusqueda`, retirada en la Etapa 2): la lógica es la de `lib/paleta.ts` y los datos, la Server Action
+ * `buscarGlobal` (la RLS decide qué ve cada uno; acá solo se dibuja).
  *
- * - El foco se queda en el campo; las flechas mueven la opción activa (`aria-activedescendant`),
- *   Enter la abre y Escape cierra. Tab queda atrapado entre el campo y el botón de cerrar, y al
- *   cerrar el foco vuelve a donde estaba.
- * - Consulta con 200 ms de espera, desde 2 letras, a UNA Server Action. Una respuesta que llega
- *   tarde (la persona ya escribió otra cosa) se descarta: `cancelado` en el cleanup del efecto.
- * - Con la caja vacía ofrece "Ir a …" las pantallas que el rol puede abrir.
- * - En pantallas chicas es una hoja a todo el ancho y alto.
- *
- * Todo lo que ve la persona lo decide la RLS en la acción; acá solo se dibuja.
+ * - Diálogo "Buscar en el CRM" (`aria-modal`, `data-paleta`: el atajo lo reconoce como propio) con un combobox
+ *   "Buscar" + listbox: el foco se queda en el campo, ↑/↓ mueven la opción activa (`aria-activedescendant`), Enter abre,
+ *   Escape cierra. Tab queda atrapado entre el campo y "Cerrar la búsqueda"; al cerrar, el foco vuelve a donde estaba
+ *   (o al disparador visible, `[data-paleta-disparador]`).
+ * - Desde 2 letras, 200 ms de espera, hasta 5 por grupo, grupos según permisos; una respuesta tardía se descarta.
+ * - Con la caja vacía ofrece "Ir a …" las pantallas que el rol puede abrir. Durante una composición (IME) las teclas
+ *   son del teclado de la persona.
+ * - En `#crm-portal` (hereda los tokens); en pantallas chicas, hoja a todo el ancho y alto.
  */
-export default function PaletaBusqueda({
-  abierta,
-  onCerrar,
-  permisos,
-}: {
-  abierta: boolean;
-  onCerrar: () => void;
-  permisos: string[];
-}) {
-  const { visible, overlayClass, modalClass } = useModalAnimation(abierta);
-  if (!visible) return null;
-  return createPortal(
-    <Panel abierta={abierta} onCerrar={onCerrar} permisos={permisos} overlayClass={overlayClass} modalClass={modalClass} />,
-    document.body,
+export function CommandPalette({ abierta, onCerrar, permisos }: { abierta: boolean; onCerrar: () => void; permisos: string[] }) {
+  const { montada, cerrando } = usePresence(abierta, 160); // = --crm-dur
+  if (!montada) return null;
+  return (
+    <CrmPortal>
+      <Panel abierta={abierta} cerrando={cerrando} onCerrar={onCerrar} permisos={permisos} />
+    </CrmPortal>
   );
 }
 
 function Panel({
   abierta,
+  cerrando,
   onCerrar,
   permisos,
-  overlayClass,
-  modalClass,
 }: {
   abierta: boolean;
+  cerrando: boolean;
   onCerrar: () => void;
   permisos: string[];
-  overlayClass: string;
-  modalClass: string;
 }) {
   const router = useRouter();
-  const idLista = useId();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const cerrarRef = useRef<HTMLButtonElement>(null);
+  const idLista = React.useId();
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const cerrarRef = React.useRef<HTMLButtonElement>(null);
   // Quién tenía el foco al abrir: se lee en el primer render, antes de que el campo lo tome.
-  const [previo] = useState(() => (typeof document === "undefined" ? null : document.activeElement));
+  const [previo] = React.useState(() => (typeof document === "undefined" ? null : document.activeElement));
 
-  const [texto, setTexto] = useState("");
-  const [resultado, setResultado] = useState<Resultado | null>(null);
-  const [activo, setActivo] = useState(0);
+  const [texto, setTexto] = React.useState("");
+  const [resultado, setResultado] = React.useState<Resultado | null>(null);
+  const [activo, setActivo] = React.useState(0);
 
   const consulta = consultaBuscable(texto);
 
   // Consulta con espera. Cada cambio de `consulta` cancela la anterior: su respuesta, si llega, se ignora.
-  useEffect(() => {
+  React.useEffect(() => {
     if (!consulta) return;
     let cancelado = false;
     const guardar = (r: Resultado) => {
@@ -110,8 +103,8 @@ function Panel({
     };
   }, [consulta]);
 
-  // Al cerrar, el foco vuelve a donde estaba (o al botón de búsqueda si ese elemento ya no está).
-  useEffect(() => {
+  // Al cerrar, el foco vuelve a donde estaba (o al botón de búsqueda visible si ese elemento ya no está).
+  React.useEffect(() => {
     if (abierta) return;
     const destino =
       previo instanceof HTMLElement && previo !== document.body && document.contains(previo)
@@ -121,19 +114,16 @@ function Panel({
   }, [abierta, previo]);
 
   const cargando = consulta !== null && resultado?.consulta !== consulta;
-  const mostrados = useMemo(() => (consulta && resultado ? resultado.grupos : []), [consulta, resultado]);
+  const mostrados = React.useMemo(() => (consulta && resultado ? resultado.grupos : []), [consulta, resultado]);
   const error = consulta && resultado?.consulta === consulta ? resultado.error : null;
-  const acciones = useMemo(
-    () => accionesRapidas(permisos, texto.trim(), consulta ? 3 : 8),
-    [permisos, texto, consulta],
-  );
-  const opciones = useMemo(() => aplanar(mostrados, acciones), [mostrados, acciones]);
+  const acciones = React.useMemo(() => accionesRapidas(permisos, texto.trim(), consulta ? 3 : 8), [permisos, texto, consulta]);
+  const opciones = React.useMemo(() => aplanar(mostrados, acciones), [mostrados, acciones]);
   const indice = opciones.length ? Math.min(activo, opciones.length - 1) : -1;
   const sinResultados = consulta !== null && !cargando && !error && mostrados.length === 0;
 
   const idOpcion = (i: number) => `${idLista}-op-${i}`;
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (indice >= 0) document.getElementById(`${idLista}-op-${indice}`)?.scrollIntoView({ block: "nearest" });
   }, [indice, idLista]);
 
@@ -189,7 +179,13 @@ function Panel({
 
   return (
     <div
-      className={cn("fixed inset-0 z-[100] flex items-start justify-center bg-black/60 backdrop-blur-sm sm:p-4 sm:pt-[12vh]", overlayClass)}
+      data-app-chrome
+      className={cn(
+        UI_ROOT,
+        "fixed inset-0 z-(--crm-z-dialog) flex items-start justify-center bg-(--crm-scrim) sm:p-4 sm:pt-[12vh]",
+        cerrando ? "animate-[crm-fade_var(--crm-dur)_var(--crm-ease)_reverse_forwards]" : "animate-[crm-fade_var(--crm-dur)_var(--crm-ease)]",
+        "motion-reduce:animate-none",
+      )}
       {...backdropClose(onCerrar)}
     >
       <div
@@ -199,12 +195,12 @@ function Panel({
         aria-label="Buscar en el CRM"
         onKeyDown={alTeclear}
         className={cn(
-          modalClass,
-          "flex h-dvh w-full flex-col overflow-hidden bg-background shadow-2xl sm:h-auto sm:max-h-[min(34rem,76vh)] sm:max-w-xl sm:rounded-xl sm:border sm:border-border",
+          "flex h-dvh w-full flex-col overflow-hidden bg-(--crm-panel) sm:h-auto sm:max-h-[min(34rem,76vh)] sm:max-w-[600px] sm:rounded-(--crm-radius) sm:border sm:border-(--crm-border) sm:shadow-(--crm-shadow-float)",
+          !cerrando && "animate-[crm-pop_var(--crm-dur)_var(--crm-ease)] motion-reduce:animate-none",
         )}
       >
-        <div className="flex shrink-0 items-center gap-2 border-b border-border px-3">
-          <Search aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <div className="flex h-12 shrink-0 items-center gap-2 border-b border-(--crm-border) pl-4 pr-2">
+          <Search aria-hidden="true" strokeWidth={1.75} className="size-4 shrink-0 text-(--crm-text-2)" />
           <input
             ref={inputRef}
             autoFocus
@@ -226,34 +222,27 @@ function Panel({
               setTexto(e.target.value);
               setActivo(0);
             }}
-            className="h-12 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground sm:text-sm"
+            className="h-full min-w-0 flex-1 bg-transparent text-[16px] text-(--crm-text) outline-none placeholder:text-(--crm-text-2) sm:text-[14px]"
           />
-          {cargando && <Loader2 aria-hidden="true" className="h-4 w-4 shrink-0 animate-spin text-muted-foreground motion-reduce:animate-none" />}
-          <button
-            ref={cerrarRef}
-            type="button"
-            onClick={onCerrar}
-            aria-label="Cerrar la búsqueda"
-            title="Cerrar (Esc)"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <X aria-hidden="true" className="h-4 w-4" />
-          </button>
+          {cargando && (
+            <Loader2 aria-hidden="true" strokeWidth={1.75} className="size-4 shrink-0 animate-spin text-(--crm-text-2) motion-reduce:animate-none" />
+          )}
+          <IconButton ref={cerrarRef} label="Cerrar la búsqueda" icon={X} onClick={onCerrar} />
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-2">
+        <div className="min-h-0 flex-1 overflow-y-auto p-1">
           {texto.trim().length > 0 && texto.trim().length < MIN_CARACTERES && (
-            <p className="px-2 py-1.5 text-xs text-muted-foreground">Escribí al menos {MIN_CARACTERES} letras para buscar.</p>
+            <p className={cn(TYPE.meta, "px-3 py-2 text-(--crm-text-2)")}>Escribí al menos {MIN_CARACTERES} letras para buscar.</p>
           )}
           {error && (
-            <p role="alert" className="mx-1 my-1.5 rounded-md bg-secondary p-3 text-sm">
+            <p role="alert" className="m-1 rounded-(--crm-radius-sm) border border-(--crm-danger)/25 bg-(--crm-danger-tint) px-3 py-2">
               {error}
             </p>
           )}
           {sinResultados && (
-            <div className="px-2 py-4 text-center">
-              <p className="text-sm font-medium">Nada con «{consulta}»</p>
-              <p className="mx-auto mt-1 max-w-xs text-xs text-muted-foreground">
+            <div className="px-3 py-4">
+              <p className="font-medium">Nada con «{consulta}»</p>
+              <p className={cn(TYPE.meta, "mt-1 text-(--crm-text-2)")}>
                 Probá con el nombre completo, el CUIT, el mail o el título de la oportunidad.
               </p>
             </div>
@@ -264,8 +253,8 @@ function Panel({
               const Icono = ICONO_GRUPO[s.clave];
               const idTitulo = `${idLista}-g-${s.clave}`;
               return (
-                <div key={s.clave} role="group" aria-labelledby={idTitulo} className="mb-1">
-                  <div id={idTitulo} className="px-2 pb-1 pt-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                <div key={s.clave} role="group" aria-labelledby={idTitulo} className="pb-1">
+                  <div id={idTitulo} className={cn(TYPE.meta, "px-3 pb-1 pt-2 font-medium text-(--crm-text-2)")}>
                     {s.titulo}
                   </div>
                   {opciones.slice(s.inicio, s.inicio + s.filas).map((op, k) => {
@@ -277,21 +266,23 @@ function Panel({
                         id={idOpcion(i)}
                         role="option"
                         aria-selected={seleccionada}
+                        data-active={seleccionada}
                         onMouseMove={() => setActivo(i)}
                         onClick={() => ir(i)}
                         className={cn(
-                          "flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2 py-2",
-                          seleccionada ? "bg-accent" : "hover:bg-accent/60",
+                          "flex min-h-9 cursor-pointer items-center gap-3 rounded-(--crm-radius-sm) px-3 py-1",
+                          "hover:bg-(--crm-hover) data-[active=true]:bg-(--crm-pressed) data-[active=true]:shadow-[inset_2px_0_0_var(--crm-accent)]",
                         )}
                       >
-                        <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand">
-                          <Icono className="h-4 w-4" />
+                        <Icono aria-hidden="true" strokeWidth={1.75} className="size-4 shrink-0 text-(--crm-text-2)" />
+                        {/* En mobile el detalle va debajo; desde sm, al lado (el título no se recorta por el detalle). */}
+                        <span className="flex min-w-0 flex-1 flex-col sm:flex-row sm:items-baseline sm:gap-2">
+                          <span className="truncate font-medium sm:max-w-[60%] sm:shrink-0">{op.titulo}</span>
+                          {op.detalle && <span className={cn(TYPE.meta, "min-w-0 truncate text-(--crm-text-2)")}>{op.detalle}</span>}
                         </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-medium">{op.titulo}</span>
-                          {op.detalle && <span className="block truncate text-xs text-muted-foreground">{op.detalle}</span>}
-                        </span>
-                        {seleccionada && <CornerDownLeft aria-hidden="true" className="hidden h-3.5 w-3.5 shrink-0 text-muted-foreground sm:block" />}
+                        {seleccionada && (
+                          <CornerDownLeft aria-hidden="true" strokeWidth={1.75} className="hidden size-3.5 shrink-0 text-(--crm-text-2) sm:block" />
+                        )}
                       </div>
                     );
                   })}
@@ -301,10 +292,16 @@ function Panel({
           </div>
         </div>
 
-        <p className="hidden shrink-0 items-center gap-4 border-t border-border px-3 py-2 text-[11px] text-muted-foreground sm:flex">
-          <span>↑ ↓ para moverte</span>
-          <span>Enter para abrir</span>
-          <span>Esc para cerrar</span>
+        <p className={cn(TYPE.meta, "hidden shrink-0 items-center gap-4 border-t border-(--crm-border) px-4 py-2 text-(--crm-text-2) sm:flex")}>
+          <span>
+            <Kbd>↑</Kbd> <Kbd>↓</Kbd> para moverte
+          </span>
+          <span>
+            <Kbd>Enter</Kbd> para abrir
+          </span>
+          <span>
+            <Kbd>Esc</Kbd> para cerrar
+          </span>
         </p>
 
         <p role="status" className="sr-only">
@@ -312,5 +309,14 @@ function Panel({
         </p>
       </div>
     </div>
+  );
+}
+
+/** Tecla dibujada (decorativa: el texto de al lado ya la nombra). */
+export function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded-(--crm-radius-sm) border border-(--crm-border) bg-(--crm-panel) px-1 font-(family-name:--crm-font-mono) text-[12px] leading-4 text-(--crm-text-2)">
+      {children}
+    </kbd>
   );
 }

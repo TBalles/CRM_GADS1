@@ -6,6 +6,7 @@ import { esErrorDeEsquema } from "@/lib/esquema";
 import { hoyAR } from "@/lib/oportunidades";
 import { cargarOpciones } from "../datos";
 import OportunidadDetalle from "./OportunidadDetalle";
+import { CrumbLabel } from "@/components/crm/shell/Crumbs";
 
 export const metadata = { title: "Oportunidad" };
 
@@ -40,23 +41,26 @@ export default async function OportunidadPage({ params }: { params: Promise<{ id
   }
 
   return (
-    <OportunidadDetalle
-      oportunidad={oportunidad}
-      historial={historial ?? []}
-      auditoria={auditoria ?? []}
-      actividades={actividades ?? []}
-      tipos={tipos ?? []}
-      opciones={opciones}
-      licitacion={licitacionRes.data ?? null}
-      licitacionesActivas={licitacionesActivas}
-      hoy={hoyAR()}
-      yoId={sesion.user.id}
-      puedeEditar={sesion.puede("oportunidades.editar")}
-      puedeAsignar={sesion.puede("oportunidades.asignar")}
-      puedeReabrir={sesion.puede("oportunidades.reabrir")}
-      puedeVerActividades={puedeVerActividades}
-      puedeEscribirActividad={sesion.puede("bitacora.escribir")}
-      puedeVerClientes={sesion.puede("clientes.ver")}
-    />
+    <>
+      <CrumbLabel>{oportunidad.titulo}</CrumbLabel>
+      <OportunidadDetalle
+        oportunidad={oportunidad}
+        historial={historial ?? []}
+        auditoria={auditoria ?? []}
+        actividades={actividades ?? []}
+        tipos={tipos ?? []}
+        opciones={opciones}
+        licitacion={licitacionRes.data ?? null}
+        licitacionesActivas={licitacionesActivas}
+        hoy={hoyAR()}
+        yoId={sesion.user.id}
+        puedeEditar={sesion.puede("oportunidades.editar")}
+        puedeAsignar={sesion.puede("oportunidades.asignar")}
+        puedeReabrir={sesion.puede("oportunidades.reabrir")}
+        puedeVerActividades={puedeVerActividades}
+        puedeEscribirActividad={sesion.puede("bitacora.escribir")}
+        puedeVerClientes={sesion.puede("clientes.ver")}
+      />
+    </>
   );
 }

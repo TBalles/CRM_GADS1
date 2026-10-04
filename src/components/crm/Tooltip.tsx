@@ -15,6 +15,8 @@ const PAD = 8;
  *
  * El hijo tiene que ser UN elemento; recibe `aria-describedby` mientras el tooltip está visible.
  * `onlyWhenTruncated`: solo aparece si el hijo está recortado (celdas con `truncate`).
+ * `disabled`: no aparece (p. ej. el ítem del rail expandido, cuyo texto ya se ve). No cambia el markup.
+ * `side="right"`: a la derecha y centrado en alto (rail colapsado); por defecto arriba (abajo si no entra).
  *
  * No usar `title=` en CRM 2.0: el TooltipHost legacy del layout raíz lo convierte en su propio globo.
  */
@@ -22,10 +24,14 @@ export function Tooltip({
   content,
   children,
   onlyWhenTruncated = false,
+  disabled = false,
+  side = "top",
 }: {
   content: React.ReactNode;
   children: React.ReactElement<{ "aria-describedby"?: string }>;
   onlyWhenTruncated?: boolean;
+  disabled?: boolean;
+  side?: "top" | "right";
 }) {
   const id = React.useId();
   const wrap = React.useRef<HTMLSpanElement>(null);
@@ -41,6 +47,7 @@ export function Tooltip({
     timer.current = window.setTimeout(
       () => {
         if (abrir) {
+          if (disabled) return;
           const el = objetivo();
           if (!el) return;
           if (onlyWhenTruncated && el.scrollWidth <= el.clientWidth) return;
@@ -81,11 +88,16 @@ export function Tooltip({
     const r = el.getBoundingClientRect();
     const w = t.offsetWidth;
     const h = t.offsetHeight;
-    const top = r.top - h - 6 > PAD ? r.top - h - 6 : r.bottom + 6;
-    const left = Math.max(PAD, Math.min(r.left + r.width / 2 - w / 2, window.innerWidth - w - PAD));
+    const derecha = side === "right";
+    const top = derecha
+      ? Math.max(PAD, Math.min(r.top + r.height / 2 - h / 2, window.innerHeight - h - PAD))
+      : r.top - h - 6 > PAD
+        ? r.top - h - 6
+        : r.bottom + 6;
+    const left = derecha ? r.right + 8 : Math.max(PAD, Math.min(r.left + r.width / 2 - w / 2, window.innerWidth - w - PAD));
     // Medir el DOM y posicionar antes de pintar: el caso para el que existe useLayoutEffect.
     setPos({ left, top });
-  }, [abierto]);
+  }, [abierto, side]);
 
   return (
     <>

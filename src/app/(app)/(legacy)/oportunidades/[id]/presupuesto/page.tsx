@@ -5,6 +5,7 @@ import { esUuid } from "@/lib/clientes";
 import { esErrorDeEsquema } from "@/lib/esquema";
 import { hoyAR } from "@/lib/oportunidades";
 import PresupuestoView from "./PresupuestoView";
+import { CrumbLabel } from "@/components/crm/shell/Crumbs";
 
 export const metadata = { title: "Presupuesto" };
 
@@ -61,38 +62,41 @@ export default async function PresupuestoPage({ params }: { params: Promise<{ id
   const tipoPropuesta = tipos.find((t) => t.activo && (t.codigo === "propuesta" || t.nombre === "Envío de propuesta"));
 
   return (
-    <PresupuestoView
-      oportunidad={{
-        id: oportunidad.id,
-        titulo: oportunidad.titulo,
-        empresa_id: oportunidad.empresa_id,
-        contacto_id: oportunidad.contacto_id,
-        producto_id: oportunidad.producto_id,
-        monto: oportunidad.monto == null ? null : Number(oportunidad.monto),
-      }}
-      organizacion={{
-        nombre: organizacion.nombre,
-        razon_social: organizacion.razon_social,
-        cuit: organizacion.cuit,
-        condicion_iva: organizacion.condicion_iva,
-        direccion: organizacion.direccion,
-        telefono: organizacion.telefono,
-        email: organizacion.email,
-        sitio_web: organizacion.sitio_web,
-        presupuesto_validez_dias: organizacion.presupuesto_validez_dias,
-        presupuesto_condiciones: organizacion.presupuesto_condiciones,
-      }}
-      logoUrl={logoUrl}
-      logoPath={organizacion.logo_path}
-      empresa={empresaRes.data ?? null}
-      contacto={contactoRes.data ?? null}
-      productos={(productosRes.data ?? []).map((p) => ({ id: p.id, nombre: p.nombre, precio: p.precio == null ? null : Number(p.precio) }))}
-      previos={previosRes.data ?? []}
-      presupuestosActivos={presupuestosActivos}
-      tipoPropuestaId={tipoPropuesta?.id ?? null}
-      hoy={hoyAR()}
-      puedeGuardar={sesion.puede("oportunidades.editar")}
-      puedeConfigurar={sesion.puede("configuracion.gestionar")}
-    />
+    <>
+      <CrumbLabel>{oportunidad.titulo}</CrumbLabel>
+      <PresupuestoView
+        oportunidad={{
+          id: oportunidad.id,
+          titulo: oportunidad.titulo,
+          empresa_id: oportunidad.empresa_id,
+          contacto_id: oportunidad.contacto_id,
+          producto_id: oportunidad.producto_id,
+          monto: oportunidad.monto == null ? null : Number(oportunidad.monto),
+        }}
+        organizacion={{
+          nombre: organizacion.nombre,
+          razon_social: organizacion.razon_social,
+          cuit: organizacion.cuit,
+          condicion_iva: organizacion.condicion_iva,
+          direccion: organizacion.direccion,
+          telefono: organizacion.telefono,
+          email: organizacion.email,
+          sitio_web: organizacion.sitio_web,
+          presupuesto_validez_dias: organizacion.presupuesto_validez_dias,
+          presupuesto_condiciones: organizacion.presupuesto_condiciones,
+        }}
+        logoUrl={logoUrl}
+        logoPath={organizacion.logo_path}
+        empresa={empresaRes.data ?? null}
+        contacto={contactoRes.data ?? null}
+        productos={(productosRes.data ?? []).map((p) => ({ id: p.id, nombre: p.nombre, precio: p.precio == null ? null : Number(p.precio) }))}
+        previos={previosRes.data ?? []}
+        presupuestosActivos={presupuestosActivos}
+        tipoPropuestaId={tipoPropuesta?.id ?? null}
+        hoy={hoyAR()}
+        puedeGuardar={sesion.puede("oportunidades.editar")}
+        puedeConfigurar={sesion.puede("configuracion.gestionar")}
+      />
+    </>
   );
 }

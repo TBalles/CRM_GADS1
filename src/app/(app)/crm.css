@@ -161,6 +161,14 @@
   }
 }
 
+/* Rail como cajón en mobile (entra desde la izquierda). */
+@keyframes crm-slide-in-left {
+  from {
+    transform: translateX(-16px);
+    opacity: 0;
+  }
+}
+
 @keyframes crm-pulse {
   50% {
     opacity: 0.55;
