@@ -1,0 +1,70 @@
+name: Error
+description: Algo no funciona como debería
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por avisar. **No pegues claves, contraseñas ni datos reales de personas.**
+        Si el problema es una vulnerabilidad de seguridad, no abras un issue público: seguí [SECURITY.md](https://github.com/TBalles/CRM_GADS1/blob/main/SECURITY.md).
+  - type: textarea
+    id: que-paso
+    attributes:
+      label: Qué pasó
+      description: Qué esperabas que ocurriera y qué ocurrió en cambio.
+    validations:
+      required: true
+  - type: textarea
+    id: pasos
+    attributes:
+      label: Pasos para reproducirlo
+      placeholder: |
+        1. Ingresar con ...
+        2. Ir a ...
+        3. Hacer clic en ...
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área
+      options:
+        - Acceso y cuentas
+        - Empresas y contactos
+        - Productos
+        - Ventas
+        - Alertas de recambio
+        - Oportunidades y embudo
+        - Usuarios, roles y permisos
+        - Panel de plataforma (/admin)
+        - Tablero
+        - Landing
+        - Base de datos / migraciones
+        - Otra
+    validations:
+      required: true
+  - type: input
+    id: rol
+    attributes:
+      label: Rol con el que ocurre
+      description: Administrador, Vendedor, Responsable comercial, Solo lectura, superadmin o un rol propio.
+  - type: dropdown
+    id: entorno
+    attributes:
+      label: Dónde ocurre
+      options:
+        - Producción
+        - Local
+        - Otro
+    validations:
+      required: true
+  - type: input
+    id: navegador
+    attributes:
+      label: Navegador y dispositivo
+      placeholder: Chrome 130 en escritorio
+  - type: textarea
+    id: extra
+    attributes:
+      label: Capturas, mensajes de error o logs
+      description: Si hay un mensaje de error, copialo textual. Revisá que no incluya datos sensibles.

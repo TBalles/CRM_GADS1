@@ -9,16 +9,26 @@ canchas de fútbol, clubes, complejos deportivos y escuelas de fútbol. Producto
 redes, conos, pecheras, pelotas y demás materiales para el funcionamiento y mantenimiento de una
 cancha.
 
-La **primera entrega** fue una versión funcional mínima para registrar clientes y gestionar
-oportunidades comerciales. La **segunda entrega** (esta) suma una landing pública, catálogo con
-vida útil, historial de ventas, alertas de recambio y bitácora de clientes.
+La **primera entrega** (2026-09-17) fue una versión funcional mínima para registrar clientes y
+gestionar oportunidades comerciales. La **segunda entrega** (2026-09-18 a 09-24) sumó la landing
+pública, catálogo con vida útil, historial de ventas, alertas de recambio, bitácora, multitenancy,
+roles con permisos y cuentas. Se trabaja hacia la **entrega final (2026-11-12)**: la migración
+`0007_entrega_final.sql` ya está aplicada (la base cumple casi todo el módulo comercial de la
+consigna) y la interfaz de esas capacidades se construye en las fases F1 a F8. El estado real,
+requisito por requisito, está en [`docs/notas-de-version.md`](./docs/notas-de-version.md); el resto
+de la documentación se indexa en [`docs/README.md`](./docs/README.md).
 
-## Alcance de esta entrega
+**Tres estados, siempre distintos:** *implementado* (anda en producción), *base lista, sin
+interfaz* (la base ya lo aplica, la pantalla no) y *planificado*. No documentes como existente lo
+que está en el segundo o tercer estado.
+
+## Alcance actual
 
 Incluido:
 
-- **Acceso**: login funcional con Supabase Auth. Alcanza con un único usuario habilitado (no se
-  pide gestión de roles/permisos).
+- **Acceso**: login con Supabase Auth, sin registro público. Los usuarios se invitan (superadmin y
+  administradores), activan su cuenta definiendo una contraseña y pueden recuperarla (ver "Cuentas"
+  más abajo).
 - **Empresas y contactos**: alta y edición de empresas en `/empresas`; cada empresa es
   desplegable y muestra sus contactos anidados, con alta/edición de contacto ahí mismo (relación
   contacto → empresa, opcional).
@@ -35,12 +45,16 @@ Incluido:
 - **Bitácora de clientes**: desde el menú "⋮" de cada empresa en `/empresas`. Llamadas, reuniones,
   consultas, quejas y observaciones, con fecha, autor y contacto opcional.
 - **Oportunidades**: alta y edición, relacionadas a una empresa y/o contacto, con responsable
-  asignado (usuario del sistema) y producto/servicio seleccionado. Listado y detalle.
+  asignado (usuario del sistema) y producto/servicio seleccionado. Listado; el detalle es el panel
+  de edición (no hay página de detalle todavía, F2).
 - **Embudo comercial**: vista Kanban integrada arriba de `/oportunidades` con las oportunidades
-  agrupadas por etapa (sin scroll horizontal, se achica a grilla 3×2 en mobile). Cambiar de etapa
-  se hace con un `<select>` en cada tarjeta (no hay drag & drop) y el cambio se persiste en la
-  base al instante.
-- **Etapas**: precargadas por seed SQL, sin configuración desde la UI.
+  agrupadas por etapa (sin scroll horizontal, se achica a grilla 3×2 en mobile; columnas fijas en 6
+  con `lg:grid-cols-6`). Cambiar de etapa se hace **arrastrando la tarjeta** (HTML5 nativo, no
+  funciona con touch: en mobile se cambia desde el formulario de edición) y el cambio se persiste en
+  la base al instante con un `update` de `etapa_id` (todavía no usa la RPC `cambiar_etapa`).
+- **Etapas**: las crea el trigger al dar de alta una organización (embudo del rubro: Consulta
+  recibida, Relevamiento de cancha, Presupuesto enviado, Negociación, Entregado, Perdida). La base
+  permite configurarlas (`configuracion.gestionar`), pero no hay pantalla todavía (F1).
 - **Modo oscuro**: toggle manual (ícono sol/luna en la barra superior), respeta `prefers-color-scheme`
   la primera vez y después queda guardado en `localStorage`.
 
@@ -55,16 +69,35 @@ Incluido:
   reenvío automático de la activación si alguien intenta ingresar con una cuenta sin activar.
   Todos los mails salen por nuestro SMTP (`src/lib/email/`), ninguno por Supabase.
 
-Explícitamente **fuera de alcance** en esta entrega (no agregar sin que el usuario lo pida):
+**Entrega final: en la base sí, en la interfaz todavía no** (migración `0007`, aplicada el
+2026-10-04). Son reglas que viven en la base y se cumplen por cualquier camino; ninguna pantalla las
+usa aún, salvo donde se aclara:
 
-- Historial de cambios de etapa (auditoría/timeline).
-- Envío automático de alertas sin intervención humana (hoy el mensaje se arma solo, pero lo
-  confirma una persona — ver el FAQ de la landing para el porqué).
-- Edición o borrado de entradas de bitácora: es un log, se agrega y no se corrige el pasado.
-- Pantallas de configuración general.
-- Cierre completo de oportunidades (ganada/perdida como flujo especial, motivos de pérdida, etc.)
-  — "Ganada" y "Perdida" existen solo como dos etapas más del embudo, sin lógica asociada.
-- Cualquier funcionalidad de inteligencia artificial.
+- Estados (potencial, cliente, inactivo, no contactar), responsable y origen en empresas y contactos
+  (baja lógica = `inactivo`). Alta de la cartera: un alta sin responsable queda para quien la crea.
+- Oportunidades con estado (abierta, ganada, perdida), fecha de cierre, motivo de pérdida, origen,
+  probabilidad y tipo. **Reglas del embudo en el trigger `oportunidades_reglas`**: el estado sale del
+  tipo de la etapa, ganada pone fecha de cierre, perdida exige motivo, reabrir exige
+  `oportunidades.reabrir`. Hoy arrastrar una tarjeta a "Perdida" falla (el arrastre no pide motivo).
+- Historial de cambios de etapa (`oportunidad_etapas_historial`) y auditoría de las cerradas
+  (`oportunidad_auditoria`): se escriben solos, no hay pantalla para leerlos.
+- Catálogos configurables por organización (`origenes`, `motivos_perdida`, `tipos_actividad`) y datos
+  fiscales del proveedor más el bucket privado `logos` (PNG/JPG/WebP, 1 MB, sin SVG).
+- **Cartera propia**: sin `clientes.ver_todos` solo se ve lo asignado. Esto **sí rige en pantalla**
+  (la base devuelve menos filas). Las oportunidades ya **no se borran** (sin política de borrar).
+- Actividades (`bitacora_entradas`) con tipo de catálogo, oportunidad y resultado; la pantalla
+  todavía usa el campo `tipo` viejo (un trigger lo traduce).
+
+**Planificado** (F1 a F8, 2026-10-13 a 2026-11-11): `/configuracion`, detalles de empresa, contacto y
+oportunidad, cierre desde la UI, búsqueda/filtros/paginación en el servidor, funciones del rubro
+(canchas, parque instalado, licitaciones), presupuesto imprimible, E2E y CI, IA opcional y manual.
+
+**Fuera de alcance según la consigna** (no agregar sin que el usuario lo pida): tareas, agenda,
+recordatorios, exportación, integraciones, API pública, importación, facturación, pagos,
+contabilidad, stock y campañas. El proyecto igual tiene multitenancy, envío de mails, links de
+WhatsApp y un tablero con indicadores, que la consigna lista como fuera de alcance: se conservan.
+Además: no hay envío automático de alertas (lo confirma una persona), la bitácora no se edita ni se
+borra, y no hay IA todavía.
 
 ### Demo esperada
 
@@ -72,7 +105,7 @@ Explícitamente **fuera de alcance** en esta entrega (no agregar sin que el usua
 2. Registrar una empresa (en `/empresas`) y, desplegándola, un contacto.
 3. Crear una oportunidad (en `/oportunidades`).
 4. Visualizarla en el embudo (arriba de la misma página).
-5. Cambiarla de etapa.
+5. Cambiarla de etapa (arrastrando la tarjeta).
 6. Refrescar y comprobar que la información permanece guardada.
 
 ## Stack técnico
@@ -88,8 +121,10 @@ entre el equipo.
 
 ### Por qué mutaciones client-side y no Server Actions para el CRUD
 
-El login usa una Server Action (`src/app/login/actions.ts`) porque necesita escribir cookies de
-sesión del lado servidor. Pero el CRUD de empresas/contactos/oportunidades (crear, editar, cambiar
+Las Server Actions se reservan para lo que no puede ir desde el navegador: escribir cookies de
+sesión (`src/app/login/actions.ts`), usar la clave de servicio (`usuarios/actions.ts`,
+`admin/actions.ts`, `recuperar/`, `definir-clave/`) y enviar mails (`alertas/actions.ts`).
+Pero el CRUD de empresas/contactos/oportunidades/productos/ventas (crear, editar, cambiar
 etapa) se hace desde Client Components con el cliente de Supabase del navegador
 (`src/lib/supabase/client.ts`), no con Server Actions. Motivo: la UI usa paneles laterales
 (`Drawer`) para editar sin navegar a otra página, y `router.refresh()` después de una Server Action
@@ -110,9 +145,16 @@ src/
     login/                    Login (fuera del grupo protegido), Server Action en actions.ts
       page.tsx                 Split-screen: panel de marca (cancha en SVG) + panel de form
       LoginForm.tsx            Client: show/hide de contraseña, banner de error, useFormStatus
+    recuperar/                "Olvidé mi contraseña" (pública; responde siempre igual)
+    definir-clave/            Elegir contraseña tras activar o recuperar (Server Action)
     auth/signout/route.ts     Logout (POST, borra la sesión)
+    auth/confirm/route.ts     Canjea el token de los mails con verifyOtp (solo rutas internas en `next`)
+    admin/                    Panel del superadmin (alta/suspensión de clientes), fuera del CRM
     (app)/                    Grupo de rutas protegidas (layout valida sesión)
-      layout.tsx               Arma el AppShell + guard de auth
+      layout.tsx               AppShell + guards: superadmin va a /admin; baja o suspensión = "Sin acceso"
+      usuarios/                Usuarios y roles del cliente (permiso usuarios.gestionar); actions.ts
+      sin-permisos/            Destino cuando el rol no tiene ninguna sección
+      */loading.tsx            Loader de marca por módulo
       dashboard/                KPIs + distribución del embudo + rankings
         page.tsx                 Server Component: cuenta y agrega oportunidades por etapa/empresa
         charts.tsx               MagnitudeBars / ShareBar en CSS puro (sin librería de charts)
@@ -132,9 +174,9 @@ src/
         actions.ts               Server Actions: envío por SMTP/Gmail (o mailto) + registro
         plantillas.ts            Mensajes prearmados — funciones puras
         plantillas.check.ts      Self-check: node --test "src/app/(app)/alertas/plantillas.check.ts"
-      oportunidades/             Embudo (kanban) + listado en una sola página
+      oportunidades/             Embudo (kanban con drag & drop) + listado en una sola página
         page.tsx                 Server Component: fetch de oportunidades + catálogos
-        OportunidadesView.tsx     Client: embudo, tabla + cards mobile, filtros, EtapaBadge
+        OportunidadesView.tsx     Client: embudo, tabla + cards mobile, filtro por etapa, EtapaBadge
         OportunidadForm.tsx       Form de alta/edición (usado dentro del Drawer)
   components/
     ui/                        Primitivos del Sumar UI Kit — reusar, no reinventar
@@ -152,7 +194,8 @@ src/
       ParticleField.tsx         Canvas de partículas: isotipo, halo y cielo; reacciona al mouse
       BallCursor.tsx            Cursor pelota de fútbol + spotlight de las cards
       ProductShowcase.tsx       Ventanas simuladas del CRM (datos de ejemplo)
-    AppShell.tsx                Sidebar colapsable desktop + header/drawer mobile + logout
+    AppShell.tsx                Sidebar colapsable desktop + header/drawer mobile + logout (NAV por permiso)
+    AuthCard.tsx                Tarjeta de las pantallas de acceso (login, recuperar, sin acceso)
     Logo.tsx                    GoalMark: isotipo en currentColor (sidebar, login, loader)
     Cancha.tsx                  MarcasCancha: la cancha en SVG sobre la superficie .cesped
     Equipamiento.tsx            Íconos del rubro (arco, red, pelota…) + IconoEquipo
@@ -165,7 +208,12 @@ src/
   lib/
     utils.ts                   cn() — merge de clases Tailwind
     brand.ts                   APP_NAME — única fuente del nombre de la app
-    contacto.ts                Datos de contacto y remitente, leídos de variables de entorno
+    contacto.ts                Datos de contacto y remitente SMTP, leídos de variables de entorno
+    sesion.ts                  getSesion(), exigirPermiso() y origenPublico() (SITE_URL para los links de mails)
+    permisos.ts                Catálogo de 19 permisos, ROLES_POR_DEFECTO, rutaInicial()
+    permisos.check.ts          Self-check: el catálogo coincide con el CHECK de la 0007
+    cuentas.ts                 Alta, activación, recuperación y límite de mails (solo servidor)
+    email/                     enviar.ts (único punto de salida SMTP), layout.ts (HTML de mails), plantillas.ts
     money.ts                   Máscara/parseo es-AR + formatters de display
     money.check.ts             Self-check: node --test src/lib/money.check.ts
     equipo.ts                  tipoEquipo(): qué equipo es un producto, para su ícono
@@ -173,12 +221,18 @@ src/
     supabase/
       client.ts                Cliente Supabase para Client Components (drawers, mutaciones)
       server.ts                Cliente Supabase para Server Components/Actions (usa cookies())
+      admin.ts                  Cliente con service_role (`server-only`); solo tras verificar permisos
       middleware.ts             Lógica de refresco de sesión + redirects, usada por proxy.ts
-      types.ts                  Tipos Database generados (tablas + relaciones para embeds tipados)
-  proxy.ts                      Proxy/middleware raíz de Next.js (protege todo salvo / y /login)
+      types.ts                  Tipos Database generados. OJO: anteriores a la 0007 (13 tablas); regenerar
+  proxy.ts                      Proxy raíz de Next.js (exige login; públicas: /, /login, /recuperar, /auth/confirm)
 docs/
   DESIGN.md                     Sumar UI Kit canónico (vendoreado, READ-ONLY, no editar)
   design-overrides.md           Dónde esta app se desvía del kit a propósito, y por qué
+  README.md                     Índice de la documentación
+  notas-de-version.md           Todo lo agregado desde la primera entrega + estado frente a la consigna
+  arquitectura.md, modelo-de-datos.md, reglas-de-negocio.md, seguridad.md, deploy.md, pruebas.md
+  decisiones/                   ADR: por qué se decidió cada cosa de peso
+CHANGELOG.md, CONTRIBUTING.md, SECURITY.md     En la raíz
 supabase/
   migrations/
     0001_init_schema.sql        Tablas, índices, triggers, RLS
@@ -188,63 +242,70 @@ supabase/
     0004_multitenant.sql        Organizaciones, organizacion_id en todo, FKs compuestas, RLS por org
     0005_roles_permisos.sql     Roles con permisos por organización y RLS por permiso
     0006_superadmin_sin_organizacion.sql  El superadmin sale de la org demo (solo plataforma)
-  tests/
-    0005_permisos.sql           Prueba de aislamiento y permisos (corre en el SQL Editor, hace rollback)
+    0007_entrega_final.sql      Catálogos, estados, reglas del embudo, historial, cartera propia, logo
+  tests/                        SQL con rollback; devuelven "TODO OK" o fallan con "FALLA:"
+    0005_permisos.sql           Aislamiento y permisos (correr DESPUÉS de la 0007)
+    0007_reglas.sql             Reglas de la 0007 (correr después de aplicarla)
+    0007_reejecucion.sql        Re-ejecución de la 0007 (SOLO en una base sin la 0007)
+  seeds/demo_catedra.sql        Organización "Cátedra UNLaM (demo)" con una cuenta por rol y datos
 ```
 
 No hay rutas separadas para "nueva empresa" o "detalle de oportunidad": todo alta/edición pasa
 por el `Drawer` desde la lista correspondiente. Tampoco hay una página de Contactos aparte — viven
-anidados dentro de cada empresa en `/empresas`.
+anidados dentro de cada empresa en `/empresas` (un contacto sin empresa existe en la base pero hoy
+no se lista; `/contactos` y los detalles son F1). Rutas planificadas: `/configuracion`,
+`/contactos`, `/empresas/[id]`, `/oportunidades/[id]`.
 
 ### Modelo de datos (Postgres, esquema `public`)
 
-- `perfiles` — espejo liviano de `auth.users` (id, nombre, email) para poder mostrar el nombre de
-  un responsable sin exponer la tabla `auth.users`. Se completa solo via trigger
-  `on_auth_user_created` cuando se crea un usuario en Supabase Auth.
-- `empresas` — nombre, cuit, teléfono, email, dirección, notas.
-- `contactos` — nombre, apellido, email, teléfono, cargo, notas, `empresa_id` (FK opcional a
-  `empresas`).
-- `productos` — nombre (único), descripción, precio, categoría, marca, activo,
-  `vida_util_meses` (null = sin seguimiento de recambio).
-- `etapas` — nombre, `orden` (único, define el orden de las columnas del embudo), color (hex,
-  usado en la UI).
-- `oportunidades` — título, monto, notas, `empresa_id`, `contacto_id`, `producto_id` (todas FK
-  opcionales), `responsable_id` (FK opcional a `perfiles`), `etapa_id` (FK obligatoria a
-  `etapas`).
+Resumen. El detalle completo (diagrama ER, columnas, FKs, RLS por tabla) está en
+[`docs/modelo-de-datos.md`](./docs/modelo-de-datos.md). 18 tablas más la vista `alertas_vida_util`.
 
-- `ventas` — `empresa_id` (obligatoria), `contacto_id`, `oportunidad_id`, fecha, comprobante,
-  notas. Es un hecho consumado: distinto de `oportunidades`, que es el embudo.
-- `venta_items` — `venta_id`, `producto_id`, cantidad, precio_unitario, `fecha_entrega`,
-  `vida_util_meses`. Los dos últimos los completa un trigger si vienen vacíos: la vida útil se
-  **copia** del catálogo (snapshot) y no se lee por join, para que cambiar el catálogo no altere
-  lo que ya se le prometió a un cliente.
-- `bitacora_entradas` — `empresa_id`, `contacto_id`, tipo (CHECK: llamada, reunion, email,
-  whatsapp, consulta, queja, nota), título, detalle, `autor_id`, `ocurrido_en`.
-- `alertas_enviadas` — registro de cada aviso mandado (canal, destinatario, mensaje, autor).
-  **Solo se guarda lo enviado**: las alertas pendientes no se persisten.
-- `alertas_vida_util` (VISTA, `security_invoker = on`) — calcula en vivo qué ítems vencieron o
-  vencen en 60 días, con el último envío de cada uno. Sin cron: siempre dice la verdad de hoy.
+- **Plataforma**: `organizaciones` (un cliente = una fila; desde la 0007 también datos fiscales y
+  `logo_path`), `perfiles` (espejo de `auth.users`: organización, rol, `activo`, `activado_at`,
+  `es_superadmin`; solo el servidor lo escribe), `roles` (por organización; `permisos text[]` con
+  CHECK de 19 claves), `envios_auth` (límite de mails de cuenta).
+- **Clientes**: `empresas` y `contactos` (contacto → empresa opcional). Con `estado`
+  (potencial/cliente/inactivo/no_contactar), `responsable_id`, `origen_id`; empresas con
+  `tipo_cliente` y `sitio_web`, contactos con `documento`.
+- **Comercial**: `productos` (`vida_util_meses`, null = sin seguimiento; se dan de baja con
+  `activo`), `etapas` (con `tipo` abierta/ganada/perdida), `oportunidades` (con `estado`,
+  `fecha_cierre`, `motivo_perdida_id`, `origen_id`, `probabilidad`, `tipo` directa/licitacion;
+  **no se borran**).
+- **Ventas y recambio**: `ventas` (hecho consumado, distinto de la oportunidad) y `venta_items`
+  (`fecha_entrega` propia y `vida_util_meses` **copiada** del producto por trigger: snapshot).
+  `alertas_enviadas` guarda solo lo enviado; las pendientes las calcula la vista
+  `alertas_vida_util` (`security_invoker`, ventana de 60 días, sin cron).
+- **Actividad e historial**: `bitacora_entradas` (las "actividades": log inmutable, con
+  `tipo_actividad_id`, `oportunidad_id`, `resultado`; empresa o contacto), `oportunidad_etapas_historial`
+  y `oportunidad_auditoria` (las escriben triggers).
+- **Catálogos**: `origenes`, `motivos_perdida`, `tipos_actividad` (por organización, con `activo`).
 
-Todas las tablas tienen RLS habilitado con una política única: cualquier usuario autenticado
-puede leer y escribir. No hay distinción de roles todavía — ver "fuera de alcance" arriba.
+**Seguridad (importante):** todas las tablas tienen RLS. Cada política pide la organización propia
+(`organizacion_id = org_actual()`) **y** el permiso (`tiene_permiso(...)`); las FKs entre tablas de
+datos son compuestas `(organizacion_id, id)`. Desde la 0007, empresas, contactos y oportunidades
+además se limitan a la cartera propia salvo `clientes.ver_todos`. Un Vendedor ve solo lo asignado;
+Responsable comercial y Solo lectura ven todos los clientes; el Administrador tiene los 19 permisos.
+El superadmin no tiene organización ni ve datos comerciales. Las reglas de negocio (embudo, cierre,
+asignación, vida útil) viven en triggers, no en la UI.
 
 ## Supabase
 
 Ya hay un proyecto de Supabase conectado y provisionado (organización `dgmoqhihtjjbetuedaad`,
 proyecto `pdseuwdifzywpdgawbrl`, región `us-west-2`). Se armó vía el MCP de Supabase:
 
-- Las migraciones `0001_init_schema.sql` y `0002_seed_data.sql` ya están aplicadas.
-- RLS habilitado en las 6 tablas, sin warnings de seguridad pendientes (`get_advisors`).
-- Hay un usuario habilitado para el login de la demo (`admin@crmgads1.com` — ver al usuario del
-  proyecto por la contraseña, se generó una vez y no queda guardada en el repo).
-- `.env.local` ya tiene `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` cargados
-  (archivo gitignoreado, no se commitea).
-- `src/lib/supabase/types.ts` está generado contra este proyecto real.
+- Las migraciones `0001` a `0007` están aplicadas (la `0007` el 2026-10-04, con sus pruebas SQL).
+  Se aplican a mano en el SQL Editor, en orden; **aplicar y desplegar enseguida**, ver
+  [`docs/deploy.md`](./docs/deploy.md).
+- El seed `supabase/seeds/demo_catedra.sql` crea la organización de demostración con una cuenta por
+  rol (credenciales en el README).
+- `.env.local` tiene las variables de Supabase (archivo gitignoreado, no se commitea). La lista
+  completa de variables está en `docs/deploy.md`.
+- `src/lib/supabase/types.ts` está generado contra este proyecto real pero **es anterior a la
+  0007**: regenerarlo antes de construir pantallas que usen las tablas y columnas nuevas.
 
-Si en algún momento hace falta reconectar a otro proyecto o recrearlo desde cero, `.env.example`
-documenta qué variables hacen falta y el [README](./README.md) tiene los pasos manuales
-(crear proyecto, correr las migraciones desde el SQL Editor, crear un usuario en
-Authentication → Users).
+Si en algún momento hace falta reconectar a otro proyecto o recrearlo desde cero, el
+[README](./README.md) y [`docs/deploy.md`](./docs/deploy.md) tienen los pasos.
 
 ## Vercel
 
@@ -252,9 +313,10 @@ Authentication → Users).
 guion; los intentos previos con `crm-gads1` fueron un nombre distinto que quedó descartado),
 team `tomasballesteros12-8080`, conectado al repo de GitHub `TBalles/CRM_GADS1`: cada push a
 `main` dispara un build y deploy de producción automático. Las env vars
-(`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) ya están cargadas en Project
-Settings → Environment Variables. Verificado andando en producción (login + datos de Supabase +
-UI rediseñada) el 2026-09-17.
+(`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) están cargadas en Project
+Settings → Environment Variables; también `SUPABASE_SERVICE_ROLE_KEY`, `SITE_URL` y `SMTP_*` (tabla
+completa en `docs/deploy.md`). Verificado andando en producción (login + datos de Supabase + UI
+rediseñada) el 2026-09-17.
 
 Nota para el futuro: el MCP de Vercel de esta sesión nunca pudo leer el proyecto vía API
 (`list_projects` devolvía `[]` con el proyecto andando perfecto desde el dashboard) — si hace
@@ -294,10 +356,17 @@ Como el stack es Tailwind v4 (no v3 como el kit), los tokens se declaran con `@t
   del negocio (empresas, contactos, oportunidades, embudo, etapas).
 - Identificadores de código (variables, funciones, tipos TS) en inglés/español mixto está bien,
   pero seguí el patrón ya usado en cada archivo en vez de mezclar convenciones nuevas.
-- El único Server Action del proyecto es el login (`src/app/login/actions.ts`), porque necesita
-  escribir la cookie de sesión. El resto del CRUD (empresas, contactos, oportunidades) muta la
-  base directo desde Client Components — ver "Por qué mutaciones client-side" más arriba antes de
-  agregar un Server Action nuevo para alguna de esas pantallas.
+- Las Server Actions son solo para lo privilegiado (login/cookies, clave de servicio, mails). Cada una
+  verifica sesión y permiso con `getSesion()` y valida tipo y forma de sus argumentos. El CRUD
+  (empresas, contactos, oportunidades, productos, ventas) muta la base directo desde Client
+  Components — ver "Por qué mutaciones client-side" más arriba antes de agregar un Server Action
+  nuevo para alguna de esas pantallas.
+- Las reglas de negocio van en la base (triggers, CHECK, RLS), no en la UI. Un permiso nuevo se
+  agrega en `src/lib/permisos.ts` **y** en la migración (CHECK + roles por defecto):
+  `permisos.check.ts` lee `0007_entrega_final.sql` y falla si divergen.
+- Migraciones: aditivas si se puede, idempotentes, probadas dentro de `begin ... rollback`, con su
+  prueba en `supabase/tests/`. Ver [`CONTRIBUTING.md`](./CONTRIBUTING.md).
+- Commits: Conventional Commits y **sin líneas de atribución de IA** (nada de `Co-Authored-By`).
 - Los formularios usan los componentes de `src/components/form.tsx` en vez de reinventar inputs
   estilizados en cada página.
 - Los tipos de la base (`src/lib/supabase/types.ts`) están generados contra el proyecto real de
@@ -313,12 +382,18 @@ npm run dev      # servidor de desarrollo (http://localhost:3000)
 npm run build    # build de producción
 npm run lint     # eslint
 
-# Self-check de la máscara de dinero (sin framework, corre con el runner de Node)
-node --test src/lib/money.check.ts
+npx tsc --noEmit                     # tipos
+npx eslint src --max-warnings=0      # lint sin advertencias
 
-# Self-check del ícono de cada producto (nombre primero, después categoría)
-node --test src/lib/equipo.check.ts
+# Self-checks (sin framework, runner de Node): money, equipo, permisos, email/layout, alertas/plantillas
+node --test "src/**/*.check.ts"      # 5 archivos, 37 pruebas
+node --test src/lib/money.check.ts   # o uno solo
 ```
+
+Antes de pushear pasan `tsc`, `eslint`, los self-checks y `next build`. Las pruebas SQL de
+`supabase/tests/` se pegan en el SQL Editor (hacen rollback); `0005_permisos.sql` y `0007_reglas.sql`
+se corren después de la 0007, y `0007_reejecucion.sql` solo en una base que no la tiene. Detalle en
+[`docs/pruebas.md`](./docs/pruebas.md).
 
 <!-- BEGIN:nextjs-agent-rules -->
 

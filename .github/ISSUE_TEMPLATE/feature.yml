@@ -1,0 +1,57 @@
+name: Propuesta de funcionalidad
+description: Una mejora o una funcionalidad nueva
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Antes de proponer, mirá el estado actual y el plan en [docs/notas-de-version.md](https://github.com/TBalles/CRM_GADS1/blob/main/docs/notas-de-version.md).
+        Varias capacidades ya están en la base de datos y esperan su interfaz (fases F1 a F8).
+  - type: textarea
+    id: problema
+    attributes:
+      label: Qué problema resuelve
+      description: Quién lo necesita y qué le cuesta hoy.
+    validations:
+      required: true
+  - type: textarea
+    id: propuesta
+    attributes:
+      label: Qué proponés
+      description: Cómo debería funcionar, desde el punto de vista de quien lo usa.
+    validations:
+      required: true
+  - type: dropdown
+    id: rol
+    attributes:
+      label: Para quién
+      multiple: true
+      options:
+        - Administrador
+        - Vendedor
+        - Responsable comercial
+        - Solo lectura
+        - Superadmin (plataforma)
+    validations:
+      required: true
+  - type: dropdown
+    id: relacion
+    attributes:
+      label: Relación con la consigna
+      description: ¿Es un requisito de la consigna o una mejora propia?
+      options:
+        - Requisito de la consigna
+        - Rubro (equipamiento deportivo)
+        - Mejora propia
+        - No lo sé
+    validations:
+      required: true
+  - type: textarea
+    id: alternativas
+    attributes:
+      label: Alternativas consideradas
+  - type: textarea
+    id: contexto
+    attributes:
+      label: Contexto adicional
+      description: Capturas, ejemplos o enlaces. No incluyas datos reales de personas.
