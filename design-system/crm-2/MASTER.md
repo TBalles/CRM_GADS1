@@ -344,7 +344,7 @@ Los de §10.1–§10.10 están construidos en `src/components/crm/` y se ven en 
 no tienen `"use client"` ni hooks y se pueden usar desde server components (el laboratorio dibuja una DataTable con links y
 tooltips de recorte desde su página servidor); los demás son de cliente. §10.11 es el shell (Etapa 2, construido); §10.12 es la
 especificación de las composiciones, §10.13 cómo quedaron construidas en Empresas (Etapa 3) y §10.14 Contactos y Productos
-(Lote A), con lo que se generalizó para todas las listas.
+(Lote A), con lo que se generalizó para todas las listas. §10.15 es el selector de fecha (`DatePicker` / `DateTimePicker`).
 
 ### 10.1 Button, IconButton, FilterChip — `Button.tsx` (server-safe)
 - Variantes: `primary` (acento sólido; **una por pantalla**), `secondary` (panel + hairline; la normal), `ghost` (sin caja; acciones
@@ -363,6 +363,7 @@ especificación de las composiciones, §10.13 cómo quedaron construidas en Empr
   id/aria-*`) + `color` y `disabled` por opción, `required` (→ `aria-required`), `aria-invalid` y `aria-describedby` (los pasa
   `Field`). Buscador automático con más de 8 opciones. Clic en su `<label>`: enfoca sin abrir la lista.
 - Montos: `MoneyInput` de siempre (nunca `type="number"`).
+- Fechas: `DatePicker` / `DateTimePicker` (§10.15), nunca `type="date"` ni `datetime-local` nativos.
 
 ### 10.3 Menu, Popover — `Menu.tsx`, `Popover.tsx`
 - `Menu`: `⋮` (nombre = `label`, p. ej. "Acciones de Complejo La Tablada") o botón con texto ("Más acciones"). `role="menu"` +
@@ -664,6 +665,59 @@ Segundo y tercer slice (`src/app/(app)/(crm2)/contactos/`, `src/app/(app)/(crm2)
   repetido por la restricción única), payload (precio vacío = `null`, no $ 0) y textos; "Seguimiento de recambio" como
   `FormSection` y la explicación como ayuda del campo (`aria-describedby`).
 
+### 10.15 DatePicker, DateTimePicker — `DatePicker.tsx` (+ lógica en `fecha.ts`)
+Reemplaza a `<input type="date">` y `datetime-local` en CRM 2.0 (el calendario nativo no sigue el tema, ni la tipografía, ni
+la semana de lunes). Un solo componente; `DateTimePicker` = `DatePicker time`. Cliente (hooks); la lógica pura vive en
+`fecha.ts` y la prueba `fecha.check.ts` (`npm test`).
+
+- **Contrato de valor (el del nativo, así validadores y payloads no cambian):** fecha `"YYYY-MM-DD"`; fecha y hora
+  `"YYYY-MM-DDTHH:mm"` en hora **local** (igual que `datetime-local`); vacío `""`. `onChange` recibe SIEMPRE un valor válido
+  dentro de `[min, max]` o `""`: un texto que no es una fecha deja el valor vacío y muestra su mensaje.
+- **Props:** `id` (va en el campo visible: `<label htmlFor>`, `aria-describedby` y los selectores de E2E —`#ocurrido_en`— siguen
+  andando), `value`, `onChange(string)`, `time`, `min`/`max` (por **día**; si traen hora se ignora: la hora contra el tope la
+  valida quien llama, p. ej. "no puede ser futura"), `required`, `disabled`, `name` (un `input hidden` con el ISO),
+  `placeholder` (por defecto `dd/mm/aaaa` / `dd/mm/aaaa hh:mm`), `clearable` (por defecto `!required`), `error`, `dense` (28),
+  `aria-*`. Con `Field`: `{(p) => <DatePicker {...p} … error={error} />}` y el error **al picker, no a `Field`**: muestra uno
+  solo (primero el de formato, si no el de quien llama) con `FieldError` y lo ata por `aria-describedby` + `aria-invalid`.
+  En formularios de drawer: `CampoFecha` (`cuenta/FormDrawer.tsx`).
+- **Campo:** el `Input` de siempre (32, radio 4, borde `--crm-border-strong`, el mismo foco), numerales tabulares, máscara
+  mientras se tipea (solo cifras; `/`, espacio y `:` se ponen solos; "6/" → "06/"; pegar "6/10/2026" se respeta; al borrar no se
+  reacomoda nada, así Backspace borra la barra). Se confirma al salir del campo o con **Enter** (con texto sin confirmar, Enter
+  confirma y NO envía el formulario; el siguiente sí). Mensajes: "Escribí la fecha como dd/mm/aaaa.", "El 31/02/2026 no
+  existe.", "Elegí una fecha hasta el 04/10/2026." (desde / entre), "La hora va de 00:00 a 23:59.". A la derecha, `IconButton`
+  de calendario (`CalendarDays`, 28; 24 en `dense`) "Abrir calendario" con `aria-haspopup="dialog"` y `aria-expanded`. Abierto,
+  el borde del campo pasa a `--crm-accent` (como el Select).
+- **Panel:** capa flotante en `#crm-portal` (`useAnchor` + `useLayer` + `FLOATING`: `--crm-panel`, hairline, radio 6, la única
+  sombra), 280 de ancho, padding 12, `role="dialog"` "Elegir fecha" ("Elegir fecha y hora" con `time`), no modal. Se arma
+  con las piezas del `Popover` (no con el `Popover` mismo: el ancla es el campo entero y el foco inicial va al día, no al
+  primer botón).
+  - **Cabecera:** "Mes anterior" / "Mes siguiente" (`IconButton sm`) y en el medio el mes en 14/600, "Octubre 2026"
+    (mayúscula inicial, nombres escritos a mano: no depende de `Intl`). Clic en el mes → **vista de meses**: grilla 3 × 4
+    (Ene…Dic, 36 de alto), las flechas pasan a "Año anterior" / "Año siguiente"; elegir un mes vuelve a los días. Una región
+    `aria-live="polite"` (oculta) anuncia el mes o el año al cambiar.
+  - **Grilla:** `role="grid"` + `row` + `columnheader` (Lu Ma Mi Ju Vi Sa Do, 12/500 secundario, semana de lunes) + 6 × 7
+    `gridcell` (botones de 32, radio 4, 13 px). Días de otro mes en `--crm-text-2`; **hoy** con anillo interior de 1 px
+    `--crm-border-strong` + 600 (nunca relleno) y `aria-current="date"`; **elegido** relleno `--crm-accent` + `--crm-on-accent`
+    600 y `aria-selected`; hover tonal; fuera de `[min, max]` al 45 % con `aria-disabled` (sigue enfocable, el clic no hace
+    nada). Nombre de cada día: "martes 6 de octubre de 2026".
+  - **Hora** (`time`): fila bajo la grilla con "Hora", dos `spinbutton` de 28 × 44 (HH y mm, 24 h): se tipea (con tope 23 /
+    59), ↑/↓ dan la vuelta, Enter confirma y cierra; "Ahora" (ghost `sm`) pone hoy y la hora actual.
+  - **Pie:** "Hoy" (ghost `sm`, deshabilitado si hoy está fuera de rango) a la izquierda; "Limpiar" (si `clearable`) y, con
+    `time`, "Listo" a la derecha. Hairline arriba de la hora y del pie.
+  - Elegir un día cierra y devuelve el foco al campo; con `time` el panel queda abierto para ajustar la hora ("Listo",
+    Escape o clic afuera cierran; el valor ya quedó guardado).
+- **Hidratación:** "hoy" se calcula al abrir, en el navegador (el panel nunca lo dibuja el servidor); el campo muestra solo el
+  valor, igual en servidor y cliente. Aritmética de días con `Date.UTC`; nunca `new Date("YYYY-MM-DD")`.
+- **Celular (< 640):** el panel deja de anclarse y queda como hoja fija abajo, de lado a lado con 8 px de margen (pisa la
+  posición de `useAnchor` con `!`). Con puntero grueso (`pointer-coarse:`, variante de Tailwind; no hace falta regla en
+  crm.css) los días pasan a 36, los botones del panel y los campos de hora a 36 y los meses a 44.
+- **Movimiento y color:** solo `crm-pop` del flotante (apagado con `prefers-reduced-motion`) y transiciones de color de 120 ms.
+  Sin tokens nuevos: todos los pares que usa ya están medidos en §3.3 (on-accent/accent, text-2/panel, border-strong/panel,
+  foco). Sin gradientes, sin sombras extra, sin `title=`.
+- **Dónde se usa:** `ActividadDrawer` ("Cuándo", `#ocurrido_en`, `time`, `max` = ahora; misma validación y payload). Las
+  pantallas legacy (`CierreModal`, `ActividadForm`, `FiltrosUrl`, `VentaForm`, `OportunidadForm`) siguen con el nativo hasta su
+  slice. Muestras en `/crm-lab` (sección "Fechas").
+
 ---
 
 ## 11. Interacción y teclado
@@ -683,6 +737,11 @@ Segundo y tercer slice (`src/app/(app)/(crm2)/contactos/`, `src/app/(app)/(crm2)
   buffer); Enter elige; Escape cierra sin cambiar; las deshabilitadas se saltan. Clic en su label: enfoca sin abrir.
 - **Tabs:** ←/→/Home/End; por URL activación manual (Enter o Espacio), controladas automática. **Segmentado:** flechas mueven y eligen.
 - **Popover:** foco al primer control; Escape o salir con Tab cierran y vuelven al disparador.
+- **DatePicker** (§10.15): en el campo, tipear + Enter/salir confirman, Alt+↓ abre. Abierto, el foco va al día elegido (o hoy, o el
+  más cercano dentro del rango); ←/→ un día, ↑/↓ una semana, Home/End inicio/fin de semana (lunes/domingo), RePág/AvPág un mes,
+  Shift+RePág/AvPág un año (cambiar de mes sigue al foco), Enter/Espacio eligen; Tab recorre cabecera → grilla (una parada,
+  roving tabindex) → hora → pie y al salir cierra y deja el foco en el botón del calendario; Escape cierra SOLO el calendario y
+  devuelve el foco al campo (dentro de un drawer, el siguiente Escape cierra el drawer).
 - **Grilla (Etapa 3, construido):** ↑/↓ mueve la selección desde la fila con foco (optimista, una sola navegación al soltar), Enter en el nombre abre la ficha, Esc cierra la vista previa si no hay una capa abierta (detalle en §10.13).
 - Ctrl/Cmd+clic y botón del medio en links de lista y paginación abren donde la persona quiere (son links reales).
 - La lógica pura de teclado está en `src/components/crm/teclado.ts` (probada en `teclado.check.ts`).

@@ -6,6 +6,7 @@ import { Button } from "../Button";
 import { InlineBanner } from "../Feedback";
 import { Field, Input, Textarea } from "../Field";
 import { Select, type SelectOption } from "../Select";
+import { DatePicker } from "../DatePicker";
 import type { OrigenOpcion, PerfilOpcion } from "@/lib/clientes";
 
 /**
@@ -98,6 +99,38 @@ export function CampoTexto({
   return (
     <Field id={id} label={label} error={error} required={required} help={help} className={className}>
       {(p) => <Input {...p} {...input} value={value} onChange={(e) => onChange(e.target.value)} />}
+    </Field>
+  );
+}
+
+/**
+ * Fecha (o fecha y hora con `time`) con el `DatePicker` de CRM 2.0. Mismo contrato que el input nativo ("YYYY-MM-DD" o
+ * "YYYY-MM-DDTHH:mm" local) y el mismo id. El error va al picker (no a `Field`): muestra uno solo, el de formato o este.
+ */
+export function CampoFecha({
+  id,
+  label,
+  value,
+  onChange,
+  error,
+  required,
+  time,
+  min,
+  max,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  error?: string;
+  required?: boolean;
+  time?: boolean;
+  min?: string;
+  max?: string;
+}) {
+  return (
+    <Field id={id} label={label} required={required}>
+      {(p) => <DatePicker {...p} time={time} min={min} max={max} value={value} onChange={onChange} error={error} />}
     </Field>
   );
 }

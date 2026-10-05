@@ -293,6 +293,16 @@ qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
 - **Por qué**: el embudo es una sola magnitud por etapa, no una proporción del total, y la búsqueda es el único atajo
   de teclado global del CRM: tiene que ser accesible sin ratón y usable con el pulgar.
 
+## 17. DatePicker propio en CRM 2.0 (spec en `design-system/crm-2/MASTER.md` §10.15)
+
+- **Kit**: nombra un `DatePicker` (§3.9 y el patrón de dropdown anclado de §8) pero no lo especifica.
+- **Tuco & Nito**: en las pantallas CRM 2.0 las fechas usan `DatePicker` / `DateTimePicker` (campo con máscara
+  dd/mm/aaaa + calendario no modal en `#crm-portal`, semana de lunes, es-AR), con el mismo valor que el input nativo
+  ("YYYY-MM-DD" / "YYYY-MM-DDTHH:mm" local). La spec completa (look Ledger, teclado APG, celular) está en MASTER crm-2 §10.15.
+  Las pantallas legacy siguen con `type="date"` / `datetime-local` hasta que se migren.
+- **Dónde**: `src/components/crm/DatePicker.tsx`, `src/components/crm/fecha.ts` (+ `fecha.check.ts`).
+- **Por qué**: el calendario nativo no sigue el tema claro/oscuro, ni la tipografía, ni el formato y la semana de es-AR.
+
 ---
 
 > Si aparece una divergencia nueva respecto del kit, se agrega como un bloque más en este

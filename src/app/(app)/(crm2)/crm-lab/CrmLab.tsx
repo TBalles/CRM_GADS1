@@ -6,6 +6,7 @@ import { urlConParams, type ParamsUrl } from "@/lib/paginacion";
 import { Button, FilterChip, IconButton } from "@/components/crm/Button";
 import { Checkbox, Field, Input, Radio, RadioGroup, Switch, Textarea } from "@/components/crm/Field";
 import { Select, type SelectOption } from "@/components/crm/Select";
+import { DatePicker, DateTimePicker } from "@/components/crm/DatePicker";
 import { Menu } from "@/components/crm/Menu";
 import { Popover } from "@/components/crm/Popover";
 import { Tooltip } from "@/components/crm/Tooltip";
@@ -120,6 +121,10 @@ function Lab({ tab, tabs, page, sel, params }: Props) {
   const [vistaRapida, setVistaRapida] = React.useState(false);
   const [nombre, setNombre] = React.useState("Complejo La Tablada");
   const [porPagina, setPorPagina] = React.useState("20");
+  const [fechaLab, setFechaLab] = React.useState("2026-10-06");
+  const [fechaHora, setFechaHora] = React.useState("2026-10-04T09:30");
+  const [fechaRango, setFechaRango] = React.useState("");
+  const [fechaVence, setFechaVence] = React.useState("");
 
   const guardar = (e: React.FormEvent) => {
     e.preventDefault();
@@ -249,6 +254,30 @@ function Lab({ tab, tabs, page, sel, params }: Props) {
             <Radio id="lab-r-baja" name="lab-prioridad" label="Baja" description="Sin seguimiento semanal." />
             <Radio id="lab-r-off" name="lab-prioridad-off" label="Deshabilitado" disabled />
           </RadioGroup>
+        </div>
+      </Seccion>
+
+      <Seccion id="lab-fechas" titulo="Fechas">
+        <div className="grid gap-x-6 gap-y-4 rounded-(--crm-radius) border border-(--crm-border) bg-(--crm-panel) p-4 md:grid-cols-2">
+          <Field id="lab-fecha" label="Fecha" help={`Valor: ${fechaLab || "(vacío)"}`}>
+            {(p) => <DatePicker {...p} value={fechaLab} onChange={setFechaLab} />}
+          </Field>
+          <Field id="lab-fecha-hora" label="Fecha y hora" required help={`Valor: ${fechaHora || "(vacío)"}`}>
+            {(p) => <DateTimePicker {...p} value={fechaHora} onChange={setFechaHora} />}
+          </Field>
+          <Field id="lab-fecha-rango" label="Con mínimo y máximo" help="Solo del 01/10/2026 al 20/10/2026: el resto de los días quedan deshabilitados.">
+            {(p) => <DatePicker {...p} min="2026-10-01" max="2026-10-20" value={fechaRango} onChange={setFechaRango} />}
+          </Field>
+          <Field id="lab-fecha-error" label="Con error de quien llama" required>
+            {(p) => <DatePicker {...p} value={fechaVence} onChange={setFechaVence} error={fechaVence ? undefined : "Indicá la fecha de vencimiento."} />}
+          </Field>
+          <Field id="lab-fecha-off" label="Deshabilitado">
+            {(p) => <DatePicker {...p} disabled value="2026-10-04" onChange={() => {}} />}
+          </Field>
+          <div className="flex flex-col gap-1">
+            <span className="text-[13px] font-medium leading-[18px]">En una toolbar (28)</span>
+            <DatePicker id="lab-fecha-dense" dense aria-label="Desde" value={fechaLab} onChange={setFechaLab} className="w-40" />
+          </div>
         </div>
       </Seccion>
 

@@ -2,7 +2,7 @@
 
 import { useCrmToast } from "../Toast";
 import { InlineBanner } from "../Feedback";
-import { CampoArea, CampoOpciones, CampoTexto, FormDrawer, Par } from "./FormDrawer";
+import { CampoArea, CampoFecha, CampoOpciones, CampoTexto, FormDrawer, Par } from "./FormDrawer";
 import { ahoraLocal, useActividadForm, type TipoActividadOpcion } from "@/lib/formularios/actividad";
 import type { Tables } from "@/lib/supabase/types";
 
@@ -86,11 +86,11 @@ export function ActividadDrawer({
           options={activos.map((t) => ({ value: t.id, label: t.nombre }))}
           error={errores.tipo}
         />
-        <CampoTexto
+        <CampoFecha
           id="ocurrido_en"
           label="Cuándo"
           required
-          type="datetime-local"
+          time
           max={ahoraLocal()}
           value={v.ocurridoEn}
           onChange={(x) => set("ocurridoEn", x)}
