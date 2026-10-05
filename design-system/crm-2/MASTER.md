@@ -704,7 +704,11 @@ la semana de lunes). Un solo componente; `DateTimePicker` = `DatePicker time`. C
 
 - **Contrato de valor (el del nativo, así validadores y payloads no cambian):** fecha `"YYYY-MM-DD"`; fecha y hora
   `"YYYY-MM-DDTHH:mm"` en hora **local** (igual que `datetime-local`); vacío `""`. `onChange` recibe SIEMPRE un valor válido
-  dentro de `[min, max]` o `""`: un texto que no es una fecha deja el valor vacío y muestra su mensaje.
+  dentro de `[min, max]` o `""`: un texto que no es una fecha deja el valor vacío y muestra su mensaje. **Borrado ≠
+  inválido** (`confirmarTexto` en `fecha.ts`, probado): borrar el campo emite `""` siempre; un texto inválido o fuera de
+  rango, en un formulario, vacía el valor (lo valida como faltante: nunca se guarda una fecha que no se ve); con
+  `keepOnInvalid` (filtros de lista, `FechaFiltro`) NO emite nada: queda el último válido y el campo muestra el mensaje (antes
+  un "01/01/2027" en "Desde" borraba en silencio el `?desde=` aplicado).
 - **Props:** `id` (va en el campo visible: `<label htmlFor>`, `aria-describedby` y los selectores de E2E —`#ocurrido_en`— siguen
   andando), `value`, `onChange(string)`, `time`, `min`/`max` (por **día**; si traen hora se ignora: la hora contra el tope la
   valida quien llama, p. ej. "no puede ser futura"), `required`, `disabled`, `name` (un `input hidden` con el ISO),
@@ -768,7 +772,7 @@ la validación de líneas y la fecha local).
 - **Fila desplegable** (el acordeón de antes): una por venta, una abierta a la vez. El disparador es un `<button>` en la celda del
   cliente (chevron + nombre; `aria-expanded`, `aria-controls` → la fila del detalle mientras existe; nombre accesible
   "<cliente>, <fecha>" para distinguir dos ventas al mismo club); Enter y Espacio son los nativos del botón y el clic en el resto
-  de la fila también alterna. El detalle es una fila `FilaCompleta` en `--crm-canvas`, alineada bajo el nombre del cliente (148 px
+  de la fila también alterna (salvo que se esté seleccionando texto, p. ej. para copiar un comprobante). El detalle es una fila `FilaCompleta` en `--crm-canvas`, alineada bajo el nombre del cliente (148 px
   desde 30rem): una línea por producto (ícono de equipamiento gris, nombre, "Entrega dd/mm/aaaa", "Vida útil N meses", "×N" mono,
   subtotal `$` gris + mono) y las notas. Con menos de 45rem de contenedor la entrega, la vida útil y la cantidad pasan a un
   segundo renglón (sin recortar).
@@ -814,7 +818,8 @@ en `alertas/logica.ts` (+ `.check`: contadores, filtro + búsqueda, texto del ve
 - **Toolbar:** el filtro de siempre como `SegmentedControl` "Filtrar alertas" (Todas / Vencidas / Por vencer / Sin avisar;
   `radiogroup`, flechas mueven y eligen) + textbox **"Buscar alerta"** ("Buscar cliente o producto…", `SearchInput`, el campo
   del `SearchField` sin URL) a la derecha. Con IA disponible, debajo, la línea "Si querés, «Redactar con IA»…" + "Cómo usamos la
-  IA". Los avisos de la página (migración 0011 sin aplicar, error al leer las oportunidades) van bajo la barra (`InlineBanner`).
+  IA". Los avisos de la página (migración 0011 sin aplicar —el texto de `AvisoMigracion`, ahora como `InlineBanner` info—, error
+  al leer las oportunidades) van bajo la barra.
 - **Tabla** (dos renglones por fila; sin cards): Equipo (ícono de equipamiento gris + nombre 500 + "×N" mono si es más de 1;
   debajo "Entregado el … · vida útil N meses") · Cliente (empresa; contacto debajo) · Vencimiento ("Vencido hace N d" como
   `StatusBadge` danger —es lo que tiene que saltar—, "Vence en N d" / "Vence hoy" como punto de atención; debajo "vence
@@ -825,10 +830,16 @@ en `alertas/logica.ts` (+ `.check`: contadores, filtro + búsqueda, texto del ve
   apoyo del equipo, **un dato por renglón** (no se recortan). En el celular la columna de acciones se esconde y las acciones van
   debajo del equipo, a todo el ancho.
 - **Acciones a la vista** (como antes; no en un `⋮`, el legacy no tenía menú): "Crear oportunidad de recambio" (botón `sm` con
-  texto visible "Crear oportunidad" y el nombre accesible completo; con poco ancho, solo ícono) o el link "Oportunidad abierta →";
-  "Redactar con IA" (solo con clave de IA y `alertas.enviar`), "Mail" y "WhatsApp" como `IconButton` con tooltip. Mismos
-  handlers, permisos, avisos y la regla de UNA llamada a la IA a la vez. El overlay de "Enviando…" / "Creando la oportunidad…"
-  se cambió por: la fila ocupada deshabilitada, la tabla `aria-busy` y una región `role="status"` con el mismo texto.
+  texto visible "Crear oportunidad" y el nombre accesible completo; con menos de **70rem** de tabla —1280 y menos— solo ícono,
+  así el equipo tiene ancho y la fila queda en dos renglones; el tooltip aparece SOLO cuando el texto está escondido,
+  `Tooltip onlyWhenLabelHidden`) o el link "Oportunidad abierta →"; "Redactar con IA" (solo con clave de IA y `alertas.enviar`),
+  "Mail" y "WhatsApp" como `IconButton` con tooltip. Mismos handlers, permisos, avisos y la regla de UNA llamada a la IA a la
+  vez; mientras una fila manda un aviso o crea una oportunidad, "Redactar con IA" no abre otro borrador. El overlay de
+  "Enviando…" / "Creando la oportunidad…" se cambió por: la fila ocupada con `aria-disabled` (NO `disabled`, que tiraba el foco
+  al `<body>`), la tabla `aria-busy` y una región `role="status"` con el mismo texto. **Foco:** al terminar, vuelve a la misma
+  acción de la fila (`data-accion`); al crear la oportunidad, al link "Oportunidad abierta →" que reemplaza al botón; si la fila
+  salió de la lista ("Sin avisar"), a la siguiente que siga (`filaTrasRefresco`). Si una consulta del recambio tira (red), la fila
+  se libera con el aviso de error (`sinTrabarse`).
 - **"Aviso de recambio con IA"** (`BorradorIA`, `Drawer` de 480): misma lógica (`useBorradorIA` sin cambios), descripción
   "<equipo> · <cliente>", la etiqueta "Borrador generado con IA — revisalo antes de enviar" en `--crm-accent-text` (como la de la
   historia de la cuenta), el aviso de falla como `InlineBanner` de atención con `role="alert"` (como antes; `InlineBanner` acepta
@@ -861,13 +872,18 @@ usuario, grupos de permisos, el tildado con dependencias y la validación del ro
   | < 30rem | Usuario · `⋮` | estado (si no es "Activo") · rol · email (sin recortar) |
 
   Después de "Dar de baja" / "Reactivar" el foco sigue la regla de §10.14 (`useFocoFilas`; sin link de nombre, va al `⋮`).
-- **Tab Roles:** sin cards. (1) Tabla **"Roles"**: Rol · Descripción (debajo del nombre con poco ancho) · Usuarios (mono, a la
+- **Tab Roles:** sin cards. (1) Tabla **"Roles"**: Rol · Descripción (entera, en varios renglones si hace falta; debajo del
+  nombre con poco ancho: en el celular no hay tooltip, así que no se recorta) · Usuarios (mono, a la
   derecha) · `⋮` **"Acciones del rol <nombre>"** (Editar, Borrar → `ConfirmDialog` "Borrar rol") o, en el Administrador, la
   etiqueta "Fijo" con candado (y "el rol Administrador no se puede modificar" para lectores de pantalla y en tooltip). (2) Matriz
-  **"Permisos por rol"**: un permiso por fila (`th scope="row"`), agrupados con filas de grupo como el Parque instalado, un rol por
-  columna, "✓" (con "Sí" para lectores de pantalla) o "—" ("No"). Los mismos datos que las pastillas de color de antes, leíbles
-  de un vistazo y comparables entre roles. En el celular la matriz scrollea de costado DENTRO de su contenedor con la columna
-  del permiso fija (`sticky`, 160 px).
+  **"Permisos por rol"**: un permiso por fila (`th scope="row"`), un `<tbody>` por grupo con su título (`th scope="rowgroup"`,
+  sin `colSpan`: celdas vacías por columna, así no aparecen columnas fantasma), un rol por columna, "✓" (con "Sí" para lectores
+  de pantalla) o "—" ("No"). Los mismos datos que las pastillas de color de antes, leíbles de un vistazo y comparables entre
+  roles. La matriz es **su propio scroller** (`flex-1 min-h-0`; la tab entera no scrollea salvo que no entre ni el mínimo de 240
+  de la matriz), así la cabecera queda fija al bajar. Ancho tope 240 + 128 por rol (en 1800+ las columnas no se estiran). **En el
+  celular** (< 30rem de tabla) se ve UN rol por vez, elegido con el `Select` "Ver el rol" en la barra de la sección (la misma
+  matriz, columna por columna: sin scroll de costado ni datos nuevos); entre 30 y 45rem, si no entra, scrollea de costado
+  con la columna del permiso fija (`sticky`).
 - **Drawers** (`FormDrawer`, 480): "Invitar usuario" (`#inv-nombre`, `#inv-email`, `#inv-rol` con Vendedor por defecto, la ayuda
   de siempre, "Enviar invitación"), "Cambiar rol" (descripción = el usuario; `#cambiar-rol`; debajo, la descripción del rol y sus
   permisos como `Tag`) y `RolForm` "Nuevo rol" / "Editar rol" (`#rol-nombre`, `#rol-descripcion` de 200, fieldset "Qué puede
@@ -879,7 +895,16 @@ usuario, grupos de permisos, el tildado con dependencias y la validación del ro
 **Generalizado en el Lote B** (lo usan o pueden usar todas las pantallas): `Toolbar.tsx` → `SearchInput` (el campo sin URL;
 `SearchField` ahora lo usa) y `FechaFiltro` (filtro de fecha por URL); `FilaCompleta` (arriba); `PageBar`: si el contador no entra
 al lado del h1, baja a un segundo renglón (`min-h-12` + wrap) en vez de recortar el título (pasaba con Alertas en el celular);
-`ListSkeleton`: `toolbar` (fila propia), `tabs` y `footer`; `InlineBanner`: `role`.
+`ListSkeleton`: `toolbar` (fila propia), `tabs` y `footer`; `InlineBanner`: `role`; `Tooltip`: `onlyWhenLabelHidden`; `DatePicker`:
+`keepOnInvalid` (§10.15).
+
+**Guardar sin trabarse** (`src/lib/guardar.ts`, + `.check`): todo drawer o diálogo con `busy` (Cancelar, Escape y la X
+deshabilitados mientras guarda) corre su guardado con `sinTrabarse(guardar, liberar)`: si la llamada TIRA (red caída, Server
+Action abortada, despliegue en curso) apaga el `saving` y muestra "No se pudo completar la acción. Intentá de nuevo." en el
+banner del formulario, en vez de quedar en "Guardando…" para siempre. Los errores esperados (`{ error }`, `{ ok: false }`) siguen
+con sus mensajes. Lo usan Venta, Producto, Empresa, Cancha, Contacto y Actividad (`lib/formularios/*`, también en los
+formularios legacy), Invitar usuario, Cambiar rol, Rol, Oportunidad, Cierre, Reasignar y el recambio en 1 clic de Alertas; el
+`ConfirmDialog` ya se liberaba solo (`finally`) y `ejecutar` de Usuarios atrapa.
 
 ### 10.19 Oportunidades (Lote C, construido)
 `src/app/(app)/(crm2)/oportunidades/` (`git mv` de `page.tsx`, `datos.ts`, `OportunidadesView.tsx`, `OportunidadForm.tsx`, `loading.tsx` y

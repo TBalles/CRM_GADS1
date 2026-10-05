@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { EMAIL_RE, estaDeBaja, mensajeErrorGuardado } from "@/lib/clientes";
 import type { Tables } from "@/lib/supabase/types";
+import { sinTrabarse } from "@/lib/guardar";
 
 /**
  * Lógica del alta/edición de un contacto: estado, validación, payload y guardado. Sin UI: la usa el drawer de CRM 2.0
@@ -53,7 +54,7 @@ export function useContactoForm({
     if (campo in errores && errores[campo as keyof Errores]) setErrores((prev) => ({ ...prev, [campo]: undefined }));
   }
 
-  async function submit(e: React.FormEvent) {
+  async function enviar(e: React.FormEvent) {
     e.preventDefault();
 
     const nuevos: Errores = {};
@@ -94,6 +95,13 @@ export function useContactoForm({
     notificar(contacto ? "Contacto actualizado." : "Contacto creado.", "success");
     onSaved(data);
   }
+
+  /** El submit del drawer: si el guardado tira (red, despliegue), el formulario se libera con un mensaje (`sinTrabarse`). */
+  const submit = (e: React.FormEvent) =>
+    void sinTrabarse(() => enviar(e), (m) => {
+      setSaving(false);
+      setError(m);
+    });
 
   return { v, set, errores, error, saving, submit };
 }

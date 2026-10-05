@@ -11,6 +11,7 @@ import { Input } from "@/components/crm/Field";
 import { ListFooter, useFocoFilas } from "@/components/crm/Lista";
 import { Menu, type MenuItem } from "@/components/crm/Menu";
 import { PageBar, SectionBar } from "@/components/crm/PageBar";
+import { Select } from "@/components/crm/Select";
 import { Avatar, StatusDot, Tag, type Tone } from "@/components/crm/Status";
 import { TabPanel, Tabs } from "@/components/crm/Tabs";
 import { useCrmToast } from "@/components/crm/Toast";
@@ -24,6 +25,7 @@ import { urlConParams } from "@/lib/paginacion";
 import { borrarRol, cambiarActivo, cambiarRol, invitarUsuario, reenviarInvitacion } from "./actions";
 import RolForm, { type RolFila } from "./RolForm";
 import { TEXTO_ESTADO, estadoUsuario, gruposDePermisos, type EstadoUsuario } from "./logica";
+import { sinTrabarse } from "@/lib/guardar";
 
 type UsuarioFila = {
   id: string;
@@ -401,9 +403,11 @@ function FilaUsuario({ usuario: u, rol, esYo, menu }: { usuario: UsuarioFila; ro
 }
 
 /**
- * La tab Roles: la tabla de roles (nombre, descripción, cuántos usuarios, sus acciones; el Administrador es fijo) y la
- * matriz de permisos por rol (un permiso por fila, agrupados como en el formulario; un rol por columna; "Sí" con tilde o
- * "—"). Scrollea entera dentro del área de trabajo; la matriz, además, de costado si no entra (celular).
+ * La tab Roles: la tabla de roles (nombre, descripción completa, cuántos usuarios, sus acciones; el Administrador es fijo)
+ * y la matriz de permisos por rol (un permiso por fila, agrupados como en el formulario —un `<tbody>` por grupo—; un rol por
+ * columna; "Sí" con tilde o "—"). La matriz es su propio scroller (la cabecera queda fija al bajar) y no se estira más que
+ * 240 + 128 por rol. En el celular (< 30rem de contenedor) muestra UN rol por vez, elegido arriba ("Ver el rol"): es la
+ * misma matriz, columna por columna, sin scroll de costado.
  */
 function Roles({
   roles,
@@ -416,9 +420,12 @@ function Roles({
   onEditar: (r: RolFila) => void;
   onBorrar: (r: RolFila) => void;
 }) {
+  const [rolVisto, setRolVisto] = React.useState(roles[0]?.id ?? "");
+  // En el celular se ve una sola columna de rol: la elegida. Desde 30rem, todas.
+  const columna = (id: string) => (id === rolVisto ? "" : "hidden @[30rem]:table-cell");
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-4">
-      <section className="flex flex-col">
+    <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-3">
+      <section className="flex shrink-0 flex-col">
         <SectionBar title="Roles" count={roles.length} />
         <DataTable label="Roles">
           <THead>
@@ -436,14 +443,13 @@ function Roles({
               const usos = usosPorRol[r.id] ?? 0;
               return (
                 <Tr key={r.id} data-id={r.id}>
-                  <Td className="py-1">
+                  <Td className="whitespace-normal py-1.5">
                     <RolCelda rol={r} />
-                    {r.descripcion && <div className={cn(TYPE.meta, "truncate text-(--crm-text-2) @[45rem]:hidden")}>{r.descripcion}</div>}
+                    {/* Con poco ancho la descripción va debajo del nombre, entera (en el celular no hay tooltip). */}
+                    {r.descripcion && <div className={cn(TYPE.meta, "text-(--crm-text-2) @[45rem]:hidden")}>{r.descripcion}</div>}
                   </Td>
-                  <Td hideBelow="md">
-                    <Tooltip content={r.descripcion ?? ""} onlyWhenTruncated>
-                      <span className="block truncate text-(--crm-text-2)">{r.descripcion ?? "—"}</span>
-                    </Tooltip>
+                  <Td hideBelow="md" className="whitespace-normal py-1.5 text-(--crm-text-2)">
+                    {r.descripcion ?? "—"}
                   </Td>
                   <Td align="right">
                     <CellNumber>{usos}</CellNumber>
@@ -480,54 +486,79 @@ function Roles({
         </DataTable>
       </section>
 
-      <section className="flex flex-col">
-        <SectionBar title="Permisos por rol" count={PERMISOS.length} />
-        <DataTable label="Permisos por rol">
-          <THead>
-            {/* La columna del permiso queda fija al scrollear de costado (celular: la matriz no entra). */}
-            <Th className="sticky left-0 z-(--crm-z-sticky) w-40 @[30rem]:w-60">Permiso</Th>
-            {roles.map((r) => (
-              <Th key={r.id} width={112} align="center">
-                <Tooltip content={r.nombre} onlyWhenTruncated>
-                  <span className="block truncate">{r.nombre}</span>
-                </Tooltip>
-              </Th>
-            ))}
-          </THead>
-          <TBody>
-            {GRUPOS.map(([grupo, permisos]) => [
-              <tr key={`g-${grupo}`}>
-                <th colSpan={roles.length + 1} scope="colgroup" className={cn(TYPE.th, "h-7 border-b border-(--crm-border) bg-(--crm-panel-2) px-3 text-left")}>
-                  <span className="sticky left-3">{grupo}</span>
-                </th>
-              </tr>,
-              ...permisos.map((p) => (
-                <Tr key={p.clave}>
-                  <th scope="row" className="sticky left-0 border-b border-(--crm-border) bg-(--crm-panel) px-3 py-1 text-left align-middle font-normal group-hover/row:bg-[image:linear-gradient(var(--crm-hover),var(--crm-hover))]">
-                    {p.etiqueta}
+      <section className="@container flex min-h-60 flex-1 flex-col">
+        <SectionBar
+          title="Permisos por rol"
+          count={PERMISOS.length}
+          actions={
+            <div className="@[30rem]:hidden">
+              <Select
+                dense
+                aria-label="Ver el rol"
+                className="w-44"
+                value={rolVisto}
+                onChange={setRolVisto}
+                options={roles.map((r) => ({ value: r.id, label: r.nombre }))}
+              />
+            </div>
+          }
+        />
+        {/* Ancho tope: 240 + 128 por rol (en pantallas anchas las columnas no se estiran a 260 px). */}
+        <div className="flex min-h-0 flex-col" style={{ maxWidth: 242 + roles.length * 128 }}>
+          <DataTable label="Permisos por rol" className="min-h-0">
+            <THead>
+              {/* La columna del permiso queda fija si la matriz scrollea de costado (entre 30 y 45rem con muchos roles). */}
+              <Th className="sticky left-0 z-(--crm-z-sticky) @[30rem]:w-60">Permiso</Th>
+              {roles.map((r) => (
+                <Th key={r.id} width={128} align="center" className={cn("whitespace-normal", columna(r.id))}>
+                  {/* Hasta dos renglones ("Responsable comercial" no entra en 128); un nombre más largo, con tooltip. */}
+                  <Tooltip content={r.nombre} onlyWhenTruncated>
+                    <span className="line-clamp-2 break-words">{r.nombre}</span>
+                  </Tooltip>
+                </Th>
+              ))}
+            </THead>
+            {GRUPOS.map(([grupo, permisos]) => (
+              <tbody key={grupo} className="[&:last-child>tr:last-child>*]:border-b-0">
+                <tr>
+                  <th scope="rowgroup" className={cn(TYPE.th, "sticky left-0 h-7 border-b border-(--crm-border) bg-(--crm-panel-2) px-3 text-left")}>
+                    {grupo}
                   </th>
                   {roles.map((r) => (
-                    <Td key={r.id} align="center">
-                      {r.permisos.includes(p.clave) ? (
-                        <>
-                          <Check aria-hidden="true" strokeWidth={2} className="inline size-4 text-(--crm-text)" />
-                          <span className="sr-only">Sí</span>
-                        </>
-                      ) : (
-                        <>
-                          <span aria-hidden="true" className="text-(--crm-text-2)">
-                            —
-                          </span>
-                          <span className="sr-only">No</span>
-                        </>
-                      )}
-                    </Td>
+                    <td key={r.id} aria-hidden="true" className={cn("border-b border-(--crm-border) bg-(--crm-panel-2)", columna(r.id))} />
                   ))}
-                </Tr>
-              )),
-            ])}
-          </TBody>
-        </DataTable>
+                </tr>
+                {permisos.map((p) => (
+                  <Tr key={p.clave}>
+                    <th
+                      scope="row"
+                      className="sticky left-0 border-b border-(--crm-border) bg-(--crm-panel) px-3 py-1 text-left align-middle font-normal group-hover/row:bg-[image:linear-gradient(var(--crm-hover),var(--crm-hover))]"
+                    >
+                      {p.etiqueta}
+                    </th>
+                    {roles.map((r) => (
+                      <Td key={r.id} align="center" className={columna(r.id)}>
+                        {r.permisos.includes(p.clave) ? (
+                          <>
+                            <Check aria-hidden="true" strokeWidth={2} className="inline size-4 text-(--crm-text)" />
+                            <span className="sr-only">Sí</span>
+                          </>
+                        ) : (
+                          <>
+                            <span aria-hidden="true" className="text-(--crm-text-2)">
+                              —
+                            </span>
+                            <span className="sr-only">No</span>
+                          </>
+                        )}
+                      </Td>
+                    ))}
+                  </Tr>
+                ))}
+              </tbody>
+            ))}
+          </DataTable>
+        </div>
       </section>
     </div>
   );
@@ -600,7 +631,10 @@ function InvitarForm({
   }
 
   return (
-    <FormDrawer open={open} onClose={onClose} title="Invitar usuario" saving={saving} error={error} submitLabel="Enviar invitación" onSubmit={guardar}>
+    <FormDrawer open={open} onClose={onClose} title="Invitar usuario" saving={saving} error={error} submitLabel="Enviar invitación" onSubmit={(e) => void sinTrabarse(() => guardar(e), (m) => {
+        setSaving(false);
+        setError(m);
+      })}>
       <CampoTexto id="inv-nombre" label="Nombre y apellido" required value={nombre} onChange={setNombre} />
       <CampoTexto id="inv-email" label="Email" type="email" inputMode="email" required placeholder="persona@empresa.com" value={email} onChange={setEmail} />
       <CampoOpciones id="inv-rol" label="Rol" required options={roles.map((r) => ({ value: r.id, label: r.nombre }))} value={rolId} onChange={setRolId} />
@@ -652,7 +686,10 @@ function CambiarRolForm({
       description={usuario.nombre ?? usuario.email ?? undefined}
       saving={saving}
       error={error}
-      onSubmit={guardar}
+      onSubmit={(e) => void sinTrabarse(() => guardar(e), (m) => {
+        setSaving(false);
+        setError(m);
+      })}
     >
       <CampoOpciones id="cambiar-rol" label="Rol" required options={roles.map((r) => ({ value: r.id, label: r.nombre }))} value={rolId} onChange={setRolId} />
       {elegido && (

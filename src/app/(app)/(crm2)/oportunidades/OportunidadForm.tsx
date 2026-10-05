@@ -26,6 +26,7 @@ import {
   type OpcionProducto,
 } from "@/lib/oportunidades";
 import type { Tables } from "@/lib/supabase/types";
+import { sinTrabarse } from "@/lib/guardar";
 
 type Oportunidad = Tables<"oportunidades">;
 type Licitacion = Tables<"licitaciones">;
@@ -251,7 +252,10 @@ export default function OportunidadForm({
       description={oportunidad?.titulo}
       saving={saving}
       error={error}
-      onSubmit={handleSubmit}
+      onSubmit={(e) => void sinTrabarse(() => handleSubmit(e), (m) => {
+        setSaving(false);
+        setError(m);
+      })}
     >
       {cerrada && (
         <InlineBanner tone="info" title="Esta oportunidad está cerrada.">

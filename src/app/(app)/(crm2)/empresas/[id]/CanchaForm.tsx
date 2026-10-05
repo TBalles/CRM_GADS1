@@ -9,6 +9,7 @@ import { mensajeErrorGuardado } from "@/lib/clientes";
 import { FORMATOS, SUPERFICIES } from "@/lib/canchas";
 import { esErrorDeEsquema } from "@/lib/esquema";
 import type { Tables } from "@/lib/supabase/types";
+import { sinTrabarse } from "@/lib/guardar";
 
 type Cancha = Tables<"canchas">;
 type Errores = Partial<Record<"nombre" | "formato" | "cantidad", string>>;
@@ -94,7 +95,10 @@ export default function CanchaForm({
       description={empresaNombre}
       saving={saving}
       error={error}
-      onSubmit={handleSubmit}
+      onSubmit={(e) => void sinTrabarse(() => handleSubmit(e), (m) => {
+        setSaving(false);
+        setError(m);
+      })}
     >
       <CampoTexto
         id="cancha_nombre"

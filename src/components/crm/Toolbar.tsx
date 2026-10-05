@@ -133,7 +133,8 @@ export function SearchInput({
 /**
  * Filtro de fecha atado a la URL (`?desde=` / `?hasta=`, "YYYY-MM-DD"): el `DatePicker` de CRM 2.0 (28 en la toolbar,
  * 32 dentro de "Más filtros"). Escribe en la URL solo un valor confirmado y válido (el picker nunca entrega una fecha a
- * medio tipear) o lo borra con "". `min`/`max` encadenan desde/hasta como el `FiltroFecha` legacy.
+ * medio tipear) o lo borra con "" (campo vaciado a propósito). Un texto inválido o fuera de rango NO toca la URL
+ * (`keepOnInvalid`): el filtro aplicado sigue y el campo muestra su mensaje. `min`/`max` encadenan desde/hasta como el `FiltroFecha` legacy.
  * - `inline` (toolbar): label visible a la izquierda ("Desde [__/__/____]").
  * - apilado (dentro de "Más filtros"): label arriba, como los demás campos del popover.
  */
@@ -158,6 +159,7 @@ export function FechaFiltro({
     <DatePicker
       id={id}
       dense={inline}
+      keepOnInvalid
       value={valor}
       min={min || undefined}
       max={max || undefined}

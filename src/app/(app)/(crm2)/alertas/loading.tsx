@@ -10,7 +10,10 @@ import { getSesion } from "@/lib/sesion";
  */
 export default async function CargandoAlertas() {
   const sesion = await getSesion();
-  const acciones = Boolean(sesion?.puede("alertas.enviar") || sesion?.puede("oportunidades.editar"));
+  // Las mismas condiciones que la página: acciones con `alertas.enviar` o con el recambio en 1 clic
+  // (`oportunidades.editar`); el ancho de la columna, el de la página con o sin recambio.
+  const recambio = Boolean(sesion?.puede("oportunidades.editar"));
+  const acciones = Boolean(sesion?.puede("alertas.enviar")) || recambio;
   return (
     <ListSkeleton
       title="Alertas de recambio"
@@ -37,7 +40,7 @@ export default async function CargandoAlertas() {
             Aviso
           </Th>
           {acciones && (
-            <Th hideBelow="sm" className="w-[132px] @[45rem]:w-[244px]">
+            <Th hideBelow="sm" className={recambio ? "w-[132px] @[70rem]:w-[244px]" : "w-[104px]"}>
               <span className="sr-only">Acciones</span>
             </Th>
           )}

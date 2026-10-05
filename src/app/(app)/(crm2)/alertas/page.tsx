@@ -4,7 +4,6 @@ import { exigirPermiso } from "@/lib/sesion";
 import { esErrorDeEsquema } from "@/lib/esquema";
 import { iaDisponible } from "@/lib/ia/config";
 import { abiertasPorItem, etapaInicialId, origenRecambioId } from "@/lib/recambio";
-import { AvisoMigracion } from "@/components/AvisoMigracion";
 import { InlineBanner } from "@/components/crm/Feedback";
 import AlertasView, { type DatosRecambio } from "./AlertasView";
 
@@ -71,7 +70,12 @@ export default async function AlertasPage() {
       iaDisponible={iaDisponible()}
       avisos={
         <>
-          <AvisoMigracion visible={faltaMigracion && sesion.puede("configuracion.gestionar")} que="el botón «Crear oportunidad de recambio»" />
+          {/* El aviso de `AvisoMigracion` (mismo texto y rol), con el banner de CRM 2.0. */}
+          {faltaMigracion && sesion.puede("configuracion.gestionar") && (
+            <InlineBanner tone="info" title="Se activa al aplicar la migración 0011.">
+              Hasta entonces el botón «Crear oportunidad de recambio» no aparece. Los pasos están en la guía de despliegue.
+            </InlineBanner>
+          )}
           {errorRecambio && (
             <InlineBanner tone="warning" title="No pudimos consultar las oportunidades de recambio.">
               Por ahora el botón «Crear oportunidad de recambio» no está disponible; recargá la página para reintentar.

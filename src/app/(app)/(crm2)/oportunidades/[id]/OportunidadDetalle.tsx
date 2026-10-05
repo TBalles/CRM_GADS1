@@ -34,6 +34,7 @@ import type { Tables } from "@/lib/supabase/types";
 import CierreDialog, { ACCION_CAMBIO, useCierre } from "../CierreDialog";
 import OportunidadForm from "../OportunidadForm";
 import type { Opciones } from "../datos";
+import { sinTrabarse } from "@/lib/guardar";
 
 type Oportunidad = Tables<"oportunidades">;
 type Historial = Tables<"oportunidad_etapas_historial">;
@@ -638,7 +639,10 @@ function ReasignarDrawer({
       saving={saving}
       error={error}
       submitLabel="Reasignar"
-      onSubmit={handleSubmit}
+      onSubmit={(e) => void sinTrabarse(() => handleSubmit(e), (m) => {
+        setSaving(false);
+        setError(m);
+      })}
     >
       <p className={cn(TYPE.ui, "text-(--crm-text-2)")}>
         Quien queda a cargo ve esta oportunidad en su cartera. Quien la tenía deja de verla si no tiene acceso a toda la cartera.

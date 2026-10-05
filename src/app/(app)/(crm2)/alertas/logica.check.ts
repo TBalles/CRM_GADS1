@@ -20,8 +20,8 @@ const alertas = [
   fila({ estado: "por_vencer", empresa_nombre: "La Tablada", producto_nombre: "Pelota N°5" }),
 ];
 
-test("contarAlertas: los tres contadores de siempre y el total", () => {
-  assert.deepEqual(contarAlertas(alertas), { todas: 3, vencido: 2, por_vencer: 1, sin_avisar: 2 });
+test("contarAlertas: los tres contadores de siempre", () => {
+  assert.deepEqual(contarAlertas(alertas), { vencido: 2, por_vencer: 1, sin_avisar: 2 });
 });
 
 test("filtrarAlertas por grupo", () => {

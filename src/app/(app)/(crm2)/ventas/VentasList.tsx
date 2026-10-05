@@ -273,6 +273,8 @@ function FilaVenta({
         data-abierta={abierta || undefined}
         onClick={(ev) => {
           if ((ev.target as HTMLElement).closest("a, button")) return;
+          // Seleccionar texto (copiar un comprobante) no es un clic para abrir.
+          if (window.getSelection()?.toString()) return;
           onAlternar();
         }}
         className="cursor-pointer data-abierta:[&>td]:border-b-transparent"

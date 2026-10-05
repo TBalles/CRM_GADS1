@@ -8,6 +8,7 @@ import { cuitValido, formatearCuit } from "@/lib/cuit";
 import { sitioWebValido } from "@/lib/sitioweb";
 import { EMAIL_RE, ESTADOS, TIPOS_CLIENTE, mensajeErrorGuardado, type OrigenOpcion, type PerfilOpcion } from "@/lib/clientes";
 import type { Tables } from "@/lib/supabase/types";
+import { sinTrabarse } from "@/lib/guardar";
 
 type Empresa = Tables<"empresas">;
 type Errores = Partial<Record<"nombre" | "cuit" | "email" | "sitio_web", string>>;
@@ -125,7 +126,10 @@ export default function EmpresaForm({
       size="lg"
       saving={saving}
       error={error}
-      onSubmit={handleSubmit}
+      onSubmit={(e) => void sinTrabarse(() => handleSubmit(e), (m) => {
+        setSaving(false);
+        setError(m);
+      })}
     >
       <CampoTexto
         id="nombre"

@@ -21,10 +21,9 @@ export const FILTROS_ALERTAS: { value: FiltroAlertas; label: string }[] = [
   { value: "sin_avisar", label: "Sin avisar" },
 ];
 
-/** Cuántas hay en cada grupo (los contadores que mostraba el marcador; ahora van en los segmentos del filtro). */
-export function contarAlertas(alertas: readonly FilaFiltrable[]): Record<FiltroAlertas, number> {
+/** Los tres contadores que mostraba el marcador; ahora van en el contador de la PageBar. */
+export function contarAlertas(alertas: readonly FilaFiltrable[]): Record<Exclude<FiltroAlertas, "todas">, number> {
   return {
-    todas: alertas.length,
     vencido: alertas.filter((a) => a.estado === "vencido").length,
     por_vencer: alertas.filter((a) => a.estado === "por_vencer").length,
     sin_avisar: alertas.filter((a) => !a.ultimo_envio).length,

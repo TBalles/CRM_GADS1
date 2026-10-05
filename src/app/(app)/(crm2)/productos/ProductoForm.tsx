@@ -9,6 +9,7 @@ import { CampoArea, CampoTexto, FormDrawer, Par } from "@/components/crm/cuenta/
 import { createClient } from "@/lib/supabase/client";
 import { maskFromNumber, parseMoney } from "@/lib/money";
 import type { Tables } from "@/lib/supabase/types";
+import { sinTrabarse } from "@/lib/guardar";
 
 type Producto = Tables<"productos">;
 
@@ -111,7 +112,10 @@ export default function ProductoForm({
       description={producto?.nombre}
       saving={saving}
       error={error}
-      onSubmit={handleSubmit}
+      onSubmit={(e) => void sinTrabarse(() => handleSubmit(e), (m) => {
+        setSaving(false);
+        setError(m);
+      })}
     >
       <CampoTexto
         id="nombre"

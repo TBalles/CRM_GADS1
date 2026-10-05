@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   acotar,
+  confirmarTexto,
   acotarNumero,
   deIso,
   diaSemana,
@@ -152,4 +153,23 @@ test("hora y minutos: tope al tipear, vuelta con flechas", () => {
   assert.equal(pasoCircular(23, 1, 23), 0);
   assert.equal(pasoCircular(0, -1, 59), 59);
   assert.equal(pasoCircular(10, 1, 59), 11);
+});
+
+test("confirmarTexto distingue borrado de inválido", () => {
+  // Borrar a propósito: "" y se emite (también en los filtros).
+  assert.deepEqual(confirmarTexto("", false, "2026-01-01"), { valor: "", error: null, emitir: true });
+  assert.deepEqual(confirmarTexto("", false, "2026-01-01", { conservar: true }), { valor: "", error: null, emitir: true });
+  // Válido: se emite si cambió.
+  assert.deepEqual(confirmarTexto("02/01/2026", false, "2026-01-01"), { valor: "2026-01-02", error: null, emitir: true });
+  assert.equal(confirmarTexto("01/01/2026", false, "2026-01-01").emitir, false);
+  // Inválido en un formulario: vacía (y emite) para que la validación lo trate como faltante.
+  const f = confirmarTexto("31/02/2026", false, "2026-01-01");
+  assert.equal(f.valor, "");
+  assert.equal(f.emitir, true);
+  assert.match(f.error ?? "", /no existe/);
+  // Inválido o fuera de rango en un filtro: conserva el último válido y no emite (la URL no pierde el filtro).
+  const r = confirmarTexto("01/01/2027", false, "2026-01-01", { max: "2026-06-30", conservar: true });
+  assert.deepEqual(r, { valor: "2026-01-01", error: "Elegí una fecha hasta el 30/06/2026.", emitir: false });
+  // Un formulario vacío con un texto inválido no emite ("" → "" no es un cambio).
+  assert.equal(confirmarTexto("99/99", false, "").emitir, false);
 });

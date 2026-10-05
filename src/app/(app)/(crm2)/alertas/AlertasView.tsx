@@ -18,6 +18,8 @@ import { Tooltip } from "@/components/crm/Tooltip";
 import { TYPE, UI_ROOT, cn } from "@/components/crm/cx";
 import { createClient } from "@/lib/supabase/client";
 import { mensajeErrorOportunidad } from "@/lib/oportunidades";
+import { sinTrabarse } from "@/lib/guardar";
+import { filaTrasRefresco } from "@/components/crm/seleccion";
 import { oportunidadDeRecambio } from "@/lib/recambio";
 import type { Tables } from "@/lib/supabase/types";
 import { enviarAlertaEmail, registrarEnvioWhatsapp } from "./actions";
@@ -86,6 +88,26 @@ export default function AlertasView({
   const columnas = conAcciones ? 5 : 4;
   const refrescar = () => startTransition(() => router.refresh());
 
+  // Foco después de una acción de fila (MASTER §10.17). Los botones de la fila ocupada van con `aria-disabled` (no
+  // `disabled`, que saca el foco al <body>); al terminar, el foco vuelve a la misma acción de la misma fila —o al link
+  // "Oportunidad abierta →" que reemplaza al botón— y, si la fila salió de la lista (filtro "Sin avisar"), a la
+  // siguiente que siga (`filaTrasRefresco`, como en las otras listas).
+  const tabla = React.useRef<HTMLDivElement>(null);
+  const focoPendiente = React.useRef<{ id: string; antes: string[]; accion: string } | null>(null);
+  const anotarFoco = (id: string, accion: string) => {
+    focoPendiente.current = { id, antes: filtradas.map((f) => f.venta_item_id ?? ""), accion };
+  };
+  React.useEffect(() => {
+    const p = focoPendiente.current;
+    if (!p) return;
+    focoPendiente.current = null;
+    const destino = filaTrasRefresco(p.antes, filtradas.map((f) => f.venta_item_id ?? ""), p.id);
+    if (!destino) return;
+    const fila = tabla.current?.querySelector(`tr[data-id="${CSS.escape(destino)}"]`);
+    const visibles = [...(fila?.querySelectorAll<HTMLElement>("[data-accion]") ?? [])].filter((el) => el.getClientRects().length > 0);
+    (visibles.find((el) => el.dataset.accion === p.accion) ?? visibles[0])?.focus();
+  }, [filtradas, creadas]);
+
   async function handleEmail(a: Alerta) {
     if (!a.venta_item_id || pendingId) return;
     // Se prefiere el mail de la persona; el del club es el respaldo.
@@ -114,6 +136,7 @@ export default function AlertasView({
       return;
     }
     showToast(res.modo === "mailto" ? "Abrimos tu cliente de correo con el mensaje listo." : `Mail enviado a ${destinatario}.`, "success");
+    anotarFoco(a.venta_item_id, "mail");
     refrescar();
   }
 
@@ -141,6 +164,7 @@ export default function AlertasView({
       showToast(res.error, "error");
       return;
     }
+    anotarFoco(a.venta_item_id, "whatsapp");
     refrescar();
   }
 
@@ -150,8 +174,22 @@ export default function AlertasView({
    */
   async function handleRecambio(a: Alerta) {
     if (!recambio || !a.venta_item_id || pendingId) return;
+    // El foco irá al link "Oportunidad abierta →" que reemplaza al botón (se anota antes: `creadas` cambia adentro).
+    anotarFoco(a.venta_item_id, "recambio");
+    // Si una consulta TIRA (red caída), la fila no puede quedar ocupada para siempre.
+    await sinTrabarse(() => crearRecambio(a, recambio), (m) => {
+      focoPendiente.current = null;
+      setPendingId(null);
+      setCreandoOportunidad(false);
+      showToast(m, "error");
+    });
+  }
+
+  async function crearRecambio(a: Alerta, recambio: DatosRecambio) {
+    if (!a.venta_item_id) return;
     const ventaItemId = a.venta_item_id;
     if (!recambio.etapaId) {
+      focoPendiente.current = null;
       showToast("El embudo no tiene una etapa abierta donde crear la oportunidad. Revisá Configuración.", "error");
       return;
     }
@@ -182,6 +220,7 @@ export default function AlertasView({
       responsableId: recambio.yoId,
     });
     if (!fila) {
+      focoPendiente.current = null;
       setPendingId(null);
       setCreandoOportunidad(false);
       showToast("No se pudo armar la oportunidad de recambio. Recargá la página e intentá de nuevo.", "error");
@@ -197,6 +236,7 @@ export default function AlertasView({
     setPendingId(null);
     setCreandoOportunidad(false);
     if (error || !data) {
+      focoPendiente.current = null;
       showToast(mensajeErrorOportunidad(error, "No se pudo crear la oportunidad de recambio. Intentá de nuevo."), "error");
       return;
     }
@@ -254,7 +294,7 @@ export default function AlertasView({
           />
         </div>
       ) : (
-        <div className="flex min-h-0 flex-col pb-3">
+        <div ref={tabla} className="flex min-h-0 flex-col pb-3">
           <DataTable label="Alertas de recambio" busy={pendingId !== null || refrescando} className="min-h-0">
             <THead>
               <Th>Equipo</Th>
@@ -268,7 +308,7 @@ export default function AlertasView({
                 Aviso
               </Th>
               {conAcciones && (
-                <Th hideBelow="sm" className={cn(recambio ? "w-[132px] @[45rem]:w-[244px]" : "w-[104px]")}>
+                <Th hideBelow="sm" className={cn(recambio ? "w-[132px] @[70rem]:w-[244px]" : "w-[104px]")}>
                   <span className="sr-only">Acciones</span>
                 </Th>
               )}
@@ -297,7 +337,10 @@ export default function AlertasView({
                             iaOcupada={ia.estado.cargando && ia.estado.alerta?.venta_item_id !== a.venta_item_id}
                             puedeEnviar={puedeEnviar}
                             onRecambio={() => handleRecambio(a)}
-                            onIA={() => ia.abrir(a)}
+                            onIA={() => {
+                              // Mientras se manda un aviso (o se crea una oportunidad), no se abre otro borrador.
+                              if (!pendingId) ia.abrir(a);
+                            }}
                             onEmail={() => handleEmail(a)}
                             onWhatsapp={() => handleWhatsapp(a)}
                           />
@@ -358,7 +401,7 @@ function Fila({ alerta: a, acciones }: { alerta: Alerta; acciones: (enCelda: boo
           </span>
         </div>
         {/* En el celular las acciones van debajo, a todo el ancho (la columna de acciones se esconde). */}
-        {acciones(true) && <div className="mt-1.5 pl-5 @[30rem]:hidden">{acciones(true)}</div>}
+        {acciones(true) && <div className="mt-1.5 pl-6 @[30rem]:hidden">{acciones(true)}</div>}
       </Td>
       <Td hideBelow="md" className="py-1.5 align-top">
         <Tooltip content={a.empresa_nombre ?? ""} onlyWhenTruncated>
@@ -428,51 +471,60 @@ function Acciones({
   onEmail: () => void;
   onWhatsapp: () => void;
 }) {
-  // En la columna, con poco ancho la primera queda como ícono (su nombre accesible no cambia).
-  const corto = enCelda ? "" : "@max-[45rem]:w-7 @max-[45rem]:px-0";
-  const textoCorto = enCelda ? "" : "@max-[45rem]:sr-only";
+  // En la columna, con menos de 70rem la primera queda como ícono (su nombre accesible no cambia): así el equipo tiene
+  // ancho y la fila queda en dos renglones a 1280. El tooltip aparece solo cuando el texto está escondido.
+  const corto = enCelda ? "" : "@max-[70rem]:w-7 @max-[70rem]:px-0";
+  const textoCorto = enCelda ? "" : "@max-[70rem]:sr-only";
+  // Ocupada: `aria-disabled` y no `disabled` (que saca el foco al <body>); los handlers ya ignoran el clic.
+  const ocupada = busy || undefined;
   return (
     <div className={cn("flex items-center", enCelda ? "justify-start gap-1" : "justify-end gap-0.5")}>
       {recambio &&
         (abiertaId ? (
-          <Tooltip content="Oportunidad abierta →">
+          <Tooltip content="Oportunidad abierta →" onlyWhenLabelHidden>
             <Link
               href={`/oportunidades/${abiertaId}`}
               aria-label="Oportunidad abierta →"
+              data-accion="recambio"
               className={buttonClass({ variant: "ghost", size: "sm", className: cn(!enCelda && "mr-auto", corto) })}
             >
               <Handshake aria-hidden="true" strokeWidth={1.75} />
-              <span className={textoCorto}>Oportunidad abierta →</span>
+              <span data-label className={textoCorto}>
+                Oportunidad abierta →
+              </span>
             </Link>
           </Tooltip>
         ) : (
-          <Tooltip content="Crear oportunidad de recambio">
+          <Tooltip content="Crear oportunidad de recambio" onlyWhenLabelHidden>
             <Button
               size="sm"
               icon={Handshake}
-              loading={creando}
-              disabled={busy}
+              aria-disabled={ocupada}
+              aria-busy={creando || undefined}
+              data-accion="recambio"
               onClick={onRecambio}
               aria-label="Crear oportunidad de recambio"
               className={cn(!enCelda && "mr-auto", corto)}
             >
-              <span className={textoCorto}>Crear oportunidad</span>
+              <span data-label className={textoCorto}>
+                Crear oportunidad
+              </span>
             </Button>
           </Tooltip>
         ))}
       {conIA && (
         <Tooltip content="Redactar con IA">
           {/* Una sola llamada paga a la vez: mientras una alerta espera su borrador, las otras esperan. */}
-          <IconButton label="Redactar con IA" icon={Sparkles} size="sm" disabled={busy || iaOcupada} onClick={onIA} />
+          <IconButton label="Redactar con IA" icon={Sparkles} size="sm" data-accion="ia" aria-disabled={busy || iaOcupada || undefined} onClick={onIA} />
         </Tooltip>
       )}
       {puedeEnviar && (
         <>
           <Tooltip content="Mail">
-            <IconButton label="Mail" icon={Mail} size="sm" disabled={busy} onClick={onEmail} />
+            <IconButton label="Mail" icon={Mail} size="sm" data-accion="mail" aria-disabled={ocupada} onClick={onEmail} />
           </Tooltip>
           <Tooltip content="WhatsApp">
-            <IconButton label="WhatsApp" icon={MessageCircle} size="sm" disabled={busy} onClick={onWhatsapp} />
+            <IconButton label="WhatsApp" icon={MessageCircle} size="sm" data-accion="whatsapp" aria-disabled={ocupada} onClick={onWhatsapp} />
           </Tooltip>
         </>
       )}

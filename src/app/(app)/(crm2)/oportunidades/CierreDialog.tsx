@@ -25,6 +25,7 @@ import {
   type ModoCambio,
 } from "@/lib/oportunidades";
 import type { Tables } from "@/lib/supabase/types";
+import { sinTrabarse } from "@/lib/guardar";
 
 type Oportunidad = Tables<"oportunidades">;
 type Etapa = Pick<Tables<"etapas">, "id" | "nombre" | "tipo" | "orden" | "color">;
@@ -190,7 +191,10 @@ function Contenido({
       title={copy.titulo}
       description={oportunidad.titulo}
       busy={saving}
-      onSubmit={confirmar}
+      onSubmit={(e) => void sinTrabarse(() => confirmar(e), (m) => {
+        setSaving(false);
+        setError(m);
+      })}
       footer={
         <>
           <Button onClick={onClose} disabled={saving} className="max-sm:h-9">

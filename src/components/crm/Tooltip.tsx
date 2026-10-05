@@ -15,6 +15,8 @@ const PAD = 8;
  *
  * El hijo tiene que ser UN elemento; recibe `aria-describedby` mientras el tooltip está visible.
  * `onlyWhenTruncated`: solo aparece si el hijo está recortado (celdas con `truncate`).
+ * `onlyWhenLabelHidden`: solo aparece si el texto visible del hijo (`[data-label]`) está escondido (`sr-only` o `hidden`
+ *   por ancho): un botón que con poco lugar queda como ícono (Alertas, "Crear oportunidad").
  * `disabled`: no aparece (p. ej. el ítem del rail expandido, cuyo texto ya se ve). No cambia el markup.
  * `side="right"`: a la derecha y centrado en alto (rail colapsado); por defecto arriba (abajo si no entra).
  *
@@ -24,12 +26,14 @@ export function Tooltip({
   content,
   children,
   onlyWhenTruncated = false,
+  onlyWhenLabelHidden = false,
   disabled = false,
   side = "top",
 }: {
   content: React.ReactNode;
   children: React.ReactElement<{ "aria-describedby"?: string }>;
   onlyWhenTruncated?: boolean;
+  onlyWhenLabelHidden?: boolean;
   disabled?: boolean;
   side?: "top" | "right";
 }) {
@@ -51,6 +55,7 @@ export function Tooltip({
           const el = objetivo();
           if (!el) return;
           if (onlyWhenTruncated && el.scrollWidth <= el.clientWidth && el.scrollHeight <= el.clientHeight) return;
+          if (onlyWhenLabelHidden && (el.querySelector<HTMLElement>("[data-label]")?.offsetWidth ?? 0) > 1) return;
         }
         setAbierto(abrir);
       },

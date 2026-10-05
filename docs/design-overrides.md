@@ -256,6 +256,8 @@ qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
     vendés", "El embudo", "Arranca el reloj", "Llegá antes que nadie").
   - **Reloj del recambio** en cada alerta: barra de la entrega al vencimiento con la ventana de 60
     días en ámbar. Usa `dias_restantes` de la vista (no `new Date()`), así no desfasa la hidratación.
+    (CRM 2.0, Lote B: la barra se reemplazó por texto —entrega, vida útil y vencimiento— en la tabla de `/alertas`;
+    ver `design-system/crm-2/MASTER.md` §10.17.)
 - **Dónde**: `globals.css`, `layout.tsx`, `components/Cancha.tsx`, `AppShell.tsx`,
   `UIComponents.tsx` (`PageHeader`), `dashboard/page.tsx`, `alertas/AlertasView.tsx`,
   `login/page.tsx`, y el `eyebrow` de cada pantalla.

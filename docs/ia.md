@@ -100,7 +100,7 @@ con que se despliegue** y debe revisarse con quien aporta la clave antes de acti
 
 ## 4. Control de la persona y transparencia
 
-- **Etiqueta visible** en todo lugar donde aparece texto de la IA (`EtiquetaIA`).
+- **Etiqueta visible** en todo lugar donde aparece texto de la IA ("Borrador generado con IA" en `BorradorIA.tsx`, "Generado con IA" en `crm/cuenta/HistoriaCuenta.tsx`; con los tokens de CRM 2.0).
 - **"Cómo usamos la IA"** (un `<details>` junto a los botones, y dentro del panel del aviso) dice qué se envía, qué no y que la IA solo redacta.
 - **Revisión obligatoria por diseño.** Nada sale solo: el aviso exige un clic en "Abrir en WhatsApp" o "Abrir en mail" sobre un
   texto editable; el resumen no dispara nada.
@@ -125,9 +125,9 @@ src/lib/ia/
   limite.ts      límite por persona (ventana deslizante en memoria)
   generar.ts     la llamada a Claude, `server-only`
 src/app/(app)/ia/actions.ts          Server Actions redactarAvisoRecambio y resumirCuenta
-src/app/(app)/alertas/BorradorIA.tsx  panel del aviso (hook useBorradorIA + Drawer)
+src/app/(app)/(crm2)/alertas/BorradorIA.tsx  panel del aviso (hook useBorradorIA + Drawer de CRM 2.0)
 src/components/ResumenIA.tsx          botón y panel del resumen
-src/components/IaAviso.tsx            EtiquetaIA y "Cómo usamos la IA"
+src/components/IaAviso.tsx            "Cómo usamos la IA"
 ```
 
 **La llamada** (`generar.ts`, SDK oficial `@anthropic-ai/sdk`, única dependencia nueva, solo en servidor):

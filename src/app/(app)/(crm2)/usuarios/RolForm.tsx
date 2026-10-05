@@ -7,6 +7,7 @@ import { Checkbox, Field, Textarea } from "@/components/crm/Field";
 import { PERMISOS, type Permiso } from "@/lib/permisos";
 import { guardarRol } from "./actions";
 import { alternarPermiso, errorDeRol, gruposDePermisos } from "./logica";
+import { sinTrabarse } from "@/lib/guardar";
 
 export type RolFila = {
   id: string;
@@ -80,7 +81,10 @@ export default function RolForm({
       saving={saving}
       error={error}
       submitLabel={rol ? "Guardar rol" : "Crear rol"}
-      onSubmit={guardar}
+      onSubmit={(e) => void sinTrabarse(() => guardar(e), (m) => {
+        setSaving(false);
+        setError(m);
+      })}
     >
       <CampoTexto id="rol-nombre" label="Nombre" required placeholder="RRHH, Logística, Atención al cliente…" value={nombre} onChange={setNombre} />
       <Field id="rol-descripcion" label="Descripción">

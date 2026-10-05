@@ -241,6 +241,25 @@ export function interpretar(texto: string, conHora: boolean, min?: string, max?:
 }
 
 /**
+ * Qué deja confirmar un texto (salir del campo o Enter). Distingue BORRADO de INVÁLIDO:
+ * - vacío → valor "" (se borró a propósito): se emite;
+ * - válido → ese valor: se emite;
+ * - inválido (no existe, mal escrito, fuera de rango) → el mensaje, y el valor depende de `conservar`: por defecto "" (un
+ *   formulario lo valida como faltante: nunca se guarda una fecha que la persona no ve); con `conservar` (los filtros de
+ *   una lista), queda `actual`, el último válido, y NO se emite nada: un texto mal tipeado no borra un filtro aplicado.
+ */
+export function confirmarTexto(
+  texto: string,
+  conHora: boolean,
+  actual: string,
+  { min, max, conservar = false }: { min?: string; max?: string; conservar?: boolean } = {},
+): { valor: string; error: string | null; emitir: boolean } {
+  const r = interpretar(texto, conHora, min, max);
+  if ("valor" in r) return { valor: r.valor, error: null, emitir: r.valor !== actual };
+  return conservar ? { valor: actual, error: r.error, emitir: false } : { valor: "", error: r.error, emitir: actual !== "" };
+}
+
+/**
  * Hora o minutos de los campos del calendario: el texto tipeado → número dentro de [0, max] (tope, no vuelta).
  * Sin cifras, `previo`.
  */

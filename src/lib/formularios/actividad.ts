@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/supabase/types";
+import { sinTrabarse } from "@/lib/guardar";
 
 /**
  * Lógica de "Registrar actividad": estado, validación y alta. Sin UI: la usa el drawer de CRM 2.0
@@ -67,7 +68,7 @@ export function useActividadForm({
     if (clave && errores[clave]) setErrores((prev) => ({ ...prev, [clave]: undefined }));
   }
 
-  async function submit(e: React.FormEvent) {
+  async function enviar(e: React.FormEvent) {
     e.preventDefault();
 
     const nuevos: Errores = {};
@@ -119,6 +120,13 @@ export function useActividadForm({
     notificar("Actividad registrada.", "success");
     onSaved(data);
   }
+
+  /** El submit del drawer: si el guardado tira (red, despliegue), el formulario se libera con un mensaje (`sinTrabarse`). */
+  const submit = (e: React.FormEvent) =>
+    void sinTrabarse(() => enviar(e), (m) => {
+      setSaving(false);
+      setError(m);
+    });
 
   return { v, set, activos, errores, error, saving, submit };
 }

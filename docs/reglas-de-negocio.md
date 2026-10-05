@@ -38,8 +38,8 @@ Contenido: [1. Vida útil y alertas](#1-vida-útil-y-alertas) · [2. Embudo y ci
 | 1.11 | El envío lo confirma una persona. No hay envío automático | Diseño | FAQ de la landing | Sí |
 | 1.12 | Si el mail salió pero no se pudo registrar, el mensaje dice explícitamente que no se vuelva a mandar | Servidor | `actions.ts` | Sí |
 
-**Nota.** El valor 60 está repetido en la vista SQL, en el reloj de `AlertasView.tsx` y en textos de
-pantalla. Cambiar la ventana exige tocar los tres.
+**Nota.** El valor 60 está repetido en la vista SQL, en `src/lib/parque.ts` (parque instalado) y en textos de
+pantalla de `/alertas` ("por vencer (60 días)", el vacío). Cambiar la ventana exige tocar los tres.
 
 ---
 
@@ -334,6 +334,6 @@ Opcional y sin migración. Detalle, datos y costo en [ia](./ia.md); decisión en
 | 14.2 | **Solo redacta.** La IA no envía, no guarda y no cambia datos. El aviso lo manda la persona desde su WhatsApp o su correo; `registrarEnvioConBorrador` solo registra | `ia/actions.ts`, `alertas/actions.ts` | Sí |
 | 14.3 | **Permisos.** Redactar un aviso pide `alertas.enviar`; resumir una cuenta, `clientes.ver`. El contexto se lee con la sesión de la persona: la RLS decide qué ve la IA, y lo que su rol no puede ver (compras, actividades, oportunidades, avisos) no se manda | `ia/actions.ts`, RLS | Sí |
 | 14.4 | **Contexto mínimo.** Los campos de mails, teléfonos, CUIT, documentos, direcciones y notas no se piden; de los contactos, solo el nombre de pila; en los textos libres se intentan tachar mails, enlaces, CUIT y números largos (sin garantía) y el total tiene tope de 6000 caracteres | `src/lib/ia/contexto.ts` | Sí: "Cómo usamos la IA" |
-| 14.5 | **Revisión.** Todo texto de la IA lleva la etiqueta de IA; el aviso se edita en un cuadro de texto y nada sale hasta que la persona lo manda | `EtiquetaIA`, `BorradorIA.tsx` | Sí |
+| 14.5 | **Revisión.** Todo texto de la IA lleva la etiqueta de IA; el aviso se edita en un cuadro de texto y nada sale hasta que la persona lo manda | La etiqueta "Borrador generado con IA" de `BorradorIA.tsx` (y "Generado con IA" en `HistoriaCuenta.tsx`) | Sí |
 | 14.6 | **Respaldo.** Ante cualquier falla de la IA el cuadro del aviso se llena con la plantilla fija y un aviso dice por qué; "Volver a la plantilla" la restaura | `useBorradorIA` | Sí |
 | 14.7 | **Límite por persona.** 10 borradores cada 10 minutos, en memoria y por instancia del servidor | `src/lib/ia/limite.ts` | Sí: mensaje con los minutos de espera |

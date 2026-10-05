@@ -36,6 +36,11 @@ export type DatePickerProps = {
   error?: string;
   /** 28 de alto (toolbars). */
   dense?: boolean;
+  /**
+   * Un texto inválido NO vacía el valor: queda el último válido y se muestra el mensaje (filtros por URL, `FechaFiltro`).
+   * Sin esto (formularios), el valor pasa a "" y el formulario lo trata como faltante. Borrar el campo siempre emite "".
+   */
+  keepOnInvalid?: boolean;
   className?: string;
   "aria-describedby"?: string;
   "aria-invalid"?: boolean;
@@ -67,6 +72,7 @@ export function DatePicker({
   clearable = !required,
   error,
   dense,
+  keepOnInvalid = false,
   className,
   "aria-describedby": ariaDescribedBy,
   "aria-invalid": ariaInvalid,
@@ -120,14 +126,16 @@ export function DatePicker({
   const confirmar = (): string => {
     // Sin cambios no se re-valida: un valor que llega de afuera fuera de rango no se borra solo por pasar el foco.
     if (!sync.error && sync.texto === F.formatear(value, time)) return value;
-    const r = F.interpretar(sync.texto, time, min, max);
-    if ("valor" in r) {
+    const r = F.confirmarTexto(sync.texto, time, value, { min, max, conservar: keepOnInvalid });
+    if (!r.error) {
       emitir(r.valor);
       return r.valor;
     }
-    setSync({ value: "", texto: sync.texto, error: r.error });
-    if (value !== "") onChange("");
-    return "";
+    // Inválido: el texto queda con su mensaje. Sin `keepOnInvalid` el valor se vacía (contrato de siempre); con él, sigue
+    // el último válido (`sync.value === value`, así el campo no se rehace y el mensaje no se pierde).
+    setSync({ value: r.valor, texto: sync.texto, error: r.error });
+    if (r.emitir) onChange(r.valor);
+    return r.valor;
   };
 
   const cerrar = (devolver: Cierre) => {

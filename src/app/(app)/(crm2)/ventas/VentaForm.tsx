@@ -14,6 +14,7 @@ import { TYPE, cn } from "@/components/crm/cx";
 import { formatMoney, maskFromNumber, parseMoney } from "@/lib/money";
 import type { Tables } from "@/lib/supabase/types";
 import { errorDeLineas, espejarEntregas, hoyLocal, type LineaBorrador } from "./logica";
+import { sinTrabarse } from "@/lib/guardar";
 
 type Empresa = Tables<"empresas">;
 type Contacto = Tables<"contactos">;
@@ -178,7 +179,10 @@ export default function VentaForm({
       saving={saving}
       error={error}
       submitLabel="Registrar venta"
-      onSubmit={guardar}
+      onSubmit={(e) => void sinTrabarse(() => guardar(e), (m) => {
+        setSaving(false);
+        setError(m);
+      })}
     >
       <CampoOpciones
         id="empresa_id"
