@@ -1109,24 +1109,32 @@ numerados con línea de cal): el Inicio es una superficie de trabajo, no una por
   exacta, que antes decía "$X repartidos en N oportunidades abiertas") · **Empresas** · **Contactos** · **Oportunidades abiertas**. Las tres
   cuentas son links, como las métricas legacy, con el mismo nombre accesible ("11 Empresas") y el mismo destino. **Contactos sigue
   llevando a `/empresas`**: es un bug conocido que se corrige aparte (decisión del Lote E; comentario `ponytail:` en el código). El link
-  "N oportunidades" de la frase de abajo del marcador se fue: es el mismo destino que la cifra "Oportunidades abiertas".
+  "N oportunidades" de la frase de abajo del marcador se fue: es el mismo destino que la cifra "Oportunidades abiertas". Con
+  `alertas.ver` (y la vista sin error) hay una quinta cifra, **Recambios vencidos**: la MISMA cuenta de la sección de recambios (ningún
+  dato nuevo), link a `/alertas` ("3 Recambios vencidos") y en aviso (ícono + color) si es más de 0. Las cuatro de arriba no cambian.
 - **"Oportunidades por etapa"** (tabla): reemplaza a los DOS gráficos que repetían el mismo dato ("Distribución del embudo", barra 100 %
   apilada con los colores de cada etapa, y "Oportunidades por etapa", barras por cantidad). Etapa (cuadradito de su color + nombre, que
-  baja de renglón, `StatusDot wrap`) · barra (`CellBar`, cantidad sobre la mayor) · Cantidad · Del total (`porcentajeDe`: la misma cuenta
-  y el mismo redondeo que la leyenda legacy) · Valor (EXACTO; el legacy mostraba "$1,5 M") y un pie **Total** (`TFoot`: N y 100 %, el "N en
-  total" del legacy). Todas las oportunidades, también las cerradas, cada una en su etapa (como antes). Con menos de 30rem de tabla la
-  barra y el porcentaje se esconden y el porcentaje pasa a una línea bajo la etapa ("13% del total").
+  baja de renglón, `StatusDot wrap`; `th scope="row"`) · Cantidad · Del total (`porcentajeDe`: la misma cuenta y el mismo redondeo que la
+  leyenda legacy) · Valor (EXACTO; el legacy mostraba "$1,5 M") y un pie **Total** (`TFoot`, "Total" como `th scope="row"`: solo N, el "N
+  en total" del legacy; la celda "Del total" queda vacía porque cada fila redondea —13 + 20 + … da 99 o 102— y un "100 %" la
+  contradiría). **Sin barra** (revisión del Lote E): con 6 filas de 2–3 las barras eran casi iguales y repetían la cantidad que está en
+  la columna de al lado. Todas las oportunidades, también las cerradas, cada una en su etapa (como antes). Con menos de 30rem de tabla el
+  porcentaje pasa a una línea bajo la etapa ("13% del total").
 - **"Recambios que vienen"** (solo con `alertas.ver` y si la vista no falló; mismo criterio que el legacy): `SectionBar` con el total y
-  "Ver alertas"; tabla de las 4 primeras (las más urgentes): ícono de equipamiento gris (`IconoEquipoSimple`) + producto 500 y el cliente
+  "Ver alertas"; arriba de la tabla, **lo vencido manda**: "3 vencidos" con ícono de aviso en `--crm-danger` 600 (ícono + palabra +
+  color; sin vencidos, en texto común y sin ícono) y "· 2 por vencer" en secundario; tabla de las 4 primeras (las más urgentes): ícono de equipamiento gris (`IconoEquipoSimple`) + producto 500 y el cliente
   debajo · Vencimiento con el texto de Alertas (`textoVencimiento`: "Vencido hace 73 d" como `StatusBadge` danger, "Vence en 19 d" como
-  punto de atención; antes "Hace 73 d" / "En 19 d" con el color como única diferencia). Debajo, "3 vencidos · 2 por vencer". Vacío: "Todo el
+  punto de atención; antes "Hace 73 d" / "En 19 d" con el color como única diferencia). Vacío: "Todo el
   equipamiento está al día" + "Nada vence en los próximos 60 días.".
 - **"Empresas con más valor en juego"** (las 6 primeras de las abiertas, sin "sin empresa", mismo orden): Empresa (sin link, como antes) ·
   barra (valor sobre el mayor) · En juego (exacto) · Abiertas. Vacío con el texto de siempre.
-- **Grilla:** desde 1280, 12 columnas: por etapa (7) y recambios (5, alto de dos filas) arriba; empresas (7) debajo. Sin recambios, por
-  etapa (7) y empresas (5) lado a lado. Debajo de 1280, una columna en el orden por etapa → recambios → empresas. Sin cajas alrededor de
+- **Grilla:** **recambios va PRIMERO en el DOM** (revisión del Lote E: en el celular y debajo de 1280 lo vencido —lo que el proveedor
+  atiende hoy— queda arriba, como lo ponía el legacy), luego por etapa y empresas. Desde 1280, 12 columnas con lugares fijos: recambios a la
+  derecha (`col-start-8`, 5 columnas, alto de dos filas, `row-start-1`), por etapa (7, fila 1) y empresas (7, fila 2) a la izquierda. Sin
+  recambios, por etapa (7) y empresas (5) lado a lado. Debajo de 1280, una columna: recambios → por etapa → empresas. Sin cajas alrededor de
   las secciones (barra de sección + tabla); los vacíos ocupan el lugar de la tabla con su borde.
-- **Carga:** `TableroSkeleton` (h1 real, franja de 4 cifras, las secciones en la misma grilla; la de recambios solo si el rol la ve) +
+- **Carga:** `TableroSkeleton` (h1 real, franja de 4 cifras —5 con recambios—, las secciones en el mismo orden y la misma grilla; la de
+  recambios solo si el rol la ve) +
   "Cargando tablero…". Error: `(crm2)/error.tsx`.
 
 **Barras de dato (vale para los tres tableros):** `CellBar` (`DataTable.tsx`) dibuja `anchoBarra(valor, max)` (`barra.ts`, probado):
@@ -1142,13 +1150,14 @@ truncado, mismas cuentas (`lib/tablero.ts` sin cambios), mismos permisos (`clien
 `rutaInicial`; sin `bitacora.ver` no hay "sin actividad") y mismos parámetros (`?dias=7|14|30`, `?mes=aaaa-mm`).
 
 - **PageBar:** "Tablero comercial" (sin el eyebrow "El equipo en la cancha" ni la bajada). Se fue el segundo marcador sobre la cancha.
-- **Franja** (`StatStrip lg`): Valor en juego del equipo (compacta + exacta debajo) · Oportunidades abiertas (link a `/oportunidades`;
-  debajo "de N responsables") · "Quietas hace 14 días o más" ("—" si el rol no ve la bitácora) · "Ganadas en octubre de 2026" · "Perdidas
-  en octubre de 2026". Si la lectura de abiertas tocó el tope, un `InlineBanner` de atención con el aviso de siempre.
-- **"Pipeline por responsable"** (5 de 12 desde 1280): Responsable (Avatar + nombre que baja de renglón; "Sin responsable" en gris) · barra
+- **Franja** (`StatStrip lg`, `aria-label` "Resumen del equipo"): Valor en juego del equipo (compacta + exacta debajo) · Oportunidades
+  abiertas (link a `/oportunidades`; debajo "de N responsables") · "Quietas hace 14 días o más" ("—" si el rol no ve la bitácora) ·
+  **Ganadas** y **Perdidas** con el mes como detalle ("en octubre de 2026"; antes iba en la etiqueta y la hacía de dos renglones a 1024). Si la lectura de abiertas tocó el tope, un `InlineBanner` de atención con el aviso de siempre.
+- **"Pipeline por responsable"** (6 de 12 desde 1280; revisión del Lote E: con 5 la tabla medía ~470 px, menos de 30rem, y la barra se
+  escondía justo en los anchos de escritorio; con 6 entra a 1280, 1440 y 1903. "Por qué se pierde" también pasó a 6): Responsable (Avatar + nombre que baja de renglón; "Sin responsable" en gris) · barra
   (valor) · Valor · Abiertas + pie **Total** (el valor en juego y las abiertas: los "N abiertas" del legacy). Se fue "La barra mide el
   valor; el número chico, la cantidad.": las columnas lo dicen.
-- **"Abiertas sin actividad"** (7 de 12): `nav` "Días sin actividad" con los tres links "N días o más" (`aria-current` en el elegido,
+- **"Abiertas sin actividad"** (6 de 12; a 1280 y 1440 la última actividad ya iba bajo el título con 7, así que no pierde nada): `nav` "Días sin actividad" con los tres links "N días o más" (`aria-current` en el elegido,
   `scroll={false}`) con forma de segmentado; la explicación de siempre; tabla `TablaQuietas` (Oportunidad = link a la ficha + responsable ·
   cliente · Última actividad (fecha mono + "de la oportunidad / del cliente / desde el alta", "antes del …" si es un piso) · Valor ·
   Quieta ("38 días" / "Más de N días" con punto de atención; "Sin datos suficientes" neutro). Con menos de 45rem de tabla la última
@@ -1164,21 +1173,25 @@ truncado, mismas cuentas (`lib/tablero.ts` sin cambios), mismos permisos (`clien
 ### 10.23 Conversión del embudo (Lote E, construido)
 `src/app/(app)/(crm2)/embudo/` (`git mv` de `page.tsx`, `EmbudoFiltros.tsx` y `loading.tsx`). Misma consulta con tope y margen de un día,
 misma cohorte (`filtrarCohorte`), mismas cuentas (`calcularEmbudo`), mismos permisos (`oportunidades.ver` + `clientes.ver_todos`) y los
-mismos parámetros (`?desde=&hasta=&origen=`, `origen=sin` = sin origen; un valor que no es una opción se ve como "Todos").
+mismos parámetros (`?desde=&hasta=&origen=`, `origen=sin` = sin origen).
 
 - **PageBar:** "Conversión del embudo" + la frase de la cohorte como contador ("15 oportunidades en la cohorte: 10 abiertas, 2 ganadas y 3
   perdidas."). Sin eyebrow ni bajada.
 - **Toolbar** "Filtros del embudo" (`EmbudoFiltros`, cliente): `FechaFiltro` inline **"Alta desde"** y **"hasta"** (los labels de
   siempre; encadenados con `min`/`max`), `Select` denso **"Filtrar por origen"** (Todos los orígenes / Sin origen cargado / cada origen;
   con buscador por tener más de 8) y "Limpiar filtros" (ghost, solo con filtros). Los controles bajan de renglón con poco ancho (no hay
-  "Más filtros": son los únicos controles). Mientras el servidor recalcula, el resultado queda `aria-busy` al 60 % (reemplaza a la línea
-  de `BarraPendiente`).
+  "Más filtros": son los únicos controles). Mientras el servidor recalcula, el resultado queda `aria-busy`, una línea de 2 px en acento
+  pulsa entre la toolbar y el resultado (reserva su lugar; quieta con movimiento reducido) y una región viva dice "Actualizando…". **No
+  se atenúa** (revisión del Lote E: el 60 % bajaba el contraste de lo que se está leyendo). Un `?origen=` con un uuid que no es un origen
+  de la lista (el servidor SÍ filtra por él y da 0) se ve como **"Origen desconocido"**; uno que no es "sin" ni un uuid (el servidor lo
+  ignora) se ve como "Todos los orígenes".
 - **Franja** (`StatStrip lg`): Tasa de éxito ("40" + "%" en gris; debajo "2 ganadas de 5 cerradas") · Ciclo hasta ganar · Ciclo hasta perder
   ("21,5" + "días"; "menos de 1 día" o "—" como texto; debajo "del alta al cierre, en promedio"). Se fue la cifra de 48 px.
 - **"Embudo por etapa"** (tabla, a todo el ancho): Etapa · la **barra del embudo** (centrada, entraron sobre el máximo — misma escala que el
   legacy, que incluía a las ganadas —, visible en todo ancho) · Entraron · Avanzaron ("12 de 14") · Conversión ("85,7 %") · Mediana en la
-  etapa ("Ninguna terminó" / "—") · Siguen ahí ahora ("2 · mediana hasta hoy 6,7 días" o "—"). El pie es **Ganadas** (punto de éxito,
-  barra, cantidad); debajo "Las N perdidas y las M abiertas no suman a la fila de ganadas." y el aviso de oportunidades sin historial. Se
+  etapa ("Ninguna terminó" / "—") · Siguen ahí ahora ("2 · mediana hasta hoy 6,7 días" o "—"). La última fila es **Ganadas** (punto de
+  éxito, barra, cantidad) en un `tbody` aparte con la regla fuerte arriba (`TBody ruled`): es el último paso, no un total, así que no va
+  en `tfoot`; el nombre de cada fila es `th scope="row"`; debajo "Las N perdidas y las M abiertas no suman a la fila de ganadas." y el aviso de oportunidades sin historial. Se
   fueron los "01, 02…" de cada etapa. Con menos de 45rem de tabla, avanzaron/conversión y la mediana pasan a renglones bajo la etapa; con
   menos de 60rem, "Siguen ahí ahora".
 - **«Cómo se calcula»:** el `<details>` de siempre con el mismo texto (Cohorte, Entraron, Avanzaron, Mediana, Tasa de éxito, Ciclo,
@@ -1189,9 +1202,11 @@ mismos parámetros (`?desde=&hasta=&origen=`, `origen=sin` = sin origen; un valo
 - **Carga:** `TableroSkeleton` con la toolbar, 3 cifras y la tabla + "Cargando la conversión…" (antes "Calculando la conversión…": el
   contrato de §13.2 pide que empiece con "Cargando").
 
-**Generalizado en el Lote E:** `StatStrip` → `size="lg"` (cifra de 28, `TYPE.kpi`; el detalle baja de renglón en vez de recortarse) y
-`href` por cifra (link con nombre "cifra + etiqueta"); `StatusDot` → `wrap` (el texto baja de renglón); `DataTable` → `CellBar` y `TFoot`
-(pie de totales con la regla fuerte); `barra.ts` (+ `.check`: `anchoBarra`, `porcentajeDe`); `Skeletons` → `TableroSkeleton`. **Se borró**
+**Generalizado en el Lote E:** `StatStrip` → `size="lg"` (cifra de 28, `TYPE.kpi`, con interletrado −0,04em —la mono reserva un
+carácter entero para la coma y el espacio—; el detalle baja de renglón en vez de recortarse; desde `sm` etiqueta, cifra y detalle son
+filas compartidas con `subgrid`, así las cifras quedan en la misma línea aunque una etiqueta baje de renglón) y `href` por cifra (link con
+nombre "cifra + etiqueta"); `StatusDot` → `wrap` (el texto baja de renglón); `DataTable` → `CellBar`, `TFoot` (pie de totales con la regla
+fuerte), `Td rowHeader` (`th scope="row"` con el aspecto de una celda) y `TBody ruled` (un grupo de filas tras la regla fuerte); `barra.ts` (+ `.check`: `anchoBarra`, `porcentajeDe`); `Skeletons` → `TableroSkeleton`. **Se borró**
 (sin usuarios): `(legacy)/dashboard/charts.tsx`, y `FiltroFecha` y `BarraPendiente` de `components/FiltrosUrl.tsx`.
 
 **Paridad (prueba del Lote E):** cada cifra de las tres pantallas legacy (build de `3ef72fa`) contra la nueva, con Administrador,

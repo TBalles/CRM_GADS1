@@ -201,8 +201,9 @@ src/
       sin-permisos/            Destino cuando el rol no tiene ninguna sección
       */loading.tsx            Loader de marca por módulo
       error.tsx                Aviso con "Reintentar" si la base no responde (las lecturas ya no se tragan el error)
-      (crm2)/dashboard/          CRM 2.0 (Lote E): Inicio. h1 "Inicio", franja de 4 cifras (StatStrip lg; Contactos sigue yendo a /empresas,
-                                   bug conocido sin corregir) y tablas con barra: por etapa, recambios (alertas.ver), empresas con más valor
+      (crm2)/dashboard/          CRM 2.0 (Lote E): Inicio. h1 "Inicio", franja de 4 cifras + "Recambios vencidos" con alertas.ver (StatStrip
+                                   lg; Contactos sigue yendo a /empresas, bug conocido sin corregir) y tablas: recambios (alertas.ver,
+                                   PRIMERO en el DOM), por etapa (sin barra), empresas con más valor (con barra)
         page.tsx / loading.tsx   Server Component: mismas lecturas y cuentas que el legacy; carga con TableroSkeleton
       (crm2)/empresas/          CRM 2.0 (Etapa 3): lista + vista previa (master-detail, `?sel=`) y ficha con tabs (`?tab=`)
         page.tsx                 Server Component: searchParams → UNA página (.range) + catálogos; vista previa en <Suspense key={sel}>

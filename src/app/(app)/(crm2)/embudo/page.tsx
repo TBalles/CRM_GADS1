@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { buttonClass } from "@/components/crm/Button";
-import { CellBar, CellNumber, DataTable, TBody, TFoot, THead, Td, Th, Tr } from "@/components/crm/DataTable";
+import { CellBar, CellNumber, DataTable, TBody, THead, Td, Th, Tr } from "@/components/crm/DataTable";
 import { EmptyState, InlineBanner } from "@/components/crm/Feedback";
 import { PageBar, SectionBar } from "@/components/crm/PageBar";
 import { StatStrip, type Stat } from "@/components/crm/StatStrip";
@@ -102,7 +102,7 @@ export default async function EmbudoPage({ searchParams }: { searchParams: Promi
             : undefined
         }
       />
-      <EmbudoFiltros origenes={origenesRes.data ?? []} hayFiltro={hayFiltro}>
+      <EmbudoFiltros origenes={origenesRes.data ?? []} origenAplicado={origen ?? ""} hayFiltro={hayFiltro}>
         <div className="flex flex-col gap-6 pt-2">
           {r.total === 0 ? (
             <EmptyState
@@ -176,7 +176,7 @@ export default async function EmbudoPage({ searchParams }: { searchParams: Promi
                       const siguen = f.enEtapaAhora > 0 ? `${f.enEtapaAhora} · mediana hasta hoy ${formatDias(f.medianaHastaHoyDias)}` : null;
                       return (
                         <Tr key={f.etapa.id}>
-                          <Td className="whitespace-normal py-1.5">
+                          <Td rowHeader className="whitespace-normal py-1.5">
                             <span className="block font-medium">{f.etapa.nombre}</span>
                             {/* Con menos ancho, lo de las columnas escondidas va acá abajo: un dato por renglón, sin recortar. */}
                             <span className={cn(TYPE.meta, "block tabular-nums text-(--crm-text-2) @[45rem]:hidden")}>
@@ -211,21 +211,24 @@ export default async function EmbudoPage({ searchParams }: { searchParams: Promi
                       );
                     })}
                   </TBody>
-                  <TFoot>
-                    <Td>
-                      <StatusDot tone="success">Ganadas</StatusDot>
-                    </Td>
-                    <Td>
-                      <CellBar value={r.ganadas} max={maximo} center />
-                    </Td>
-                    <Td align="right">
-                      <CellNumber>{r.ganadas}</CellNumber>
-                    </Td>
-                    <Td hideBelow="md" />
-                    <Td hideBelow="md" />
-                    <Td hideBelow="md" />
-                    <Td hideBelow="lg" />
-                  </TFoot>
+                  {/* "Ganadas" no es un total: es el último paso del embudo, separado por la regla fuerte (un tbody aparte). */}
+                  <TBody ruled>
+                    <Tr>
+                      <Td rowHeader className="font-medium">
+                        <StatusDot tone="success">Ganadas</StatusDot>
+                      </Td>
+                      <Td>
+                        <CellBar value={r.ganadas} max={maximo} center />
+                      </Td>
+                      <Td align="right">
+                        <CellNumber>{r.ganadas}</CellNumber>
+                      </Td>
+                      <Td hideBelow="md" />
+                      <Td hideBelow="md" />
+                      <Td hideBelow="md" />
+                      <Td hideBelow="lg" />
+                    </Tr>
+                  </TBody>
                 </DataTable>
                 <p className={cn(TYPE.meta, "mt-2 max-w-prose tabular-nums text-(--crm-text-2)")}>
                   Las {plural(r.perdidas, "perdida", "perdidas")} y las {plural(r.abiertas, "abierta", "abiertas")} no suman a la fila de ganadas.

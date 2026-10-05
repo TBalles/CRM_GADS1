@@ -91,17 +91,28 @@ export function Th({
   );
 }
 
-export function TBody({ children }: { children: React.ReactNode }) {
-  return <tbody className="[&>tr:last-child>td]:border-b-0">{children}</tbody>;
+export function TBody({ children, ruled = false }: { children: React.ReactNode; ruled?: boolean }) {
+  return (
+    <tbody
+      className={cn(
+        "[&>tr:last-child>*]:border-b-0",
+        // `ruled`: un grupo de filas separado del anterior por la regla fuerte, sin ser un pie (la fila "Ganadas" del
+        // embudo: es un dato más, no un total).
+        ruled && "[&>tr:first-child>*]:border-t [&>tr:first-child>*]:border-t-(--crm-border-strong)",
+      )}
+    >
+      {children}
+    </tbody>
+  );
 }
 
 /**
  * Fila de totales (tableros, §10.21): la regla fuerte arriba, como el cierre de una columna en un libro mayor. Solo
- * totales que ya existen en la pantalla (no se inventan sumas). Las celdas son `Td` comunes.
+ * totales que ya existen en la pantalla (no se inventan sumas). La primera celda es `Td rowHeader` ("Total": `th scope="row"`).
  */
 export function TFoot({ children }: { children: React.ReactNode }) {
   return (
-    <tfoot className="font-medium [&>tr>td]:border-b-0 [&>tr>td]:border-t [&>tr>td]:border-t-(--crm-border-strong)">
+    <tfoot className="font-medium [&>tr>*]:border-b-0 [&>tr>*]:border-t [&>tr>*]:border-t-(--crm-border-strong)">
       <tr className="h-9">{children}</tr>
     </tfoot>
   );
@@ -139,20 +150,31 @@ export function Td({
   hideBelow,
   className,
   colSpan,
+  rowHeader = false,
 }: {
   children?: React.ReactNode;
   align?: Align;
   hideBelow?: HideBelow;
   className?: string;
   colSpan?: number;
+  /** La celda nombra su fila (`th scope="row"`): "Total" de un pie, la etapa de una fila. Se ve como una celda más. */
+  rowHeader?: boolean;
 }) {
+  const Celda = rowHeader ? "th" : "td";
   return (
-    <td
+    <Celda
       colSpan={colSpan}
-      className={cn("overflow-hidden text-ellipsis whitespace-nowrap border-b border-(--crm-border) px-3 align-middle", ALINEAR[align], hideBelow && ESCONDER[hideBelow], className)}
+      scope={rowHeader ? "row" : undefined}
+      className={cn(
+        "overflow-hidden text-ellipsis whitespace-nowrap border-b border-(--crm-border) px-3 align-middle",
+        rowHeader && "[font-weight:inherit]",
+        ALINEAR[align],
+        hideBelow && ESCONDER[hideBelow],
+        className,
+      )}
     >
       {children}
-    </td>
+    </Celda>
   );
 }
 

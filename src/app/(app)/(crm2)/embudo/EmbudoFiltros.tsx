@@ -10,15 +10,19 @@ import { ORIGEN_SIN } from "@/lib/embudo";
 
 /**
  * Período y origen del embudo (MASTER.md §10.23). Viven en la URL (`?desde=&hasta=&origen=`), como siempre: la página
- * servidor recalcula y esto solo escribe. Envuelve el resultado (`children`, lo dibuja el servidor) para atenuarlo con
- * `aria-busy` mientras llega el recálculo (antes, la línea de `BarraPendiente`).
+ * servidor recalcula y esto solo escribe. Envuelve el resultado (`children`, lo dibuja el servidor): mientras llega el
+ * recálculo queda `aria-busy`, una línea fina en acento pulsa arriba y una región viva dice "Actualizando…". El resultado
+ * NO se atenúa (bajaría el contraste de lo que se está leyendo; el legacy tampoco lo hacía).
  */
 export default function EmbudoFiltros({
   origenes,
+  origenAplicado,
   hayFiltro,
   children,
 }: {
   origenes: { id: string; nombre: string }[];
+  /** El origen con el que filtró el servidor ("" si ninguno: sin parámetro o con uno que no es "sin" ni un uuid). */
+  origenAplicado: string;
   hayFiltro: boolean;
   children: React.ReactNode;
 }) {
@@ -30,8 +34,12 @@ export default function EmbudoFiltros({
     { value: ORIGEN_SIN, label: "Sin origen cargado" },
     ...origenes.map((o) => ({ value: o.id, label: o.nombre })),
   ];
-  // Un valor de la URL que no es una opción se ve como "Todos", igual que en el servidor (el FiltroSelect legacy).
+  // Lo que filtra el servidor: un `?origen=` que no es "sin" ni un uuid no filtra (se ve "Todos"); un uuid que no es un
+  // origen de la lista (borrado, de otra organización, tipeado a mano) SÍ filtra —y da 0—, así que se muestra como
+  // "Origen desconocido" en vez de mentir "Todos" (el FiltroSelect legacy mostraba "Todos").
   const crudo = filtros.valor("origen");
+  const desconocido = crudo !== "" && crudo === origenAplicado && !opciones.some((o) => o.value === crudo);
+  if (desconocido) opciones.push({ value: crudo, label: "Origen desconocido" });
   const origen = opciones.some((o) => o.value === crudo) ? crudo : "";
   return (
     <>
@@ -52,12 +60,19 @@ export default function EmbudoFiltros({
           </Button>
         )}
       </Toolbar>
-      <div
-        aria-busy={filtros.pending || undefined}
-        className={cn("transition-opacity duration-(--crm-dur-fast) motion-reduce:transition-none", filtros.pending && "opacity-60")}
-      >
-        {children}
+      {/* Reserva su lugar siempre (no empuja el resultado). */}
+      <div aria-hidden="true" className="h-0.5 overflow-hidden rounded-(--crm-radius-sm)">
+        <div
+          className={cn(
+            "h-full bg-(--crm-accent)",
+            filtros.pending ? "animate-[crm-pulse_1.6s_ease-in-out_infinite] motion-reduce:animate-none" : "invisible",
+          )}
+        />
       </div>
+      <p role="status" className="sr-only">
+        {filtros.pending ? "Actualizando…" : ""}
+      </p>
+      <div aria-busy={filtros.pending || undefined}>{children}</div>
     </>
   );
 }

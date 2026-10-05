@@ -30,7 +30,9 @@ export type Stat = {
  * - `md` (ficha): UNA fila fina desde `sm` (N columnas iguales), cifra de 20 en mono (sans si es texto); de a dos en
  *   mobile. La cifra de 28 (`TYPE.kpi`) queda para tableros, no para la franja de una ficha.
  * - `sm` (vista previa): grilla de 2, cifra de 16.
- * - `lg` (tableros: Inicio, Tablero comercial, Embudo): la misma fila que `md` con la cifra de 28 (`TYPE.kpi`).
+ * - `lg` (tableros: Inicio, Tablero comercial, Embudo): la misma fila que `md` con la cifra de 28 (`TYPE.kpi`), interletrado
+ *   de −0,04em (la mono reserva un carácter entero para la coma y el espacio: sin esto "21,5 días" se desparrama) y las
+ *   cifras alineadas aunque una etiqueta baje de renglón.
  */
 export function StatStrip({
   items,
@@ -58,18 +60,21 @@ export function StatStrip({
           ? // Una sola fila desde sm (N columnas iguales, divisores verticales); en mobile, de a dos.
             "grid-cols-2 gap-y-3 sm:grid-cols-[repeat(var(--n),minmax(0,1fr))] [&>div]:border-l [&>div]:border-(--crm-border) [&>div]:px-4 [&>div:first-child]:border-l-0 [&>div:first-child]:pl-0 max-sm:[&>div:nth-child(odd)]:border-l-0 max-sm:[&>div:nth-child(odd)]:pl-0"
           : "grid-cols-2 gap-x-4 gap-y-3",
+        // lg: en la fila única, etiqueta | cifra | detalle son filas compartidas (subgrid): si una etiqueta baja a dos
+        // renglones ("Quietas hace 14 días o más" a 1024), las cifras siguen en la misma línea de base.
+        size === "lg" && "sm:grid-rows-[auto_auto_auto]",
         className,
       )}
     >
       {items.map((it) => (
-        <div key={it.label} className="flex min-w-0 flex-col gap-0.5">
+        <div key={it.label} className={cn("flex min-w-0 flex-col gap-0.5", size === "lg" && "sm:row-span-3 sm:grid sm:grid-rows-subgrid sm:gap-y-0.5")}>
           <dt className={cn(TYPE.meta, "text-(--crm-text-2)")}>{it.label}</dt>
           <dd
             className={cn(
               "flex min-w-0 items-baseline gap-1 font-medium",
               it.text
                 ? "text-[14px] leading-6 tabular-nums"
-                : cn(TYPE.mono, size === "lg" ? "text-[28px] leading-9" : size === "md" ? "text-[20px] leading-6" : "text-[16px] leading-6"),
+                : cn(TYPE.mono, size === "lg" ? "text-[28px] leading-9 tracking-[-0.04em]" : size === "md" ? "text-[20px] leading-6" : "text-[16px] leading-6"),
               it.warning && "text-(--crm-warning)",
             )}
           >

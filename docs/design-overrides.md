@@ -88,27 +88,29 @@ qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
     `<link>`), en vez de un `<link rel="icon">` a mano.
 - **Dónde vive**: `src/app/layout.tsx`, `src/app/icon.svg`.
 
-## 5. Sin `recharts` — los charts del dashboard son CSS
+## 5. Sin `recharts` — los charts de los tableros son CSS
 
 - **Kit**: los charts van con **Recharts**, única librería, envueltos en `Card` +
   `SectionTitle` (`docs/DESIGN.md` §4.6, §10).
-- **Tuco & Nito**: el dashboard no usa ninguna librería de charts. Las dos formas que necesita
-  se construyen con divs y flex en `src/app/(app)/dashboard/charts.tsx`:
-  - **Magnitud** (oportunidades por etapa, empresas con más valor) → `MagnitudeBars`: barra
-    horizontal ordenada, **hue único de marca**, con el valor como label directo. Nada de
-    multi-tint `shade(i)` por categoría nominal — eso double-encodea el largo de la barra
-    como color sin agregar información.
-  - **Part-to-whole** (distribución del embudo) → `ShareBar`: barra apilada 100% con los
-    colores de etapa (uso categórico legítimo) y leyenda con porcentajes directos, así la
-    identidad nunca depende solo del color.
+- **Tuco & Nito** (desde CRM 2.0, Lote E): Inicio, Tablero comercial y Conversión del embudo no usan
+  ninguna librería de charts ni cards. Cada dato es una **tabla** (la alternativa accesible) y la forma
+  visual es una barra fina dentro de la fila: `CellBar` (`src/components/crm/DataTable.tsx`), con el
+  ancho de `anchoBarra` (`src/components/crm/barra.ts`, probado en `barra.check.ts`).
+  - **Magnitud** (empresas con más valor, pipeline por responsable, motivos de pérdida, el embudo
+    por etapa) → barra horizontal, **un solo tono** (`--crm-accent`), proporcional a la mayor y con
+    el número escrito en su columna. Nada de multi-tint por categoría nominal.
+  - **Part-to-whole** (la distribución por etapa) → ya no es una barra apilada: es la columna
+    "Del total" de la tabla "Oportunidades por etapa" (`porcentajeDe`, mismo redondeo que la leyenda
+    de antes); el color de cada etapa queda en el cuadradito junto a su nombre.
   - Los **promedios y montos no son part-to-whole** → nunca torta.
-- **Dónde vive**: `src/app/(app)/dashboard/charts.tsx`, consumido por `dashboard/page.tsx`.
-- **Por qué**: dos formas de chart, ambas triviales en CSS. Recharts pinta `fill`/`stroke`
-  como atributos SVG donde `var(--token)` NO resuelve, así que habría que duplicar toda la
-  paleta en JS y sincronizarla a mano con el tema (el problema que TopRentals resolvió con un
-  hook `useChartColors`). En CSS los charts heredan los tokens y andan en claro y oscuro sin
-  una línea extra. Si aparecen series temporales o charts densos, traer Recharts y seguir
-  §4.6 + el método `dataviz`.
+- **Dónde vive**: `src/components/crm/DataTable.tsx` (`CellBar`) y `src/components/crm/barra.ts`,
+  usados por `src/app/(app)/(crm2)/{dashboard,tablero-comercial,embudo}/page.tsx`. Las reglas están en
+  `design-system/crm-2/MASTER.md` §10.21–§10.23. (`dashboard/charts.tsx` con `MagnitudeBars` y
+  `ShareBar` se borró en el Lote E.)
+- **Por qué**: formas triviales en CSS. Recharts pinta `fill`/`stroke` como atributos SVG donde
+  `var(--token)` NO resuelve, así que habría que duplicar toda la paleta en JS y sincronizarla a mano
+  con el tema. En CSS las barras heredan los tokens y andan en claro y oscuro sin una línea extra. Si
+  aparecen series temporales o charts densos, traer Recharts y seguir §4.6 + el método `dataviz`.
 
 ## 6. Primitivos y hooks en módulos separados, no un único `UIComponents.tsx`
 

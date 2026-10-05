@@ -179,7 +179,7 @@ export default async function TableroComercialPage({ searchParams }: { searchPar
       <div className="flex flex-col gap-6 pt-2">
         <StatStrip
           size="lg"
-          label="Valor en juego del equipo"
+          label="Resumen del equipo"
           items={[
             {
               label: "Valor en juego del equipo",
@@ -199,8 +199,8 @@ export default async function TableroComercialPage({ searchParams }: { searchPar
             },
             // Sin bitácora no se sabe: se dice "—", no se muestra un 0.
             { label: `Quietas hace ${dias} días o más`, value: verBitacora ? quietas.length : undefined },
-            { label: `Ganadas en ${mesTexto}`, value: cierres.ganadas.cantidad },
-            { label: `Perdidas en ${mesTexto}`, value: cierres.perdidas.cantidad },
+            { label: "Ganadas", value: cierres.ganadas.cantidad, detail: `en ${mesTexto}` },
+            { label: "Perdidas", value: cierres.perdidas.cantidad, detail: `en ${mesTexto}` },
           ]}
         />
         {abiertasTruncadas && (
@@ -211,7 +211,7 @@ export default async function TableroComercialPage({ searchParams }: { searchPar
 
         <div className="grid items-start gap-6 xl:grid-cols-12">
           {/* PIPELINE POR RESPONSABLE */}
-          <section className="flex min-w-0 flex-col xl:col-span-5">
+          <section className="flex min-w-0 flex-col xl:col-span-6">
             <SectionBar title="Pipeline por responsable" count={porVendedor.length} />
             {porVendedor.length ? (
               <>
@@ -231,7 +231,7 @@ export default async function TableroComercialPage({ searchParams }: { searchPar
                   <TBody>
                     {porVendedor.map((v) => (
                       <Tr key={v.key}>
-                        <Td className="whitespace-normal py-1.5">
+                        <Td rowHeader className="whitespace-normal py-1.5">
                           {v.key === SIN_RESPONSABLE ? (
                             <span className="text-(--crm-text-2)">{v.label}</span>
                           ) : (
@@ -255,7 +255,7 @@ export default async function TableroComercialPage({ searchParams }: { searchPar
                     ))}
                   </TBody>
                   <TFoot>
-                    <Td>Total</Td>
+                    <Td rowHeader>Total</Td>
                     <Td hideBelow="sm" />
                     <Td align="right">
                       <Monto valor={totalEnJuego} />
@@ -277,7 +277,7 @@ export default async function TableroComercialPage({ searchParams }: { searchPar
           </section>
 
           {/* SIN ACTIVIDAD */}
-          <section className="flex min-w-0 flex-col xl:col-span-7">
+          <section className="flex min-w-0 flex-col xl:col-span-6">
             <SectionBar title="Abiertas sin actividad" count={verBitacora ? quietas.length : undefined} />
             <nav aria-label="Días sin actividad" className="flex flex-wrap items-center gap-2 pb-2">
               <span className={cn(TYPE.table, "text-(--crm-text-2)")}>Quietas hace</span>
@@ -389,7 +389,7 @@ export default async function TableroComercialPage({ searchParams }: { searchPar
             </div>
 
             <div className="grid items-start gap-6 pt-2 xl:grid-cols-12">
-              <section className="flex min-w-0 flex-col xl:col-span-7">
+              <section className="flex min-w-0 flex-col xl:col-span-6">
                 <SectionBar as="h3" title="Ganadas y perdidas" count={cerradasMes} />
                 <DataTable label="Ganadas y perdidas">
                   <THead>
@@ -403,7 +403,7 @@ export default async function TableroComercialPage({ searchParams }: { searchPar
                   </THead>
                   <TBody>
                     <Tr>
-                      <Td>
+                      <Td rowHeader>
                         <StatusDot tone="success">Ganadas</StatusDot>
                       </Td>
                       <Td align="right">
@@ -414,7 +414,7 @@ export default async function TableroComercialPage({ searchParams }: { searchPar
                       </Td>
                     </Tr>
                     <Tr>
-                      <Td>
+                      <Td rowHeader>
                         <StatusDot tone="danger">Perdidas</StatusDot>
                       </Td>
                       <Td align="right">
@@ -433,7 +433,7 @@ export default async function TableroComercialPage({ searchParams }: { searchPar
                 </p>
               </section>
 
-              <section className="flex min-w-0 flex-col xl:col-span-5">
+              <section className="flex min-w-0 flex-col xl:col-span-6">
                 <SectionBar
                   as="h3"
                   title="Por qué se pierde"
@@ -463,7 +463,9 @@ export default async function TableroComercialPage({ searchParams }: { searchPar
                     <TBody>
                       {motivos.map((m) => (
                         <Tr key={m.key}>
-                          <Td className="whitespace-normal py-1.5">{m.label}</Td>
+                          <Td rowHeader className="whitespace-normal py-1.5">
+                            {m.label}
+                          </Td>
                           <Td hideBelow="sm">
                             <CellBar value={m.cantidad} max={maxMotivo} />
                           </Td>

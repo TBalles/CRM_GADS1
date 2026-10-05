@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AlertTriangle } from "lucide-react";
 import { IconoEquipoSimple } from "@/components/Equipamiento";
 import { CellBar, CellNumber, DataTable, TBody, TFoot, THead, Td, Th, Tr } from "@/components/crm/DataTable";
 import { EmptyState } from "@/components/crm/Feedback";
@@ -81,7 +82,6 @@ export default async function DashboardPage() {
       monto: deLaEtapa.reduce((acc, o) => acc + (Number(o.monto) || 0), 0),
     };
   });
-  const maxEtapa = Math.max(0, ...porEtapa.map((e) => e.cantidad));
 
   // Las empresas con más valor en juego (abiertas), las 6 primeras. Sin empresa no entra al ranking: "Sin empresa
   // asignada" no es un cliente. Igual cuenta en la cifra de arriba.
@@ -117,85 +117,15 @@ export default async function DashboardPage() {
             // (decisión del Lote E: no se arregla dentro del rediseño); el destino correcto sería /contactos.
             { label: "Contactos", value: contactosCount ?? 0, href: "/empresas" },
             { label: "Oportunidades abiertas", value: abiertas.length, href: "/oportunidades" },
+            // La misma cuenta de la sección "Recambios que vienen" (solo con alertas.ver y si la vista no falló): lo que un
+            // proveedor tiene que atender hoy, a la vista sin bajar.
+            ...(mostrarRecambios ? [{ label: "Recambios vencidos", value: vencidos, href: "/alertas", warning: vencidos > 0 }] : []),
           ]}
         />
 
         <div className="grid items-start gap-6 xl:grid-cols-12">
-          <section className="flex min-w-0 flex-col xl:col-span-7">
-            <SectionBar title="Oportunidades por etapa" />
-            {items.length ? (
-              <DataTable label="Oportunidades por etapa">
-                <THead>
-                  <Th>Etapa</Th>
-                  <Th hideBelow="sm" className="w-[22%]">
-                    <span className="sr-only">Distribución</span>
-                  </Th>
-                  <Th width={88} align="right">
-                    Cantidad
-                  </Th>
-                  <Th width={80} align="right" hideBelow="sm">
-                    Del total
-                  </Th>
-                  <Th width={128} align="right">
-                    Valor
-                  </Th>
-                </THead>
-                <TBody>
-                  {porEtapa.map((e) => (
-                    <Tr key={e.id}>
-                      <Td className="py-1.5">
-                        <StatusDot wrap color={e.color}>
-                          {e.nombre}
-                        </StatusDot>
-                        <span className={cn(TYPE.meta, "block tabular-nums text-(--crm-text-2) @[30rem]:hidden")}>
-                          {porcentajeDe(e.cantidad, items.length)}% del total
-                        </span>
-                      </Td>
-                      <Td hideBelow="sm">
-                        <CellBar value={e.cantidad} max={maxEtapa} />
-                      </Td>
-                      <Td align="right">
-                        <CellNumber>{e.cantidad}</CellNumber>
-                      </Td>
-                      <Td align="right" hideBelow="sm">
-                        <CellNumber unit="%">{porcentajeDe(e.cantidad, items.length)}</CellNumber>
-                      </Td>
-                      <Td align="right">
-                        <Monto valor={e.monto} />
-                      </Td>
-                    </Tr>
-                  ))}
-                </TBody>
-                <TFoot>
-                  <Td>Total</Td>
-                  <Td hideBelow="sm" />
-                  <Td align="right">
-                    <CellNumber>{items.length}</CellNumber>
-                  </Td>
-                  <Td align="right" hideBelow="sm">
-                    <CellNumber unit="%">100</CellNumber>
-                  </Td>
-                  <Td />
-                </TFoot>
-              </DataTable>
-            ) : (
-              <div className="rounded-(--crm-radius) border border-(--crm-border) bg-(--crm-panel)">
-                <EmptyState
-                  compact
-                  title="El embudo está vacío"
-                  description="Cuando cargues la primera consulta, acá se ve en qué etapa está."
-                  action={
-                    <Link href="/oportunidades" className={buttonClass({ size: "sm" })}>
-                      Ir a Oportunidades
-                    </Link>
-                  }
-                />
-              </div>
-            )}
-          </section>
-
           {mostrarRecambios && (
-            <section className="flex min-w-0 flex-col xl:col-span-5 xl:row-span-2">
+            <section className="flex min-w-0 flex-col xl:col-span-5 xl:col-start-8 xl:row-span-2 xl:row-start-1">
               <SectionBar
                 title="Recambios que vienen"
                 count={recambios.length}
@@ -207,6 +137,14 @@ export default async function DashboardPage() {
               />
               {recambios.length ? (
                 <>
+                  {/* Lo vencido manda: es lo que se atiende hoy (ícono + palabra + color, nunca solo el color). */}
+                  <p className="flex flex-wrap items-center gap-x-2 pb-2 text-[14px] leading-5 tabular-nums">
+                    <span className={cn("inline-flex items-center gap-1.5 font-semibold", vencidos > 0 ? "text-(--crm-danger)" : "text-(--crm-text)")}>
+                      {vencidos > 0 && <AlertTriangle aria-hidden="true" strokeWidth={1.75} className="size-4 shrink-0 self-center" />}
+                      {vencidos} vencidos
+                    </span>
+                    <span className="text-(--crm-text-2)">· {recambios.length - vencidos} por vencer</span>
+                  </p>
                   <DataTable label="Recambios que vienen">
                     <THead>
                       <Th>Equipo y cliente</Th>
@@ -235,9 +173,6 @@ export default async function DashboardPage() {
                       })}
                     </TBody>
                   </DataTable>
-                  <p className={cn(TYPE.meta, "mt-2 tabular-nums text-(--crm-text-2)")}>
-                    {vencidos} vencidos · {recambios.length - vencidos} por vencer
-                  </p>
                 </>
               ) : (
                 <div className="rounded-(--crm-radius) border border-(--crm-border) bg-(--crm-panel)">
@@ -247,7 +182,72 @@ export default async function DashboardPage() {
             </section>
           )}
 
-          <section className={cn("flex min-w-0 flex-col", mostrarRecambios ? "xl:col-span-7" : "xl:col-span-5")}>
+          <section className="flex min-w-0 flex-col xl:col-span-7 xl:col-start-1 xl:row-start-1">
+            <SectionBar title="Oportunidades por etapa" />
+            {items.length ? (
+              <DataTable label="Oportunidades por etapa">
+                <THead>
+                  <Th>Etapa</Th>
+                  <Th width={88} align="right">
+                    Cantidad
+                  </Th>
+                  <Th width={80} align="right" hideBelow="sm">
+                    Del total
+                  </Th>
+                  <Th width={128} align="right">
+                    Valor
+                  </Th>
+                </THead>
+                <TBody>
+                  {porEtapa.map((e) => (
+                    <Tr key={e.id}>
+                      <Td rowHeader className="py-1.5">
+                        <StatusDot wrap color={e.color}>
+                          {e.nombre}
+                        </StatusDot>
+                        <span className={cn(TYPE.meta, "block tabular-nums text-(--crm-text-2) @[30rem]:hidden")}>
+                          {porcentajeDe(e.cantidad, items.length)}% del total
+                        </span>
+                      </Td>
+                      <Td align="right">
+                        <CellNumber>{e.cantidad}</CellNumber>
+                      </Td>
+                      <Td align="right" hideBelow="sm">
+                        <CellNumber unit="%">{porcentajeDe(e.cantidad, items.length)}</CellNumber>
+                      </Td>
+                      <Td align="right">
+                        <Monto valor={e.monto} />
+                      </Td>
+                    </Tr>
+                  ))}
+                </TBody>
+                <TFoot>
+                  <Td rowHeader>Total</Td>
+                  <Td align="right">
+                    <CellNumber>{items.length}</CellNumber>
+                  </Td>
+                  {/* Sin "100 %": cada fila redondea como la leyenda legacy y la suma da 99 o 102; el pie no la contradice. */}
+                  <Td align="right" hideBelow="sm" />
+                  <Td />
+                </TFoot>
+              </DataTable>
+            ) : (
+              <div className="rounded-(--crm-radius) border border-(--crm-border) bg-(--crm-panel)">
+                <EmptyState
+                  compact
+                  title="El embudo está vacío"
+                  description="Cuando cargues la primera consulta, acá se ve en qué etapa está."
+                  action={
+                    <Link href="/oportunidades" className={buttonClass({ size: "sm" })}>
+                      Ir a Oportunidades
+                    </Link>
+                  }
+                />
+              </div>
+            )}
+          </section>
+
+          <section className={cn("flex min-w-0 flex-col", mostrarRecambios ? "xl:col-span-7 xl:col-start-1 xl:row-start-2" : "xl:col-span-5")}>
             <SectionBar title="Empresas con más valor en juego" count={topEmpresas.length} />
             {topEmpresas.length ? (
               <DataTable label="Empresas con más valor en juego">

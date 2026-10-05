@@ -25,3 +25,13 @@ test("porcentajeDe: la misma cuenta que la leyenda de la distribución del embud
   assert.equal(porcentajeDe(0, 0), 0);
   assert.equal(porcentajeDe(4, 4), 100);
 });
+
+test("porcentajeDe: las filas redondeadas no suman 100 (por eso el pie de Inicio no dice «100 %»)", () => {
+  const suma = (cantidades: number[]) => {
+    const total = cantidades.reduce((a, b) => a + b, 0);
+    return cantidades.reduce((a, c) => a + porcentajeDe(c, total), 0);
+  };
+  // Demo: Administrador (15 en 6 etapas) y Vendedor (8 en 6 etapas).
+  assert.equal(suma([2, 3, 2, 3, 2, 3]), 99);
+  assert.equal(suma([1, 2, 1, 1, 2, 1]), 102);
+});

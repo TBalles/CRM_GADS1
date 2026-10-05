@@ -176,11 +176,12 @@ solo la página que se ve. Antes un `select("*")` traía todo y PostgREST cortab
   servidor la vuelve a calcular: la fila nueva puede caer en otra página o salir del filtro, y eso solo lo
   sabe la consulta. (La nota de la decisión 0001 sobre `router.refresh()` valía para listas que copiaban sus
   props a un `useState`; ahora no hay estado local de filas, salvo el movimiento optimista de las tarjetas.)
-- **Estado "pendiente".** `useFiltrosUrl` expone `pending`: la lista pone `aria-busy` y una línea de progreso
-  (`BarraPendiente`) mientras el servidor recalcula, sin atenuar el texto.
+- **Estado "pendiente".** `useFiltrosUrl` expone `pending`: la lista pone `aria-busy` mientras el servidor recalcula
+  (en la Conversión del embudo, además, una línea fina de progreso y "Actualizando…" para lectores, sin atenuar el texto).
 
 Piezas reutilizables: `src/lib/paginacion.ts` (lógica pura), `src/components/FiltrosUrl.tsx`
-(`useFiltrosUrl`, `CajaBusqueda`, `FiltroSelect`, `FiltroChip`, `FiltroFecha`, `BarraPendiente`) y
+(`useFiltrosUrl`, `useBusquedaUrl`, `CajaBusqueda`, `FiltroSelect`, `AnuncioResultados`; los filtros de fecha de CRM 2.0
+son `FechaFiltro` en `src/components/crm/Toolbar.tsx`) y
 `src/components/Paginacion.tsx` (`nav` accesible con links `?page=N`, que funcionan sin JavaScript).
 Los índices que ayudan a estas consultas están en `supabase/migrations/0010_indices_busqueda.sql`
 (**pendiente de aplicar a mano en la base viva**; la app funciona igual sin ella).
