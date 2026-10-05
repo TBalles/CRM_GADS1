@@ -1318,7 +1318,7 @@ no hay UI que migrar y quedan en `(app)/`.
 `/admin` los suyos. Impresión: `[data-app-main] > div` ahora alcanza la raíz de cada pantalla (verificado en el presupuesto: shell
 `block`, main sin overflow ni padding, chrome oculto). **Se borraron** por quedar sin usos (ninguno congelado): `components/{ConfirmModal,
 Drawer,RowActions,ThemeToggle,form}.tsx` y `components/ui/{EmptyState,OverlayCarga,PantallaCarga,Loader,MoneyInput}.tsx`. Quedaban sin
-usos, de antes del Lote F, `components/Paginacion.tsx` y `components/ui/KpiCard.tsx`; se borraron antes de la 2.0, junto con `CajaBusqueda` y `FiltroSelect` de `FiltrosUrl.tsx`.
+usos, de antes del Lote F, `components/Paginacion.tsx` y `components/ui/{KpiCard,Select}.tsx` y `components/ui/overlay.ts`; se borraron antes de la 2.0, junto con `CajaBusqueda` y `FiltroSelect` de `FiltrosUrl.tsx`.
 
 **Generalizado en el Lote F:** `Tabs vertical`, `prefetch` y `dot` (§10.7); `Button loading` sin `disabled` (§10.1); `SectionBar` →
 `id` y contador en sans salvo una cifra suelta; `AppFrame`/`RailNav`/`Topbar` → `plataforma` (la marca va a `/admin`) / `onBuscar`

@@ -278,9 +278,8 @@ src/
   components/
     ui/                        Sumar UI Kit de la landing, el acceso y el layout raíz: ya no es la base del CRM, que usa `crm/` (congelados: UIComponents, Toast y Tooltip)
       UIComponents.tsx          cn, Card, Button, Input… (congelado: lo importan las pantallas de acceso)
-      Select.tsx                Select del kit (sin usos desde que se borró FiltroSelect de FiltrosUrl)
       Toast.tsx / Tooltip.tsx   ToastProvider y TooltipHost del layout raíz (congelados)
-      overlay.ts / backdropClose.ts   Hooks de capa y cierre a prueba de arrastre (backdropClose lo usan los overlays CRM)
+      backdropClose.ts          Cierre a prueba de arrastre (lo usan los overlays CRM)
     landing/                    Solo para la landing pública (ver design-overrides.md §12)
       ParticleField.tsx         Canvas de partículas: isotipo, halo y cielo; reacciona al mouse
       BallCursor.tsx            Cursor pelota de fútbol + spotlight de las cards
@@ -399,7 +398,7 @@ scripts/manual/                 Manual de usuario: figuras.mjs (lista de figuras
 scripts/migraciones/consolidar.mjs  Arma el kit de migraciones
 scripts/guard/                  Guardas de CRM 2.0: frozen-files.mjs (hashes), landing.spec.ts + landing.css (pixel diff), compare-png.mjs, baseline-crm.mjs
 playwright.guard.config.ts      Config de Playwright de `guard:landing` (baselines en design-system/crm-2/guard/landing/)
-design-system/crm-2/            CRM 2.0: README.md (contrato de aislamiento), MASTER.md (fuente de verdad visual), guard/ (frozen-files.json y baselines) y preview/
+design-system/crm-2/            CRM 2.0: README.md (contrato de aislamiento), MASTER.md (fuente de verdad visual), guard/ (frozen-files.json y baselines)
 design-system/tuco-y-nito/      MASTER.md de la marca: SUPERSEDED para el CRM, vigente para la landing y el acceso
 docs/manual/                    Fuente del manual: manual.html, manual.css, capitulos/, capturas/, fuentes/, pendientes.json y LEEME.md
 e2e/                            Pruebas E2E de Playwright (F6): acceso.spec.ts, demo.spec.ts, navegacion.spec.ts, helpers.ts y su tsconfig

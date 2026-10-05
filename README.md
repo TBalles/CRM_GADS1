@@ -12,9 +12,9 @@ Trabajo práctico de *Gestión Aplicada al Desarrollo de Software II* (Ingenier�
 Producción: [crmgads1.vercel.app](https://crmgads1.vercel.app). Entrega final: 2026-11-12.
 
 > **Estado en una línea.** Versión 2.0.0 (CRM 2.0): el CRM está completo (fases F0 a F8, entrega final 1.0.0) y toda su interfaz se
-> rediseñó con el sistema "Ledger", sin capacidades, datos ni permisos nuevos; la landing y el acceso no cambiaron. Falta aplicar a mano en
-> Supabase las migraciones `0008` a `0012` (hay un [kit de un solo archivo](./supabase/aplicar/LEEME.md)); mientras tanto la
-> aplicación esconde canchas, licitaciones, recambio en un clic y la numeración de presupuestos, y anda igual. Este README
+> rediseñó con el sistema "Ledger", sin capacidades, datos ni permisos nuevos; la landing y el acceso no cambiaron. Las migraciones `0008` a `0012` ya están
+> aplicadas en la base de la demo y de producción (canchas, licitaciones, recambio en un clic y presupuestos numerados están activos);
+> una base **nueva** tiene que aplicarlas, en orden, desde `supabase/migrations` (ver [docs/deploy.md](./docs/deploy.md)). Este README
 > distingue siempre lo que ya funciona de lo que no.
 
 ## Qué hace hoy, por estado
@@ -200,7 +200,7 @@ src/
   lib/                  sesion, permisos, cuentas, email, ia (F7), supabase (3 clientes), money, equipo
   proxy.ts              Refresca la sesión y exige login
 supabase/
-  migrations/           0001 a 0012 (se aplican en orden; de la 0008 en adelante faltan en la base viva)
+  migrations/           0001 a 0012 (se aplican en orden; todas están aplicadas en la base viva)
   aplicar/              Kit: las migraciones 0008 a 0012 en un solo archivo, con verificación, y su LEEME
   tests/                Pruebas SQL con rollback
   seeds/                demo_catedra.sql, demo_rubro.sql (canchas, licitación, presupuesto) y e2e_tests.sql
@@ -242,7 +242,7 @@ mano y **antes** del deploy cuando la aplicación vieja no es compatible. Resume
 | Entrega | Fecha | Estado |
 |---|---|---|
 | Primera: login, empresas y contactos, oportunidades, embudo | 2026-09-24 | Alcance cubierto por la aplicación, que además ya incluye multitenencia, roles, ventas y alertas |
-| Final: CRM completo según la consigna | 2026-11-12 | Hecho (1.0.0, rediseño de la interfaz en la 2.0.0): interfaz y base completas; falta aplicar las migraciones `0008` a `0012` en la base viva |
+| Final: CRM completo según la consigna | 2026-11-12 | Hecho (1.0.0, rediseño de la interfaz en la 2.0.0): interfaz y base completas; migraciones `0008` a `0012` aplicadas en la base viva |
 
 Las fases F0 a F8 están hechas; el plan y el requisito por requisito frente a la consigna están en
 [docs/notas-de-version.md](./docs/notas-de-version.md#e-estado-frente-a-la-consigna).

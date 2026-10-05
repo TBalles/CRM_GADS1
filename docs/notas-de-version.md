@@ -15,7 +15,7 @@ interfaz de trabajo densa y sobria, pensada para usar muchas horas, con tablas e
 pantalla y el resto en un menú `⋮`. **No cambió qué hace el sistema**: los mismos datos, permisos, reglas y flujos, con otra forma de
 mostrarlos y de recorrerlos. La fuente de verdad del diseño es [`design-system/crm-2/MASTER.md`](../design-system/crm-2/MASTER.md)
 (§10.1 a §10.25: cada pantalla, cómo es y por qué); la decisión de cómo se hizo el rediseño está en el
-[ADR 0014](./decisiones/0014-crm-2-redisenio-por-slices-con-aislamiento-de-la-landing.md). Se hizo en la rama `crm-2.0`, en 17 commits
+[ADR 0014](./decisiones/0014-crm-2-redisenio-por-slices-con-aislamiento-de-la-landing.md). Se hizo en la rama `crm-2.0`, en una serie de commits
 por slices verticales (una pantalla o un grupo de pantallas por vez), cada uno revisado antes del siguiente.
 
 ### Qué cambia para quien usa el CRM

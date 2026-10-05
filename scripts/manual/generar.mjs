@@ -224,7 +224,7 @@ function armarIndice(capitulos, paginas) {
   return html + (abierto ? "</ol>" : "");
 }
 
-const AVISO_PENDIENTES = `<p>Los recuadros con la leyenda <em>Captura pendiente</em> marcan pantallas que se agregan al aplicar las últimas migraciones de la base de datos (canchas, licitaciones, recambio en un clic y presupuestos numerados) o al configurar funciones opcionales. El manual se regenera con un solo comando (<code>npm run manual</code>) y esas figuras se completan solas.</p>`;
+const AVISO_PENDIENTES = `<p>Los recuadros con la leyenda <em>Captura pendiente</em> marcan pantallas que todavía no se pudieron fotografiar: los botones de inteligencia artificial, que se activan al cargar la clave del servicio (<code>ANTHROPIC_API_KEY</code>), y el panel de plataforma, que solo ve la cuenta de superadministrador. El manual se regenera con un solo comando (<code>npm run manual</code>) y esas figuras se completan solas.</p>`;
 
 // ───────────────────────── Marcadores del PDF
 

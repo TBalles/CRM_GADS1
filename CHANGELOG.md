@@ -28,7 +28,6 @@ se mantiene: [notas de versión](./docs/notas-de-version.md#200-crm-20-la-interf
   etapa agrupadas (`335beb1`); editor de presupuesto con vista dividida y la hoja imprimible intacta (`3ef72fa`).
 - Usuarios con la matriz «Permisos por rol»; Configuración con subnavegación por URL (`?s=`) y barra «Cambios sin guardar»; `/admin`
   con el mismo marco del CRM (`087aab7`, `69cbd6e`, `064ba3d`).
-- `npm run demo:rubro` (`scripts/demo/cargar-rubro.mjs`): carga la demo del rubro por la API con la cuenta de Administrador de la demo, para quien no tiene SQL Editor. Idempotente (clave natural), con `--dry` de solo lectura; vincula la oportunidad «Recambio de redes de fútbol 11» a su equipo entregado.
 
 ### Cambiado
 
@@ -74,6 +73,7 @@ base viva** (kit de un solo archivo en `supabase/aplicar/`); la aplicación esco
     bloque opcional de `pg_trgm` apagado y un `select` final que confirma las 24 piezas), con su `LEEME.md`. Validado en PGlite: `0001` a
     `0007` y después solo el kit, dos veces seguidas; las pruebas `0005`, `0007`, `0008`, `0009`, `0011` y `0012` dan `TODO OK`.
   - `supabase/seeds/demo_rubro.sql`: canchas, datos de la licitación y un presupuesto guardado para la demostración (requiere las migraciones).
+  - `npm run demo:rubro` (`scripts/demo/cargar-rubro.mjs`): carga la demo del rubro por la API con la cuenta de Administrador de la demo, para quien no tiene SQL Editor. Idempotente (clave natural), con `--dry` de solo lectura; vincula la oportunidad «Recambio de redes de fútbol 11» a su equipo entregado (`c21caf9`).
   - Pruebas nuevas en `npm test` (243 en 25 archivos): `migraciones.check.ts` falla si el kit quedó desactualizado respecto de las
     migraciones y `manual.check.ts` cuida que las figuras de los capítulos y de `figuras.mjs` coincidan, que cada una tenga su captura o figure en `pendientes.json`, y que los scripts no lleven contraseñas.
   - `package.json` pasa a la versión 1.0.0.

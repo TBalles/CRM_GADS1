@@ -39,7 +39,7 @@ archivo y sobre `docs/DESIGN.md`**.
 | 6 | Primitivos y hooks separados | Vigente para `src/components/ui/` (congelado). El CRM tiene su propio `src/components/crm/overlay.ts` |
 | 7 | Pill de etapa tintada | **Superseded** por `StatusDot` / `StatusBadge` (ya describe CRM 2.0) |
 | 8 | Formularios en Drawer | La decisión sigue; el `Drawer` y `form.tsx` de esta sección ya no existen (ver la sección) |
-| 9 | `useAnchoredPortal` | Vigente solo para `ui/Select.tsx`. **Superseded** para el CRM por `useAnchor` (`crm/overlay.ts`) |
+| 9 | `useAnchoredPortal` | **Superseded** por `useAnchor` (`crm/overlay.ts`); `ui/Select.tsx` y `ui/overlay.ts` se borraron antes de la 2.0 |
 | 10 | Escala de z-index | Vigente para el toast y el tooltip del layout raíz. **Superseded** para el CRM por `--crm-z-*` |
 | 11 | Accesibilidad desde el arranque | La regla sigue; los campos ahora son `crm/Field.tsx` (ver la sección) |
 | 12 | Estética de marketing de la landing | **Vigente** |
@@ -52,8 +52,8 @@ archivo y sobre `docs/DESIGN.md`**.
 **Aplicado a archivos de la landing y el acceso.** Verificado contra el código: `src/app/page.tsx` usa Varela Round, Inter y el
 bloque `LANDING` de `globals.css`; `/login` usa `GoalMark`, `Cancha.tsx` (`MarcasCancha`), `.cesped` y los primitivos de
 `ui/UIComponents.tsx` (`Button`, `Input`); `/recuperar` y `/definir-clave` usan `AuthCard` y `ui/UIComponents.tsx`. `ui/Toast.tsx` y `ui/Tooltip.tsx`
-los monta el layout raíz. Del resto de `src/components/ui/` solo se usan `overlay.ts` y `backdropClose.ts` (este último también lo importan los overlays del CRM);
-`Select.tsx` quedó sin usos al borrarse `FiltroSelect` de `FiltrosUrl.tsx`.
+los monta el layout raíz. Del resto de `src/components/ui/` solo se usa `backdropClose.ts` (también lo importan los overlays del CRM);
+`Select.tsx` y `overlay.ts` quedaron sin usos al borrarse `FiltroSelect` de `FiltrosUrl.tsx` y se eliminaron antes de la 2.0.
 
 **Archivos que estas secciones nombran y ya no existen** (se borraron en CRM 2.0, Lote F, o antes): `components/Drawer.tsx`,
 `form.tsx`, `ConfirmModal.tsx`, `RowActions.tsx`, `AppShell.tsx`, `PaletaBusqueda.tsx`, `ThemeToggle.tsx`, `ui/EmptyState.tsx`,
@@ -184,7 +184,7 @@ este repo: acá esos componentes **no se copiaron** y su lugar lo ocupan `crm/Mo
 - **Tuco & Nito**: los primitivos puros quedan en `src/components/ui/UIComponents.tsx`
   **sin `"use client"`** (módulos compartidos, renderizan a los dos lados de la frontera RSC),
   y los hooks de overlay (`useModalAnimation`, `useAnchoredPortal`, `popoverPanelClass`) se
-  mudaron a `src/components/ui/overlay.ts`, que **sí** es `"use client"`.
+  mudaron a `src/components/ui/overlay.ts` (histórico: se borró antes de la 2.0 al quedar sin usos), que era `"use client"`.
 - **Por qué**: el kit está escrito para Vite, donde no existe la frontera servidor/cliente.
   Meter los hooks en el mismo archivo obliga a marcarlo `"use client"`, y eso convierte a
   **cada primitivo del archivo** en client component. A partir de ahí, pasar un ícono como
@@ -233,13 +233,13 @@ este repo: acá esos componentes **no se copiaron** y su lugar lo ocupan `crm/Mo
 
 ## 9. `useAnchoredPortal` extraído — el kit lo prescribe y no lo hace
 
-> **Vigente solo para `ui/Select.tsx`** (`RowActions` se borró). **SUPERSEDED para el CRM** por `useAnchor` y `useLayer` de `src/components/crm/overlay.ts` (anclaje, flip, cierre por Escape y clic afuera).
+> **SUPERSEDED** (`ui/Select.tsx`, `ui/overlay.ts` y `RowActions` se borraron). El CRM usa `useAnchor` y `useLayer` de `src/components/crm/overlay.ts` (anclaje, flip, cierre por Escape y clic afuera).
 
 - **Kit**: §8.4 describe el patrón de popover portaled y dice explícitamente
   *"extraé esto a un hook `useAnchoredPortal()` en vez de repetirlo"*, pero su propio código
   lo duplica en 5+ lugares.
-- **Tuco & Nito**: el hook existe (hoy en `src/components/ui/overlay.ts`) y lo compartían `Select`
-  y `RowActions` (este último se borró; hoy solo lo usa `ui/Select.tsx`): medición del trigger, flip vertical, clamp horizontal, y cierre por
+- **Tuco & Nito** (histórico): el hook vivía en `src/components/ui/overlay.ts` y lo compartían `Select`
+  y `RowActions` (los tres se borraron): medición del trigger, flip vertical, clamp horizontal, y cierre por
   mousedown afuera / scroll / Escape.
 - **Por qué**: es la prescripción del kit, cumplida.
 

@@ -56,19 +56,10 @@ Los archivos individuales siguen siendo la fuente; el kit es solo comodidad.
 
 Cosas a saber:
 
-- **0012 (presupuestos, F6) también está pendiente.** Se pega después de la 0011, y conviene correr enseguida
-  `supabase/tests/0012_presupuestos.sql` (tiene que dar `TODO OK`). La app detecta que falta (`esErrorDeEsquema`) y sigue
-  andando como borrador, así que se puede desplegar antes; al aplicarla, "Guardar presupuesto" funciona al recargar.
-  Al aplicarla, regenerar `src/lib/supabase/types.ts` (la tabla `presupuestos` está escrita a mano).
-
-- **0011 (rubro, F4) también está pendiente.** Se pega después de la 0010. La app de F4 detecta que falta y esconde
-  lo que depende de ella, así que se puede desplegar antes; las secciones aparecen solas al aplicarla (recargar la página).
-  Al aplicarla conviene regenerar `src/lib/supabase/types.ts`, que hoy tiene esas tablas escritas a mano.
-- **0010 (índices de F3) también está pendiente.** Se pega en el SQL Editor después de la 0009; no cambia
-  tablas, reglas ni políticas, así que se puede aplicar antes o después de desplegar F3.
-- **0008 y 0009 están en el repositorio pero no en la base viva.** Se aplican a mano, en ese orden, y se
-  despliega enseguida. La app de F2 ya valida las tres reglas de la 0009 en pantalla y traduce sus errores,
-  así que desplegarla antes o después no rompe nada; sin la 0009 la base simplemente no las impone.
+- **Las migraciones 0008 a 0012 ya están aplicadas en la base de la demo y de producción** (baja lógica, reglas de
+  oportunidades, índices, rubro y presupuestos). Una base NUEVA las necesita todas: se aplican en orden con
+  `supabase/aplicar/aplicar_0008_a_0012.sql` (o los archivos de `supabase/migrations/`), y conviene correr después
+  `supabase/tests/0012_presupuestos.sql` (tiene que dar `TODO OK`) y regenerar `src/lib/supabase/types.ts` si cambian tablas.
 - **La 0004 cambia datos existentes** y, si el email del superadmin no existe en Authentication, aborta con
   un mensaje claro (todo dentro de una transacción: no queda nada a medias).
 - **La 0007 no es solo aditiva.** Renombra roles y etapas, cierra oportunidades, asigna responsables. Corre

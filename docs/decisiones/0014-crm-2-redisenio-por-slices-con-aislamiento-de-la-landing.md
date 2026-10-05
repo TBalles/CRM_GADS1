@@ -63,10 +63,12 @@ tiene un procedimiento explícito (commitear, regenerar baselines y manifiesto, 
 
 ## Consecuencias
 
-- **Bueno.** La landing y el acceso quedan intactos y eso se verifica con un comando. La migración fue incremental: cada commit deja una aplicación que anda. Los tokens, las fuentes y el CSS
-  del CRM no llegan a la landing. La selección de una fila se puede compartir como link. El contraste de los tokens lo mide `npm test` (123 de las 442 pruebas).
-- **Cuesta.** Durante la migración convivieron dos juegos de primitivos; hoy `src/components/ui/` sigue vivo por la landing y el acceso (`UIComponents`, `Toast` y `Tooltip` están congelados) y quedó
-  un archivo sin usos (`ui/Select.tsx`) tras borrar `ui/KpiCard.tsx` y `components/Paginacion.tsx` antes de la 2.0. Tras una navegación del lado del cliente del CRM a la landing, `crm.css` ya descargado sigue en el
+- **Bueno.** La landing y el acceso quedan intactos y eso se verifica con un comando. La migración fue incremental: cada commit deja una aplicación que anda. Los tokens y las fuentes del CRM
+  no llegan a la landing (no hay reglas `[data-crm]` en su documento ni precarga de IBM Plex) y sus píxeles son idénticos (guarda: 0 px). La selección de una fila se puede compartir como link. El contraste de los tokens lo mide `npm test` (123 de las 442 pruebas).
+- **Cuesta.** Durante la migración convivieron dos juegos de primitivos; hoy `src/components/ui/` sigue vivo por la landing y el acceso (`UIComponents`, `Toast` y `Tooltip` están congelados) y los
+  archivos que quedaron sin usos (`ui/Select.tsx`, `ui/overlay.ts`, `ui/KpiCard.tsx` y `components/Paginacion.tsx`) se borraron antes de la 2.0. La hoja de estilos global de la landing
+  creció de unos 140 KB a unos 163 KB sin comprimir (alrededor de 4 KB más con gzip) porque Tailwind v4 escanea todas las fuentes, las del CRM incluidas, y vuelca a `globals.css` las
+  utilidades que usan `--crm-*` (265 referencias): es peso inerte, sin efecto visual. Excluir las fuentes del CRM del escaneo exigiría editar `globals.css`, que está congelado; se aceptó el costo. Tras una navegación del lado del cliente del CRM a la landing, `crm.css` ya descargado sigue en el
   documento: es inerte por diseño (todo cuelga de `[data-crm]`). Los `title="…"` del CRM están prohibidos porque el `TooltipHost` del layout raíz los reescribe.
 - **Límites de las guardas.** Cubren `/`, `/login` y `/recuperar` (`/definir-clave` solo por hashes), con movimiento reducido, y no protegen a las baselines ni al manifiesto: un `--update` mal
   usado pasaría, así que todo diff en `design-system/crm-2/guard/` se revisa en el PR. Las baselines son de Chromium en Windows y las guardas no están en la CI todavía.

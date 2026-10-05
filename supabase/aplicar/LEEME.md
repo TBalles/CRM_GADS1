@@ -1,8 +1,8 @@
 # Kit para aplicar las migraciones 0008 a 0012
 
-Un solo archivo, [`aplicar_0008_a_0012.sql`](./aplicar_0008_a_0012.sql), que reúne las cinco migraciones que
-faltan en la base viva, en orden, y termina con una tabla que confirma que quedó todo puesto. Se pega entero
-en el SQL Editor de Supabase. Es el paso que te falta para que se activen las canchas, las licitaciones, el
+Un solo archivo, [`aplicar_0008_a_0012.sql`](./aplicar_0008_a_0012.sql), que reúne las cinco migraciones
+(ya aplicadas en la base de la demo y de producción), en orden, y termina con una tabla que confirma que quedó todo puesto. Se pega entero
+en el SQL Editor de Supabase. Es el paso para una base nueva, para que se activen las canchas, las licitaciones, el
 recambio en un clic y la numeración de presupuestos.
 
 | # | Migración | Qué agrega |
