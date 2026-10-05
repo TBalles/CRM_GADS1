@@ -1,16 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { Field } from "@/components/crm/Field";
+import { FormSection } from "@/components/crm/Drawer";
+import { MoneyInput } from "@/components/crm/MoneyInput";
+import { useCrmToast } from "@/components/crm/Toast";
+import { CampoArea, CampoTexto, FormDrawer, Par } from "@/components/crm/cuenta/FormDrawer";
 import { createClient } from "@/lib/supabase/client";
-import {
-  Campo,
-  CampoGrupo,
-  CampoMoney,
-  CampoTextarea,
-  FormActions,
-  FormBanner,
-} from "@/components/form";
-import { useToast } from "@/components/ui/Toast";
 import { maskFromNumber, parseMoney } from "@/lib/money";
 import type { Tables } from "@/lib/supabase/types";
 
@@ -19,30 +15,33 @@ type Producto = Tables<"productos">;
 /** Postgres: violacion de restriccion unica. `productos.nombre` es unique. */
 const UNIQUE_VIOLATION = "23505";
 
+/**
+ * "Nuevo producto" / "Editar producto" en un drawer de CRM 2.0 (480). Mismos campos, ids (`#nombre`, `#marca`,
+ * `#categoria`, `#precio`, `#vida_util_meses`, `#descripcion`), validaciones, payload y mensajes que el formulario
+ * legacy; no tiene otros usuarios. Quien lo usa le pone `key` por apertura (`useApertura().n`).
+ */
 export default function ProductoForm({
+  open,
+  onClose,
   producto,
   onSaved,
-  onCancel,
 }: {
+  open: boolean;
+  onClose: () => void;
   producto?: Producto;
   onSaved: (producto: Producto) => void;
-  onCancel: () => void;
 }) {
   const [nombre, setNombre] = useState(producto?.nombre ?? "");
   const [marca, setMarca] = useState(producto?.marca ?? "");
   const [categoria, setCategoria] = useState(producto?.categoria ?? "");
-  const [precio, setPrecio] = useState(
-    maskFromNumber(producto?.precio),
-  );
-  const [vidaUtil, setVidaUtil] = useState(
-    producto?.vida_util_meses != null ? String(producto.vida_util_meses) : "",
-  );
+  const [precio, setPrecio] = useState(maskFromNumber(producto?.precio));
+  const [vidaUtil, setVidaUtil] = useState(producto?.vida_util_meses != null ? String(producto.vida_util_meses) : "");
   const [descripcion, setDescripcion] = useState(producto?.descripcion ?? "");
   const [nombreError, setNombreError] = useState<string | null>(null);
   const [vidaUtilError, setVidaUtilError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const { showToast } = useToast();
+  const { showToast } = useCrmToast();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -105,14 +104,19 @@ export default function ProductoForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-      {error && <FormBanner message={error} />}
-
-      <Campo
+    <FormDrawer
+      open={open}
+      onClose={onClose}
+      title={producto ? "Editar producto" : "Nuevo producto"}
+      description={producto?.nombre}
+      saving={saving}
+      error={error}
+      onSubmit={handleSubmit}
+    >
+      <CampoTexto
         id="nombre"
         label="Nombre"
         required
-        autoFocus
         placeholder="Red de arco 7.32 × 2.44"
         value={nombre}
         onChange={(v) => {
@@ -121,22 +125,15 @@ export default function ProductoForm({
         }}
         error={nombreError ?? undefined}
       />
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Campo id="marca" label="Marca" placeholder="Genérica" value={marca} onChange={setMarca} />
-        <Campo
-          id="categoria"
-          label="Categoría"
-          placeholder="Arcos, redes, conos…"
-          value={categoria}
-          onChange={setCategoria}
-        />
-      </div>
-
-      <CampoMoney id="precio" label="Precio de lista" value={precio} onChange={setPrecio} />
-
-      <CampoGrupo title="Seguimiento de recambio">
-        <Campo
+      <Par>
+        <CampoTexto id="marca" label="Marca" placeholder="Genérica" value={marca} onChange={setMarca} />
+        <CampoTexto id="categoria" label="Categoría" placeholder="Arcos, redes, conos…" value={categoria} onChange={setCategoria} />
+      </Par>
+      <Field id="precio" label="Precio de lista">
+        {(p) => <MoneyInput {...p} value={precio} onChange={setPrecio} />}
+      </Field>
+      <FormSection title="Seguimiento de recambio">
+        <CampoTexto
           id="vida_util_meses"
           label="Duración estimada (meses)"
           inputMode="numeric"
@@ -147,23 +144,10 @@ export default function ProductoForm({
             if (vidaUtilError) setVidaUtilError(null);
           }}
           error={vidaUtilError ?? undefined}
+          help="Cuando este producto se venda, el sistema va a contar estos meses desde la fecha de entrega y va a avisarte 60 días antes de que se cumpla. Dejalo vacío si este producto no lleva seguimiento de recambio."
         />
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          Cuando este producto se venda, el sistema va a contar estos meses desde la fecha de
-          entrega y va a avisarte 60 días antes de que se cumpla. Dejalo vacío si este producto no
-          lleva seguimiento de recambio.
-        </p>
-      </CampoGrupo>
-
-      <CampoTextarea
-        id="descripcion"
-        label="Descripción"
-        placeholder="Material, medidas, detalles técnicos…"
-        value={descripcion}
-        onChange={setDescripcion}
-      />
-
-      <FormActions saving={saving} onCancel={onCancel} />
-    </form>
+      </FormSection>
+      <CampoArea id="descripcion" label="Descripción" placeholder="Material, medidas, detalles técnicos…" value={descripcion} onChange={setDescripcion} />
+    </FormDrawer>
   );
 }

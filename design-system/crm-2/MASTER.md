@@ -343,7 +343,8 @@ los pares de las barras y bordes indicadores; el par más justo es el foco sobre
 Los de §10.1–§10.10 están construidos en `src/components/crm/` y se ven en `/crm-lab` (solo desarrollo). Los marcados **(server-safe)**
 no tienen `"use client"` ni hooks y se pueden usar desde server components (el laboratorio dibuja una DataTable con links y
 tooltips de recorte desde su página servidor); los demás son de cliente. §10.11 es el shell (Etapa 2, construido); §10.12 es la
-especificación de las composiciones y §10.13 cómo quedaron construidas en Empresas (Etapa 3).
+especificación de las composiciones, §10.13 cómo quedaron construidas en Empresas (Etapa 3) y §10.14 Contactos y Productos
+(Lote A), con lo que se generalizó para todas las listas.
 
 ### 10.1 Button, IconButton, FilterChip — `Button.tsx` (server-safe)
 - Variantes: `primary` (acento sólido; **una por pantalla**), `secondary` (panel + hairline; la normal), `ghost` (sin caja; acciones
@@ -524,7 +525,7 @@ próximos slices (Contactos, Oportunidades…).
     la vieja se atenúa (60 %) con `aria-busy` y "Cargando vista previa…".
   - **Teclado:** ↑/↓ (foco en la grilla) cuentan desde la fila CON FOCO: si no es la elegida, la eligen; si lo es, pasan a la
     vecina, sin vuelta en los bordes. El foco va al nombre de la fila nueva (Enter ahí abre la ficha). Con la tecla apretada se
-    navega UNA vez, a la última fila, 200 ms después de la última flecha (`vecinoSel` en `seleccion.ts`, probado).
+    navega UNA vez, a la última fila, 200 ms después de la última flecha (`vecinoSel` en `components/crm/seleccion.ts`, probado).
   - **Esc** quita `sel` y devuelve el foco a la fila. Su listener está en `document` y se registró ANTES que el de un menú, select o
     drawer que se abra después, así que corre primero: por eso no alcanza con `defaultPrevented` y se fija si hay una capa abierta
     (`hayCapaAbierta()` de `overlay.ts`, o un `aria-modal`, o el foco en un menú/listbox/diálogo). Con una capa abierta, el Esc es
@@ -573,6 +574,95 @@ próximos slices (Contactos, Oportunidades…).
   (o al buscador si la lista queda vacía); en el panel y la ficha vuelve al `⋮`, que sigue existiendo.
 - **Foco (corrección)**: `FOCUS` lleva `focus-visible:outline-solid`. Sin él, en Tailwind v4 `outline-none` deja
   `--tw-outline-style: none` y el anillo de 2 px no se dibujaba en ningún primitivo (Etapas 1–2).
+
+### 10.14 Contactos y Productos slice (Lote A, construido)
+Segundo y tercer slice (`src/app/(app)/(crm2)/contactos/`, `src/app/(app)/(crm2)/productos/`), movidos con `git mv` desde
+`(legacy)`. Reusan §10.13 sin copiarlo: lo que era de Empresas y servía a cualquier lista se movió a `components/crm/`.
+
+- **Generalizado (lo usan Empresas, Contactos y Productos):**
+  - `Lista.tsx` (cliente): `useSeleccionUrl` (selección optimista por `?sel=`, ↑/↓ desde la fila con foco con UNA navegación a
+    los 200 ms, Esc con `hayCapaAbierta()`, < 1280 quita `sel` con `router.replace`, clic en la fila), `useFocoFilas` (foco
+    después de una acción, abajo), `PanelVistaPrevia` (`aria-busy` + "Cargando vista previa…" + 60 %), `LinkVistaPrevia`
+    ("Vista previa de <nombre>", fuera del orden de Tab), `FILA_SELECCIONABLE` y `ListFooter` (banda de pie de §10.13). Los refs
+    de la grilla (`tabla`, `buscador`) los crea la pantalla y se los pasa al hook: el compilador de React no deja leer refs que
+    llegan dentro de lo que devuelve un hook.
+  - `seleccion.ts` (+ `.check`): `vecinoSel`, `tabValida` y `filaTrasAccion` (puro, probado).
+  - `PreviewPanel.tsx` (server-safe): el `aside` de 400/440 con header fijo (h2 + "Fuera de la lista actual" + "Cerrar vista
+    previa"), meta, acciones y pie "Abrir ficha completa →"; `PreviewPanelSkeleton`.
+  - `Skeletons.tsx` (server-safe): `ListSkeleton` (barra con el h1 real, toolbar, grilla con sus `Th` reales, banda de pie) y
+    `DetailSkeleton` (franja + tabs + Resumen sin caja exterior + riel). Las `loading.tsx` de las tres pantallas son una línea.
+  - `cuenta/SeccionesCuenta.tsx` (server-safe): `ResumenStats`, `OportunidadesAbiertas`, `ActividadReciente`, `RielDatos`,
+    `OportunidadesTab`, `VentasTab`, `Monto` y, para la vista previa, `OportunidadesPrevia` y `MovimientosPrevia` (`TOPE_PREVIA` 3):
+    las fichas de empresa y de contacto dibujan las mismas tablas, vacíos y topes.
+  - `cuenta/BajaDialog.tsx`: `itemsEdicionCliente` (Editar + Dar de baja / Reactivar con las reglas de siempre: solo con
+    `clientes.editar`; Reactivar solo `inactivo`; "No contactar" no se deshace con un clic). `cuenta/estados.tsx`: `UltimoContacto`.
+  - `MoneyInput.tsx` (cliente): el monto con máscara es-AR en el `Input` de CRM 2.0; máscara y cursor de `lib/money` (los mismos
+    que `ui/MoneyInput`, que no se toca). Cifra en mono, "$" en gris adentro.
+- **Foco después de mutar (corrección para las tres listas):** `useFocoFilas().conFoco(items, id, sale)` anota a qué fila irá el
+  foco cuando se elige "Dar de baja" / "Reactivar" en el `⋮` (la misma si sigue en la lista; si sale, la siguiente, o la
+  anterior si era la última; si la lista queda vacía, el buscador), y `trasCambio()` (en `alCambiar`, antes del refresco) lo
+  aplica recién cuando la mutación terminó. Antes se anotaba al elegir: cancelar la confirmación dejaba un foco pendiente que
+  saltaba en el próximo refresco. "Nueva…" llama `olvidar()`. Sin link de nombre en la fila (Productos), el foco va a su `⋮`.
+
+#### Contactos
+- **PageBar:** "Contactos" + "N contactos · M individuales" (con filtro "N de T contactos") + primaria "Nuevo contacto"
+  (`clientes.editar`; en celular, botón de ícono con el mismo nombre). **Toolbar:** textbox **"Buscar contacto"** (el de la lista
+  legacy), chips `Menu` "Filtrar por estado" (`?estado=`), "Filtrar por empresa o individual" (chip "Vínculo", `?vinculo=
+  empresa|individual`), "Filtrar por responsable" (solo con `clientes.ver_todos`, `?responsable=`), "Filtrar por origen"
+  (`?origen=`), `ToggleChip` "Ver bajas" + cantidad (`?bajas=1`) y "Limpiar filtros" (conserva `sel`).
+- **Columnas que colapsan** (mismo markup en todo ancho, `@container`):
+
+  | Contenedor | Columnas | Línea de apoyo bajo el nombre |
+  |---|---|---|
+  | ≥ 60rem (sin vista previa) | Contacto (+ cargo · mail · teléfono en gris al lado; "Sin datos de contacto" si no hay) · Empresa · Estado · Responsable · `⋮` | — (fila de 36) |
+  | 30–60rem (vista previa a 1440 y 1280) | Contacto · Empresa · Estado · `⋮` | cargo · mail · teléfono · responsable |
+  | < 30rem (celular) | Contacto · `⋮` | estado · empresa (o "Individual") · cargo · responsable |
+
+  Empresa = link a su ficha, `Tag` "Individual" (sin empresa) o "Empresa de otra cartera" (la RLS no la muestra), como la
+  legacy. En celular el mail y el teléfono quedan en la ficha (la tarjeta legacy de celular tampoco los mostraba).
+- **Master-detail ≥ 1280:** idéntico a Empresas (`?sel=`, `<Suspense key={sel}>`, `uuidParam`, cliente con RLS). `VistaPrevia`
+  (server): h2 = nombre completo, meta estado · cargo · responsable; UNA acción ("Registrar actividad", `bitacora.escribir` +
+  `bitacora.ver`; sin permiso, "Editar") + `⋮` "Más acciones" (Editar, Dar de baja / Reactivar); cuerpo `DefinitionList`
+  Empresa · Teléfono · Email · Documento · Último contacto; Oportunidades abiertas (3) y Últimos movimientos (3) con la lectura de
+  la ficha (`leerCuenta360` por `contacto_id`). Origen, alta y observaciones quedan en la ficha. Entra sin scroll en 1440 × 900.
+  La empresa sale de las que ya trae la página para el formulario (las que la RLS deja ver): sin consulta extra.
+- **Ficha** (`[id]`): `DetailHeader` (h1 = `nombreCompleto` exacto, `CrumbLabel` igual que antes; meta estado · empresa como link
+  o `Tag` "Cliente individual" o "Empresa de otra cartera" · cargo · responsable), UNA primaria + "Más acciones". Tabs por URL:
+  **Resumen · Actividad · Oportunidades · Ventas** (Actividad con cualquiera de los cuatro permisos de la historia, las otras con
+  el suyo: las secciones y condiciones de la ficha legacy; no hay Contactos ni Canchas). Resumen = superficie de trabajo de
+  §10.13: cifras, oportunidades abiertas, actividad reciente + riel "Datos" (Empresa, Documento, Email, Teléfono, Cargo,
+  Responsable, Origen, Alta) + Observaciones. Actividad = `HistoriaCuenta` con "Resumir con IA" (`tipo="contacto"`) y
+  "Registrar". La actividad se cuelga también de la empresa del contacto si la persona la ve, y ofrece solo las oportunidades
+  abiertas que no son de otra empresa (misma regla que la legacy). Cada mutación hace `router.refresh()` (la legacy copiaba la
+  fila a un estado local).
+- **Drawers:** `ContactoDrawer` (el de la ficha de empresa: `useContactoForm`, mismos ids `#nombre`, `#apellido`, `#empresa_id`…)
+  con la descripción = nombre al editar; `ActividadDrawer`; `BajaDialog` "Dar de baja el contacto". Una sola implementación de
+  acciones: `contactos/acciones.tsx` (`useAccionesContacto`, `itemsFila`, `oportunidadesParaActividad`). El `ContactoForm` legacy
+  se borró (no quedaba nadie que lo usara).
+
+#### Productos
+- Sin ficha ni vista previa (el plan limita el master-detail a Empresas y Contactos): la fila no navega ni se elige.
+- **PageBar:** "Productos" + "N productos · M con vida útil" + "Nuevo producto" (`productos.editar`). **Toolbar** (si el catálogo
+  no está vacío): textbox **"Buscar producto"**, chips "Filtrar por categoría" (`?categoria=`, solo valores que existen) y
+  "Filtrar por estado" ("Activos y de baja" / "Activos" / "De baja", `?estado=activo|baja`), "Limpiar filtros".
+- **Columnas:** Producto (ícono de equipamiento SIN caja, 16, gris + nombre 500 + marca en gris al lado) · Categoría (texto, ya no
+  pastilla de color) · Precio (`$` gris + cifra mono a la derecha; sin precio "—") · Vida útil (barra fina de 40 × 4 en
+  `--crm-text-2` sobre `--crm-border`, decorativa, comparada con la más larga del catálogo + "5 años" / "18 meses" / "Sin
+  seguimiento") · Estado (punto + "Activo" / "De baja") · `⋮` (solo con `productos.editar`).
+
+  | Contenedor | Columnas | Línea de apoyo |
+  |---|---|---|
+  | ≥ 45rem | todas | — (fila de 36) |
+  | 30–45rem (768) | Producto · Precio · Estado · `⋮` | categoría · vida útil · marca |
+  | < 30rem | Producto · `⋮` | estado · precio · categoría · vida útil · marca (lo que más pesa primero: la línea recorta al final; sin barra) |
+
+  Las filas de baja ya no van al 55 % de opacidad (bajaba el contraste del texto debajo de AA): el estado lo dice el punto + palabra.
+- **`⋮` "Acciones de <nombre>":** "Editar" + "Dar de baja" (danger, `ConfirmDialog` "Dar de baja el producto" con el texto de
+  siempre) o "Reactivar" (directo). Misma mutación (`activo`), mismos avisos ("Producto dado de baja." / "Producto
+  reactivado." / error). **Drawer** "Nuevo producto" / "Editar producto" (480): mismos campos e ids (`#nombre`, `#marca`,
+  `#categoria`, `#precio`, `#vida_util_meses`, `#descripcion`), validaciones (nombre obligatorio, vida útil entera > 0, nombre
+  repetido por la restricción única), payload (precio vacío = `null`, no $ 0) y textos; "Seguimiento de recambio" como
+  `FormSection` y la explicación como ayuda del campo (`aria-describedby`).
 
 ---
 

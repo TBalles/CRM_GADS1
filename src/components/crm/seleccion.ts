@@ -1,8 +1,9 @@
 /**
- * Master-detail de Empresas: lo puro, sin React ni imports (se prueba con `node --test`, seleccion.check.ts).
+ * Listas y fichas de CRM 2.0 (Empresas, Contactos, Productos): lo puro, sin React ni imports (se prueba con `node --test`,
+ * seleccion.check.ts). Lo usan `Lista.tsx` (selección y foco de la grilla) y las páginas de ficha.
  *
  * La selección vive en la URL (`?sel=<id>`) y la tab de la ficha también (`?tab=`): esto solo decide a dónde se mueve
- * la selección con ↑/↓ y qué tab vale.
+ * la selección con ↑/↓, qué tab vale y a qué fila va el foco cuando una acción saca la suya de la lista.
  */
 
 /**
@@ -28,4 +29,16 @@ export function vecinoSel(ids: readonly string[], actual: string | null, foco: s
 export function tabValida<T extends string>(pedida: string | string[] | undefined, disponibles: readonly T[]): T {
   const t = typeof pedida === "string" ? pedida : "";
   return (disponibles as readonly string[]).includes(t) ? (t as T) : disponibles[0];
+}
+
+/**
+ * A qué fila llevar el foco después de una acción sobre `id` (dar de baja, reactivar). Si la fila sigue en la lista
+ * (`sale` falso), a ella misma; si sale, a la siguiente, o a la anterior si era la última; si era la única, null (el
+ * foco va al buscador).
+ */
+export function filaTrasAccion(ids: readonly string[], id: string, sale: boolean): string | null {
+  if (!sale) return id;
+  const i = ids.indexOf(id);
+  if (i < 0) return null;
+  return ids[i + 1] ?? ids[i - 1] ?? null;
 }

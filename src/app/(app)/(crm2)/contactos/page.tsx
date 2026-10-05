@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { exigirPermiso } from "@/lib/sesion";
@@ -14,7 +15,9 @@ import {
   uuidParam,
   type ParamsUrl,
 } from "@/lib/paginacion";
+import { PreviewPanelSkeleton } from "@/components/crm/PreviewPanel";
 import ContactosList from "./ContactosList";
+import VistaPrevia from "./VistaPrevia";
 
 export const metadata = { title: "Contactos" };
 
@@ -22,6 +25,11 @@ const BAJAS = "(inactivo,no_contactar)";
 /** Empresas que se miran por cada palabra para encontrar un contacto por el nombre de su empresa. */
 const IDS_MAX = 100;
 
+/**
+ * Contactos (CRM 2.0): lista servida por la URL + vista previa (master-detail desde 1280 px), igual que Empresas.
+ * La selección vive en la URL (`?sel=<id>`): el servidor la lee y dibuja la vista previa dentro de `<Suspense key={sel}>`
+ * con el cliente de la sesión (RLS). Un `sel` inválido, de otra cartera o inexistente no dibuja nada.
+ */
 export default async function ContactosPage({ searchParams }: { searchParams: Promise<ParamsUrl> }) {
   // Los contactos cuelgan del mismo permiso que las empresas (`clientes.ver`).
   const sesion = await exigirPermiso("clientes.ver");
@@ -38,6 +46,7 @@ export default async function ContactosPage({ searchParams }: { searchParams: Pr
   const responsable = puedeVerTodos ? uuidParam(sp.responsable) : "";
   const verBajas = sp.bajas === "1";
   const hayFiltro = Boolean(q || estado || vinculo || origen || responsable);
+  const sel = uuidParam(sp.sel);
 
   // "Juan Pérez" tiene que encontrar a Juan Pérez aunque el nombre y el apellido sean columnas distintas: cada palabra
   // debe aparecer en alguna columna (o en el nombre de la empresa del contacto).
@@ -70,7 +79,7 @@ export default async function ContactosPage({ searchParams }: { searchParams: Pr
   };
 
   const visibles = supabase.from("contactos").select("id", { count: "exact", head: true });
-  const [pagina, sinFiltro, bajas, individuales, { data: empresas }, { data: perfiles }, { data: origenes }] = await Promise.all([
+  const [pagina, sinFiltro, bajas, individuales, { data: empresas }, { data: perfilesRaw }, { data: origenesRaw }] = await Promise.all([
     leerPagina(consultar, paginacion),
     verBajas ? visibles : visibles.not("estado", "in", BAJAS),
     supabase.from("contactos").select("id", { count: "exact", head: true }).in("estado", ["inactivo", "no_contactar"]),
@@ -88,6 +97,36 @@ export default async function ContactosPage({ searchParams }: { searchParams: Pr
 
   if (pagina.ultimaPagina) redirect(urlConParams("/contactos", sp, { page: String(pagina.ultimaPagina) }));
 
+  const perfiles = (perfilesRaw ?? []).map((p) => ({ id: p.id, nombre: p.nombre ?? p.email ?? "Usuario", activo: p.activo }));
+  const origenes = origenesRaw ?? [];
+  const permisos = {
+    puedeEditar: sesion.puede("clientes.editar"),
+    puedeAsignar: sesion.puede("clientes.asignar"),
+  };
+
+  const panel = sel ? (
+    <Suspense key={sel} fallback={<PreviewPanelSkeleton />}>
+      <VistaPrevia
+        id={sel}
+        params={sp}
+        enLista={pagina.filas.some((c) => c.id === sel)}
+        empresas={empresas ?? []}
+        perfiles={perfiles}
+        origenes={origenes}
+        yoId={sesion.user.id}
+        puedeEditar={permisos.puedeEditar}
+        puedeAsignar={permisos.puedeAsignar}
+        permisos={{
+          oportunidades: sesion.puede("oportunidades.ver"),
+          ventas: sesion.puede("ventas.ver"),
+          actividades: sesion.puede("bitacora.ver"),
+          avisos: sesion.puede("alertas.ver"),
+        }}
+        puedeEscribirActividad={sesion.puede("bitacora.escribir")}
+      />
+    </Suspense>
+  ) : null;
+
   return (
     <ContactosList
       contactos={pagina.filas}
@@ -101,12 +140,14 @@ export default async function ContactosPage({ searchParams }: { searchParams: Pr
       dadosDeBaja={bajas.count ?? 0}
       individuales={individuales.count ?? 0}
       empresas={empresas ?? []}
-      perfiles={(perfiles ?? []).map((p) => ({ id: p.id, nombre: p.nombre ?? p.email ?? "Usuario", activo: p.activo }))}
-      origenes={origenes ?? []}
-      puedeEditar={sesion.puede("clientes.editar")}
-      puedeAsignar={sesion.puede("clientes.asignar")}
+      perfiles={perfiles}
+      origenes={origenes}
+      puedeEditar={permisos.puedeEditar}
+      puedeAsignar={permisos.puedeAsignar}
       puedeVerTodos={puedeVerTodos}
       yoId={sesion.user.id}
+      sel={sel || null}
+      panel={panel}
     />
   );
 }

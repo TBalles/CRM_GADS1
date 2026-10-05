@@ -41,9 +41,9 @@ import {
 import type { Tables } from "@/lib/supabase/types";
 
 /**
- * Historia de la cuenta en CRM 2.0: la misma línea de tiempo que `Cuenta360.HistoriaCuenta` (legacy, la sigue usando la
- * ficha de contacto), armada con la misma lógica pura de `lib/timeline360.ts`. Cambia solo la presentación: filas
- * densas con hairline, ícono de 16 sin caja, meta en 12 secundario, fechas en mono.
+ * Historia de la cuenta en CRM 2.0 (fichas de empresa y de contacto): la línea de tiempo que antes dibujaba
+ * `Cuenta360.HistoriaCuenta` (legacy, retirado en el Lote A), armada con la misma lógica pura de `lib/timeline360.ts`.
+ * Filas densas con hairline, ícono de 16 sin caja, meta en 12 secundario, fechas en mono.
  */
 
 type Actividad = Tables<"bitacora_entradas">;

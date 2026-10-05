@@ -1,12 +1,14 @@
 "use client";
 
+import { Pencil, Power } from "lucide-react";
 import { ConfirmDialog } from "../Dialog";
+import type { MenuItem } from "../Menu";
 import { useCrmToast } from "../Toast";
 import { darDeBajaCliente, reactivarCliente, textoBaja, type Fila, type TipoCliente } from "@/components/BajaCliente";
 
 /**
  * Baja lógica de una empresa o contacto con el `ConfirmDialog` de CRM 2.0. La mutación y los textos son los de
- * `BajaCliente` (compartidos con el `BajaModal` legacy); acá solo cambian el diálogo y el toast.
+ * `BajaCliente` (lógica sin UI); acá van el diálogo y el toast.
  */
 export function BajaDialog<T extends TipoCliente>({
   tipo,
@@ -39,7 +41,7 @@ export function BajaDialog<T extends TipoCliente>({
   );
 }
 
-/** `reactivarCliente` con el toast de CRM 2.0 (misma firma que `useReactivar`). */
+/** `reactivarCliente` con el toast de CRM 2.0: devuelve la fila reactivada (o null si falló). */
 export function useReactivarCrm<T extends TipoCliente>(tipo: T) {
   const { showToast } = useCrmToast();
   return async function reactivar(id: string, nombre: string, empresaId?: string | null): Promise<Fila<T> | null> {
@@ -47,4 +49,25 @@ export function useReactivarCrm<T extends TipoCliente>(tipo: T) {
     showToast(aviso.mensaje, aviso.tipo);
     return row;
   };
+}
+
+/**
+ * "Editar" y "Dar de baja" / "Reactivar" de una empresa o un contacto, con las reglas de siempre: solo con
+ * `clientes.editar`; "Reactivar" solo para `inactivo`; "No contactar" es un pedido del cliente: no se deshace con un
+ * clic, se cambia desde Editar. Lo usan la fila, la vista previa y la ficha de las dos entidades.
+ */
+export function itemsEdicionCliente(
+  estado: string,
+  puedeEditar: boolean,
+  acciones: { editar: () => void; reactivar: () => void; darDeBaja: () => void },
+): MenuItem[] {
+  if (!puedeEditar) return [];
+  return [
+    { label: "Editar", icon: Pencil, onSelect: acciones.editar },
+    ...(estado === "inactivo"
+      ? [{ label: "Reactivar", icon: Power, onSelect: acciones.reactivar }]
+      : estado === "no_contactar"
+        ? []
+        : [{ label: "Dar de baja", icon: Power, variant: "danger" as const, onSelect: acciones.darDeBaja }]),
+  ];
 }

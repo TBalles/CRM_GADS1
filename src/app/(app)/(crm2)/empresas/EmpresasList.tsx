@@ -3,33 +3,25 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PanelRight, Plus } from "lucide-react";
-import { Button, buttonClass } from "@/components/crm/Button";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/crm/Button";
 import { DataTable, TBody, THead, Td, Th, TableMessage, Tr, CellNumber, CellPerson, CellActions } from "@/components/crm/DataTable";
-import { EmptyState, LoadingStatus } from "@/components/crm/Feedback";
+import { EmptyState } from "@/components/crm/Feedback";
+import { FILA_SELECCIONABLE, LinkVistaPrevia, ListFooter, PanelVistaPrevia, useFocoFilas, useSeleccionUrl } from "@/components/crm/Lista";
 import { Menu, type MenuItem } from "@/components/crm/Menu";
 import { PageBar } from "@/components/crm/PageBar";
-import { Pagination } from "@/components/crm/Pagination";
-import { Select } from "@/components/crm/Select";
 import { SearchField, ToggleChip, Toolbar } from "@/components/crm/Toolbar";
 import { Tooltip } from "@/components/crm/Tooltip";
 import { EstadoCliente } from "@/components/crm/cuenta/estados";
-import { hayCapaAbierta } from "@/components/crm/overlay";
 import { FOCUS, TYPE, UI_ROOT, cn } from "@/components/crm/cx";
 import { AnuncioResultados, useFiltrosUrl } from "@/components/FiltrosUrl";
 import { ESTADOS, TIPOS_CLIENTE, etiquetaTipoCliente, type OrigenOpcion, type PerfilOpcion } from "@/lib/clientes";
-import { TAMANIO_POR_DEFECTO, TAMANIOS_PAGINA, urlConParams } from "@/lib/paginacion";
 import type { Tables } from "@/lib/supabase/types";
 import { itemsFila, useAccionesEmpresa } from "./acciones";
-import { vecinoSel } from "./seleccion";
 
 type Empresa = Tables<"empresas">;
 
-/** Desde acá hay vista previa (master-detail); debajo, la fila abre la ficha. Igual que `xl` de Tailwind. */
-const MASTER_DETAIL = "(min-width: 1280px)";
 const COLUMNAS = 7;
-/** Con la tecla apretada (↓↓↓) se navega una sola vez, a la última fila, cuando las flechas paran este tiempo. */
-const ESPERA_FLECHAS_MS = 200;
 
 /**
  * Lista de empresas (CRM 2.0) + el lugar de la vista previa (`panel`, un server component que dibuja la página).
@@ -90,27 +82,14 @@ export default function EmpresasList({
   const filtros = useFiltrosUrl();
   const tabla = React.useRef<HTMLDivElement>(null);
   const buscador = React.useRef<HTMLDivElement>(null);
-  const timer = React.useRef<number | undefined>(undefined);
-  /** Fila a enfocar cuando vuelva la lista (la que tenía el foco puede desaparecer al darla de baja). */
-  const focoTras = React.useRef<string | null>(null);
-  const [navegando, startNav] = React.useTransition();
-  const acciones = useAccionesEmpresa({ perfiles, origenes, puedeAsignar, yoId }, filtros.refrescar);
-  const verBajas = filtros.valor("bajas") === "1";
-
-  // Selección que se VE. `pedido`: lo último que se mandó a la URL (undefined = nada en vuelo; null = cerrar).
-  const [vista, setVista] = React.useState<{ sel: string | null; base: string | null; pedido: string | null | undefined }>({
-    sel,
-    base: sel,
-    pedido: undefined,
+  const foco = useFocoFilas(empresas, { tabla, buscador });
+  const ids = empresas.map((e) => e.id);
+  const seleccion = useSeleccionUrl({ sel, ids, filtros, ficha: (id) => `/empresas/${id}`, enfocarFila: foco.enfocarFila });
+  const acciones = useAccionesEmpresa({ perfiles, origenes, puedeAsignar, yoId }, () => {
+    foco.trasCambio();
+    filtros.refrescar();
   });
-  if (vista.base !== sel) {
-    // La URL cambió. Si es la respuesta a lo último pedido (o un cambio ajeno: atrás/adelante), se sigue a la URL;
-    // si es la respuesta a un pedido VIEJO (las flechas siguieron), se mantiene lo que la persona ya está viendo.
-    const enVuelo = vista.pedido !== undefined && vista.pedido !== sel;
-    setVista({ sel: enVuelo ? vista.sel : sel, base: sel, pedido: enVuelo ? vista.pedido : undefined });
-  }
-  const selVista = vista.sel;
-  const cargandoPanel = navegando || vista.pedido !== undefined;
+  const verBajas = filtros.valor("bajas") === "1";
 
   const perfilPorId = React.useMemo(() => new Map(perfiles.map((p) => [p.id, p.nombre])), [perfiles]);
   const origenPorId = React.useMemo(() => new Map(origenes.map((o) => [o.id, o.nombre])), [origenes]);
@@ -123,102 +102,15 @@ export default function EmpresasList({
       ? `${total} de ${base} empresas`
       : `${visiblesSinFiltro} empresas · ${totalContactos} contactos`;
 
-  const hrefSel = (id: string | null) => urlConParams(filtros.pathname, filtros.params, { sel: id });
-  const ids = empresas.map((e) => e.id);
-
-  /** Elige (o quita, con null) la vista previa: marca al instante y navega (ya, o al soltar las flechas). */
-  function elegir(id: string | null, { esperar = false } = {}) {
-    setVista((v) => ({ ...v, sel: id, pedido: id }));
-    window.clearTimeout(timer.current);
-    const ir = () => startNav(() => router.push(hrefSel(id), { scroll: false }));
-    if (esperar) timer.current = window.setTimeout(ir, ESPERA_FLECHAS_MS);
-    else ir();
-  }
-  React.useEffect(() => () => window.clearTimeout(timer.current), []);
-
-  /** Foco al nombre de la fila `id` (Enter ahí abre la ficha: es un link). */
-  function enfocarFila(id: string) {
-    tabla.current?.querySelector<HTMLElement>(`tr[data-id="${id}"] [data-nombre]`)?.focus();
-  }
-
-  // ↑/↓ mueven la selección desde la fila CON FOCO. Solo con vista previa (≥ 1280).
-  function alTeclado(e: React.KeyboardEvent) {
-    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
-    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
-    const objetivo = e.target as HTMLElement;
-    const fila = objetivo.closest<HTMLElement>("tr[data-id]");
-    if (!fila || objetivo.closest("[aria-haspopup]")) return;
-    if (!window.matchMedia(MASTER_DETAIL).matches) return;
-    e.preventDefault();
-    const destino = vecinoSel(ids, selVista, fila.dataset.id ?? null, e.key === "ArrowDown" ? "next" : "prev");
-    if (!destino) return;
-    enfocarFila(destino);
-    if (destino !== selVista) elegir(destino, { esperar: true });
-  }
-
-  // Esc cierra la vista previa. Este listener se registra ANTES que el de un menú o drawer que se abra después (mismo
-  // `document`, orden de registro), así que no alcanza con `defaultPrevented`: si hay una capa abierta, el Esc es suyo.
-  React.useEffect(() => {
-    if (!selVista) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape" || e.defaultPrevented) return;
-      if (hayCapaAbierta() || document.querySelector('[aria-modal="true"]')) return;
-      const t = e.target as HTMLElement | null;
-      if (t?.closest('input, textarea, [contenteditable], [role="menu"], [role="listbox"], [role="dialog"]')) return;
-      if (!window.matchMedia(MASTER_DETAIL).matches) return;
-      e.preventDefault();
-      const cerrada = selVista;
-      elegir(null);
-      enfocarFila(cerrada);
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  });
-
-  // Debajo de 1280 no hay vista previa: un `?sel=` (link directo, ventana que se achica) se quita de la URL para que
-  // el servidor deje de dibujar un panel que no se ve. Un link con `sel` abierto en una pantalla ancha no se toca.
-  React.useEffect(() => {
-    const mq = window.matchMedia(MASTER_DETAIL);
-    const quitar = () => {
-      if (!mq.matches && sel) router.replace(urlConParams(filtros.pathname, filtros.params, { sel: null }), { scroll: false });
-    };
-    quitar();
-    mq.addEventListener("change", quitar);
-    return () => mq.removeEventListener("change", quitar);
-  }, [sel, router, filtros.pathname, filtros.params]);
-
-  // Volvió la lista después de una baja o reactivación: el foco a la fila que corresponde (o al buscador).
-  React.useEffect(() => {
-    const id = focoTras.current;
-    if (!id) return;
-    focoTras.current = null;
-    const fila = ids.includes(id) ? id : null;
-    if (fila) enfocarFila(fila);
-    else buscador.current?.querySelector("input")?.focus();
-  }, [empresas]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  /** Menú de una fila: si la acción puede sacar la fila de la lista, se recuerda a dónde llevar el foco. */
+  /** Menú de una fila: dar de baja la saca de la lista salvo con "Ver dadas de baja" (el foco va a la siguiente). */
   function menuDe(e: Empresa): MenuItem[] {
-    const i = ids.indexOf(e.id);
-    const siguiente = ids[i + 1] ?? ids[i - 1] ?? null;
-    return itemsFila(e, puedeEditar, acciones, () => router.push(`/empresas/${e.id}`)).map((it) =>
-      it.label === "Dar de baja" || it.label === "Reactivar"
-        ? {
-            ...it,
-            onSelect: () => {
-              focoTras.current = it.label === "Dar de baja" && !verBajas ? siguiente : e.id;
-              it.onSelect();
-            },
-          }
-        : it,
-    );
+    const items = itemsFila(e, puedeEditar, acciones, () => router.push(`/empresas/${e.id}`));
+    return foco.conFoco(items, e.id, (label) => label === "Dar de baja" && !verBajas);
   }
 
-  /** Clic en la fila (fuera de sus links y botones): ≥ 1280 la elige; debajo abre la ficha. */
-  function alClickFila(ev: React.MouseEvent, id: string) {
-    if ((ev.target as HTMLElement).closest("a, button, input")) return;
-    if (window.matchMedia(MASTER_DETAIL).matches) elegir(id);
-    else router.push(`/empresas/${id}`);
+  function nueva() {
+    foco.olvidar();
+    acciones.nueva();
   }
 
   const estadoValor = filtros.valor("estado");
@@ -227,7 +119,7 @@ export default function EmpresasList({
   const origenValor = filtros.valor("origen");
 
   const nuevaEmpresa = puedeEditar && (
-    <Button variant="primary" icon={Plus} onClick={acciones.nueva} aria-label="Nueva empresa" className="max-sm:w-8 max-sm:px-0">
+    <Button variant="primary" icon={Plus} onClick={nueva} aria-label="Nueva empresa" className="max-sm:w-8 max-sm:px-0">
       <span className="max-sm:sr-only">Nueva empresa</span>
     </Button>
   );
@@ -310,7 +202,7 @@ export default function EmpresasList({
               }
               action={
                 puedeEditar ? (
-                  <Button variant="primary" icon={Plus} onClick={acciones.nueva}>
+                  <Button variant="primary" icon={Plus} onClick={nueva}>
                     Nueva empresa
                   </Button>
                 ) : undefined
@@ -320,7 +212,7 @@ export default function EmpresasList({
         ) : (
           <>
             {/* onKeyDown en el contenedor: las flechas llegan burbujeando desde los links de cada fila. */}
-            <div ref={tabla} onKeyDown={alTeclado} className="flex min-h-0 flex-col pb-3">
+            <div ref={tabla} onKeyDown={seleccion.alTeclado} className="flex min-h-0 flex-col pb-3">
               <DataTable label="Empresas" busy={filtros.pending} className="min-h-0">
                 <THead>
                   <Th>Empresa</Th>
@@ -374,14 +266,14 @@ export default function EmpresasList({
                       <Fila
                         key={e.id}
                         empresa={e}
-                        seleccionada={e.id === selVista}
+                        seleccionada={e.id === seleccion.selVista}
                         responsable={(e.responsable_id && perfilPorId.get(e.responsable_id)) || null}
                         origen={(e.origen_id && origenPorId.get(e.origen_id)) || null}
                         gente={contactosPorEmpresa[e.id] ?? 0}
-                        hrefPreview={hrefSel(e.id)}
+                        hrefPreview={seleccion.hrefSel(e.id)}
                         menu={menuDe(e)}
-                        onClickFila={(ev) => alClickFila(ev, e.id)}
-                        onPreview={() => elegir(e.id)}
+                        onClickFila={(ev) => seleccion.alClickFila(ev, e.id)}
+                        onPreview={() => seleccion.elegir(e.id)}
                       />
                     ))
                   )}
@@ -389,48 +281,14 @@ export default function EmpresasList({
               </DataTable>
             </div>
 
-            {/* Banda de pie, pegada abajo del área de trabajo: la tabla queda a su alto natural y el rango no flota. */}
-            {total > 0 && (
-              <div className="-mx-4 mt-auto flex min-h-10 shrink-0 items-center border-t border-(--crm-border) bg-(--crm-panel) px-4 py-1 xl:-mx-6 xl:px-6">
-                <Pagination
-                  total={total}
-                  page={page}
-                  pageSize={pageSize}
-                  pathname={filtros.pathname}
-                  params={filtros.params}
-                  ir={filtros.ir}
-                  className="w-full"
-                  pageSizeControl={
-                    total > TAMANIOS_PAGINA[0] && (
-                      <Select
-                        dense
-                        aria-label="Filas por página"
-                        className="w-36"
-                        value={String(pageSize)}
-                        onChange={(v) => filtros.aplicar({ pageSize: v === String(TAMANIO_POR_DEFECTO) ? null : v })}
-                        options={TAMANIOS_PAGINA.map((n) => ({ value: String(n), label: `${n} por página` }))}
-                      />
-                    )
-                  }
-                />
-              </div>
-            )}
+            <ListFooter filtros={filtros} total={total} page={page} pageSize={pageSize} />
           </>
         )}
 
         {acciones.overlays}
       </div>
 
-      {panel && (
-        // La vista previa que llega del servidor; mientras la nueva está en camino, la vieja se atenúa y avisa.
-        <div
-          aria-busy={cargandoPanel || undefined}
-          className={cn("hidden min-h-0 transition-opacity duration-(--crm-dur-fast) xl:flex", cargandoPanel && "opacity-60 motion-reduce:transition-none")}
-        >
-          {cargandoPanel && <LoadingStatus label="Cargando vista previa…" />}
-          {panel}
-        </div>
-      )}
+      {panel && <PanelVistaPrevia cargando={seleccion.cargandoPanel}>{panel}</PanelVistaPrevia>}
     </div>
   );
 }
@@ -471,8 +329,7 @@ function Fila({
       data-id={e.id}
       selected={seleccionada}
       onClick={onClickFila}
-      // Sin vista previa (< 1280) un `?sel=` no se marca: la fila no tiene panel al que apuntar.
-      className="cursor-pointer max-xl:data-selected:bg-transparent max-xl:data-selected:hover:bg-(--crm-hover) max-xl:data-selected:[&>td:first-child]:shadow-none"
+      className={FILA_SELECCIONABLE}
     >
       <Td className="py-1">
         <div className="flex min-w-0 items-baseline gap-2">
@@ -508,25 +365,7 @@ function Fila({
       </Td>
       <Td className="overflow-visible px-1">
         <CellActions menu={<Menu label={`Acciones de ${e.nombre}`} size="sm" items={menu} />}>
-          {/* Elegir para la vista previa: link real (`?sel=`, se puede abrir en otra pestaña), solo desde 1280. Fuera
-              del orden de Tab: con teclado se elige con ↑/↓ (y Enter en el nombre abre la ficha). */}
-          <Tooltip content="Vista previa">
-            <Link
-              href={hrefPreview}
-              scroll={false}
-              tabIndex={-1}
-              data-preview
-              aria-label={`Vista previa de ${e.nombre}`}
-              onClick={(ev) => {
-                if (ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
-                ev.preventDefault();
-                onPreview();
-              }}
-              className={buttonClass({ variant: "ghost", size: "sm", className: "hidden w-7 px-0 xl:inline-flex" })}
-            >
-              <PanelRight aria-hidden="true" strokeWidth={1.75} />
-            </Link>
-          </Tooltip>
+          <LinkVistaPrevia href={hrefPreview} nombre={e.nombre} onPreview={onPreview} />
         </CellActions>
       </Td>
     </Tr>

@@ -5,13 +5,21 @@ import { esUuid } from "@/lib/clientes";
 import { leerCuenta360 } from "@/lib/cuenta360";
 import { hoyAR } from "@/lib/oportunidades";
 import { iaDisponible } from "@/lib/ia/config";
-import ContactoDetalle from "./ContactoDetalle";
 import { CrumbLabel } from "@/components/crm/shell/Crumbs";
+import { tabValida } from "@/components/crm/seleccion";
+import ContactoDetalle, { type TabFicha } from "./ContactoDetalle";
 
 export const metadata = { title: "Contacto" };
 
-export default async function ContactoPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ContactoPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string | string[] }>;
+}) {
   const { id } = await params;
+  const { tab: tabPedida } = await searchParams;
   const sesion = await exigirPermiso("clientes.ver");
   if (!esUuid(id)) notFound();
 
@@ -39,16 +47,20 @@ export default async function ContactoPage({ params }: { params: Promise<{ id: s
     supabase.from("origenes").select("id, nombre, activo").order("orden").order("nombre"),
   ]);
 
-  // La empresa del contacto puede ser de otra cartera: si la RLS no la muestra,
-  // la actividad no se cuelga de ella (la base la rechazaría).
-  const empresaVisible = (empresas ?? []).find((e) => e.id === contacto.empresa_id) ?? null;
+  // Tabs que existen para este rol (las mismas condiciones con que la ficha legacy mostraba cada sección): la historia
+  // con cualquiera de sus cuatro permisos, oportunidades y ventas con el suyo. Una tab pedida que no existe cae en Resumen.
+  const tabs: TabFicha[] = [
+    "resumen",
+    ...(puedeVerActividades || puedeVerOportunidades || puedeVerVentas || puedeVerAvisos ? (["actividad"] as const) : []),
+    ...(puedeVerOportunidades ? (["oportunidades"] as const) : []),
+    ...(puedeVerVentas ? (["ventas"] as const) : []),
+  ];
 
   return (
     <>
       <CrumbLabel>{[contacto.nombre, contacto.apellido].filter(Boolean).join(" ")}</CrumbLabel>
       <ContactoDetalle
         contacto={contacto}
-        empresa={empresaVisible}
         empresas={empresas ?? []}
         oportunidades={cuenta.oportunidades}
         etapas={cuenta.etapas}
@@ -62,6 +74,8 @@ export default async function ContactoPage({ params }: { params: Promise<{ id: s
         tipos={tipos ?? []}
         perfiles={(perfiles ?? []).map((p) => ({ id: p.id, nombre: p.nombre ?? p.email ?? "Usuario", activo: p.activo }))}
         origenes={origenes ?? []}
+        tabs={tabs}
+        tab={tabValida(tabPedida, tabs)}
         yoId={sesion.user.id}
         puedeEditar={sesion.puede("clientes.editar")}
         puedeAsignar={sesion.puede("clientes.asignar")}

@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { Eye, Pencil, Power } from "lucide-react";
+import { Eye } from "lucide-react";
 import type { MenuItem } from "@/components/crm/Menu";
 import { useApertura } from "@/components/crm/cuenta/FormDrawer";
-import { BajaDialog, useReactivarCrm } from "@/components/crm/cuenta/BajaDialog";
+import { BajaDialog, itemsEdicionCliente, useReactivarCrm } from "@/components/crm/cuenta/BajaDialog";
 import type { OrigenOpcion, PerfilOpcion } from "@/lib/clientes";
 import type { Tables } from "@/lib/supabase/types";
 import EmpresaForm from "./EmpresaForm";
@@ -63,20 +63,13 @@ export function useAccionesEmpresa(catalogos: CatalogosEmpresa, alCambiar: () =>
 
 export type AccionesEmpresa = ReturnType<typeof useAccionesEmpresa>;
 
-/**
- * "Editar" y "Dar de baja" / "Reactivar" con las reglas de siempre: solo con `clientes.editar`; "Reactivar" solo para
- * `inactivo`; "No contactar" es un pedido del cliente: no se deshace con un clic, se cambia desde Editar.
- */
+/** "Editar" y "Dar de baja" / "Reactivar" con las reglas de siempre (`itemsEdicionCliente`). */
 export function itemsEdicion(e: Empresa, puedeEditar: boolean, acciones: AccionesEmpresa): MenuItem[] {
-  if (!puedeEditar) return [];
-  return [
-    { label: "Editar", icon: Pencil, onSelect: () => acciones.editar(e) },
-    ...(e.estado === "inactivo"
-      ? [{ label: "Reactivar", icon: Power, onSelect: () => void acciones.reactivar(e) }]
-      : e.estado === "no_contactar"
-        ? []
-        : [{ label: "Dar de baja", icon: Power, variant: "danger" as const, onSelect: () => acciones.darDeBaja(e) }]),
-  ];
+  return itemsEdicionCliente(e.estado, puedeEditar, {
+    editar: () => acciones.editar(e),
+    reactivar: () => void acciones.reactivar(e),
+    darDeBaja: () => acciones.darDeBaja(e),
+  });
 }
 
 /** El menú de una fila: "Ver ficha" + las de edición. */

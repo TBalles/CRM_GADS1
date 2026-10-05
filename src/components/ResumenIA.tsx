@@ -1,15 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Loader2, RefreshCw, Sparkles, X } from "lucide-react";
 import { resumirCuenta } from "@/app/(app)/ia/actions";
-import { ComoUsamosIA, EtiquetaIA } from "@/components/IaAviso";
-import { Button } from "@/components/ui/UIComponents";
-import { useToast } from "@/components/ui/Toast";
 import { MENSAJES_IA } from "@/lib/ia/config";
 
 /**
- * Estado de "Resumir con IA" sin UI (lo comparten esta pieza legacy y la de CRM 2.0). `notificar` es el toast de cada una.
+ * Estado de "Resumir con IA" sin UI. La pieza que lo dibuja es `ResumenIACrm` (`components/crm/cuenta/HistoriaCuenta.tsx`,
+ * fichas de empresa y de contacto). `notificar` es su toast.
  */
 export function useResumenIA(
   tipo: "empresa" | "contacto",
@@ -47,61 +44,4 @@ export function useResumenIA(
   }
 
   return { cargando, texto, error, resumir, copiar, cerrar: () => setTexto(null) };
-}
-
-/**
- * "Resumir con IA" en la Historia de la cuenta (F7, ficha 360 de empresa y de contacto).
- *
- * El resumen vive solo en el estado de este componente: no se guarda, no se envía, no se agrega a la historia.
- * La Server Action recibe únicamente el tipo y el id; los datos los vuelve a leer el servidor con la sesión de
- * quien mira. Esta pieza solo se monta si el servidor dice que la IA está activada.
- */
-export function ResumenIA({ tipo, id }: { tipo: "empresa" | "contacto"; id: string }) {
-  const { showToast } = useToast();
-  const { cargando, texto, error, resumir, copiar, cerrar } = useResumenIA(tipo, id, showToast);
-
-  return (
-    <div className="mb-4 flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <Button variant="outline" size="sm" className="gap-1.5" disabled={cargando} onClick={resumir}>
-          {cargando ? <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin" /> : <Sparkles aria-hidden="true" className="h-3.5 w-3.5" />}
-          {cargando ? "Resumiendo…" : texto ? "Volver a resumir" : "Resumir con IA"}
-        </Button>
-        <ComoUsamosIA />
-      </div>
-
-      <div role="status" aria-live="polite" className="sr-only">
-        {cargando ? "Armando el resumen con IA…" : texto ? "Resumen generado con IA listo para revisar." : ""}
-      </div>
-
-      {error && (
-        <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-        </p>
-      )}
-
-      {texto && (
-        <section aria-label="Resumen generado con IA" className="rounded-lg border border-brand/30 bg-card p-4 shadow-sm">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <EtiquetaIA>Generado con IA: revisalo antes de usarlo, puede tener errores</EtiquetaIA>
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="sm" className="gap-1.5" onClick={copiar}>
-                <Copy aria-hidden="true" className="h-3.5 w-3.5" /> Copiar
-              </Button>
-              <Button variant="ghost" size="sm" className="gap-1.5" disabled={cargando} onClick={resumir}>
-                <RefreshCw aria-hidden="true" className="h-3.5 w-3.5" /> Regenerar
-              </Button>
-              <Button variant="ghost" size="sm" className="gap-1.5" onClick={cerrar}>
-                <X aria-hidden="true" className="h-3.5 w-3.5" /> Cerrar
-              </Button>
-            </div>
-          </div>
-          <p className="whitespace-pre-line text-sm leading-relaxed">{texto}</p>
-          <p className="mt-3 text-xs text-muted-foreground">
-            No se guarda en el CRM: si lo querés conservar, copialo o registralo como una actividad.
-          </p>
-        </section>
-      )}
-    </div>
-  );
 }

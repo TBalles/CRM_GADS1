@@ -5,7 +5,7 @@ import { formatMoney } from "@/lib/money";
 import { textoContacto, type ResumenCuenta } from "@/lib/timeline360";
 
 /**
- * "Resumen de la cuenta" como cifras para `StatStrip`: las mismas que `ResumenCuentaCard` (legacy), calculadas por
+ * "Resumen de la cuenta" como cifras para `StatStrip`: las mismas que mostraba la tarjeta legacy, calculadas por
  * `resumenCuenta` con las filas que ya se trajeron. Lo que el rol no puede ver no se afirma (se omite, no se muestra 0).
  */
 export function statsCuenta(

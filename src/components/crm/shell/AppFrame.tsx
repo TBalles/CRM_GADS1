@@ -152,9 +152,15 @@ export default function AppFrame({
   return (
     <CrumbsProvider>
       <CrmToastProvider>
+        {/* El documento NUNCA scrollea: solo `<main>`. Un `position: absolute` sin ancestro posicionado (el `sr-only` de
+            Tailwind, por ejemplo) toma como bloque contenedor el viewport, no lo recorta ni lo scrollea el `<main>`, y
+            estira el DOCUMENTO; como `html` tiene `overflow-x: hidden` (globals.css), su `overflow-y` computa `auto` y la
+            rueda (al llegar al final del `<main>` o sobre el rail) mueve la página entera con el shell adentro. Por eso:
+            `relative` en el shell y en el `<main>` (todo absoluto queda contenido) y `overflow-clip` en el shell (a
+            diferencia de `hidden`, no es un contenedor de scroll: ni un foco ni un scrollIntoView pueden correrlo). */}
         <div
           data-app-shell
-          className="grid h-dvh grid-cols-[auto_minmax(0,1fr)] grid-rows-[48px_minmax(0,1fr)] overflow-hidden bg-background text-foreground"
+          className="relative grid h-dvh grid-cols-[auto_minmax(0,1fr)] grid-rows-[48px_minmax(0,1fr)] overflow-clip bg-background text-foreground"
         >
           {/* Primer enfocable de la página. `fixed`: no ocupa celda de la grilla; aparece solo con el foco. Peso 400 a
               propósito: está en todo ancho (fuera de pantalla, pero maquetado), así el único archivo de Plex que se precarga
@@ -204,7 +210,7 @@ export default function AppFrame({
             onSalir={() => setSalir(true)}
           />
 
-          <main id="contenido" tabIndex={-1} data-app-main className="col-start-2 row-start-2 min-h-0 min-w-0 overflow-y-auto outline-none">
+          <main id="contenido" tabIndex={-1} data-app-main className="relative col-start-2 row-start-2 min-h-0 min-w-0 overflow-y-auto outline-none">
             {children}
           </main>
         </div>

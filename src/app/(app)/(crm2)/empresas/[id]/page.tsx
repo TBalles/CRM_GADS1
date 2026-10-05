@@ -9,7 +9,7 @@ import { leerCuenta360 } from "@/lib/cuenta360";
 import { iaDisponible } from "@/lib/ia/config";
 import EmpresaDetalle from "./EmpresaDetalle";
 import { CrumbLabel } from "@/components/crm/shell/Crumbs";
-import { tabValida } from "../seleccion";
+import { tabValida } from "@/components/crm/seleccion";
 import type { TabFicha } from "./EmpresaDetalle";
 
 export const metadata = { title: "Empresa" };

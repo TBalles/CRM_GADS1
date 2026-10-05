@@ -1,8 +1,5 @@
 "use client";
 
-import { Power } from "lucide-react";
-import ConfirmModal from "@/components/ConfirmModal";
-import { useToast } from "@/components/ui/Toast";
 import { createClient } from "@/lib/supabase/client";
 import { mensajeErrorGuardado, type EstadoCliente } from "@/lib/clientes";
 import type { Tables } from "@/lib/supabase/types";
@@ -32,7 +29,7 @@ type Aviso = { mensaje: string; tipo: "success" | "error" };
  * y a `potencial` si no. Un `no_contactar` no se reactiva: es un pedido del
  * cliente y se cambia a propósito desde "Editar".
  *
- * Sin UI: devuelve la fila y el aviso; quien llama lo muestra con SU toast (legacy o CRM 2.0).
+ * Sin UI: devuelve la fila y el aviso; quien llama lo muestra con su toast.
  * `empresaId` solo importa para un contacto.
  */
 export async function reactivarCliente<T extends TipoCliente>(
@@ -61,7 +58,7 @@ export async function reactivarCliente<T extends TipoCliente>(
   return { row, aviso: { mensaje: `«${nombre}» se reactivó como ${compro ? `Cliente (${motivo})` : "Potencial"}.`, tipo: "success" } };
 }
 
-/** La baja lógica (`inactivo`) con su aviso, sin UI: la usan `BajaModal` (legacy) y el diálogo de CRM 2.0. */
+/** La baja lógica (`inactivo`) con su aviso, sin UI: la usa el diálogo de CRM 2.0 (`BajaDialog`). */
 export async function darDeBajaCliente<T extends TipoCliente>(
   tipo: T,
   objetivo: { id: string; nombre: string },
@@ -83,56 +80,10 @@ export async function darDeBajaCliente<T extends TipoCliente>(
   };
 }
 
-/** Texto de la confirmación de baja (mismo en legacy y CRM 2.0). */
+/** Texto de la confirmación de baja. */
 export function textoBaja(tipo: TipoCliente, nombre: string) {
   return {
     titulo: tipo === "empresa" ? "Dar de baja la empresa" : "Dar de baja el contacto",
     descripcion: `«${nombre}» pasa a Inactivo. No se borra: conserva su historial y ${tipo === "empresa" ? "la" : "lo"} podés reactivar cuando quieras.`,
   };
-}
-
-/** `reactivarCliente` con el toast legacy. */
-export function useReactivar<T extends TipoCliente>(tipo: T) {
-  const { showToast } = useToast();
-  return async function reactivar(id: string, nombre: string, empresaId?: string | null): Promise<Fila<T> | null> {
-    const { row, aviso } = await reactivarCliente(tipo, id, nombre, empresaId);
-    showToast(aviso.mensaje, aviso.tipo);
-    return row;
-  };
-}
-
-/** Confirmacion de la baja logica. Cierra solo; avisa con toast y devuelve la fila actualizada. */
-export function BajaModal<T extends TipoCliente>({
-  tipo,
-  objetivo,
-  onClose,
-  onHecho,
-}: {
-  tipo: T;
-  objetivo: { id: string; nombre: string } | null;
-  onClose: () => void;
-  onHecho: (fila: Fila<T>) => void;
-}) {
-  const { showToast } = useToast();
-  const texto = textoBaja(tipo, objetivo?.nombre ?? "");
-
-  async function confirmar() {
-    if (!objetivo) return;
-    const { row, aviso } = await darDeBajaCliente(tipo, objetivo);
-    showToast(aviso.mensaje, aviso.tipo);
-    if (row) onHecho(row);
-  }
-
-  return (
-    <ConfirmModal
-      isOpen={Boolean(objetivo)}
-      onClose={onClose}
-      onConfirm={confirmar}
-      title={texto.titulo}
-      description={objetivo ? texto.descripcion : ""}
-      confirmText="Dar de baja"
-      variant="danger"
-      icon={<Power className="h-6 w-6" />}
-    />
-  );
 }

@@ -1,7 +1,10 @@
+import { AlertTriangle } from "lucide-react";
 import { InlineBanner } from "../Feedback";
 import { StatusDot, type Tone } from "../Status";
-import { estadoInfo } from "@/lib/clientes";
+import { cn } from "../cx";
+import { estadoInfo, formatFecha } from "@/lib/clientes";
 import { estadoOportunidadInfo } from "@/lib/oportunidades";
+import { textoContacto, type ResumenCuenta } from "@/lib/timeline360";
 
 /**
  * Estados del dominio como punto + palabra (MASTER.md §3.2). Los tonos legacy (`azul`, `verde`…) de `lib/` se
@@ -51,5 +54,17 @@ export function AvisoEstadoCrm({
     <InlineBanner tone="info" title="Dada de baja." action={accion} className={className}>
       No se borra: conserva todo su historial y no aparece en la lista salvo que pidas ver las dadas de baja.
     </InlineBanner>
+  );
+}
+
+/** "Hace 17 días el 17/09/2026" de la vista previa; si pide atención (atención o frío), ícono + color de aviso. */
+export function UltimoContacto({ resumen }: { resumen: ResumenCuenta }) {
+  const alerta = resumen.tonoContacto === "atencion" || resumen.tonoContacto === "frio";
+  return (
+    <span className={cn("inline-flex flex-wrap items-center gap-x-1.5", alerta && "font-medium text-(--crm-warning)")}>
+      {alerta && <AlertTriangle aria-hidden="true" strokeWidth={1.75} className="size-3.5 self-center" />}
+      {textoContacto(resumen.diasDesdeContacto, resumen.tonoContacto)}
+      {resumen.ultimoContacto && <span className="font-normal text-(--crm-text-2)">el {formatFecha(resumen.ultimoContacto)}</span>}
+    </span>
   );
 }

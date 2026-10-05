@@ -5,12 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, NotebookPen, Pencil, Plus, Power } from "lucide-react";
 import { Button, IconButton } from "@/components/crm/Button";
-import { DataTable, TBody, THead, Td, Th, Tr, CellActions, CellDate, CellNumber, CellText } from "@/components/crm/DataTable";
+import { DataTable, TBody, THead, Td, Th, Tr, CellActions, CellText } from "@/components/crm/DataTable";
 import { EmptyState, InlineBanner } from "@/components/crm/Feedback";
 import { Menu } from "@/components/crm/Menu";
 import { DetailHeader, SectionBar } from "@/components/crm/PageBar";
-import { DefinitionList } from "@/components/crm/Panel";
-import { StatStrip } from "@/components/crm/StatStrip";
 import { Avatar } from "@/components/crm/Status";
 import { Tabs, TabPanel, type TabItem } from "@/components/crm/Tabs";
 import { Tooltip } from "@/components/crm/Tooltip";
@@ -18,13 +16,13 @@ import { FOCUS, TYPE, UI_ROOT, cn } from "@/components/crm/cx";
 import { useApertura } from "@/components/crm/cuenta/FormDrawer";
 import { ActividadDrawer } from "@/components/crm/cuenta/ActividadDrawer";
 import { ContactoDrawer } from "@/components/crm/cuenta/ContactoDrawer";
-import { AvisoEstadoCrm, EstadoCliente, EstadoOportunidad } from "@/components/crm/cuenta/estados";
-import { HistoriaCuenta, MovimientosRecientes, ResumenIACrm } from "@/components/crm/cuenta/HistoriaCuenta";
+import { AvisoEstadoCrm, EstadoCliente } from "@/components/crm/cuenta/estados";
+import { HistoriaCuenta, ResumenIACrm } from "@/components/crm/cuenta/HistoriaCuenta";
 import { statsCuenta } from "@/components/crm/cuenta/resumen";
-import { estaDeBaja, estadoInfo, etiquetaTipoCliente, formatFecha, nombreCompleto, type OrigenOpcion, type PerfilOpcion } from "@/lib/clientes";
+import { ActividadReciente, OportunidadesAbiertas, OportunidadesTab, ResumenStats, RielDatos, VentasTab } from "@/components/crm/cuenta/SeccionesCuenta";
+import { estaDeBaja, estadoInfo, etiquetaTipoCliente, nombreCompleto, type OrigenOpcion, type PerfilOpcion } from "@/lib/clientes";
 import type { GrupoParque } from "@/lib/parque";
-import { TOPES, type AvisoCuenta, type CambioEtapaFila, type Cuenta360, type EtapaCuenta, type OportunidadCuenta, type VentaCuenta } from "@/lib/cuenta360";
-import { formatMoney } from "@/lib/money";
+import type { AvisoCuenta, CambioEtapaFila, Cuenta360, EtapaCuenta, OportunidadCuenta, VentaCuenta } from "@/lib/cuenta360";
 import { resumenCuenta } from "@/lib/timeline360";
 import type { Tables } from "@/lib/supabase/types";
 import { itemsEdicion, useAccionesEmpresa } from "../acciones";
@@ -48,16 +46,6 @@ const ETIQUETA_TAB: Record<TabFicha, string> = {
   contactos: "Contactos",
   canchas: "Canchas y parque",
 };
-
-/** Monto en pesos: símbolo en gris, cifra mono; sin monto, "—". */
-function Monto({ valor }: { valor: number }) {
-  if (!valor) return <span className="text-(--crm-text-2)">—</span>;
-  return (
-    <CellNumber unit="$" unitPosition="before">
-      {formatMoney(valor).replace(/^\$/, "")}
-    </CellNumber>
-  );
-}
 
 const LINK = cn("rounded-[2px] text-(--crm-accent-text) underline-offset-2 hover:underline", FOCUS);
 
@@ -141,8 +129,6 @@ export default function EmpresaDetalle({
   const router = useRouter();
   // Cambiar de tab navega (la URL es el estado): en una transición, con el panel marcado `busy` hasta que llega.
   const [cambiandoTab, startTab] = useTransition();
-  const nombreEtapa = useMemo(() => new Map(etapas.map((e) => [e.id, e.nombre])), [etapas]);
-  const abiertas = oportunidades.filter((o) => o.estado === "abierta");
   // Señal de recambio: lo mismo que dice el encabezado del Parque instalado (mismo dato y mismo permiso: ventas.ver).
   const vencidas = parque?.find((g) => g.estado === "vencido")?.unidades ?? 0;
   const porVencer = parque?.find((g) => g.estado === "por_vencer")?.unidades ?? 0;
@@ -270,17 +256,7 @@ export default function EmpresaDetalle({
           // Superficie de trabajo, no una card: columna principal (lo que se opera) + riel de propiedades (Datos).
           <div className="grid min-w-0 items-start gap-x-6 gap-y-5 xl:grid-cols-[minmax(0,1fr)_340px]">
             <div className="flex min-w-0 flex-col gap-5">
-              {stats.length > 0 && (
-                <section aria-labelledby="resumen-cuenta">
-                  <h2 id="resumen-cuenta" className="sr-only">
-                    Resumen de la cuenta
-                  </h2>
-                  <p id="resumen-cuenta-nota" className="sr-only">
-                    Calculado con lo que está cargado en el CRM, sin estimaciones.
-                  </p>
-                  <StatStrip items={stats} describedBy="resumen-cuenta-nota" />
-                </section>
-              )}
+              <ResumenStats stats={stats} />
 
               {recambio && (
                 <p className={cn(TYPE.table, "-mt-1 flex flex-wrap items-center gap-x-3 gap-y-1")}>
@@ -295,47 +271,7 @@ export default function EmpresaDetalle({
               )}
 
               {puedeVerOportunidades && (
-                <section className="flex min-w-0 flex-col">
-                  <SectionBar
-                    title="Oportunidades abiertas"
-                    count={abiertas.length}
-                    actions={
-                      oportunidades.length > 0 && (
-                        <Link href={`/empresas/${empresa.id}?tab=oportunidades`} className={cn(TYPE.table, LINK)}>
-                          Ver todas
-                        </Link>
-                      )
-                    }
-                  />
-                  {abiertas.length ? (
-                    <DataTable label="Oportunidades abiertas">
-                      <THead>
-                        <Th>Oportunidad</Th>
-                        <Th width={200} hideBelow="sm">
-                          Etapa
-                        </Th>
-                        <Th width={136} align="right">
-                          Monto
-                        </Th>
-                      </THead>
-                      <TBody>
-                        {abiertas.map((o) => (
-                          <Tr key={o.id}>
-                            <Td>
-                              <CellText href={`/oportunidades/${o.id}`}>{o.titulo}</CellText>
-                            </Td>
-                            <Td hideBelow="sm">{nombreEtapa.get(o.etapa_id) ?? <span className="text-(--crm-text-2)">Sin etapa</span>}</Td>
-                            <Td align="right">
-                              <Monto valor={o.monto ? Number(o.monto) : 0} />
-                            </Td>
-                          </Tr>
-                        ))}
-                      </TBody>
-                    </DataTable>
-                  ) : (
-                    <p className={cn(TYPE.table, "text-(--crm-text-2)")}>Ninguna abierta.</p>
-                  )}
-                </section>
+                <OportunidadesAbiertas oportunidades={oportunidades} etapas={etapas} verTodas={`/empresas/${empresa.id}?tab=oportunidades`} />
               )}
 
               <section className="flex min-w-0 flex-col">
@@ -386,34 +322,11 @@ export default function EmpresaDetalle({
                 )}
               </section>
 
-              {tabs.includes("actividad") && (
-                <section className="flex min-w-0 flex-col">
-                  <SectionBar
-                    title="Actividad reciente"
-                    actions={
-                      <Link href={`/empresas/${empresa.id}?tab=actividad`} className={cn(TYPE.table, LINK)}>
-                        Ver toda la actividad
-                      </Link>
-                    }
-                  />
-                  <div className="rounded-(--crm-radius) border border-(--crm-border) bg-(--crm-panel) px-3">
-                    <MovimientosRecientes limite={5} {...fuentes} />
-                  </div>
-                </section>
-              )}
+              {tabs.includes("actividad") && <ActividadReciente href={`/empresas/${empresa.id}?tab=actividad`} fuentes={fuentes} />}
             </div>
 
             {/* Riel de propiedades: una columna, término a la izquierda, hairlines entre filas. */}
-            <aside aria-label="Datos de la empresa" className="flex min-w-0 flex-col border-(--crm-border) xl:border-l xl:pl-6">
-              <SectionBar title="Datos" />
-              <DefinitionList inline columns={1} items={datosEmpresa(empresa, { responsable, origen })} />
-              {empresa.notas && (
-                <div className="mt-3 flex flex-col gap-1">
-                  <p className={cn(TYPE.meta, "text-(--crm-text-2)")}>Observaciones</p>
-                  <p className="max-w-prose whitespace-pre-line text-[13px] leading-[1.55]">{empresa.notas}</p>
-                </div>
-              )}
-            </aside>
+            <RielDatos label="Datos de la empresa" items={datosEmpresa(empresa, { responsable, origen })} notas={empresa.notas} />
           </div>
         )}
 
@@ -433,120 +346,10 @@ export default function EmpresaDetalle({
         )}
 
         {tab === "oportunidades" && (
-          <section className="flex min-w-0 flex-col">
-            <SectionBar title="Oportunidades" count={truncado.oportunidades ? `${oportunidades.length}+` : oportunidades.length} />
-            <DataTable label="Oportunidades de la empresa">
-              <THead>
-                <Th>Oportunidad</Th>
-                <Th width={200} hideBelow="sm">
-                  Etapa
-                </Th>
-                <Th width={112}>Estado</Th>
-                <Th width={136} align="right">
-                  Monto
-                </Th>
-              </THead>
-              <TBody>
-                {oportunidades.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="p-0">
-                      <EmptyState
-                        compact
-                        title="Todavía no hay oportunidades."
-                        description={
-                          <>
-                            Se cargan desde{" "}
-                            <Link href="/oportunidades" className={LINK}>
-                              Oportunidades
-                            </Link>
-                            .
-                          </>
-                        }
-                      />
-                    </td>
-                  </tr>
-                ) : (
-                  oportunidades.map((o) => (
-                    <Tr key={o.id}>
-                      <Td>
-                        <CellText href={`/oportunidades/${o.id}`}>{o.titulo}</CellText>
-                      </Td>
-                      <Td hideBelow="sm">{etapas.find((e) => e.id === o.etapa_id)?.nombre ?? <span className="text-(--crm-text-2)">Sin etapa</span>}</Td>
-                      <Td>
-                        <EstadoOportunidad estado={o.estado} />
-                      </Td>
-                      <Td align="right">
-                        {o.monto ? (
-                          <CellNumber unit="$" unitPosition="before">
-                            {formatMoney(Number(o.monto)).replace(/^\$/, "")}
-                          </CellNumber>
-                        ) : (
-                          <span className="text-(--crm-text-2)">—</span>
-                        )}
-                      </Td>
-                    </Tr>
-                  ))
-                )}
-              </TBody>
-            </DataTable>
-            {truncado.oportunidades && <p className={cn(TYPE.meta, "mt-2 text-(--crm-text-2)")}>Se muestran las {TOPES.oportunidades} más recientes.</p>}
-          </section>
+          <OportunidadesTab label="Oportunidades de la empresa" oportunidades={oportunidades} etapas={etapas} truncado={truncado.oportunidades} />
         )}
 
-        {tab === "ventas" && (
-          <section className="flex min-w-0 flex-col">
-            <SectionBar title="Ventas" count={truncado.ventas ? `${ventas.length}+` : ventas.length} />
-            <DataTable label="Ventas de la empresa">
-              <THead>
-                <Th width={120}>Fecha</Th>
-                <Th>Comprobante</Th>
-                <Th width={160} align="right">
-                  Total
-                </Th>
-              </THead>
-              <TBody>
-                {ventas.length === 0 ? (
-                  <tr>
-                    <td colSpan={3} className="p-0">
-                      <EmptyState
-                        compact
-                        title="Todavía no compró."
-                        description={
-                          <>
-                            Las entregas se cargan desde{" "}
-                            <Link href="/ventas" className={LINK}>
-                              Ventas
-                            </Link>
-                            .
-                          </>
-                        }
-                      />
-                    </td>
-                  </tr>
-                ) : (
-                  ventas.map((v) => (
-                    <Tr key={v.id}>
-                      <Td>
-                        <CellDate dateTime={v.fecha}>{formatFecha(v.fecha)}</CellDate>
-                      </Td>
-                      <Td>{v.comprobante ? <span className={TYPE.mono}>{v.comprobante}</span> : <span className="text-(--crm-text-2)">—</span>}</Td>
-                      <Td align="right">
-                        {v.total ? (
-                          <CellNumber unit="$" unitPosition="before">
-                            {formatMoney(v.total).replace(/^\$/, "")}
-                          </CellNumber>
-                        ) : (
-                          <span className="text-(--crm-text-2)">—</span>
-                        )}
-                      </Td>
-                    </Tr>
-                  ))
-                )}
-              </TBody>
-            </DataTable>
-            {truncado.ventas && <p className={cn(TYPE.meta, "mt-2 text-(--crm-text-2)")}>Se muestran las {TOPES.ventas} más recientes.</p>}
-          </section>
-        )}
+        {tab === "ventas" && <VentasTab label="Ventas de la empresa" ventas={ventas} truncado={truncado.ventas} />}
 
         {tab === "contactos" && (
           <section className="flex min-w-0 flex-col">

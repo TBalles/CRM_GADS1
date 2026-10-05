@@ -211,19 +211,22 @@ src/
         VistaPrevia.tsx           Server Component: panel ≥1280 con leerCuenta360 (RLS); nada si `sel` no es visible; <1280 la lista quita `sel`
         AccionesVistaPrevia.tsx / acciones.tsx   Acciones de empresa (nueva, editar, baja, reactivar) con drawers CRM
         EmpresaForm.tsx           Drawer de alta/edición de empresa (única implementación)
-        seleccion.ts(+.check)     Lógica pura de ↑/↓ y de la tab válida
         [id]/page.tsx             Ficha (notFound si no existe o la RLS la esconde); arma las tabs según permisos
         [id]/EmpresaDetalle.tsx   Client: DetailHeader + Tabs (Resumen, Actividad, Oportunidades, Ventas, Contactos, Canchas y parque)
         [id]/CanchasSeccion.tsx / CanchaForm.tsx / ParqueInstalado.tsx   Canchas, equipamiento sugerido y parque (CRM 2.0)
-      contactos/                Lista de contactos (de empresa e individuales) y su ficha
-        page.tsx / ContactosList.tsx / ContactoForm.tsx / [id]/page.tsx / [id]/ContactoDetalle.tsx
+      (crm2)/contactos/         CRM 2.0 (Lote A): lista + vista previa (`?sel=`, igual que Empresas) y ficha con tabs (`?tab=`)
+        page.tsx                 Server Component: searchParams → UNA página + catálogos; vista previa en <Suspense key={sel}>
+        ContactosList.tsx         Client: PageBar, toolbar (filtros por URL), DataTable, selección (`useSeleccionUrl`), banda de pie
+        VistaPrevia.tsx / AccionesVistaPrevia.tsx   Panel ≥1280 (leerCuenta360 por contacto_id) y su acción + ⋮
+        acciones.tsx / datos.tsx  Acciones de contacto (ContactoDrawer, BajaDialog) y sus datos como DefinitionList
+        [id]/page.tsx / [id]/ContactoDetalle.tsx   Ficha: DetailHeader + Tabs (Resumen, Actividad, Oportunidades, Ventas)
       tablero-comercial/         Tablero del responsable (F5): pipeline por responsable, sin actividad, cierres del mes, motivos
         page.tsx                 Server Component: `?dias=7|14|30` y `?mes=aaaa-mm`; lecturas con tope y aviso
       embudo/                    Conversión del embudo (F5): entraron, avanzaron, mediana de días, tasa de éxito y ciclo
         page.tsx / EmbudoFiltros.tsx   Server Component + filtros por URL (`?desde=&hasta=&origen=`)
       buscar/actions.ts          Server Action `buscarGlobal` de la búsqueda Ctrl+K (F5): con la sesión, la RLS manda
-      productos/                 ABM del catálogo con vida útil
-        page.tsx / ProductosList.tsx / ProductoForm.tsx
+      (crm2)/productos/          CRM 2.0 (Lote A): catálogo con vida útil (sin ficha ni vista previa)
+        page.tsx / ProductosList.tsx / ProductoForm.tsx   Lista densa + drawer de alta/edición (CRM 2.0)
       ventas/                    Historial de compras (cabecera + ítems)
         page.tsx / VentasList.tsx / VentaForm.tsx
       ia/actions.ts              Server Actions de la IA (F7): redactarAvisoRecambio y resumirCuenta; solo redactan, con la sesión de la persona
@@ -273,17 +276,21 @@ src/
     RelojRecambio.tsx           La barra entrega-vencimiento (alertas y parque instalado)
     ParqueInstalado.tsx         Parque instalado de una empresa, agrupado por urgencia (server-safe)
     AvisoMigracion.tsx          Aviso para administradores: "Se activa al aplicar la migración 0011"
+    crm/                        CRM 2.0 (design-system/crm-2/MASTER.md §10): primitivos, shell y composiciones. Del Lote A:
+      Lista.tsx                 useSeleccionUrl (master-detail por `?sel=`), useFocoFilas, ListFooter, PanelVistaPrevia
+      seleccion.ts(+.check)     Lógica pura: ↑/↓ (vecinoSel), tab válida, fila que recibe el foco tras una acción
+      PreviewPanel.tsx / Skeletons.tsx / MoneyInput.tsx   Vista previa, cargas (lista y ficha), monto con máscara
+      cuenta/SeccionesCuenta.tsx  Secciones de ficha 360 y vista previa compartidas por empresa y contacto
     Drawer.tsx                   Panel lateral derecho para los formularios de alta/edición
     RowActions.tsx               Menú "⋮" portaled que usan las filas de cada lista
     ThemeToggle.tsx              Toggle de modo oscuro (localStorage + prefers-color-scheme)
-    ActividadForm.tsx           Alta reutilizable de actividad (empresa, contacto, luego oportunidad)
+    ActividadForm.tsx           Alta de actividad legacy (detalle de oportunidad)
     ActividadesTimeline.tsx     Línea de tiempo de actividades, la más reciente arriba
-    Cuenta360.tsx               Ficha 360 (F5): ResumenCuentaCard y HistoriaCuenta (chips, meses, "Ver más")
-    ResumenIA.tsx               "Resumir con IA" de la ficha 360 (F7); IaAviso.tsx: EtiquetaIA y "Cómo usamos la IA"
+    ResumenIA.tsx               useResumenIA: estado de "Resumir con IA" (F7; lo dibuja crm/cuenta); IaAviso.tsx: EtiquetaIA y "Cómo usamos la IA"
     PaletaBusqueda.tsx          Búsqueda global Ctrl/Cmd+K (F5): diálogo combobox + listbox, foco atrapado
-    BajaCliente.tsx             BajaModal + useReactivar: baja lógica de empresas y contactos
+    BajaCliente.tsx             Baja lógica y reactivación de empresas y contactos, sin UI (la dibuja crm/cuenta/BajaDialog)
     ClienteCampos.tsx           CampoResponsable (solo lectura sin clientes.asignar) y CampoOrigen
-    cliente.tsx                 EstadoPill, Dato, Seccion, AvisoEstado, listas de oportunidades y ventas
+    cliente.tsx                 Dato, Seccion (legacy: detalle de oportunidad y presupuesto)
     form.tsx                    <Campo>, <CampoTextarea>, <CampoSelect>, <CampoMoney>,
                                 <CampoGrupo>, <FormBanner>, <FormActions>
   lib/

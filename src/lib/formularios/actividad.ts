@@ -6,7 +6,7 @@ import type { Tables } from "@/lib/supabase/types";
 
 /**
  * Lógica de "Registrar actividad": estado, validación y alta. Sin UI: la usan `components/ActividadForm.tsx` (legacy:
- * contactos y oportunidades) y el drawer de CRM 2.0 (`components/crm/cuenta/ActividadDrawer.tsx`).
+ * oportunidades) y el drawer de CRM 2.0 (`components/crm/cuenta/ActividadDrawer.tsx`).
  *
  * Una actividad es algo que YA pasó con un cliente (llamada, visita, reclamo…), no una tarea. El usuario lo completa la
  * base (trigger `bitacora_defaults`): acá no se manda. No se edita ni se borra después (es un registro).

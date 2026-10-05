@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { tabValida, vecinoSel } from "./seleccion.ts";
+import { filaTrasAccion, tabValida, vecinoSel } from "./seleccion.ts";
 
 /** ↓↓↓ con la tecla apretada: cada paso parte de lo que dejó el anterior (el foco sigue a la selección optimista). */
 function recorrer(ids: readonly string[], actual: string | null, foco: string | null, pasos: readonly ("next" | "prev")[]) {
@@ -51,4 +51,12 @@ test("tabValida: la pedida si existe; si no, la primera", () => {
   assert.equal(tabValida(undefined, tabs), "resumen");
   assert.equal(tabValida("ventas", tabs), "resumen");
   assert.equal(tabValida(["actividad"], tabs), "resumen");
+});
+
+test("filaTrasAccion: la misma si queda; si sale, la siguiente, la anterior o ninguna", () => {
+  assert.equal(filaTrasAccion(ids, "b", false), "b");
+  assert.equal(filaTrasAccion(ids, "b", true), "c");
+  assert.equal(filaTrasAccion(ids, "c", true), "b");
+  assert.equal(filaTrasAccion(["a"], "a", true), null);
+  assert.equal(filaTrasAccion(ids, "fuera", true), null);
 });

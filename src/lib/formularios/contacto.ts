@@ -6,9 +6,9 @@ import { EMAIL_RE, estaDeBaja, mensajeErrorGuardado } from "@/lib/clientes";
 import type { Tables } from "@/lib/supabase/types";
 
 /**
- * Lógica del alta/edición de un contacto: estado, validación, payload y guardado. Sin UI: la usan el formulario legacy
- * (`(legacy)/contactos/ContactoForm.tsx`) y el drawer de CRM 2.0 (`components/crm/cuenta/ContactoDrawer.tsx`). Cada uno
- * dibuja los campos con sus primitivos y pasa su toast (`notificar`).
+ * Lógica del alta/edición de un contacto: estado, validación, payload y guardado. Sin UI: la usa el drawer de CRM 2.0
+ * (`components/crm/cuenta/ContactoDrawer.tsx`: lista y ficha de contactos, ficha de empresa), que dibuja los campos y pasa
+ * su toast (`notificar`). El formulario legacy se retiró al migrar Contactos (Lote A).
  */
 type Contacto = Tables<"contactos">;
 export type EmpresaOpcion = { id: string; nombre: string; estado: string };
