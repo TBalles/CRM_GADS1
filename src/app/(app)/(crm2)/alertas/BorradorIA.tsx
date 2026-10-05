@@ -1,11 +1,15 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Copy, Loader2, Mail, MessageCircle, RefreshCw, RotateCcw, Sparkles } from "lucide-react";
-import Drawer from "@/components/Drawer";
-import { ComoUsamosIA, EtiquetaIA } from "@/components/IaAviso";
-import { Button, TONOS, Textarea, cn } from "@/components/ui/UIComponents";
-import { useToast } from "@/components/ui/Toast";
+import { Copy, Mail, MessageCircle, RefreshCw, RotateCcw, Sparkles } from "lucide-react";
+import { ComoUsamosIA } from "@/components/IaAviso";
+import { Button } from "@/components/crm/Button";
+import { ConfirmDialog } from "@/components/crm/Dialog";
+import { Drawer } from "@/components/crm/Drawer";
+import { InlineBanner, Skeleton } from "@/components/crm/Feedback";
+import { Field, Textarea } from "@/components/crm/Field";
+import { useCrmToast } from "@/components/crm/Toast";
+import { TYPE, cn } from "@/components/crm/cx";
 import { MAX_MENSAJE_BORRADOR, MENSAJES_IA } from "@/lib/ia/config";
 import type { Tables } from "@/lib/supabase/types";
 import { redactarAvisoRecambio, type ResultadoBorrador } from "@/app/(app)/ia/actions";
@@ -98,8 +102,9 @@ export function BorradorIA({
   onEnviado: () => void;
 }) {
   const { estado: s } = ia;
-  const { showToast } = useToast();
+  const { showToast } = useCrmToast();
   const [enviando, setEnviando] = useState(false);
+  const [confirmarRegenerar, setConfirmarRegenerar] = useState(false);
   const a = s.alerta;
   const vacio = !s.texto.trim();
   const anuncio = s.cargando
@@ -120,9 +125,9 @@ export function BorradorIA({
   }
 
   function regenerar() {
-    // El borrador editado a mano se perdería: se pregunta antes.
-    if (s.editado && !window.confirm("Vas a reemplazar lo que editaste por un borrador nuevo. ¿Seguimos?")) return;
-    void ia.regenerar();
+    // El borrador editado a mano se perdería: se pregunta antes (antes era el `confirm` del navegador; mismo texto).
+    if (s.editado) setConfirmarRegenerar(true);
+    else void ia.regenerar();
   }
 
   async function enviar(canal: "email" | "whatsapp") {
@@ -160,91 +165,96 @@ export function BorradorIA({
       showToast(res.error, "error");
       return;
     }
-    showToast(canal === "email" ? "Abrimos tu cliente de correo con el mensaje y dejamos registrado el aviso." : "Abrimos WhatsApp con el mensaje y dejamos registrado el aviso.", "success");
+    showToast(
+      canal === "email" ? "Abrimos tu cliente de correo con el mensaje y dejamos registrado el aviso." : "Abrimos WhatsApp con el mensaje y dejamos registrado el aviso.",
+      "success",
+    );
     ia.cerrar();
     onEnviado();
   }
 
   return (
-    <Drawer
-      open={s.open}
-      onClose={ia.cerrar}
-      title="Aviso de recambio con IA"
-      subtitle={a ? `${a.producto_nombre ?? "Equipo"} · ${a.empresa_nombre ?? "Cliente"}` : undefined}
-      icon={Sparkles}
-    >
-      {/* Región viva persistente: un cambio de su texto se anuncia; una que aparece ya con el texto, no siempre. */}
-      <div role="status" aria-live="polite" className="sr-only">
-        {anuncio}
-      </div>
-      {s.cargando ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-sm text-muted-foreground">
-          <Loader2 aria-hidden="true" className="h-6 w-6 animate-spin text-brand" />
-          Redactando el borrador…
+    <>
+      <Drawer
+        open={s.open}
+        onClose={ia.cerrar}
+        title="Aviso de recambio con IA"
+        description={a ? `${a.producto_nombre ?? "Equipo"} · ${a.empresa_nombre ?? "Cliente"}` : undefined}
+        busy={enviando}
+        footer={
+          s.cargando ? undefined : (
+            <>
+              <Button icon={Mail} disabled={enviando || vacio} onClick={() => enviar("email")} className="max-sm:h-9">
+                Abrir en mail
+              </Button>
+              <Button variant="primary" icon={MessageCircle} disabled={enviando || vacio} onClick={() => enviar("whatsapp")} className="max-sm:h-9">
+                Abrir en WhatsApp
+              </Button>
+            </>
+          )
+        }
+      >
+        {/* Región viva persistente: un cambio de su texto se anuncia; una que aparece ya con el texto, no siempre. */}
+        <div role="status" aria-live="polite" className="sr-only">
+          {anuncio}
         </div>
-      ) : (
-        <div className="flex flex-1 flex-col gap-4">
-          {s.aviso && (
-            <p role="alert" className={cn("rounded-md p-3 text-sm", TONOS.ambar)}>
-              <strong className="font-semibold">No pudimos usar la IA.</strong> {s.aviso} Te dejamos la plantilla de siempre: revisala y
-              mandala igual.
-            </p>
-          )}
-
-          {s.origen === "ia" ? (
-            <EtiquetaIA>Borrador generado con IA — revisalo antes de enviar</EtiquetaIA>
-          ) : (
-            <p className="text-xs font-semibold text-muted-foreground">Plantilla de siempre — revisala antes de enviar</p>
-          )}
-
-          <div>
-            <label htmlFor="borrador-ia" className="mb-1 block text-xs font-medium text-muted-foreground">
-              Mensaje (podés editarlo)
-            </label>
-            <Textarea
-              id="borrador-ia"
-              rows={11}
-              maxLength={MAX_MENSAJE_BORRADOR}
-              value={s.texto}
-              aria-describedby="borrador-ia-cuenta"
-              onChange={(e) => ia.editar(e.target.value)}
-              className="resize-y"
-            />
-            <p id="borrador-ia-cuenta" className="mt-1 text-right text-[11px] tabular-nums text-muted-foreground">
-              {s.texto.length}/{MAX_MENSAJE_BORRADOR}
-            </p>
+        {s.cargando ? (
+          // La forma del borrador que viene (etiqueta y cuadro de texto), con esqueletos en vez de un spinner.
+          <div aria-busy="true" className="flex flex-col gap-3">
+            <p className={cn(TYPE.meta, "text-(--crm-text-2)")}>Redactando el borrador…</p>
+            <Skeleton className="w-56" />
+            <Skeleton className="h-60 w-full" />
           </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {s.aviso && (
+              <InlineBanner tone="warning" role="alert" title="No pudimos usar la IA.">
+                {s.aviso} Te dejamos la plantilla de siempre: revisala y mandala igual.
+              </InlineBanner>
+            )}
 
-          <ComoUsamosIA />
+            {s.origen === "ia" ? (
+              <p className={cn(TYPE.meta, "inline-flex items-center gap-1.5 font-medium text-(--crm-accent-text)")}>
+                <Sparkles aria-hidden="true" strokeWidth={1.75} className="size-3.5" />
+                Borrador generado con IA — revisalo antes de enviar
+              </p>
+            ) : (
+              <p className={cn(TYPE.meta, "font-medium text-(--crm-text-2)")}>Plantilla de siempre — revisala antes de enviar</p>
+            )}
 
-          <div className="mt-auto flex flex-col gap-2 border-t pt-4">
+            <Field id="borrador-ia" label="Mensaje (podés editarlo)" help={`${s.texto.length}/${MAX_MENSAJE_BORRADOR}`}>
+              {(p) => <Textarea {...p} rows={11} maxLength={MAX_MENSAJE_BORRADOR} value={s.texto} onChange={(e) => ia.editar(e.target.value)} />}
+            </Field>
+
             <div className="flex flex-wrap gap-2">
               {s.origen === "ia" && (
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={ia.plantilla}>
-                  <RotateCcw aria-hidden="true" className="h-3.5 w-3.5" /> Volver a la plantilla
+                <Button size="sm" icon={RotateCcw} onClick={ia.plantilla}>
+                  Volver a la plantilla
                 </Button>
               )}
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={regenerar}>
-                <RefreshCw aria-hidden="true" className="h-3.5 w-3.5" /> {s.origen === "ia" ? "Regenerar con IA" : "Probar con IA de nuevo"}
+              <Button size="sm" icon={RefreshCw} onClick={regenerar}>
+                {s.origen === "ia" ? "Regenerar con IA" : "Probar con IA de nuevo"}
               </Button>
-              <Button variant="outline" size="sm" className="gap-1.5" disabled={vacio} onClick={copiar}>
-                <Copy aria-hidden="true" className="h-3.5 w-3.5" /> Copiar
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button className="flex-1 gap-1.5" disabled={enviando || vacio} onClick={() => enviar("whatsapp")}>
-                <MessageCircle aria-hidden="true" className="h-4 w-4" /> Abrir en WhatsApp
-              </Button>
-              <Button variant="outline" className="flex-1 gap-1.5" disabled={enviando || vacio} onClick={() => enviar("email")}>
-                <Mail aria-hidden="true" className="h-4 w-4" /> Abrir en mail
+              <Button size="sm" icon={Copy} disabled={vacio} onClick={copiar}>
+                Copiar
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">
+
+            <p className={cn(TYPE.meta, "text-(--crm-text-2)")}>
               Se abre tu WhatsApp o tu correo con este texto y queda registrado el aviso. La IA no envía nada.
             </p>
+            <ComoUsamosIA />
           </div>
-        </div>
-      )}
-    </Drawer>
+        )}
+      </Drawer>
+      <ConfirmDialog
+        open={confirmarRegenerar}
+        onClose={() => setConfirmarRegenerar(false)}
+        onConfirm={() => void ia.regenerar()}
+        title="Regenerar el borrador"
+        description="Vas a reemplazar lo que editaste por un borrador nuevo. ¿Seguimos?"
+        confirmText="Regenerar"
+      />
+    </>
   );
 }

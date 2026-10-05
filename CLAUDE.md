@@ -198,7 +198,6 @@ src/
     admin/                    Panel del superadmin (alta/suspensión de clientes), fuera del CRM
     (app)/                    Grupo de rutas protegidas (layout valida sesión)
       layout.tsx               AppShell + guards: superadmin va a /admin; baja o suspensión = "Sin acceso"
-      usuarios/                Usuarios y roles del cliente (permiso usuarios.gestionar); actions.ts
       sin-permisos/            Destino cuando el rol no tiene ninguna sección
       */loading.tsx            Loader de marca por módulo
       error.tsx                Aviso con "Reintentar" si la base no responde (las lecturas ya no se tragan el error)
@@ -227,16 +226,23 @@ src/
       buscar/actions.ts          Server Action `buscarGlobal` de la búsqueda Ctrl+K (F5): con la sesión, la RLS manda
       (crm2)/productos/          CRM 2.0 (Lote A): catálogo con vida útil (sin ficha ni vista previa)
         page.tsx / ProductosList.tsx / ProductoForm.tsx   Lista densa + drawer de alta/edición (CRM 2.0)
-      ventas/                    Historial de compras (cabecera + ítems)
-        page.tsx / VentasList.tsx / VentaForm.tsx
+      (crm2)/ventas/             CRM 2.0 (Lote B): historial de entregas con filas desplegables (el detalle de productos)
+        page.tsx / VentasList.tsx Server: UNA página + ítems de esa página; Client: PageBar, toolbar (q, cliente, desde/hasta por URL), DataTable
+        VentaForm.tsx             Drawer "Nueva venta" (640) con la grilla compacta de productos (DatePicker, MoneyInput)
+        logica.ts(+.check)        Pura: ítems por venta, total, entrega que sigue a la fecha, validación de líneas
       ia/actions.ts              Server Actions de la IA (F7): redactarAvisoRecambio y resumirCuenta; solo redactan, con la sesión de la persona
-      alertas/                   Recambios vencidos o por vencer
+      (crm2)/alertas/            CRM 2.0 (Lote B): recambios vencidos o por vencer, tabla densa con acciones a la vista
         page.tsx                 Lee la vista alertas_vida_util (+ datos del recambio en 1 clic si la 0011 está)
-        AlertasView.tsx          Client: KPIs, filtros, "Crear oportunidad de recambio", envío por mail/WhatsApp
+        AlertasView.tsx          Client: contadores en la PageBar, filtro (segmentado) y búsqueda en el cliente, "Crear oportunidad de recambio", mail/WhatsApp
         actions.ts               Server Actions: envío por SMTP/Gmail (o mailto) + registro
-        BorradorIA.tsx           Client (F7): panel del aviso con IA (useBorradorIA + Drawer), plantilla como respaldo
+        BorradorIA.tsx           Client (F7): drawer CRM del aviso con IA (useBorradorIA), plantilla como respaldo
         plantillas.ts            Mensajes prearmados — funciones puras
-        plantillas.check.ts      Self-check: node --test "src/app/(app)/(legacy)/alertas/plantillas.check.ts"
+        plantillas.check.ts      Self-check: node --test "src/app/(app)/(crm2)/alertas/plantillas.check.ts"
+        logica.ts(+.check)        Pura: contadores, filtro + búsqueda, texto del vencimiento
+      (crm2)/usuarios/           CRM 2.0 (Lote B): usuarios y roles (permiso usuarios.gestionar), tabs por URL (?tab=roles)
+        page.tsx / UsuariosView.tsx   Lista de usuarios (filtros por URL) + roles (tabla y matriz de permisos); invitar / cambiar rol en drawers
+        RolForm.tsx / actions.ts  Drawer de rol (permisos con dependencias) y Server Actions (clave de servicio)
+        logica.ts(+.check)        Pura: estado del usuario, grupos de permisos, tildado con dependencias, validación del rol
       oportunidades/             Tablero (kanban con drag & drop) y lista en una sola página, y el detalle
         page.tsx                 Server Component: fetch de oportunidades + catálogos
         datos.ts                 cargarOpciones(): etapas, clientes, productos, perfiles, orígenes, motivos
@@ -273,21 +279,21 @@ src/
     ConfirmModal.tsx            Alert dialog centrado (lo usa el logout)
     CierreModal.tsx             Cambiar etapa / Marcar ganada / Marcar perdida / Reabrir / Cambiar resultado, por `cambiar_etapa`
     oportunidades.tsx           EtapaBadge, EstadoOportunidadPill, TipoOportunidadBadge (server-safe)
-    RelojRecambio.tsx           La barra entrega-vencimiento (alertas y parque instalado)
     ParqueInstalado.tsx         Parque instalado de una empresa, agrupado por urgencia (server-safe)
     AvisoMigracion.tsx          Aviso para administradores: "Se activa al aplicar la migración 0011"
     crm/                        CRM 2.0 (design-system/crm-2/MASTER.md §10): primitivos, shell y composiciones. Del Lote A:
       Lista.tsx                 useSeleccionUrl (master-detail por `?sel=`), useFocoFilas, ListFooter, PanelVistaPrevia
       seleccion.ts(+.check)     Lógica pura: ↑/↓ (vecinoSel), tab válida, fila que recibe el foco tras una acción
       PreviewPanel.tsx / Skeletons.tsx / MoneyInput.tsx   Vista previa, cargas (lista y ficha), monto con máscara
-      Toolbar.tsx               SearchField, ToggleChip y "Más filtros" (MasFiltros: los filtros secundarios con poco ancho)
+      Toolbar.tsx               SearchField / SearchInput, FechaFiltro, ToggleChip y "Más filtros" (MasFiltros: los filtros secundarios con poco ancho)
+      FilaCompleta.tsx          Fila que ocupa las columnas VISIBLES (vacíos de toda lista y el detalle de Ventas)
       cuenta/SeccionesCuenta.tsx  Secciones de ficha 360 y vista previa compartidas por empresa y contacto
     Drawer.tsx                   Panel lateral derecho para los formularios de alta/edición
     RowActions.tsx               Menú "⋮" portaled que usan las filas de cada lista
     ThemeToggle.tsx              Toggle de modo oscuro (localStorage + prefers-color-scheme)
     ActividadForm.tsx           Alta de actividad legacy (detalle de oportunidad)
     ActividadesTimeline.tsx     Línea de tiempo de actividades, la más reciente arriba
-    ResumenIA.tsx               useResumenIA: estado de "Resumir con IA" (F7; lo dibuja crm/cuenta); IaAviso.tsx: EtiquetaIA y "Cómo usamos la IA"
+    ResumenIA.tsx               useResumenIA: estado de "Resumir con IA" (F7; lo dibuja crm/cuenta); IaAviso.tsx: "Cómo usamos la IA"
     PaletaBusqueda.tsx          Búsqueda global Ctrl/Cmd+K (F5): diálogo combobox + listbox, foco atrapado
     BajaCliente.tsx             Baja lógica y reactivación de empresas y contactos, sin UI (la dibuja crm/cuenta/BajaDialog)
     ClienteCampos.tsx           CampoResponsable (solo lectura sin clientes.asignar) y CampoOrigen

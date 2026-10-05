@@ -1,26 +1,11 @@
-import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
  * Piezas de transparencia de la IA asistida (F7). Server-safe: sin estado ni hooks.
  *
- * `EtiquetaIA` va en TODO lugar donde aparece texto de la IA. `ComoUsamosIA` es el aviso corto de qué se
- * manda y qué no, junto a los botones. El texto de acá y el de docs/ia.md tienen que decir lo mismo.
+ * `ComoUsamosIA` es el aviso corto de qué se manda y qué no, junto a los botones. (La etiqueta "Generado con IA" la
+ * dibuja cada pantalla de CRM 2.0 con sus tokens: Alertas y la historia de la cuenta.) El texto de acá y el de docs/ia.md tienen que decir lo mismo.
  */
-
-export function EtiquetaIA({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <p
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-md border border-brand/30 bg-brand/10 px-2 py-1 text-xs font-semibold text-brand",
-        className,
-      )}
-    >
-      <Sparkles aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
-      {children}
-    </p>
-  );
-}
 
 export function ComoUsamosIA({ className }: { className?: string }) {
   return (

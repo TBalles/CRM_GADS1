@@ -10,21 +10,29 @@ import { TYPE, UI_ROOT, cn } from "./cx";
 
 /**
  * Lista: barra de página con el h1 real, toolbar, la grilla con sus cabeceras reales (`head`: los `Th` de la lista) y
- * filas de esqueleto, y la banda de pie. `chips`: anchos de los filtros de la toolbar.
+ * filas de esqueleto, y la banda de pie. `chips`: anchos de los filtros de la toolbar. `toolbar` reemplaza esa fila
+ * cuando la pantalla la arma distinto (Alertas: el segmentado primero y la búsqueda a la derecha); `tabs`, anchos de
+ * las tabs entre la barra y la toolbar (Usuarios); `footer={false}` si la pantalla no pagina.
  */
 export function ListSkeleton({
   title,
   label,
   columns,
   head,
-  chips,
+  chips = [],
+  toolbar,
+  tabs,
+  footer = true,
   action = true,
 }: {
   title: string;
   label: `Cargando${string}`;
   columns: number;
   head: React.ReactNode;
-  chips: string[];
+  chips?: string[];
+  toolbar?: React.ReactNode;
+  tabs?: string[];
+  footer?: boolean;
   /** La acción primaria de la barra ("Nueva…"): solo si el rol la tiene, para que no salte el layout al llegar. */
   action?: boolean;
 }) {
@@ -37,11 +45,22 @@ export function ListSkeleton({
         </div>
         {action && <Skeleton className="h-8 w-36" />}
       </div>
+      {tabs && (
+        <div className="flex h-10 shrink-0 items-center gap-4 border-b border-(--crm-border)">
+          {tabs.map((w, i) => (
+            <Skeleton key={i} className={w} />
+          ))}
+        </div>
+      )}
       <div className="flex min-h-10 items-center gap-2 py-1.5">
-        <Skeleton className="h-7 w-64" />
-        {chips.map((w, i) => (
-          <Skeleton key={i} className={cn("h-7", w)} />
-        ))}
+        {toolbar ?? (
+          <>
+            <Skeleton className="h-7 w-64" />
+            {chips.map((w, i) => (
+              <Skeleton key={i} className={cn("h-7", w)} />
+            ))}
+          </>
+        )}
       </div>
       <DataTable label={title} busy className="min-h-0">
         <THead>{head}</THead>
@@ -49,7 +68,7 @@ export function ListSkeleton({
           <TableSkeleton rows={10} columns={columns} label={label} />
         </TBody>
       </DataTable>
-      <div className="-mx-4 mt-auto h-10 shrink-0 border-t border-(--crm-border) bg-(--crm-panel) xl:-mx-6" />
+      {footer && <div className="-mx-4 mt-auto h-10 shrink-0 border-t border-(--crm-border) bg-(--crm-panel) xl:-mx-6" />}
     </div>
   );
 }

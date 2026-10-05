@@ -8,7 +8,8 @@ import { TYPE, cn } from "./cx";
 
 /**
  * Barra de una pantalla de lista: 48 de alto, h1 20/600, contador secundario y las acciones a la derecha
- * (una sola primaria). Sin descripción ni bajada.
+ * (una sola primaria). Sin descripción ni bajada. Si el contador no entra al lado del título (celular, un contador
+ * largo como el de Alertas), baja a un segundo renglón en vez de recortar el h1: la barra crece, nada se pierde.
  */
 export function PageBar({
   title,
@@ -23,11 +24,11 @@ export function PageBar({
   className?: string;
 }) {
   return (
-    <div className={cn("flex h-12 shrink-0 items-center justify-between gap-4", className)}>
-      <div className="flex min-w-0 items-baseline gap-3">
-        <h1 className={cn(TYPE.title, "truncate")}>{title}</h1>
+    <div className={cn("flex min-h-12 shrink-0 items-center justify-between gap-4 py-1.5", className)}>
+      <div className="flex min-w-0 flex-wrap items-baseline gap-x-3">
+        <h1 className={cn(TYPE.title, "max-w-full truncate")}>{title}</h1>
         {/* Sans: es una frase ("8 empresas · 10 contactos"); el mono queda para cifras sueltas e identificadores. */}
-        {count !== undefined && <p className={cn(TYPE.ui, "shrink-0 tabular-nums text-(--crm-text-2)")}>{count}</p>}
+        {count !== undefined && <p className={cn(TYPE.ui, "min-w-0 tabular-nums text-(--crm-text-2)")}>{count}</p>}
       </div>
       {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
     </div>

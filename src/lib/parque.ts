@@ -15,7 +15,7 @@
  * Sin vida útil (o sin fecha de entrega) no hay seguimiento: el ítem cuenta como
  * equipo instalado pero no tiene reloj.
  *
- * La ventana de 60 días está repetida en la vista SQL, en `RelojRecambio` y acá
+ * La ventana de 60 días está repetida en la vista SQL, en los textos de /alertas y acá
  * (ver docs/reglas-de-negocio.md, nota de la sección 1).
  *
  * Imports relativos con extensión: se prueba con `node --test` (parque.check.ts).

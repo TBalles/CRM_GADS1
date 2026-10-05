@@ -5,6 +5,7 @@ import { esErrorDeEsquema } from "@/lib/esquema";
 import { iaDisponible } from "@/lib/ia/config";
 import { abiertasPorItem, etapaInicialId, origenRecambioId } from "@/lib/recambio";
 import { AvisoMigracion } from "@/components/AvisoMigracion";
+import { InlineBanner } from "@/components/crm/Feedback";
 import AlertasView, { type DatosRecambio } from "./AlertasView";
 
 export const metadata = { title: "Alertas" };
@@ -62,24 +63,22 @@ export default async function AlertasPage() {
 
   // Solo viaja el booleano al cliente, nunca las credenciales.
   return (
-    <div className="flex w-full flex-col gap-4">
-      <AvisoMigracion
-        visible={faltaMigracion && sesion.puede("configuracion.gestionar")}
-        que="el botón «Crear oportunidad de recambio»"
-      />
-      {errorRecambio && (
-        <p role="status" className="rounded-lg border border-border bg-secondary p-3 text-sm text-muted-foreground">
-          <strong className="font-semibold text-foreground">No pudimos consultar las oportunidades de recambio.</strong> Por ahora el
-          botón «Crear oportunidad de recambio» no está disponible; recargá la página para reintentar.
-        </p>
-      )}
-      <AlertasView
-        alertas={alertas ?? []}
-        enviaDesdeServidor={getRemitente() !== null}
-        puedeEnviar={sesion.puede("alertas.enviar")}
-        recambio={recambio}
-        iaDisponible={iaDisponible()}
-      />
-    </div>
+    <AlertasView
+      alertas={alertas ?? []}
+      enviaDesdeServidor={getRemitente() !== null}
+      puedeEnviar={sesion.puede("alertas.enviar")}
+      recambio={recambio}
+      iaDisponible={iaDisponible()}
+      avisos={
+        <>
+          <AvisoMigracion visible={faltaMigracion && sesion.puede("configuracion.gestionar")} que="el botón «Crear oportunidad de recambio»" />
+          {errorRecambio && (
+            <InlineBanner tone="warning" title="No pudimos consultar las oportunidades de recambio.">
+              Por ahora el botón «Crear oportunidad de recambio» no está disponible; recargá la página para reintentar.
+            </InlineBanner>
+          )}
+        </>
+      }
+    />
   );
 }

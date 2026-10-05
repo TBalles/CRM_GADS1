@@ -345,6 +345,7 @@ no tienen `"use client"` ni hooks y se pueden usar desde server components (el l
 tooltips de recorte desde su página servidor); los demás son de cliente. §10.11 es el shell (Etapa 2, construido); §10.12 es la
 especificación de las composiciones, §10.13 cómo quedaron construidas en Empresas (Etapa 3) y §10.14 Contactos y Productos
 (Lote A), con lo que se generalizó para todas las listas. §10.15 es el selector de fecha (`DatePicker` / `DateTimePicker`).
+§10.16–§10.18 son Ventas, Alertas y Usuarios (Lote B).
 
 ### 10.1 Button, IconButton, FilterChip — `Button.tsx` (server-safe)
 - Variantes: `primary` (acento sólido; **una por pantalla**), `secondary` (panel + hairline; la normal), `ghost` (sin caja; acciones
@@ -398,7 +399,7 @@ especificación de las composiciones, §10.13 cómo quedaron construidas en Empr
 - `SegmentedControl`: 2–4 vistas (Tablero/Lista); `radiogroup`, 28/32 de alto; el elegido en panel con texto y borde de acento.
 
 ### 10.8 Drawer, Dialog, ConfirmDialog, Toast — `Drawer.tsx`, `Dialog.tsx`, `Toast.tsx`
-- `Drawer`: derecha, **480** (`md`) / **640** (`lg`, empresa), ancho completo en mobile. Header fijo de 56 (título 16/600,
+- `Drawer`: derecha, **480** (`md`) / **640** (`lg`: empresa y venta, que lleva la grilla de productos), ancho completo en mobile. Header fijo de 56 (título 16/600,
   descripción 12, "Cerrar panel"), cuerpo con scroll, footer fijo (secundario + primario a la derecha; en mobile apilados, el
   primario arriba). `onSubmit` envuelve cuerpo y footer en `<form>`. `busy` impide cerrar a mitad de una mutación.
   Secciones con `FormSection` (título 13/600 + divisor), **sin cajas**.
@@ -424,7 +425,8 @@ especificación de las composiciones, §10.13 cómo quedaron construidas en Empr
   libro mayor; el contenedor scrollea: darle alto). Columnas: `Th width` fijo para estado/cifras/acciones; `hideBelow` esconde por
   ancho del **contenedor**. Celdas: `CellText` (una línea, tooltip si se recorta, `href` para el nombre), `CellNumber` (mono, a la
   derecha, `unit` en gris antes o después), `CellStatus`, `CellPerson`, `CellDate` (`<time>`), `CellActions` (rápidas al
-  hover/foco de la fila, `⋮` siempre visible; todo visible en táctil). Estados: `TableSkeleton`, `TableMessage` +
+  hover/foco de la fila, `⋮` siempre visible; todo visible en táctil). Estados: `TableSkeleton`, `TableMessage` (una
+  `FilaCompleta`, ver §10.16) +
   `EmptyState`/`InlineBanner`, `busy` → `aria-busy`. Seleccionada: `Tr selected`. **Sin** orden por columna, selector de
   columnas ni densidad.
 - `Pagination`: contrato idéntico a `Paginacion` (ver §13.2), con `ir` para transiciones y `pageSizeControl` para "Filas por
@@ -742,9 +744,140 @@ la semana de lunes). Un solo componente; `DateTimePicker` = `DatePicker time`. C
 - **Movimiento y color:** solo `crm-pop` del flotante (apagado con `prefers-reduced-motion`) y transiciones de color de 120 ms.
   Sin tokens nuevos: todos los pares que usa ya están medidos en §3.3 (on-accent/accent, text-2/panel, border-strong/panel,
   foco). Sin gradientes, sin sombras extra, sin `title=`.
-- **Dónde se usa:** `ActividadDrawer` ("Cuándo", `#ocurrido_en`, `time`, `max` = ahora; misma validación y payload). Las
-  pantallas legacy (`CierreModal`, `ActividadForm`, `FiltrosUrl`, `VentaForm`, `OportunidadForm`) siguen con el nativo hasta su
+- **Dónde se usa:** `ActividadDrawer` ("Cuándo", `#ocurrido_en`, `time`, `max` = ahora; misma validación y payload); desde el
+  Lote B, "Nueva venta" (`#fecha` y la entrega de cada línea, `#item-<key>-entrega`) y los filtros "Desde" / "Hasta" de Ventas
+  (`FechaFiltro`, §10.16). Las
+  pantallas legacy (`CierreModal`, `ActividadForm`, `FiltrosUrl`, `OportunidadForm`) siguen con el nativo hasta su
   slice. Muestras en `/crm-lab` (sección "Fechas").
+
+### 10.16 Ventas (Lote B, construido)
+`src/app/(app)/(crm2)/ventas/`, movida con `git mv` desde `(legacy)`. Mismos datos, filtros, parámetros, permisos, validaciones y
+mutaciones; la lógica pura en `ventas/logica.ts` (+ `.check`: agrupar ítems, total, "N ítems", la entrega que sigue a la fecha,
+la validación de líneas y la fecha local).
+
+- **PageBar:** "Ventas" + el contador de siempre ("6 ventas registradas" / "N de T ventas" / "N ventas" si el conteo falló) +
+  "Nueva venta" (`ventas.editar`; en celular, ícono con el mismo nombre).
+- **Toolbar:** textbox **"Buscar venta"** (`?q=`, 288 de ancho desde 52rem: el placeholder "Cliente, comprobante o producto…" entra
+  entero), `Select` denso **"Filtrar por cliente"** (`?empresa=`; con buscador si hay más de 8 clientes, como el legacy; es un
+  campo y no un chip-menú porque el menú no busca por texto) y **"Desde" / "Hasta"** (`?desde=` / `?hasta=`, `FechaFiltro`:
+  `DatePicker` denso con label a la izquierda; encadenados con `min`/`max`; solo escriben una fecha confirmada) + "Limpiar
+  filtros". Con menos de 52rem los tres van en **"Más filtros"** (cliente como `FiltroOpciones`, las fechas como `FechaFiltro`
+  apilado). Sin ventas (y el conteo bien), la toolbar no está: queda el vacío "Todavía no hay entregas asentadas" + "Nueva venta".
+- **Fila desplegable** (el acordeón de antes): una por venta, una abierta a la vez. El disparador es un `<button>` en la celda del
+  cliente (chevron + nombre; `aria-expanded`, `aria-controls` → la fila del detalle mientras existe; nombre accesible
+  "<cliente>, <fecha>" para distinguir dos ventas al mismo club); Enter y Espacio son los nativos del botón y el clic en el resto
+  de la fila también alterna. El detalle es una fila `FilaCompleta` en `--crm-canvas`, alineada bajo el nombre del cliente (148 px
+  desde 30rem): una línea por producto (ícono de equipamiento gris, nombre, "Entrega dd/mm/aaaa", "Vida útil N meses", "×N" mono,
+  subtotal `$` gris + mono) y las notas. Con menos de 45rem de contenedor la entrega, la vida útil y la cantidad pasan a un
+  segundo renglón (sin recortar).
+- **Columnas que colapsan** (sin perder datos):
+
+  | Contenedor | Columnas | Línea de apoyo bajo el cliente |
+  |---|---|---|
+  | ≥ 60rem | Fecha · Cliente · Comprobante · Productos (hasta 3 íconos + "N ítems") · Total | — (fila de 36) |
+  | 45–60rem (1024) | Fecha · Cliente · Productos · Total | comprobante |
+  | 30–45rem (768) | Fecha · Cliente · Total | comprobante · N ítems |
+  | < 30rem (celular) | Cliente · Total (+ "N ítems" debajo del total, como el legacy) | fecha · comprobante (cada dato entero; puede bajar de renglón) |
+
+  Sin comprobante, entre 45 y 60rem la línea de apoyo no existe. El total por venta es el de siempre (precio × cantidad); no hay
+  totales de página (el legacy no los tenía). Paginación por la banda de pie de §10.13 ("Mostrando N–M de T").
+- **`FilaCompleta`** (`components/crm/FilaCompleta.tsx`, cliente; la usan el detalle de Ventas y `TableMessage` en TODAS las
+  listas): una fila que ocupa todas las columnas **visibles**. Las columnas escondidas (`hideBelow` → `display: none`) no cuentan
+  en la grilla de la tabla, así que un `colSpan` fijo creaba columnas fantasma: en el celular, con el vacío "sin resultados" o
+  una venta abierta, la primera columna quedaba de ~50 px y la regla de la cabecera, cortada (pasaba también en Empresas,
+  Contactos y Productos desde el Lote A). El servidor dibuja el total; en el navegador se ajusta a las cabeceras visibles antes
+  de pintar y con cada cambio de ancho (`ResizeObserver`). `DataTable.tsx` sigue sin `"use client"`: importa esa pieza.
+- **"Nueva venta"** (`VentaForm`, `FormDrawer` de **640**): los campos, ids, validaciones, payload, textos y avisos de siempre
+  (`#empresa_id` con buscador, `#contacto_id` filtrado por el cliente, `#fecha` con `CampoFecha`, `#comprobante`, `#notas`,
+  "Registrar venta"; "Venta registrada. Arrancó el reloj del recambio." solo si algún producto sigue vida útil; el rollback de la
+  cabecera si fallan los ítems). "Productos entregados" es una sección sin caja (título 13/600 + el total corriendo a la derecha en
+  mono) con una **grilla compacta**: desde 34rem de ancho (el drawer de 640), una fila por producto — Producto (`Select` con
+  buscador) · Cantidad · Precio unit. (`MoneyInput`) · Entrega (`DatePicker`) · quitar — con las cabeceras una sola vez
+  (decorativas) y el label de cada campo solo para lectores de pantalla ("Producto N", "Cantidad"…); más angosto (celular), cada
+  línea apilada con sus labels a la vista. Ids `item-<key>-producto|cantidad|precio|entrega`, "Quitar producto N", "Agregar
+  producto" y la explicación de la entrega ("…arranca el reloj de la vida útil…") como siempre. Elegir un producto sugiere su
+  precio de lista (`maskFromNumber`) si el precio está vacío; cambiar `#fecha` mueve las entregas que todavía la seguían.
+- **Estados:** carga con `ListSkeleton` (sus `Th` reales; "Nueva venta" solo con el permiso), "sin resultados" con eco
+  ("Ninguna venta con «…»" + "Limpiar filtros"), error por `(crm2)/error.tsx`. Sin `⋮`: una venta nunca se editó ni se borró
+  desde la lista.
+
+### 10.17 Alertas de recambio (Lote B, construido)
+`src/app/(app)/(crm2)/alertas/` (`git mv`). La vista `alertas_vida_util` sigue trayendo todas, sin paginar ni filtrar en el servidor;
+filtro y búsqueda siguen en el cliente y en el estado de la pantalla (como el legacy: no hay parámetros de URL nuevos). Lógica pura
+en `alertas/logica.ts` (+ `.check`: contadores, filtro + búsqueda, texto del vencimiento). `plantillas.ts` (+ `.check`) y
+`actions.ts` no cambiaron.
+
+- **PageBar:** h1 **"Alertas de recambio"** (el de siempre) + "3 vencidas · 2 por vencer (60 días) · 2 sin avisar": los tres
+  números del marcador (y su "60 días") van en el contador; el marcador (`.cesped` + cifras de 48 px) se fue. Sin primaria.
+- **Toolbar:** el filtro de siempre como `SegmentedControl` "Filtrar alertas" (Todas / Vencidas / Por vencer / Sin avisar;
+  `radiogroup`, flechas mueven y eligen) + textbox **"Buscar alerta"** ("Buscar cliente o producto…", `SearchInput`, el campo
+  del `SearchField` sin URL) a la derecha. Con IA disponible, debajo, la línea "Si querés, «Redactar con IA»…" + "Cómo usamos la
+  IA". Los avisos de la página (migración 0011 sin aplicar, error al leer las oportunidades) van bajo la barra (`InlineBanner`).
+- **Tabla** (dos renglones por fila; sin cards): Equipo (ícono de equipamiento gris + nombre 500 + "×N" mono si es más de 1;
+  debajo "Entregado el … · vida útil N meses") · Cliente (empresa; contacto debajo) · Vencimiento ("Vencido hace N d" como
+  `StatusBadge` danger —es lo que tiene que saltar—, "Vence en N d" / "Vence hoy" como punto de atención; debajo "vence
+  dd/mm/aaaa") · Aviso ("Por mail" / "Por WhatsApp" con punto de éxito + "el dd/mm/aaaa", o "Sin avisar") · acciones.
+  **El reloj del recambio va en texto** (entrega, vida útil y vencimiento), sin la barra: la barra decorativa no entraba en una
+  fila densa sin romper la alineación y su información ya estaba escrita (`RelojRecambio.tsx` se borró: no quedaba quién lo usara).
+- **Columnas que colapsan:** < 60rem el aviso, < 45rem el cliente y < 30rem el vencimiento (con su fecha) pasan a la línea de
+  apoyo del equipo, **un dato por renglón** (no se recortan). En el celular la columna de acciones se esconde y las acciones van
+  debajo del equipo, a todo el ancho.
+- **Acciones a la vista** (como antes; no en un `⋮`, el legacy no tenía menú): "Crear oportunidad de recambio" (botón `sm` con
+  texto visible "Crear oportunidad" y el nombre accesible completo; con poco ancho, solo ícono) o el link "Oportunidad abierta →";
+  "Redactar con IA" (solo con clave de IA y `alertas.enviar`), "Mail" y "WhatsApp" como `IconButton` con tooltip. Mismos
+  handlers, permisos, avisos y la regla de UNA llamada a la IA a la vez. El overlay de "Enviando…" / "Creando la oportunidad…"
+  se cambió por: la fila ocupada deshabilitada, la tabla `aria-busy` y una región `role="status"` con el mismo texto.
+- **"Aviso de recambio con IA"** (`BorradorIA`, `Drawer` de 480): misma lógica (`useBorradorIA` sin cambios), descripción
+  "<equipo> · <cliente>", la etiqueta "Borrador generado con IA — revisalo antes de enviar" en `--crm-accent-text` (como la de la
+  historia de la cuenta), el aviso de falla como `InlineBanner` de atención con `role="alert"` (como antes; `InlineBanner` acepta
+  `role`), `#borrador-ia` con el contador como ayuda, "Volver a la plantilla" / "Regenerar con IA" / "Copiar" y, en el pie, "Abrir
+  en mail" + "Abrir en WhatsApp" (primaria). Cargando: esqueleto del texto, sin spinner. La confirmación de "Regenerar" sobre un
+  borrador editado es un `ConfirmDialog` ("Regenerar el borrador", mismo texto que el `confirm()` del navegador de antes).
+- **Vacíos:** sin alertas, "Todo el equipamiento está al día" (sin toolbar); con filtro, "Ningún recambio con ese filtro" dentro de
+  la tabla. Carga: `ListSkeleton` con el segmentado a la izquierda y la búsqueda a la derecha (`toolbar`), sin banda de pie.
+
+### 10.18 Usuarios y roles (Lote B, construido)
+`src/app/(app)/(crm2)/usuarios/` (`git mv`). `actions.ts` sin cambios; lógica pura en `usuarios/logica.ts` (+ `.check`: estado de un
+usuario, grupos de permisos, el tildado con dependencias y la validación del rol; `lib/permisos.ts` está congelado, por eso no va ahí).
+
+- **PageBar:** "Usuarios" + "4 usuarios con acceso" / "N de T usuarios" (con filtros en la tab Usuarios) + la primaria de la tab:
+  "Invitar usuario" o "Nuevo rol". **Tabs por URL** (`Tabs` compartidas; `?tab=roles`, Usuarios sin parámetro, como antes; un
+  valor inválido cae en Usuarios porque el servidor ya lo validaba): tablist "Secciones" (el nombre de siempre), Enter/Espacio
+  navegan con historial y el panel queda `busy` hasta que llega el otro.
+- **Tab Usuarios:** textbox **"Buscar usuario"** (`?q=`), chips `Menu` **"Filtrar por rol"** (`?rol=`) y **"Filtrar por estado"**
+  (`?estado=activo|pendiente|baja`), "Limpiar filtros"; con menos de 52rem los dos van en "Más filtros". DataTable: Usuario
+  (Avatar + nombre 500 + "(vos)") · Email · Rol (escudo si es Administrador; "Sin rol") · Estado (punto + "Activo" /
+  "Invitación pendiente" / "De baja") · `⋮` **"Acciones de <nombre o email>"**: "Cambiar rol", "Reenviar invitación" (solo
+  pendiente), "Dar de baja" (danger, `ConfirmDialog` "Dar de baja al usuario", mismo texto) / "Reactivar". El propio usuario no
+  tiene `⋮`. Un usuario de baja lleva el nombre en `--crm-text-2` (la opacidad de antes bajaba el contraste).
+
+  | Contenedor | Columnas | Línea de apoyo bajo el nombre |
+  |---|---|---|
+  | ≥ 60rem | Usuario · Email · Rol · Estado · `⋮` | — |
+  | 45–60rem | Usuario · Rol · Estado · `⋮` | email |
+  | 30–45rem | Usuario · Rol · `⋮` | estado (solo si no es "Activo") · email |
+  | < 30rem | Usuario · `⋮` | estado (si no es "Activo") · rol · email (sin recortar) |
+
+  Después de "Dar de baja" / "Reactivar" el foco sigue la regla de §10.14 (`useFocoFilas`; sin link de nombre, va al `⋮`).
+- **Tab Roles:** sin cards. (1) Tabla **"Roles"**: Rol · Descripción (debajo del nombre con poco ancho) · Usuarios (mono, a la
+  derecha) · `⋮` **"Acciones del rol <nombre>"** (Editar, Borrar → `ConfirmDialog` "Borrar rol") o, en el Administrador, la
+  etiqueta "Fijo" con candado (y "el rol Administrador no se puede modificar" para lectores de pantalla y en tooltip). (2) Matriz
+  **"Permisos por rol"**: un permiso por fila (`th scope="row"`), agrupados con filas de grupo como el Parque instalado, un rol por
+  columna, "✓" (con "Sí" para lectores de pantalla) o "—" ("No"). Los mismos datos que las pastillas de color de antes, leíbles
+  de un vistazo y comparables entre roles. En el celular la matriz scrollea de costado DENTRO de su contenedor con la columna
+  del permiso fija (`sticky`, 160 px).
+- **Drawers** (`FormDrawer`, 480): "Invitar usuario" (`#inv-nombre`, `#inv-email`, `#inv-rol` con Vendedor por defecto, la ayuda
+  de siempre, "Enviar invitación"), "Cambiar rol" (descripción = el usuario; `#cambiar-rol`; debajo, la descripción del rol y sus
+  permisos como `Tag`) y `RolForm` "Nuevo rol" / "Editar rol" (`#rol-nombre`, `#rol-descripcion` de 200, fieldset "Qué puede
+  hacer" con los grupos como títulos 12/500 y cada permiso como `Checkbox` con su descripción; "Crear rol" / "Guardar rol"; las
+  tres validaciones de siempre). El link de activación sin SMTP es un `InlineBanner` info con el link (mono, de solo lectura),
+  "Copiar" y "Cerrar".
+- **Carga:** `ListSkeleton` con las tabs (`tabs`) y la grilla de usuarios.
+
+**Generalizado en el Lote B** (lo usan o pueden usar todas las pantallas): `Toolbar.tsx` → `SearchInput` (el campo sin URL;
+`SearchField` ahora lo usa) y `FechaFiltro` (filtro de fecha por URL); `FilaCompleta` (arriba); `PageBar`: si el contador no entra
+al lado del h1, baja a un segundo renglón (`min-h-12` + wrap) en vez de recortar el título (pasaba con Alertas en el celular);
+`ListSkeleton`: `toolbar` (fila propia), `tabs` y `footer`; `InlineBanner`: `role`.
 
 ---
 

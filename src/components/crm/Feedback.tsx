@@ -48,16 +48,19 @@ const BANNER: Record<BannerTone, { icon: React.ElementType; clase: string }> = {
 /**
  * Aviso en línea, pegado a lo que afecta (arriba de una tabla, de un formulario). Tinte al 8 %, ícono y título en el
  * color del tono, texto en el de texto. `danger` es `role="alert"` (se anuncia al aparecer); el resto `role="status"`.
- * Una sola acción (p. ej. "Reintentar").
+ * Una sola acción (p. ej. "Reintentar"). `role` pisa ese rol cuando el aviso de otro tono tiene que anunciarse ya
+ * (la IA que falla en el borrador de Alertas: aviso de atención, `role="alert"` como siempre).
  */
 export function InlineBanner({
   tone = "info",
   title,
   children,
   action,
+  role,
   className,
 }: {
   tone?: BannerTone;
+  role?: "alert" | "status";
   title?: React.ReactNode;
   children?: React.ReactNode;
   action?: React.ReactNode;
@@ -66,7 +69,7 @@ export function InlineBanner({
   const { icon: Icon, clase } = BANNER[tone];
   return (
     <div
-      role={tone === "danger" ? "alert" : "status"}
+      role={role ?? (tone === "danger" ? "alert" : "status")}
       className={cn(
         "flex items-start gap-2 rounded-(--crm-radius) border border-[color:color-mix(in_srgb,var(--tono)_25%,transparent)] px-3 py-2",
         clase,

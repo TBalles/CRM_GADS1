@@ -1,5 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
+import { FilaCompleta } from "./FilaCompleta";
 import { LoadingStatus, Skeleton } from "./Feedback";
 import { Avatar, StatusDot, type Tone } from "./Status";
 import { Tooltip } from "./Tooltip";
@@ -264,13 +265,14 @@ export function TableSkeleton({ rows = 8, columns, label }: { rows?: number; col
   );
 }
 
-/** Una fila que ocupa todo el ancho: vacío (EmptyState compact) o error (InlineBanner con "Reintentar"). */
+/**
+ * Una fila que ocupa todo el ancho: vacío (EmptyState compact) o error (InlineBanner con "Reintentar"). `colSpan` es el
+ * total de columnas; en el navegador se ajusta a las visibles (`FilaCompleta`, la única pieza de cliente de la grilla).
+ */
 export function TableMessage({ colSpan, children }: { colSpan: number; children: React.ReactNode }) {
   return (
-    <tr>
-      <td colSpan={colSpan} className="p-0">
-        {children}
-      </td>
-    </tr>
+    <FilaCompleta colSpan={colSpan} className="p-0">
+      {children}
+    </FilaCompleta>
   );
 }

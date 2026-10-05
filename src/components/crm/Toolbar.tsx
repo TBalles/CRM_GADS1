@@ -7,6 +7,7 @@ import { FilterChip } from "./Button";
 import { Checkbox, Field } from "./Field";
 import { Popover } from "./Popover";
 import { Select, type SelectOption } from "./Select";
+import { DatePicker } from "./DatePicker";
 import { FIELD, FOCUS, cn } from "./cx";
 
 /**
@@ -41,6 +42,46 @@ export function SearchField({
   className?: string;
 }) {
   const { texto, setTexto, enviarYa } = useBusquedaUrl(filtros, param);
+  return (
+    <SearchInput
+      label={label}
+      placeholder={placeholder}
+      value={texto}
+      onChange={setTexto}
+      onEnter={() => enviarYa(texto)}
+      onClear={() => {
+        setTexto("");
+        enviarYa("");
+      }}
+      pending={filtros.pending}
+      className={className}
+    />
+  );
+}
+
+/**
+ * El campo de búsqueda de la toolbar, sin URL: lo usan `SearchField` (atado a `?q=`) y las listas que filtran en el
+ * cliente (Alertas, que nunca tuvo la búsqueda en la URL). `type="text"`: rol `textbox`.
+ */
+export function SearchInput({
+  label,
+  placeholder,
+  value,
+  onChange,
+  onEnter,
+  onClear,
+  pending = false,
+  className,
+}: {
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (v: string) => void;
+  onEnter?: () => void;
+  onClear: () => void;
+  pending?: boolean;
+  className?: string;
+}) {
   const input = React.useRef<HTMLInputElement>(null);
   return (
     <div className={cn("relative w-full sm:w-64", className)}>
@@ -51,26 +92,25 @@ export function SearchField({
         type="text"
         aria-label={label}
         placeholder={placeholder}
-        value={texto}
+        value={value}
         maxLength={100}
         autoComplete="off"
         enterKeyHint="search"
-        onChange={(e) => setTexto(e.target.value)}
+        onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             e.preventDefault();
-            enviarYa(texto);
+            onEnter?.();
           }
         }}
         className={cn(FIELD, "h-9 pl-8 pr-8 sm:h-7")}
       />
-      {texto && (
+      {value && (
         <button
           type="button"
           aria-label="Borrar la búsqueda"
           onClick={() => {
-            setTexto("");
-            enviarYa("");
+            onClear();
             // El botón desaparece al vaciar el campo: sin esto el foco caería al <body>.
             input.current?.focus();
           }}
@@ -79,7 +119,7 @@ export function SearchField({
             FOCUS,
           )}
         >
-          {filtros.pending ? (
+          {pending ? (
             <Loader2 aria-hidden="true" strokeWidth={1.75} className="size-3.5 animate-spin motion-reduce:animate-none" />
           ) : (
             <X aria-hidden="true" strokeWidth={1.75} className="size-3.5" />
@@ -87,6 +127,54 @@ export function SearchField({
         </button>
       )}
     </div>
+  );
+}
+
+/**
+ * Filtro de fecha atado a la URL (`?desde=` / `?hasta=`, "YYYY-MM-DD"): el `DatePicker` de CRM 2.0 (28 en la toolbar,
+ * 32 dentro de "Más filtros"). Escribe en la URL solo un valor confirmado y válido (el picker nunca entrega una fecha a
+ * medio tipear) o lo borra con "". `min`/`max` encadenan desde/hasta como el `FiltroFecha` legacy.
+ * - `inline` (toolbar): label visible a la izquierda ("Desde [__/__/____]").
+ * - apilado (dentro de "Más filtros"): label arriba, como los demás campos del popover.
+ */
+export function FechaFiltro({
+  filtros,
+  param,
+  label,
+  min,
+  max,
+  inline = false,
+}: {
+  filtros: FiltrosUrl;
+  param: string;
+  label: string;
+  min?: string;
+  max?: string;
+  inline?: boolean;
+}) {
+  const id = React.useId();
+  const valor = filtros.valor(param);
+  const picker = (
+    <DatePicker
+      id={id}
+      dense={inline}
+      value={valor}
+      min={min || undefined}
+      max={max || undefined}
+      onChange={(v) => {
+        if (v !== valor) filtros.aplicar({ [param]: v || null });
+      }}
+      className={inline ? "w-36" : undefined}
+    />
+  );
+  if (!inline) return <Field id={id} label={label}>{() => picker}</Field>;
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <label htmlFor={id} className="text-[13px] text-(--crm-text-2)">
+        {label}
+      </label>
+      {picker}
+    </span>
   );
 }
 
