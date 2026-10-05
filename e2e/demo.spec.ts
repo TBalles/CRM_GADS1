@@ -103,7 +103,7 @@ test.describe.serial("demo: empresa, contacto, oportunidad y embudo", () => {
     await expect(modal).toBeHidden();
 
     // El historial del detalle trae los cambios de etapa con sus observaciones.
-    await expect(page.getByRole("status").filter({ hasText: "Perdida" })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: /Perdida el \d{2}\/\d{2}\/\d{4}/ })).toBeVisible();
     await expect(page.getByText(`${corrida} paso 1`)).toBeVisible();
     await expect(page.getByText(`${corrida} paso 2`)).toBeVisible();
     await expect(page.getByText(`${corrida} cierre`)).toBeVisible();

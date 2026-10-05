@@ -26,6 +26,22 @@ export function estadoOportunidadInfo(valor: string) {
   return ESTADOS_OPORTUNIDAD.find((e) => e.value === valor) ?? { value: valor, label: valor, tono: "gris" as const };
 }
 
+/**
+ * Si el nombre de la etapa repite lo que ya dice el estado: una etapa de cierre que se llama como el estado ("Perdida"
+ * con estado perdida). Ahí la pantalla muestra solo el estado; si la etapa de cierre tiene otro nombre ("Entregado"),
+ * se muestran los dos (dicen cosas distintas). Sin distinguir mayúsculas ni acentos.
+ */
+export function etapaRepiteEstado(etapa: { nombre: string; tipo: string } | null | undefined, estado: string): boolean {
+  if (!etapa || etapa.tipo === "abierta" || estado === "abierta") return false;
+  const plano = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
+  return plano(etapa.nombre) === plano(estadoOportunidadInfo(estado).label);
+}
+
+/** El título del aviso de una oportunidad cerrada: "Perdida el 04/10/2026." (E2E lo busca así) o "Ganada." sin fecha. */
+export function textoCerrada(estado: string, fechaCierre: string | null): string {
+  return `${estadoOportunidadInfo(estado).label}${fechaCierre ? ` el ${formatFecha(fechaCierre)}` : ""}.`;
+}
+
 export function etiquetaTipoOportunidad(valor: string): string {
   return valor === "licitacion" ? "Licitación" : "Directa";
 }

@@ -54,12 +54,12 @@ export function ListSkeleton({
       )}
       <div className="flex min-h-10 items-center gap-2 py-1.5">
         {toolbar ?? (
-            <>
-                <Skeleton className="h-7 w-64" />
-                {chips.map((w, i) => (
-                  <Skeleton key={i} className={cn("h-7", w)} />
-                ))}
-            </>
+          <>
+            <Skeleton className="h-7 w-64" />
+            {chips.map((w, i) => (
+              <Skeleton key={i} className={cn("h-7", w)} />
+            ))}
+          </>
         )}
       </div>
       <DataTable label={title} busy className="min-h-0">

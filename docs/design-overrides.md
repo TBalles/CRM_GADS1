@@ -137,10 +137,11 @@ qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
   (`docs/DESIGN.md` §3.11, regla de oro #7).
 - **Tuco & Nito**: las etapas son **datos**, no un enum de código: nombre y color (hex) vienen
   de la tabla `etapas` y el usuario puede cambiarlos por seed/SQL. No hay mapa canónico
-  estado→color que `StatusBadge` pueda usar. `EtapaBadge`
-  (`src/components/oportunidades.tsx`, usado por el tablero, la lista y el detalle) construye el pill desde el hex de la
-  fila: superficie `color-mix(in srgb, {color} 14%, transparent)`, borde al 38%, texto en
-  `foreground` y un dot saturado con el color puro.
+  estado→color que `StatusBadge` pueda usar. `EtapaBadge` (legacy, `src/components/oportunidades.tsx`, ya borrado)
+  construía el pill desde el hex de la fila: superficie `color-mix(in srgb, {color} 14%, transparent)`, borde al 38%,
+  texto en `foreground` y un dot saturado con el color puro. Desde CRM 2.0 (Lote C) la etapa se muestra con `StatusDot
+  color` / `StatusBadge color` de `src/components/crm/Status.tsx` (cuadradito con el color de la organización + texto en
+  el color de texto; design-system/crm-2/MASTER.md §3.2).
 - **Por qué**: los colores sembrados son tonos 400 (`#4ade80`, `#fbbf24`, `#60a5fa`). La
   versión anterior les ponía `text-white` encima — eso daba ~1.8:1 de contraste, ilegible, y
   fallaba en ambos temas. La superficie tintada + dot conserva la identidad de color de la

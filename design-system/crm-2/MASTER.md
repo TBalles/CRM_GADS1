@@ -944,29 +944,45 @@ parámetros, permisos, validaciones, mutaciones, avisos y nombres. Lógica pura 
   "Filas por página". Pie de la tabla (`tfoot` fijo abajo, regla fuerte arriba): "Valor de la página" con la suma bajo la columna
   Valor y "N con valor · M sin responsable" (la fila de totales legacy; "En esta página" ya lo dice "Mostrando…").
 
-  | Contenedor | Columnas | Línea de apoyo bajo el título |
-  |---|---|---|
-  | ≥ 72rem (1440) | Oportunidad (+ "Licitación") · Empresa / Contacto · Producto (ícono de equipamiento + nombre) · Etapa · Estado · Responsable · Valor · `⋮` | "Cerrada el dd/mm/aaaa · motivo" (solo cerradas) |
-  | 60–72rem (1280) | todas menos Producto | producto · cierre |
-  | 45–60rem (1024) | Oportunidad · Empresa / Contacto · Etapa · Estado · Valor · `⋮` | producto · responsable · cierre |
-  | 30–45rem (768) | Oportunidad · Etapa · Valor · `⋮` | estado · cliente · producto · responsable · cierre |
-  | < 30rem (celular) | Oportunidad · `⋮` | valor · estado · etapa · cliente · producto · responsable · cierre (cada dato entero; baja de renglón) |
+  Anchos (revisión del Lote C, medidos para que no se recorte nada a 1903/1440/1280): Etapa 200 (entra "Relevamiento de
+  cancha"), Responsable 200 (Avatar + "Demo · Administrador"), Estado 96, Valor 120, `⋮` 40; Empresa / Contacto 184 (280 desde
+  90rem) y Producto 272 (solo desde 90rem). Lo que igual pueda recortarse (un nombre de empresa o de producto muy largo) muestra
+  el texto entero en un tooltip (`Tooltip onlyWhenTruncated`, que ahora mira también el `.truncate` de adentro de `StatusDot` y
+  `CellPerson`).
+
+  | Contenedor | Columnas | Línea 1 bajo el título | Línea 2 |
+  |---|---|---|---|
+  | ≥ 90rem (1903) | Oportunidad (+ "Licitación") · Empresa / Contacto · Producto (ícono + nombre) · Etapa · Estado · Responsable · Valor · `⋮` | — | "Cerrada el dd/mm/aaaa · motivo" (solo cerradas) |
+  | 72–90rem (1440) | todas menos Producto | — | producto · cierre |
+  | 45–72rem (1280, 1024) | Oportunidad · Empresa / Contacto · Etapa · Estado · Valor · `⋮` | — | producto · responsable · cierre |
+  | 30–45rem (768) | Oportunidad · Etapa · Valor · `⋮` | estado · cliente | producto · responsable · cierre |
+  | < 30rem (celular) | Oportunidad · `⋮` | valor · estado (solo cerradas: una abierta lo dice su etapa) · etapa · cliente | producto · cierre |
+
+  **Estado y etapa no se repiten:** si la etapa es de cierre y se llama como el estado ("Perdida" / perdida;
+  `etapaRepiteEstado`, sin distinguir mayúsculas ni acentos), la columna Etapa muestra "—" (el nombre queda para lectores de
+  pantalla) y la línea del celular muestra solo el estado; una etapa de cierre con otro nombre ("Entregado") se muestra igual.
+  **En el celular el responsable queda en la ficha** (la fila apunta a dos renglones: valor · etapa · cliente / producto · cierre).
 
   Vacíos: sin ninguna oportunidad, "El embudo está vacío" + "Nueva oportunidad" (sin toolbar); con filtros, "Ninguna oportunidad con
   «…»" / "…con esos filtros" + "Limpiar filtros" dentro de la tabla; sin etapas abiertas, el aviso de Configuración.
 - **Ficha** (`[id]`, `CrumbLabel` = título): `DetailHeader` con h1 = título exacto y meta estado (punto + palabra) · etapa
   (cuadradito) · "Licitación" · valor mono ("Sin valor estimado") · responsable · empresa (link, "De otra cartera" o "Sin acceso").
-  Acciones: **una primaria** "Registrar actividad" (`bitacora.escribir` + `bitacora.ver`; sin ellos, "Editar") + **"Presupuesto"**
+  La etapa no se muestra si repite el estado (`etapaRepiteEstado`). Acciones: **una primaria** "Registrar actividad" (`bitacora.escribir` + `bitacora.ver`; sin ellos, "Editar") + **"Presupuesto"**
   (link secundario con ícono, a la vista: responde a "no encuentro dónde crear presupuestos") + `⋮` "Más acciones" (Reasignar con
   `oportunidades.asignar`, Editar). Debajo, en la franja, el **recorrido por el embudo** (`ol` "Recorrido por el embudo", solo
   lectura, `pasosEmbudo`): una etapa abierta por segmento con barra de 2 px arriba (hecha: fuerte; actual: acento +
-  `aria-current="step"`; pendiente: hairline) y al final "Cierre" (cerrada: la etapa de cierre con punto de éxito o pérdida y las
-  abiertas sin marcar: el recorrido real está en el historial). Los nombres bajan de renglón, no se recortan. Al lado, el grupo
-  **"Acciones de etapa"**: Cambiar etapa, Marcar ganada, Marcar perdida / Reabrir, Cambiar resultado (botones `sm` a la vista como
-  antes; E2E aprieta "Marcar perdida"). Con menos de 1280 el recorrido ocupa su renglón (scrollea de costado con la etapa actual a la
-  vista) y las acciones van debajo. El recorrido no es clickeable: abriría el diálogo con una etapa ya elegida, una conducta nueva.
-- **Cuerpo** (sin cajas, como la ficha de empresa): a la izquierda, el aviso de cerrada (`InlineBanner` éxito/peligro con
-  `role="status"`: "Perdida el dd/mm/aaaa." + motivo y quién puede reabrir), el de la apertura de una licitación, **Licitación**
+  `aria-current="step"`; pendiente: hairline) y al final "Cierre" (cerrada: la etapa de cierre con punto Y barra en
+  `--crm-success` / `--crm-danger`, y las abiertas sin marcar: el recorrido real está en el historial). Los nombres bajan de
+  renglón, no se recortan. Al lado, el grupo **"Acciones de etapa"** con jerarquía: "Cambiar etapa" (o "Reabrir") secundario con
+  borde, un divisor hairline y "Marcar ganada" / "Marcar perdida" (o "Cambiar resultado") como botones ghost callados con el ícono en
+  éxito / peligro (siguen siendo `<button>` con los nombres de siempre: E2E aprieta "Marcar perdida"). Con menos de 1280 el recorrido
+  ocupa su renglón: scrollea de costado con imán (`snap-x`), la etapa actual a la vista y el borde que tiene más etapas desvanecido
+  (máscara de 24–32 px, como las tabs); las acciones van debajo. El recorrido no es clickeable: abriría el diálogo con una etapa ya
+  elegida, una conducta nueva.
+- **Cuerpo** (sin cajas, como la ficha de empresa): a la izquierda, el aviso de cerrada — **neutro**: hairline sobre panel, punto de
+  éxito o pérdida + "Perdida el dd/mm/aaaa." (`textoCerrada`; E2E lo busca como `status` con esa fecha) en `--crm-text` 500, y
+  motivo + quién puede reabrir en secundario; perder una oportunidad no es un error, así que no va en una caja teñida (`role="status"`,
+  `tabIndex=-1`: recibe el foco tras cerrarla si no queda ninguna acción de etapa) —, el de la apertura de una licitación, **Licitación**
   (`SectionBar` + "Editar datos"/"Cargar datos" + `DefinitionList`), **Historial** (`SectionBar` con contador y "Registrar"; filas de
   libro mayor `FilaActividad` y `FilaHistoria` de `HistoriaCuenta`: actividades y cambios de etapa con "De X → Y" y la observación) y
   **Cambios después del cierre** (una fila por corrección: "Campo: antes → después"). A la derecha desde 1280 (debajo con menos), el
@@ -981,10 +997,17 @@ parámetros, permisos, validaciones, mutaciones, avisos y nombres. Lógica pura 
   oportunidad", mismos ids y payload; el tipo es un segmentado "Tipo" (Directa / Licitación municipal) y la licitación una
   `FormSection`. "Reasignar oportunidad" (`#responsable_id`, "Reasignar") y "Registrar actividad" (`ActividadDrawer`). Cada mutación
   de la ficha hace `router.refresh()`; si el botón que abrió el diálogo desaparece (cerrar, reabrir), el foco va a la primera acción
-  de etapa que quede.
-- **Carga:** el tablero en esqueleto (barra con el h1 real, el segmentado y la primaria solo con el permiso, toolbar y columnas con
-  tarjetas; `loading.tsx` no conoce `?vista=`, así que la lista también arranca con esa forma) y la ficha con `DetailSkeleton pasos`
-  (recorrido + acciones, historial y riel).
+  de etapa que quede o, sin ninguna (un rol sin `oportunidades.reabrir`), al aviso de cerrada.
+- **Carga:** barra con el h1 real, el segmentado y la primaria solo con el permiso, toolbar y un bloque **neutro** de renglones (ni
+  columnas ni tabla: `loading.tsx` no conoce `?vista=`, así un link a la lista no salta de columnas a tabla); la ficha con
+  `DetailSkeleton pasos` (recorrido + acciones, historial y riel); el editor de presupuesto (legacy) con un esqueleto neutro de
+  CRM 2.0 (`(legacy)/oportunidades/[id]/presupuesto/loading.tsx`, "Cargando…") en lugar del cargador de marca. Ojo: al entrar
+  desde la ficha (otro route group) Next muestra la PRIMERA carga del grupo nuevo, `(legacy)/loading.tsx`; por eso ese archivo
+  (ahora cliente) dibuja el esqueleto del presupuesto cuando la ruta es `/oportunidades/<id>/presupuesto` y el loader de marca
+  de siempre en el resto de las pantallas legacy.
+- **Tablero, revisión:** "En el tablero: N · $X" cuenta lo que SE VE (una tarjeta cerrada desde su `⋮` deja de contar al
+  instante, sin esperar el refresco) y la región "Columnas del embudo" entra en el orden de Tab solo cuando scrollea de costado
+  (se mide en el navegador con `ResizeObserver`).
 - **Se borró** (sin usuarios): `components/CierreModal.tsx` (ahora `CierreDialog`), `ActividadForm.tsx`, `ClienteCampos.tsx`,
   `components/oportunidades.tsx` y la fila legacy de `ActividadesTimeline.tsx` (queda `ICONO_POR_CODIGO`).
 

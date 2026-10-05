@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, ArrowRightLeft, CircleCheck, CircleX, FileClock, FileText, NotebookPen, Pencil, Plus, RotateCcw, UserCog } from "lucide-react";
@@ -24,9 +24,11 @@ import { formatMoney } from "@/lib/money";
 import {
   accionesDisponibles,
   describirCambios,
+  etapaRepiteEstado,
   lineaDeTiempo,
   mensajeErrorOportunidad,
   pasosEmbudo,
+  textoCerrada,
   tituloCambioEtapa,
   type ResolverId,
 } from "@/lib/oportunidades";
@@ -123,22 +125,38 @@ export default function OportunidadDetalle({
   const pasos = pasosEmbudo(etapas, oportunidad.etapa_id, oportunidad.estado);
 
   // Después de cerrar, reabrir o cambiar el resultado, el botón que abrió el diálogo deja de existir (cambian las
-  // acciones): el foco va a la primera acción de etapa que haya ahora, no al <body>.
+  // acciones): el foco va a la primera acción de etapa que haya ahora y, si no queda ninguna (un rol sin
+  // `oportunidades.reabrir` que acaba de cerrarla), al aviso de cerrada. Nunca al <body>.
   const accionesEtapa = useRef<HTMLDivElement>(null);
-  // En el celular el recorrido scrollea de costado: la etapa actual queda a la vista.
-  const recorrido = useRef<HTMLOListElement>(null);
-  useEffect(() => {
-    const ol = recorrido.current;
-    const actual = ol?.querySelector<HTMLElement>('[aria-current="step"]');
-    if (ol && actual && ol.scrollWidth > ol.clientWidth) ol.scrollLeft = actual.offsetLeft - ol.offsetLeft - 16;
-  }, [oportunidad.etapa_id]);
+  const avisoCerrada = useRef<HTMLDivElement>(null);
   const focoTrasCambio = useRef(false);
   useEffect(() => {
     if (!focoTrasCambio.current) return;
     focoTrasCambio.current = false;
     const activo = document.activeElement;
-    if (!activo || activo === document.body || !activo.isConnected) accionesEtapa.current?.querySelector<HTMLElement>("button")?.focus();
+    if (activo && activo !== document.body && activo.isConnected) return;
+    (accionesEtapa.current?.querySelector<HTMLElement>("button") ?? avisoCerrada.current)?.focus();
   }, [oportunidad.estado, oportunidad.etapa_id]);
+
+  // En el celular el recorrido scrollea de costado: la etapa actual queda a la vista y el borde que tiene más etapas se
+  // desvanece (como las tabs), así se ve que sigue.
+  const recorrido = useRef<HTMLOListElement>(null);
+  const [mas, setMas] = useState({ izq: false, der: false });
+  useEffect(() => {
+    const ol = recorrido.current;
+    if (!ol) return;
+    const actual = ol.querySelector<HTMLElement>('[aria-current="step"]');
+    if (actual && ol.scrollWidth > ol.clientWidth) ol.scrollLeft = actual.offsetLeft - ol.offsetLeft - 24;
+    const medir = () => setMas({ izq: ol.scrollLeft > 1, der: ol.scrollLeft + ol.clientWidth < ol.scrollWidth - 1 });
+    medir();
+    ol.addEventListener("scroll", medir, { passive: true });
+    const ro = new ResizeObserver(medir);
+    ro.observe(ol);
+    return () => {
+      ol.removeEventListener("scroll", medir);
+      ro.disconnect();
+    };
+  }, [oportunidad.etapa_id]);
 
   const resolver: ResolverId = (campo, id) => {
     switch (campo) {
@@ -207,10 +225,13 @@ export default function OportunidadDetalle({
             <span className="text-(--crm-text)">
               <EstadoOportunidad estado={oportunidad.estado} />
             </span>
-            <StatusDot color={etapa?.color}>
-              <span className="sr-only">Etapa: </span>
-              {etapa?.nombre ?? "—"}
-            </StatusDot>
+            {/* Una etapa de cierre que se llama como el estado ("Perdida") no se repite: lo dice el estado. */}
+            {!etapaRepiteEstado(etapa, oportunidad.estado) && (
+              <StatusDot color={etapa?.color}>
+                <span className="sr-only">Etapa: </span>
+                {etapa?.nombre ?? "—"}
+              </StatusDot>
+            )}
             {oportunidad.tipo === "licitacion" && <Tag>Licitación</Tag>}
             <span className={cn(TYPE.mono, oportunidad.monto ? "text-(--crm-text)" : undefined)}>
               <span className="sr-only">Valor estimado: </span>
@@ -248,7 +269,14 @@ export default function OportunidadDetalle({
             <ol
               ref={recorrido}
               aria-label="Recorrido por el embudo"
-              className="flex min-w-0 flex-1 basis-full gap-1 overflow-x-auto [scrollbar-width:none] xl:basis-0"
+              className={cn(
+                "flex min-w-0 flex-1 basis-full snap-x gap-1 overflow-x-auto scroll-px-6 [scrollbar-width:none] xl:basis-0",
+                mas.der && mas.izq
+                  ? "[mask-image:linear-gradient(to_right,transparent,black_24px,black_calc(100%-32px),transparent)]"
+                  : mas.der
+                    ? "[mask-image:linear-gradient(to_right,black_calc(100%-32px),transparent)]"
+                    : mas.izq && "[mask-image:linear-gradient(to_right,transparent,black_24px)]",
+              )}
             >
               {pasos.abiertas.map((p) => (
                 <Paso key={p.id} nombre={p.nombre} color={p.color} paso={p.paso} />
@@ -260,11 +288,27 @@ export default function OportunidadDetalle({
               />
             </ol>
             {modos.length > 0 && (
-              <div ref={accionesEtapa} role="group" aria-label="Acciones de etapa" className="flex flex-wrap items-center gap-2">
-                {modos.map((modo) => (
-                  <Button key={modo} size="sm" icon={ACCION_CAMBIO[modo].icon} onClick={() => cierre.abrir({ modo, oportunidad, licitacion: apertura })}>
-                    {ACCION_CAMBIO[modo].label}
-                  </Button>
+              // Jerarquía: mover (o reabrir) es la acción de etapa principal (secundaria con borde); cerrar como ganada o
+              // perdida (o cambiar el resultado) va callada, sin caja, después de un divisor, con el ícono en el color
+              // de lo que hace. Siguen siendo <button> con los nombres de siempre (E2E aprieta "Marcar perdida").
+              <div ref={accionesEtapa} role="group" aria-label="Acciones de etapa" className="flex flex-wrap items-center gap-1">
+                {modos.map((modo, i) => (
+                  <Fragment key={modo}>
+                    {i === 1 && <span aria-hidden="true" className="mx-1 h-5 w-px bg-(--crm-border)" />}
+                    <Button
+                      size="sm"
+                      variant={i === 0 ? "secondary" : "ghost"}
+                      icon={ACCION_CAMBIO[modo].icon}
+                      className={cn(
+                        i > 0 && "text-(--crm-text)",
+                        modo === "ganada" && "[&_svg]:text-(--crm-success)",
+                        modo === "perdida" && "[&_svg]:text-(--crm-danger)",
+                      )}
+                      onClick={() => cierre.abrir({ modo, oportunidad, licitacion: apertura })}
+                    >
+                      {ACCION_CAMBIO[modo].label}
+                    </Button>
+                  </Fragment>
                 ))}
               </div>
             )}
@@ -275,18 +319,28 @@ export default function OportunidadDetalle({
       <div className="grid min-w-0 flex-1 items-start gap-x-6 gap-y-5 px-4 py-4 xl:grid-cols-[minmax(0,1fr)_340px] xl:px-6">
         <div className="flex min-w-0 flex-col gap-5">
           {cerrada && (
-            <InlineBanner
-              tone={oportunidad.estado === "ganada" ? "success" : "danger"}
-              // Un aviso de estado, no un error: se anuncia con cortesía (E2E lo busca como `status`).
+            // Perder una oportunidad no es un error: aviso neutro (hairline, punto de éxito o pérdida + texto), no una caja
+            // teñida. `role="status"` (E2E lo busca así: "Perdida el dd/mm/aaaa"). Recibe el foco tras cerrarla si no
+            // queda ninguna acción de etapa.
+            <div
+              ref={avisoCerrada}
+              tabIndex={-1}
               role="status"
-              title={`${oportunidad.estado === "ganada" ? "Ganada" : "Perdida"}${oportunidad.fecha_cierre ? ` el ${formatFecha(oportunidad.fecha_cierre)}` : ""}.`}
+              className={cn("flex flex-col gap-0.5 rounded-(--crm-radius) border border-(--crm-border) bg-(--crm-panel) px-3 py-2", FOCUS)}
             >
-              {oportunidad.estado === "perdida" && oportunidad.motivo_perdida_id && (
-                <>Motivo: {motivoPorId.get(oportunidad.motivo_perdida_id) ?? "no disponible"}. </>
-              )}
-              Está cerrada: corregirla queda registrado en la auditoría
-              {puedeReabrir ? ", y podés reabrirla." : ". Reabrirla lo hace quien tiene ese permiso."}
-            </InlineBanner>
+              <p className="font-medium">
+                <StatusDot tone={oportunidad.estado === "ganada" ? "success" : "danger"}>{textoCerrada(oportunidad.estado, oportunidad.fecha_cierre)}</StatusDot>
+              </p>
+              <p className={cn(TYPE.ui, "text-(--crm-text-2)")}>
+                {oportunidad.estado === "perdida" && oportunidad.motivo_perdida_id && (
+                  <>
+                    <span className="text-(--crm-text)">Motivo: {motivoPorId.get(oportunidad.motivo_perdida_id) ?? "no disponible"}.</span>{" "}
+                  </>
+                )}
+                Está cerrada: corregirla queda registrado en la auditoría
+                {puedeReabrir ? ", y podés reabrirla." : ". Reabrirla lo hace quien tiene ese permiso."}
+              </p>
+            </div>
           )}
 
           {avisoApertura && licitacion && (
@@ -504,7 +558,16 @@ function Paso({
       aria-current={paso === "actual" ? "step" : undefined}
       className={cn(
         "flex min-w-24 flex-1 basis-0 flex-col gap-1 border-t-2 pt-1.5",
-        paso === "actual" ? "border-(--crm-accent)" : paso === "hecho" ? "border-(--crm-border-strong)" : "border-(--crm-border)",
+        "snap-start",
+        tono === "success"
+          ? "border-(--crm-success)"
+          : tono === "danger"
+            ? "border-(--crm-danger)"
+            : paso === "actual"
+              ? "border-(--crm-accent)"
+              : paso === "hecho"
+                ? "border-(--crm-border-strong)"
+                : "border-(--crm-border)",
       )}
     >
       {/* Sin recortar: un nombre largo baja de renglón (el recorrido comparte la fila con las acciones). */}

@@ -8,13 +8,17 @@ const ABRIR_MS = 250;
 const CERRAR_MS = 100;
 const PAD = 8;
 
+/** Texto recortado (`truncate`, una línea) o cortado de alto (`line-clamp`). */
+const recortado = (n: HTMLElement) => n.scrollWidth > n.clientWidth || n.scrollHeight > n.clientHeight;
+
 /**
  * Tooltip de CRM 2.0 (MASTER.md §10.4): texto corto que nombra o completa, nunca información que no esté en otro
  * lado. Se abre con hover (250 ms) y con foco; se cierra con Escape, al salir o al hacer scroll; se puede pasar el
  * mouse por encima sin que se cierre (WCAG 1.4.13). Va a `#crm-portal`, encima de todo (`--crm-z-tooltip`).
  *
  * El hijo tiene que ser UN elemento; recibe `aria-describedby` mientras el tooltip está visible.
- * `onlyWhenTruncated`: solo aparece si el hijo está recortado (celdas con `truncate`).
+ * `onlyWhenTruncated`: solo aparece si el hijo (o un `.truncate` adentro: el texto de un `StatusDot`, de `CellPerson`) está
+ *   recortado, de ancho o de alto (`line-clamp`).
  * `onlyWhenLabelHidden`: solo aparece si el texto visible del hijo (`[data-label]`) está escondido (`sr-only` o `hidden`
  *   por ancho): un botón que con poco lugar queda como ícono (Alertas, "Crear oportunidad").
  * `disabled`: no aparece (p. ej. el ítem del rail expandido, cuyo texto ya se ve). No cambia el markup.
@@ -54,7 +58,7 @@ export function Tooltip({
           if (disabled) return;
           const el = objetivo();
           if (!el) return;
-          if (onlyWhenTruncated && el.scrollWidth <= el.clientWidth && el.scrollHeight <= el.clientHeight) return;
+          if (onlyWhenTruncated && !recortado(el) && !Array.from(el.querySelectorAll<HTMLElement>(".truncate")).some(recortado)) return;
           if (onlyWhenLabelHidden && (el.querySelector<HTMLElement>("[data-label]")?.offsetWidth ?? 0) > 1) return;
         }
         setAbierto(abrir);

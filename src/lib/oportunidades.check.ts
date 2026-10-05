@@ -8,6 +8,8 @@ import test from "node:test";
 import {
   accionesDisponibles,
   COPY_CAMBIO,
+  textoCerrada,
+  etapaRepiteEstado,
   ETIQUETA_CAMBIO,
   etapaSugerida,
   pasosEmbudo,
@@ -272,4 +274,22 @@ test("stepper del embudo: hechas, actual y pendientes; cerrada no inventa el rec
   assert.deepEqual([perdida.cierre.nombre, perdida.cierre.paso], ["Perdida", "actual"]);
   // Una etapa que ya no existe no marca nada (ni rompe).
   assert.deepEqual(pasosEmbudo(etapas, "borrada", "abierta").abiertas.map((p) => p.paso), ["pendiente", "pendiente"]);
+});
+
+test("estado y etapa de cierre: se muestra uno solo cuando dicen lo mismo", () => {
+  assert.equal(etapaRepiteEstado({ nombre: "Perdida", tipo: "perdida" }, "perdida"), true);
+  assert.equal(etapaRepiteEstado({ nombre: " PÉRDIDA ", tipo: "perdida" }, "perdida"), true);
+  assert.equal(etapaRepiteEstado({ nombre: "perdida", tipo: "perdida" }, "perdida"), true);
+  assert.equal(etapaRepiteEstado({ nombre: "Ganada", tipo: "ganada" }, "ganada"), true);
+  // Una etapa de cierre con otro nombre dice algo más: se muestran las dos.
+  assert.equal(etapaRepiteEstado({ nombre: "Entregado", tipo: "ganada" }, "ganada"), false);
+  // Abierta nunca se esconde (la etapa ES el dato).
+  assert.equal(etapaRepiteEstado({ nombre: "Abierta", tipo: "abierta" }, "abierta"), false);
+  assert.equal(etapaRepiteEstado(undefined, "perdida"), false);
+});
+
+test("aviso de cerrada: estado y fecha como los busca E2E", () => {
+  assert.match(textoCerrada("perdida", "2026-10-04"), /^Perdida el \d{2}\/\d{2}\/\d{4}\.$/);
+  assert.equal(textoCerrada("perdida", "2026-10-04"), "Perdida el 04/10/2026.");
+  assert.equal(textoCerrada("ganada", null), "Ganada.");
 });

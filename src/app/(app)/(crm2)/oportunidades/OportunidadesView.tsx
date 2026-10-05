@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, FileText, LayoutGrid, List, Loader2, Pencil, Plus } from "lucide-react";
@@ -28,6 +28,7 @@ import { formatMoneyCompact } from "@/lib/money";
 import {
   accionesDisponibles,
   ESTADOS_OPORTUNIDAD,
+  etapaRepiteEstado,
   etapasAbiertas,
   mensajeErrorOportunidad,
   type OpcionContacto,
@@ -54,6 +55,13 @@ export type Vista = "tablero" | "lista";
 
 const SIN_RESPONSABLE = "sin";
 const COLUMNAS = 8;
+/** Columnas de ancho propio que cambian con el contenedor (los `Th` y sus `td` usan la misma clase de visibilidad). */
+const COL = {
+  empresa: "w-[184px] @[90rem]:w-[280px]",
+  producto: "hidden w-[272px] @[90rem]:table-cell",
+  etapa: "w-[200px]",
+  responsable: "hidden w-[200px] @[72rem]:table-cell",
+};
 /** "Limpiar filtros" conserva la vista y el tamaño de página (como el legacy). */
 const LIMPIAR_CONSERVA = ["vista", "pageSize"];
 const TIPOS = [
@@ -276,7 +284,20 @@ export default function OportunidadesView({
     return acciones;
   }
 
-  const totalVisible = items.reduce((acc, o) => acc + (Number(o.monto) || 0), 0);
+  // Lo que suma el tablero, de lo que SE VE: una tarjeta cerrada desde su ⋮ deja de contar al instante.
+  const totalVisible = visibles.reduce((acc, o) => acc + (Number(o.monto) || 0), 0);
+
+  // La región del tablero entra en el orden de Tab solo si scrollea de costado (si no, no hay nada que mover con el teclado).
+  const [desborda, setDesborda] = useState(false);
+  useEffect(() => {
+    const el = contenedor.current;
+    if (vista !== "tablero" || !el) return;
+    const medir = () => setDesborda(el.scrollWidth > el.clientWidth + 1);
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [vista, columnas.length]);
 
   function cambiarVista(next: string) {
     if (next === vista) return;
@@ -409,7 +430,7 @@ export default function OportunidadesView({
           {vista === "tablero" && columnas.length > 0 && (
             // Lo que suma el tablero (el encabezado "Embudo comercial" de antes): cantidad y valor de lo que se ve.
             <p className={cn(TYPE.table, "ml-auto whitespace-nowrap text-(--crm-text-2)")}>
-              En el tablero: <span className={cn(TYPE.mono, "text-(--crm-text)")}>{items.length}</span>
+              En el tablero: <span className={cn(TYPE.mono, "text-(--crm-text)")}>{visibles.length}</span>
               {" · "}
               <span className="text-(--crm-text)">
                 <MontoCompacto valor={totalVisible} />
@@ -447,7 +468,7 @@ export default function OportunidadesView({
             role="region"
             aria-label="Columnas del embudo"
             aria-busy={filtros.pending || undefined}
-            tabIndex={0}
+            tabIndex={desborda ? 0 : undefined}
             className={cn(
               // Una sola barra horizontal (la del tablero); cada columna scrollea solo de alto, dentro del área de trabajo.
               "-mx-4 flex min-h-0 flex-1 snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-3 sm:snap-none xl:-mx-6 xl:px-6",
@@ -545,21 +566,18 @@ export default function OportunidadesView({
             <DataTable label="Oportunidades" busy={filtros.pending} className="min-h-0">
               <THead>
                 <Th>Oportunidad</Th>
-                <Th width={168} hideBelow="md">
+                {/* Anchos (MASTER §10.19): Etapa y Responsable entran enteros; Empresa y Producto crecen desde 90rem. */}
+                <Th hideBelow="md" className={COL.empresa}>
                   Empresa / Contacto
                 </Th>
-                <Th width={152} className="hidden @[72rem]:table-cell">
-                  Producto
-                </Th>
-                <Th width={152} hideBelow="sm">
+                <Th className={COL.producto}>Producto</Th>
+                <Th hideBelow="sm" className={COL.etapa}>
                   Etapa
                 </Th>
                 <Th width={96} hideBelow="md">
                   Estado
                 </Th>
-                <Th width={144} hideBelow="lg">
-                  Responsable
-                </Th>
+                <Th className={COL.responsable}>Responsable</Th>
                 <Th width={120} align="right" hideBelow="sm">
                   Valor
                 </Th>
@@ -590,7 +608,7 @@ export default function OportunidadesView({
                       <Fila
                         key={o.id}
                         o={o}
-                        etapa={etapa ? { nombre: etapa.nombre, color: etapa.color } : null}
+                        etapa={etapa ? { nombre: etapa.nombre, color: etapa.color, tipo: etapa.tipo } : null}
                         motivo={o.motivo_perdida_id ? (motivoById.get(o.motivo_perdida_id) ?? null) : null}
                         menu={menuDe(o)}
                       />
@@ -710,11 +728,12 @@ function Fila({
   menu,
 }: {
   o: OportunidadRow;
-  etapa: { nombre: string; color: string | null } | null;
+  etapa: { nombre: string; color: string | null; tipo: string } | null;
   motivo: string | null;
   menu: React.ReactNode;
 }) {
   const cliente = nombreCliente(o);
+  const repite = etapaRepiteEstado(etapa, o.estado);
   const responsable = o.responsable?.nombre ?? null;
   const cierre = o.fecha_cierre ? `Cerrada el ${formatFecha(o.fecha_cierre)}${motivo ? ` · ${motivo}` : ""}` : null;
   return (
@@ -728,52 +747,88 @@ function Fila({
           </Tooltip>
           {o.tipo === "licitacion" && <Tag className="shrink-0">Licitación</Tag>}
         </div>
+        {/* Línea 1 (< 45rem): valor (celular) · estado · etapa (celular) · cliente. En el celular una abierta no repite
+            "Abierta" (lo dice su etapa) y una cerrada no repite la etapa si se llama como el estado. */}
+        {/* Un renglón: lo corto entero y el cliente, al final, se recorta con "…" (entero en la ficha y en el tooltip). */}
+        <div className={cn(TYPE.meta, "flex min-w-0 items-baseline gap-x-3 text-(--crm-text-2) @[45rem]:hidden")}>
+          <span className="shrink-0 text-(--crm-text) @[30rem]:hidden">
+            <Monto valor={o.monto ? Number(o.monto) : 0} />
+          </span>
+          <span className={cn("shrink-0", o.estado === "abierta" && "hidden @[30rem]:inline")}>
+            <EstadoOportunidad estado={o.estado} />
+          </span>
+          {!repite && (
+            <span className="shrink-0 @[30rem]:hidden">
+              <StatusDot color={etapa?.color}>{etapa?.nombre ?? "—"}</StatusDot>
+            </span>
+          )}
+          <Tooltip content={cliente ?? "Sin empresa / contacto"} onlyWhenTruncated>
+            <span className="min-w-0 truncate">{cliente ?? "Sin empresa / contacto"}</span>
+          </Tooltip>
+        </div>
+        {/* Línea 2: producto (< 90rem) · responsable (30–72rem; en el celular queda en la ficha) · cierre. */}
         <div
           className={cn(
             TYPE.meta,
             "flex flex-wrap gap-x-3 text-(--crm-text-2)",
-            !cierre && "@[72rem]:hidden",
-            !cierre && !o.producto?.nombre && "@[60rem]:hidden",
+            !cierre && (o.producto?.nombre ? "@[90rem]:hidden" : "hidden @[30rem]:flex @[72rem]:hidden"),
           )}
         >
-          {/* Celular: el valor encabeza la línea (la columna se esconde para que el título tenga lugar). */}
-          <span className="text-(--crm-text) @[30rem]:hidden">
-            <Monto valor={o.monto ? Number(o.monto) : 0} />
-          </span>
-          <span className="@[45rem]:hidden">
-            <EstadoOportunidad estado={o.estado} />
-          </span>
-          <span className="@[30rem]:hidden">
-            <StatusDot color={etapa?.color}>{etapa?.nombre ?? "—"}</StatusDot>
-          </span>
-          <span className="truncate @[45rem]:hidden">{cliente ?? "Sin empresa / contacto"}</span>
-          {o.producto?.nombre && <span className="truncate @[72rem]:hidden">{o.producto.nombre}</span>}
-          <span className="@[60rem]:hidden">{responsable ?? "Sin asignar"}</span>
+          {o.producto?.nombre && <span className="min-w-0 truncate @[90rem]:hidden">{o.producto.nombre}</span>}
+          <span className="hidden @[30rem]:inline @[72rem]:hidden">{responsable ?? "Sin asignar"}</span>
           {cierre && <span className="tabular-nums">{cierre}</span>}
         </div>
       </Td>
       <Td hideBelow="md">
-        <span className="block truncate">{cliente ?? <span className="text-(--crm-text-2)">—</span>}</span>
+        {cliente ? (
+          <Tooltip content={cliente} onlyWhenTruncated>
+            <span className="block truncate">{cliente}</span>
+          </Tooltip>
+        ) : (
+          <span className="text-(--crm-text-2)">—</span>
+        )}
       </Td>
-      <Td className="hidden @[72rem]:table-cell">
+      <Td className="hidden @[90rem]:table-cell">
         {o.producto?.nombre ? (
-          <span className="flex min-w-0 items-center gap-2">
-            <IconoEquipoSimple nombre={o.producto.nombre} className="size-4 text-(--crm-text-2)" />
-            <span className="truncate">{o.producto.nombre}</span>
-          </span>
+          <Tooltip content={o.producto.nombre} onlyWhenTruncated>
+            <span className="flex min-w-0 items-center gap-2">
+              <IconoEquipoSimple nombre={o.producto.nombre} className="size-4 text-(--crm-text-2)" />
+              <span className="truncate">{o.producto.nombre}</span>
+            </span>
+          </Tooltip>
         ) : (
           <span className="text-(--crm-text-2)">—</span>
         )}
       </Td>
       <Td hideBelow="sm">
-        <StatusDot color={etapa?.color} className="max-w-full">
-          {etapa?.nombre ?? "—"}
-        </StatusDot>
+        {repite ? (
+          // La etapa de cierre se llama como el estado (columna de al lado): no se repite.
+          <span className="text-(--crm-text-2)">
+            <span aria-hidden="true">—</span>
+            <span className="sr-only">{etapa?.nombre}</span>
+          </span>
+        ) : (
+          <Tooltip content={etapa?.nombre ?? "—"} onlyWhenTruncated>
+            <StatusDot color={etapa?.color} className="max-w-full">
+              {etapa?.nombre ?? "—"}
+            </StatusDot>
+          </Tooltip>
+        )}
       </Td>
       <Td hideBelow="md">
         <EstadoOportunidad estado={o.estado} />
       </Td>
-      <Td hideBelow="lg">{responsable ? <CellPerson name={responsable} /> : <span className="text-(--crm-text-2)">Sin asignar</span>}</Td>
+      <Td className="hidden @[72rem]:table-cell">
+        {responsable ? (
+          <Tooltip content={responsable} onlyWhenTruncated>
+            <span className="block min-w-0">
+              <CellPerson name={responsable} />
+            </span>
+          </Tooltip>
+        ) : (
+          <span className="text-(--crm-text-2)">Sin asignar</span>
+        )}
+      </Td>
       <Td align="right" hideBelow="sm">
         <Monto valor={o.monto ? Number(o.monto) : 0} />
       </Td>
@@ -808,10 +863,10 @@ function PieDePagina({ items }: { items: OportunidadRow[] }) {
           </p>
         </td>
         <td className={cn(celda, "hidden @[45rem]:table-cell")} />
-        <td className={cn(celda, "hidden @[72rem]:table-cell")} />
+        <td className={cn(celda, "hidden @[90rem]:table-cell")} />
         <td className={cn(celda, "hidden @[30rem]:table-cell")} />
         <td className={cn(celda, "hidden @[45rem]:table-cell")} />
-        <td className={cn(celda, "hidden @[60rem]:table-cell")} />
+        <td className={cn(celda, "hidden @[72rem]:table-cell")} />
         <td className={cn(celda, "hidden text-right @[30rem]:table-cell")}>
           <Monto valor={valor} />
         </td>

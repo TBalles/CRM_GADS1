@@ -234,7 +234,7 @@ Estas no las garantiza la base; son convenciones de la aplicación.
 
 | Regla | Dónde |
 |---|---|
-| Una actividad no puede tener fecha futura (es un hecho ya ocurrido); lo valida el formulario | `src/components/ActividadForm.tsx` |
+| Una actividad no puede tener fecha futura (es un hecho ya ocurrido); lo valida el formulario | `src/lib/formularios/actividad.ts` (drawer: `src/components/crm/cuenta/ActividadDrawer.tsx`) |
 | Los montos se ingresan con `MoneyInput` y se leen con `parseMoney` (máscara es-AR), nunca con `type="number"` | `src/lib/money.ts`, `src/components/ui/MoneyInput.tsx` |
 | Cada pantalla se protege con `exigirPermiso()` y el menú solo muestra lo que el rol puede ver | `src/lib/sesion.ts`, `AppShell.tsx` |
 | El mensaje de WhatsApp es más corto que el del mail; el verbo concuerda con la cantidad | `src/app/(app)/alertas/plantillas.ts` |
