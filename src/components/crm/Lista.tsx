@@ -13,7 +13,7 @@ import { Pagination } from "./Pagination";
 import { Select } from "./Select";
 import { Tooltip } from "./Tooltip";
 import { hayCapaAbierta } from "./overlay";
-import { filaTrasAccion, vecinoSel } from "./seleccion";
+import { filaTrasRefresco, vecinoSel } from "./seleccion";
 import { cn } from "./cx";
 
 /**
@@ -68,17 +68,19 @@ export function ListFooter({ filtros, total, page, pageSize }: { filtros: Filtro
  * (los crea la pantalla: el compilador de React no deja leer refs que vienen dentro de lo que devuelve un hook).
  *
  * Después de "Dar de baja" o "Reactivar" desde el `⋮` de una fila, la lista vuelve del servidor y la fila puede no estar
- * más (según el filtro): el foco va a la misma fila si sigue, a la siguiente si salió, o al buscador si la lista quedó
- * vacía. La intención se anota al elegir la acción (`conFoco`) y se aplica recién cuando la mutación terminó
- * (`trasCambio`, antes del refresco): cancelar la confirmación no deja un foco pendiente que salte después.
+ * más. Si sale o no depende del filtro (bajas escondidas, un estado elegido a mano) y, al reactivar, de algo que solo
+ * sabe la base (vuelve como Cliente o como Potencial): por eso no se predice, se MIRA la lista que volvió
+ * (`filaTrasRefresco`): el foco va a la misma fila si sigue, si no a la siguiente (o la anterior) que siga, y si la
+ * lista quedó vacía, al buscador. La intención se anota al elegir la acción (`conFoco`) y se aplica recién cuando la
+ * mutación terminó (`trasCambio`, antes del refresco): cancelar la confirmación no deja un foco pendiente.
  */
 export function useFocoFilas(
   filas: readonly { id: string }[],
   { tabla, buscador }: { tabla: React.RefObject<HTMLDivElement | null>; buscador: React.RefObject<HTMLDivElement | null> },
 ) {
-  /** undefined: nada; null: al buscador; id: a esa fila. */
-  const intencion = React.useRef<string | null | undefined>(undefined);
-  const pendiente = React.useRef<string | null | undefined>(undefined);
+  type Intencion = { id: string; antes: string[] };
+  const intencion = React.useRef<Intencion | null>(null);
+  const pendiente = React.useRef<Intencion | null>(null);
 
   /** Foco al nombre de la fila (Enter ahí abre la ficha) o, si la fila no tiene link, a su `⋮`. */
   const enfocarFila = React.useCallback((id: string) => {
@@ -87,37 +89,35 @@ export function useFocoFilas(
   }, [tabla]);
 
   React.useEffect(() => {
-    const id = pendiente.current;
-    if (id === undefined) return;
-    pendiente.current = undefined;
-    if (id && filas.some((f) => f.id === id)) enfocarFila(id);
+    const p = pendiente.current;
+    if (!p) return;
+    pendiente.current = null;
+    const destino = filaTrasRefresco(p.antes, filas.map((f) => f.id), p.id);
+    if (destino) enfocarFila(destino);
     else buscador.current?.querySelector("input")?.focus();
   }, [filas, enfocarFila, buscador]);
 
   return {
     enfocarFila,
-    /**
-     * Los items del `⋮` de la fila `id`: cada uno anota a dónde irá el foco si termina mutando. `sale(label)`: si esa
-     * acción saca la fila de la lista con los filtros actuales.
-     */
-    conFoco(items: MenuItem[], id: string, sale: (label: string) => boolean): MenuItem[] {
-      const ids = filas.map((f) => f.id);
+    /** Los items del `⋮` de la fila `id`: "Dar de baja" y "Reactivar" anotan a dónde irá el foco si terminan mutando. */
+    conFoco(items: MenuItem[], id: string): MenuItem[] {
+      const antes = filas.map((f) => f.id);
       return items.map((it) => ({
         ...it,
         onSelect: () => {
-          intencion.current = ACCIONES_DE_ESTADO.has(it.label) ? filaTrasAccion(ids, id, sale(it.label)) : undefined;
+          intencion.current = ACCIONES_DE_ESTADO.has(it.label) ? { id, antes } : null;
           it.onSelect();
         },
       }));
     },
     /** Una acción que no viene de una fila ("Nueva…"): no lleva el foco a ninguna fila. */
     olvidar() {
-      intencion.current = undefined;
+      intencion.current = null;
     },
     /** La mutación terminó (lo llama `alCambiar`, antes de refrescar la lista). */
     trasCambio() {
       pendiente.current = intencion.current;
-      intencion.current = undefined;
+      intencion.current = null;
     },
   };
 }

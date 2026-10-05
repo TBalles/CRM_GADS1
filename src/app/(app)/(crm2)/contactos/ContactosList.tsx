@@ -11,7 +11,7 @@ import { FILA_SELECCIONABLE, LinkVistaPrevia, ListFooter, PanelVistaPrevia, useF
 import { Menu, type MenuItem } from "@/components/crm/Menu";
 import { PageBar } from "@/components/crm/PageBar";
 import { Tag } from "@/components/crm/Status";
-import { SearchField, ToggleChip, Toolbar } from "@/components/crm/Toolbar";
+import { ANCHO_FILTROS, FiltroOpciones, FiltroSiNo, MasFiltros, SearchField, ToggleChip, Toolbar } from "@/components/crm/Toolbar";
 import { Tooltip } from "@/components/crm/Tooltip";
 import { EstadoCliente } from "@/components/crm/cuenta/estados";
 import { FOCUS, TYPE, UI_ROOT, cn } from "@/components/crm/cx";
@@ -106,16 +106,17 @@ export default function ContactosList({
 
   const base = Math.max(visiblesSinFiltro, total);
   const vacioReal = cuentasOk && !hayFiltro && visiblesSinFiltro + (verBajas ? 0 : dadosDeBaja) === 0;
+  const n = (k: number, uno: string, varios: string) => `${k} ${k === 1 ? uno : varios}`;
   const contador = !cuentasOk
-    ? `${total} contactos`
+    ? n(total, "contacto", "contactos")
     : hayFiltro
-      ? `${total} de ${base} contactos`
-      : `${visiblesSinFiltro} contactos · ${individuales} individuales`;
+      ? `${total} de ${n(base, "contacto", "contactos")}`
+      : `${n(visiblesSinFiltro, "contacto", "contactos")} · ${n(individuales, "individual", "individuales")}`;
 
-  /** Menú de una fila: dar de baja la saca de la lista salvo con "Ver bajas" (el foco va a la siguiente). */
+  /** Menú de una fila. Si dar de baja o reactivar la saca de la lista, el foco va a la siguiente (`useFocoFilas`). */
   function menuDe(c: Contacto): MenuItem[] {
     const items = itemsFila(c, puedeEditar, acciones, () => router.push(`/contactos/${c.id}`));
-    return foco.conFoco(items, c.id, (label) => label === "Dar de baja" && !verBajas);
+    return foco.conFoco(items, c.id);
   }
 
   function nuevo() {
@@ -127,6 +128,17 @@ export default function ContactosList({
   const vinculoValor = filtros.valor("vinculo");
   const responsableValor = filtros.valor("responsable");
   const origenValor = filtros.valor("origen");
+  const opcionesResponsable = [{ value: "", label: "Todos los responsables" }, ...perfiles.map((p) => ({ value: p.id, label: p.nombre }))];
+  const opcionesOrigen = [{ value: "", label: "Todos los orígenes" }, ...origenes.map((o) => ({ value: o.id, label: o.nombre }))];
+  /** Un valor de la URL que no es una opción se ve como "todos" (igual que en el servidor). */
+  const valido = (opciones: readonly { value: string }[], v: string) => (opciones.some((o) => o.value === v) ? v : "");
+  // Los que "Más filtros" junta y cuenta (con ancho, cada uno es su chip).
+  const secundariosActivos = [
+    valido(VINCULOS, vinculoValor),
+    puedeVerTodos ? valido(opcionesResponsable, responsableValor) : "",
+    valido(opcionesOrigen, origenValor),
+    verBajas ? "1" : "",
+  ].filter(Boolean).length;
 
   const nuevoContacto = puedeEditar && (
     <Button variant="primary" icon={Plus} onClick={nuevo} aria-label="Nuevo contacto" className="max-sm:w-8 max-sm:px-0">
@@ -143,7 +155,7 @@ export default function ContactosList({
         {!vacioReal && (
           <Toolbar>
             <div ref={buscador} className="contents">
-              <SearchField filtros={filtros} label="Buscar contacto" placeholder="Buscar contacto…" />
+              <SearchField filtros={filtros} label="Buscar contacto" placeholder="Buscar contacto…" className={ANCHO_FILTROS.buscador} />
             </div>
             <Menu
               label="Filtrar por estado"
@@ -155,42 +167,74 @@ export default function ContactosList({
               }))}
               align="start"
             />
-            <Menu
-              label="Filtrar por empresa o individual"
-              chip={{ label: "Vínculo", value: VINCULOS.find((v) => v.value && v.value === vinculoValor)?.label }}
-              items={VINCULOS.map((v) => ({
-                label: v.label,
-                checked: v.value === vinculoValor,
-                onSelect: () => filtros.aplicar({ vinculo: v.value || null }),
-              }))}
-              align="start"
-            />
-            {puedeVerTodos && (
+            {/* Filtros secundarios: chips sueltos con ancho; con poco ancho, juntos en "Más filtros" (ANCHO_FILTROS). */}
+            <div className={ANCHO_FILTROS.chips}>
               <Menu
-                label="Filtrar por responsable"
-                chip={{ label: "Responsable", value: perfiles.find((p) => p.id === responsableValor)?.nombre }}
-                items={[{ id: "", nombre: "Todos los responsables" }, ...perfiles].map((p) => ({
-                  label: p.nombre,
-                  checked: p.id === responsableValor,
-                  onSelect: () => filtros.aplicar({ responsable: p.id || null }),
+                label="Filtrar por empresa o individual"
+                chip={{ label: "Vínculo", value: VINCULOS.find((v) => v.value && v.value === vinculoValor)?.label }}
+                items={VINCULOS.map((v) => ({
+                  label: v.label,
+                  checked: v.value === vinculoValor,
+                  onSelect: () => filtros.aplicar({ vinculo: v.value || null }),
                 }))}
                 align="start"
               />
-            )}
-            <Menu
-              label="Filtrar por origen"
-              chip={{ label: "Origen", value: origenes.find((o) => o.id === origenValor)?.nombre }}
-              items={[{ id: "", nombre: "Todos los orígenes" }, ...origenes].map((o) => ({
-                label: o.nombre,
-                checked: o.id === origenValor,
-                onSelect: () => filtros.aplicar({ origen: o.id || null }),
-              }))}
-              align="start"
-            />
-            <ToggleChip pressed={verBajas} onPressedChange={(v) => filtros.aplicar({ bajas: v ? "1" : null })}>
-              Ver bajas
-              <span className="text-[12px] tabular-nums text-(--crm-text-2)">{dadosDeBaja}</span>
-            </ToggleChip>
+              {puedeVerTodos && (
+                <Menu
+                  label="Filtrar por responsable"
+                  chip={{ label: "Responsable", value: perfiles.find((p) => p.id === responsableValor)?.nombre }}
+                  items={opcionesResponsable.map((o) => ({
+                    label: o.label,
+                    checked: o.value === responsableValor,
+                    onSelect: () => filtros.aplicar({ responsable: o.value || null }),
+                  }))}
+                  align="start"
+                />
+              )}
+              <Menu
+                label="Filtrar por origen"
+                chip={{ label: "Origen", value: origenes.find((o) => o.id === origenValor)?.nombre }}
+                items={opcionesOrigen.map((o) => ({
+                  label: o.label,
+                  checked: o.value === origenValor,
+                  onSelect: () => filtros.aplicar({ origen: o.value || null }),
+                }))}
+                align="start"
+              />
+              <ToggleChip pressed={verBajas} onPressedChange={(v) => filtros.aplicar({ bajas: v ? "1" : null })}>
+                Ver bajas
+                <span className="text-[12px] tabular-nums text-(--crm-text-2)">{dadosDeBaja}</span>
+              </ToggleChip>
+            </div>
+            <div className={ANCHO_FILTROS.mas}>
+              <MasFiltros activos={secundariosActivos}>
+                <FiltroOpciones
+                  label="Vínculo"
+                  value={valido(VINCULOS, vinculoValor)}
+                  options={VINCULOS}
+                  onChange={(v) => filtros.aplicar({ vinculo: v || null })}
+                />
+                {puedeVerTodos && (
+                  <FiltroOpciones
+                    label="Responsable"
+                    value={valido(opcionesResponsable, responsableValor)}
+                    options={opcionesResponsable}
+                    onChange={(v) => filtros.aplicar({ responsable: v || null })}
+                  />
+                )}
+                <FiltroOpciones
+                  label="Origen"
+                  value={valido(opcionesOrigen, origenValor)}
+                  options={opcionesOrigen}
+                  onChange={(v) => filtros.aplicar({ origen: v || null })}
+                />
+                <FiltroSiNo
+                  label={`Ver bajas (${dadosDeBaja})`}
+                  checked={verBajas}
+                  onChange={(v) => filtros.aplicar({ bajas: v ? "1" : null })}
+                />
+              </MasFiltros>
+            </div>
             {hayFiltro && (
               <Button variant="ghost" size="sm" onClick={() => filtros.limpiar(LIMPIAR_CONSERVA)}>
                 Limpiar filtros
@@ -271,6 +315,7 @@ export default function ContactosList({
                         key={c.id}
                         contacto={c}
                         seleccionada={c.id === seleccion.selVista}
+                        conPanel={Boolean(panel)}
                         responsable={(c.responsable_id && perfilPorId.get(c.responsable_id)) || null}
                         hrefPreview={seleccion.hrefSel(c.id)}
                         menu={menuDe(c)}
@@ -313,12 +358,14 @@ function Vinculo({ c, link = true }: { c: ContactoFila; link?: boolean }) {
  * Una fila. Las columnas que el contenedor esconde no se pierden: pasan a una línea de apoyo (12, secundaria) debajo
  * del nombre (MASTER.md §10.14):
  * - < 30rem (celular): estado · empresa (o Individual) · cargo · responsable (como la tarjeta legacy de celular).
- * - 30–60rem (vista previa abierta, 1280 y 1440): cargo · mail · teléfono · responsable (Empresa y Estado en columnas).
+ * - 30–60rem: cargo · mail · teléfono · responsable (Empresa y Estado en columnas). Con la vista previa abierta (1280 y
+ *   1440) sin el mail: cargo · teléfono · responsable (el mail está en el panel de al lado y en la ficha).
  * - ≥ 60rem: una sola línea; cargo, mail y teléfono en gris junto al nombre, responsable en su columna.
  */
 function Fila({
   contacto: c,
   seleccionada,
+  conPanel,
   responsable,
   hrefPreview,
   menu,
@@ -327,6 +374,8 @@ function Fila({
 }: {
   contacto: ContactoFila;
   seleccionada: boolean;
+  /** Hay vista previa (`?sel=`): desde 1280 la línea de apoyo deja el mail al panel. */
+  conPanel: boolean;
   responsable: string | null;
   hrefPreview: string;
   menu: MenuItem[];
@@ -365,7 +414,7 @@ function Fila({
             <Vinculo c={c} link={false} />
           </span>
           {c.cargo && <span>{c.cargo}</span>}
-          {c.email && <span className="hidden @[30rem]:inline">{c.email}</span>}
+          {c.email && <span className={conPanel ? "hidden @[30rem]:max-xl:inline" : "hidden @[30rem]:inline"}>{c.email}</span>}
           {c.telefono && <span className="hidden @[30rem]:inline">{c.telefono}</span>}
           {!datos.length && <span className="hidden @[30rem]:inline">Sin datos de contacto</span>}
           <span>{responsable ?? "Sin asignar"}</span>

@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/crm/Feedback";
 import { FILA_SELECCIONABLE, LinkVistaPrevia, ListFooter, PanelVistaPrevia, useFocoFilas, useSeleccionUrl } from "@/components/crm/Lista";
 import { Menu, type MenuItem } from "@/components/crm/Menu";
 import { PageBar } from "@/components/crm/PageBar";
-import { SearchField, ToggleChip, Toolbar } from "@/components/crm/Toolbar";
+import { ANCHO_FILTROS, FiltroOpciones, FiltroSiNo, MasFiltros, SearchField, ToggleChip, Toolbar } from "@/components/crm/Toolbar";
 import { Tooltip } from "@/components/crm/Tooltip";
 import { EstadoCliente } from "@/components/crm/cuenta/estados";
 import { FOCUS, TYPE, UI_ROOT, cn } from "@/components/crm/cx";
@@ -102,10 +102,10 @@ export default function EmpresasList({
       ? `${total} de ${base} empresas`
       : `${visiblesSinFiltro} empresas · ${totalContactos} contactos`;
 
-  /** Menú de una fila: dar de baja la saca de la lista salvo con "Ver dadas de baja" (el foco va a la siguiente). */
+  /** Menú de una fila. Si dar de baja o reactivar la saca de la lista, el foco va a la siguiente (`useFocoFilas`). */
   function menuDe(e: Empresa): MenuItem[] {
     const items = itemsFila(e, puedeEditar, acciones, () => router.push(`/empresas/${e.id}`));
-    return foco.conFoco(items, e.id, (label) => label === "Dar de baja" && !verBajas);
+    return foco.conFoco(items, e.id);
   }
 
   function nueva() {
@@ -117,6 +117,18 @@ export default function EmpresasList({
   const tipoValor = filtros.valor("tipo");
   const responsableValor = filtros.valor("responsable");
   const origenValor = filtros.valor("origen");
+  const opcionesTipo = [{ value: "", label: "Todos los tipos" }, ...TIPOS_CLIENTE.map((t) => ({ value: t.value, label: t.label }))];
+  const opcionesResponsable = [{ value: "", label: "Todos los responsables" }, ...perfiles.map((p) => ({ value: p.id, label: p.nombre }))];
+  const opcionesOrigen = [{ value: "", label: "Todos los orígenes" }, ...origenes.map((o) => ({ value: o.id, label: o.nombre }))];
+  /** Un valor de la URL que no es una opción se ve como "todos" (igual que en el servidor). */
+  const valido = (opciones: readonly { value: string }[], v: string) => (opciones.some((o) => o.value === v) ? v : "");
+  // Los que "Más filtros" junta y cuenta (con ancho, cada uno es su chip).
+  const secundariosActivos = [
+    valido(opcionesTipo, tipoValor),
+    puedeVerTodos ? valido(opcionesResponsable, responsableValor) : "",
+    valido(opcionesOrigen, origenValor),
+    verBajas ? "1" : "",
+  ].filter(Boolean).length;
 
   const nuevaEmpresa = puedeEditar && (
     <Button variant="primary" icon={Plus} onClick={nueva} aria-label="Nueva empresa" className="max-sm:w-8 max-sm:px-0">
@@ -133,7 +145,7 @@ export default function EmpresasList({
         {!vacioReal && (
           <Toolbar>
             <div ref={buscador} className="contents">
-              <SearchField filtros={filtros} label="Buscar empresa o contacto" placeholder="Buscar empresa o contacto…" />
+              <SearchField filtros={filtros} label="Buscar empresa o contacto" placeholder="Buscar empresa o contacto…" className={ANCHO_FILTROS.buscador} />
             </div>
             <Menu
               label="Filtrar por estado"
@@ -145,42 +157,74 @@ export default function EmpresasList({
               }))}
               align="start"
             />
-            <Menu
-              label="Filtrar por tipo de cliente"
-              chip={{ label: "Tipo", value: TIPOS_CLIENTE.find((t) => t.value === tipoValor)?.label }}
-              items={[{ value: "", label: "Todos los tipos" }, ...TIPOS_CLIENTE].map((t) => ({
-                label: t.label,
-                checked: t.value === tipoValor,
-                onSelect: () => filtros.aplicar({ tipo: t.value || null }),
-              }))}
-              align="start"
-            />
-            {puedeVerTodos && (
+            {/* Filtros secundarios: chips sueltos con ancho; con poco ancho, juntos en "Más filtros" (ANCHO_FILTROS). */}
+            <div className={ANCHO_FILTROS.chips}>
               <Menu
-                label="Filtrar por responsable"
-                chip={{ label: "Responsable", value: perfiles.find((p) => p.id === responsableValor)?.nombre }}
-                items={[{ id: "", nombre: "Todos los responsables" }, ...perfiles].map((p) => ({
-                  label: p.nombre,
-                  checked: p.id === responsableValor,
-                  onSelect: () => filtros.aplicar({ responsable: p.id || null }),
+                label="Filtrar por tipo de cliente"
+                chip={{ label: "Tipo", value: TIPOS_CLIENTE.find((t) => t.value === tipoValor)?.label }}
+                items={opcionesTipo.map((t) => ({
+                  label: t.label,
+                  checked: t.value === tipoValor,
+                  onSelect: () => filtros.aplicar({ tipo: t.value || null }),
                 }))}
                 align="start"
               />
-            )}
-            <Menu
-              label="Filtrar por origen"
-              chip={{ label: "Origen", value: origenes.find((o) => o.id === origenValor)?.nombre }}
-              items={[{ id: "", nombre: "Todos los orígenes" }, ...origenes].map((o) => ({
-                label: o.nombre,
-                checked: o.id === origenValor,
-                onSelect: () => filtros.aplicar({ origen: o.id || null }),
-              }))}
-              align="start"
-            />
-            <ToggleChip pressed={verBajas} onPressedChange={(v) => filtros.aplicar({ bajas: v ? "1" : null })}>
-              Ver dadas de baja
-              <span className="text-[12px] tabular-nums text-(--crm-text-2)">{dadasDeBaja}</span>
-            </ToggleChip>
+              {puedeVerTodos && (
+                <Menu
+                  label="Filtrar por responsable"
+                  chip={{ label: "Responsable", value: perfiles.find((p) => p.id === responsableValor)?.nombre }}
+                  items={opcionesResponsable.map((o) => ({
+                    label: o.label,
+                    checked: o.value === responsableValor,
+                    onSelect: () => filtros.aplicar({ responsable: o.value || null }),
+                  }))}
+                  align="start"
+                />
+              )}
+              <Menu
+                label="Filtrar por origen"
+                chip={{ label: "Origen", value: origenes.find((o) => o.id === origenValor)?.nombre }}
+                items={opcionesOrigen.map((o) => ({
+                  label: o.label,
+                  checked: o.value === origenValor,
+                  onSelect: () => filtros.aplicar({ origen: o.value || null }),
+                }))}
+                align="start"
+              />
+              <ToggleChip pressed={verBajas} onPressedChange={(v) => filtros.aplicar({ bajas: v ? "1" : null })}>
+                Ver dadas de baja
+                <span className="text-[12px] tabular-nums text-(--crm-text-2)">{dadasDeBaja}</span>
+              </ToggleChip>
+            </div>
+            <div className={ANCHO_FILTROS.mas}>
+              <MasFiltros activos={secundariosActivos}>
+                <FiltroOpciones
+                  label="Tipo"
+                  value={valido(opcionesTipo, tipoValor)}
+                  options={opcionesTipo}
+                  onChange={(v) => filtros.aplicar({ tipo: v || null })}
+                />
+                {puedeVerTodos && (
+                  <FiltroOpciones
+                    label="Responsable"
+                    value={valido(opcionesResponsable, responsableValor)}
+                    options={opcionesResponsable}
+                    onChange={(v) => filtros.aplicar({ responsable: v || null })}
+                  />
+                )}
+                <FiltroOpciones
+                  label="Origen"
+                  value={valido(opcionesOrigen, origenValor)}
+                  options={opcionesOrigen}
+                  onChange={(v) => filtros.aplicar({ origen: v || null })}
+                />
+                <FiltroSiNo
+                  label={`Ver dadas de baja (${dadasDeBaja})`}
+                  checked={verBajas}
+                  onChange={(v) => filtros.aplicar({ bajas: v ? "1" : null })}
+                />
+              </MasFiltros>
+            </div>
             {hayFiltro && (
               <Button variant="ghost" size="sm" onClick={() => filtros.limpiar(["vista", "tab", "pageSize", "sel"])}>
                 Limpiar filtros

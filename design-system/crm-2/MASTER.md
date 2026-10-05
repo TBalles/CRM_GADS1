@@ -356,6 +356,8 @@ especificación de las composiciones, §10.13 cómo quedaron construidas en Empr
 ### 10.2 Campos — `Field.tsx` (server-safe), `Select.tsx`
 - `Field` cablea label (arriba, 13/500), ayuda (12, secundaria) y error (12, danger, `role="alert"`) con `aria-describedby`,
   `aria-invalid` y `required`; el control se dibuja con las props que recibe, así los ids (`#nombre`, `#empresa_id`…) quedan intactos.
+  La ayuda **sigue a la vista con un error** (explica justo lo que hay que corregir) y los dos ids van en `aria-describedby`;
+  antes se escondía y el id quedaba apuntando a nada.
 - `Input` 32 (28 `dense`), `Textarea` (resize vertical), `Checkbox`, `Radio` + `RadioGroup` (fieldset/legend), `Switch`
   (`role="switch"`): **nativos** con apariencia propia — teclado, formularios y lectores de pantalla sin código extra.
 - Borde `--crm-border-strong`, radio 4, el mismo anillo de foco; obligatorio = asterisco visual + `required`.
@@ -501,6 +503,14 @@ próximos slices (Contactos, Oportunidades…).
   `FilterChip` y items `menuitemradio` con `aria-checked` y tilde (mismo teclado del menú, typeahead, lista con scroll a 320). Los
   filtros on/off ("Ver dadas de baja") son `ToggleChip` (`aria-pressed`, tilde + acento). "Limpiar filtros" ghost `sm`, solo con
   filtros; no borra `sel`.
+  **Una sola fila con poco ancho:** la toolbar es `@container`. Desde 52rem (832 px: la lista sin vista previa a 1280 y 1440,
+  y a 1024) cada filtro es su chip; debajo (vista previa abierta a 1280 y 1440, 768, celular) los secundarios se juntan en UN
+  chip **"Más filtros"** que abre un `Popover` (`role="dialog"` "Más filtros") con cada uno como campo (label + `Select`; el
+  on/off como checkbox "Ver dadas de baja (N)"); el chip muestra cuántos están aplicados ("Más filtros: 2", nombre accesible
+  "Más filtros, 2 aplicados") y el buscador se angosta a 192. Los parámetros de URL son los mismos y cada cambio se aplica al
+  instante; el modo que no corresponde está en `display: none` (fuera del árbol de accesibilidad). Primarios (siempre chip):
+  búsqueda, Estado y "Limpiar filtros". Secundarios: Empresas → Tipo, Responsable, Origen, Ver dadas de baja; Contactos →
+  Vínculo, Responsable, Origen, Ver bajas (`ANCHO_FILTROS`, `MasFiltros`, `FiltroOpciones`, `FiltroSiNo` en `Toolbar.tsx`).
 - **DataTable en una lista**: la lista es una columna flex de alto completo; la tabla queda a su **alto natural** (sin caja vacía si
   hay pocas filas), se achica y scrollea con el header fijo si no entra, y debajo hay una **banda de pie** (40, `--crm-panel`,
   hairline arriba) pegada al borde inferior del área de trabajo con "Mostrando N–M de T" (sans, numerales tabulares), la
@@ -554,15 +564,21 @@ próximos slices (Contactos, Oportunidades…).
   título visible; "Calculado con lo que está cargado en el CRM, sin estimaciones." va como descripción accesible), la señal de
   recambio ("N unidades para recambiar ya · M por vencer · Ver parque", solo con `ventas.ver`, el mismo dato del Parque
   instalado), "Oportunidades abiertas" (tabla: oportunidad, etapa, monto; "Ver todas"), "Contactos" (tabla: nombre + cargo,
-  teléfono, mail; "Agregar", que E2E usa sin cambiar de tab) y "Actividad reciente" (5). A la derecha, desde 1280, un **riel de
-  propiedades** de 340 con hairline a la izquierda: "Datos" en `DefinitionList inline` de una columna (término a la izquierda,
-  hairline entre filas) + Observaciones.
+  teléfono, mail; "Agregar", que E2E usa sin cambiar de tab) y "Actividad reciente" (5, filas con hairline sobre el canvas,
+  sin caja). A la derecha, desde 1280, un **riel de propiedades** de 340 con hairline a la izquierda: "Datos" en
+  `DefinitionList inline` de una columna (término a la izquierda, hairline entre filas) + Observaciones. **El riel no repite la
+  franja de identidad:** empresa → Teléfono, Email, Sitio web, Dirección, Origen, Alta (estado, tipo, responsable y CUIT están
+  en el `DetailHeader`); contacto → Documento, Email, Teléfono, Origen, Alta (estado, empresa o "Cliente individual", cargo y
+  responsable están en el header).
 - **StatStrip**: una fila fina de N columnas iguales desde `sm` (`--n`), divisores verticales; de a 2 en mobile. Cifras en mono de
   20 (16 en el panel) con la unidad en gris al 70 %; fechas y frases ("Hace 17 días") en 14/500 sans con numerales tabulares. La
-  cifra de 28 (`TYPE.kpi`) queda para tableros. `warning` = ícono + color de aviso.
+  cifra de 28 (`TYPE.kpi`) queda para tableros. `warning` = ícono + color de aviso. Si la primera y la última compra son la
+  misma fecha, van como UNA cifra "Compró el" (`statsCuenta`); si no, "Primera compra" y "Última compra" como siempre.
 - **Historia de la cuenta**: filas de libro mayor desde 48rem de contenedor (fecha mono 176 | ícono 16 | hecho + cuerpo | quién
   208); angosta, apilada. Filtro por tipo = grupo de botones `aria-pressed` con forma de segmentado. Mes como cabecera 12/500
-  secundaria sobre regla fuerte (como `th`). Íconos de equipamiento sin caja, en gris. "Mostrando N de M" en sans.
+  secundaria sobre regla fuerte (como `th`). Íconos de equipamiento sin caja, en gris. "Mostrando N de M" en sans. Sobre el
+  canvas, **sin caja**: una regla arriba y hairline entre filas (como "Últimos movimientos" de la vista previa). No se agrupan
+  eventos parecidos (p. ej. varios "Cambio de etapa" seguidos): cada uno tiene su fecha y juntarlos la escondería.
 - **Tablas de ficha** (Oportunidades, Ventas, Contactos, Canchas, Parque): `DataTable` con `SectionBar` (14/600 + contador mono +
   acción `sm`) arriba; vacíos `EmptyState compact` dentro de la tabla. Parque instalado agrupa con filas `th colgroup` en
   `--crm-panel-2`; lo vencido como `StatusBadge` danger, el resto `StatusDot`.
@@ -571,8 +587,8 @@ próximos slices (Contactos, Oportunidades…).
   un contador `n` que va como `key`: cada apertura arranca el formulario limpio y el título no cambia durante la salida. La lógica
   vive fuera del UI: `lib/formularios/{contacto,actividad}.ts` (compartida con los formularios legacy), `BajaCliente`
   (`reactivarCliente`, `darDeBajaCliente`, `textoBaja`) y `ResumenIA` (`useResumenIA`). El Drawer valida a mano (`noValidate`).
-  Foco después de mutar: si la fila desaparece de la lista (dar de baja sin "Ver dadas de baja"), el foco va a la fila siguiente
-  (o al buscador si la lista queda vacía); en el panel y la ficha vuelve al `⋮`, que sigue existiendo.
+  Foco después de mutar: si la fila desaparece de la lista, el foco va a la fila siguiente (o al buscador si la lista queda
+  vacía; detalle en §10.14); en el panel y la ficha vuelve al `⋮`, que sigue existiendo.
 - **Foco (corrección)**: `FOCUS` lleva `focus-visible:outline-solid`. Sin él, en Tailwind v4 `outline-none` deja
   `--tw-outline-style: none` y el anillo de 2 px no se dibujaba en ningún primitivo (Etapas 1–2).
 
@@ -587,42 +603,52 @@ Segundo y tercer slice (`src/app/(app)/(crm2)/contactos/`, `src/app/(app)/(crm2)
     ("Vista previa de <nombre>", fuera del orden de Tab), `FILA_SELECCIONABLE` y `ListFooter` (banda de pie de §10.13). Los refs
     de la grilla (`tabla`, `buscador`) los crea la pantalla y se los pasa al hook: el compilador de React no deja leer refs que
     llegan dentro de lo que devuelve un hook.
-  - `seleccion.ts` (+ `.check`): `vecinoSel`, `tabValida` y `filaTrasAccion` (puro, probado).
+  - `seleccion.ts` (+ `.check`): `vecinoSel`, `tabValida` y `filaTrasRefresco` (puro, probado).
   - `PreviewPanel.tsx` (server-safe): el `aside` de 400/440 con header fijo (h2 + "Fuera de la lista actual" + "Cerrar vista
     previa"), meta, acciones y pie "Abrir ficha completa →"; `PreviewPanelSkeleton`.
-  - `Skeletons.tsx` (server-safe): `ListSkeleton` (barra con el h1 real, toolbar, grilla con sus `Th` reales, banda de pie) y
-    `DetailSkeleton` (franja + tabs + Resumen sin caja exterior + riel). Las `loading.tsx` de las tres pantallas son una línea.
+  - `Skeletons.tsx` (server-safe): `ListSkeleton` (barra con el h1 real y la primaria solo si el rol la tiene, toolbar, grilla
+    con sus `Th` reales, banda de pie) y
+    `DetailSkeleton` (la forma real: franja con h1, metadatos y primaria + `⋮`; tabs; cifras con divisores; una sección con su
+    barra y tabla; filas con hairline; riel "Datos" término | valor). Las `loading.tsx` son una línea (la de Productos lee el
+    permiso para dibujar o no la columna de acciones).
   - `cuenta/SeccionesCuenta.tsx` (server-safe): `ResumenStats`, `OportunidadesAbiertas`, `ActividadReciente`, `RielDatos`,
     `OportunidadesTab`, `VentasTab`, `Monto` y, para la vista previa, `OportunidadesPrevia` y `MovimientosPrevia` (`TOPE_PREVIA` 3):
     las fichas de empresa y de contacto dibujan las mismas tablas, vacíos y topes.
   - `cuenta/BajaDialog.tsx`: `itemsEdicionCliente` (Editar + Dar de baja / Reactivar con las reglas de siempre: solo con
     `clientes.editar`; Reactivar solo `inactivo`; "No contactar" no se deshace con un clic). `cuenta/estados.tsx`: `UltimoContacto`.
-  - `MoneyInput.tsx` (cliente): el monto con máscara es-AR en el `Input` de CRM 2.0; máscara y cursor de `lib/money` (los mismos
-    que `ui/MoneyInput`, que no se toca). Cifra en mono, "$" en gris adentro.
-- **Foco después de mutar (corrección para las tres listas):** `useFocoFilas().conFoco(items, id, sale)` anota a qué fila irá el
-  foco cuando se elige "Dar de baja" / "Reactivar" en el `⋮` (la misma si sigue en la lista; si sale, la siguiente, o la
-  anterior si era la última; si la lista queda vacía, el buscador), y `trasCambio()` (en `alCambiar`, antes del refresco) lo
-  aplica recién cuando la mutación terminó. Antes se anotaba al elegir: cancelar la confirmación dejaba un foco pendiente que
-  saltaba en el próximo refresco. "Nueva…" llama `olvidar()`. Sin link de nombre en la fila (Productos), el foco va a su `⋮`.
+  - `MoneyInput.tsx` (cliente): el monto con máscara es-AR en el `Input` de CRM 2.0; máscara y cursor de `lib/money`
+    (`caretAfterMask`). Cifra en mono, "$" en gris adentro. **Corrección del cursor** (en `lib/money`, la comparten crm y
+    `ui/MoneyInput`): pasado el último dígito el cursor va al final, así "1500" + "," + "50" da "1.500,50" (antes el cursor
+    quedaba antes de la coma y salía "150.050,"). En crm, además, después de una coma tipeada al medio sigue después de ella y
+    un carácter rechazado (una letra) no mueve el cursor. Probado tecla por tecla en `money.check.ts`.
+- **Foco después de mutar (corrección para las tres listas):** `useFocoFilas().conFoco(items, id)` anota, al elegir "Dar de baja"
+  / "Reactivar" en el `⋮`, la fila y los ids de la página; `trasCambio()` (en `alCambiar`, antes del refresco) lo deja pendiente
+  recién cuando la mutación terminó (cancelar la confirmación no deja nada). Cuando la lista vuelve, `filaTrasRefresco` MIRA el
+  resultado: la misma fila si sigue; si salió, la siguiente de las de antes que siga (o la anterior); si no queda ninguna, el
+  buscador. No se predice desde los filtros: con `?estado=cliente&bajas=1` la baja la saca, con `?estado=inactivo` la
+  reactivación la saca, y al reactivar es la base la que decide si vuelve como Cliente o Potencial. "Nueva…" llama
+  `olvidar()`. Sin link de nombre en la fila (Productos), el foco va a su `⋮`.
 
 #### Contactos
 - **PageBar:** "Contactos" + "N contactos · M individuales" (con filtro "N de T contactos") + primaria "Nuevo contacto"
   (`clientes.editar`; en celular, botón de ícono con el mismo nombre). **Toolbar:** textbox **"Buscar contacto"** (el de la lista
   legacy), chips `Menu` "Filtrar por estado" (`?estado=`), "Filtrar por empresa o individual" (chip "Vínculo", `?vinculo=
   empresa|individual`), "Filtrar por responsable" (solo con `clientes.ver_todos`, `?responsable=`), "Filtrar por origen"
-  (`?origen=`), `ToggleChip` "Ver bajas" + cantidad (`?bajas=1`) y "Limpiar filtros" (conserva `sel`).
+  (`?origen=`), `ToggleChip` "Ver bajas" + cantidad (`?bajas=1`) y "Limpiar filtros" (conserva `sel`). Con poco ancho, Vínculo,
+  Responsable, Origen y Ver bajas van en "Más filtros" (§10.13, Toolbar). Contador en singular cuando corresponde ("1 individual").
 - **Columnas que colapsan** (mismo markup en todo ancho, `@container`):
 
   | Contenedor | Columnas | Línea de apoyo bajo el nombre |
   |---|---|---|
   | ≥ 60rem (sin vista previa) | Contacto (+ cargo · mail · teléfono en gris al lado; "Sin datos de contacto" si no hay) · Empresa · Estado · Responsable · `⋮` | — (fila de 36) |
-  | 30–60rem (vista previa a 1440 y 1280) | Contacto · Empresa · Estado · `⋮` | cargo · mail · teléfono · responsable |
+  | 30–60rem sin vista previa (1024, 768) | Contacto · Empresa · Estado · `⋮` | cargo · mail · teléfono · responsable |
+  | 30–60rem con vista previa (1280, 1440) | Contacto · Empresa · Estado · `⋮` | cargo · teléfono · responsable (el mail está en el panel de al lado y en la ficha) |
   | < 30rem (celular) | Contacto · `⋮` | estado · empresa (o "Individual") · cargo · responsable |
 
   Empresa = link a su ficha, `Tag` "Individual" (sin empresa) o "Empresa de otra cartera" (la RLS no la muestra), como la
   legacy. En celular el mail y el teléfono quedan en la ficha (la tarjeta legacy de celular tampoco los mostraba).
 - **Master-detail ≥ 1280:** idéntico a Empresas (`?sel=`, `<Suspense key={sel}>`, `uuidParam`, cliente con RLS). `VistaPrevia`
-  (server): h2 = nombre completo, meta estado · cargo · responsable; UNA acción ("Registrar actividad", `bitacora.escribir` +
+  (server): h2 = nombre completo, meta estado · cargo · responsable (igual que Empresas, sin prefijo oculto); UNA acción ("Registrar actividad", `bitacora.escribir` +
   `bitacora.ver`; sin permiso, "Editar") + `⋮` "Más acciones" (Editar, Dar de baja / Reactivar); cuerpo `DefinitionList`
   Empresa · Teléfono · Email · Documento · Último contacto; Oportunidades abiertas (3) y Últimos movimientos (3) con la lectura de
   la ficha (`leerCuenta360` por `contacto_id`). Origen, alta y observaciones quedan en la ficha. Entra sin scroll en 1440 × 900.
@@ -631,8 +657,8 @@ Segundo y tercer slice (`src/app/(app)/(crm2)/contactos/`, `src/app/(app)/(crm2)
   o `Tag` "Cliente individual" o "Empresa de otra cartera" · cargo · responsable), UNA primaria + "Más acciones". Tabs por URL:
   **Resumen · Actividad · Oportunidades · Ventas** (Actividad con cualquiera de los cuatro permisos de la historia, las otras con
   el suyo: las secciones y condiciones de la ficha legacy; no hay Contactos ni Canchas). Resumen = superficie de trabajo de
-  §10.13: cifras, oportunidades abiertas, actividad reciente + riel "Datos" (Empresa, Documento, Email, Teléfono, Cargo,
-  Responsable, Origen, Alta) + Observaciones. Actividad = `HistoriaCuenta` con "Resumir con IA" (`tipo="contacto"`) y
+  §10.13: cifras, oportunidades abiertas, actividad reciente + riel "Datos" (Documento, Email, Teléfono, Origen, Alta; lo demás
+  está en el header) + Observaciones. Actividad = `HistoriaCuenta` con "Resumir con IA" (`tipo="contacto"`) y
   "Registrar". La actividad se cuelga también de la empresa del contacto si la persona la ve, y ofrece solo las oportunidades
   abiertas que no son de otra empresa (misma regla que la legacy). Cada mutación hace `router.refresh()` (la legacy copiaba la
   fila a un estado local).
@@ -647,17 +673,19 @@ Segundo y tercer slice (`src/app/(app)/(crm2)/contactos/`, `src/app/(app)/(crm2)
   no está vacío): textbox **"Buscar producto"**, chips "Filtrar por categoría" (`?categoria=`, solo valores que existen) y
   "Filtrar por estado" ("Activos y de baja" / "Activos" / "De baja", `?estado=activo|baja`), "Limpiar filtros".
 - **Columnas:** Producto (ícono de equipamiento SIN caja, 16, gris + nombre 500 + marca en gris al lado) · Categoría (texto, ya no
-  pastilla de color) · Precio (`$` gris + cifra mono a la derecha; sin precio "—") · Vida útil (barra fina de 40 × 4 en
-  `--crm-text-2` sobre `--crm-border`, decorativa, comparada con la más larga del catálogo + "5 años" / "18 meses" / "Sin
-  seguimiento") · Estado (punto + "Activo" / "De baja") · `⋮` (solo con `productos.editar`).
+  pastilla de color) · Precio (`$` gris + cifra mono a la derecha; sin precio "—") · Vida útil (texto plano "5 años" /
+  "18 meses"; sin seguimiento "—" con "Sin seguimiento" para lectores de pantalla; sin barra) · Estado (punto + "Activo" /
+  "De baja") · `⋮` (solo con `productos.editar`).
 
   | Contenedor | Columnas | Línea de apoyo |
   |---|---|---|
   | ≥ 45rem | todas | — (fila de 36) |
   | 30–45rem (768) | Producto · Precio · Estado · `⋮` | categoría · vida útil · marca |
-  | < 30rem | Producto · `⋮` | estado · precio · categoría · vida útil · marca (lo que más pesa primero: la línea recorta al final; sin barra) |
+  | < 30rem | Producto · `⋮` | "De baja" (solo si lo está) · precio · categoría · vida útil (si tiene) · marca |
 
-  Las filas de baja ya no van al 55 % de opacidad (bajaba el contraste del texto debajo de AA): el estado lo dice el punto + palabra.
+  Las filas de baja ya no van al 55 % de opacidad (bajaba el contraste debajo de AA): se distinguen por el punto + "De baja" y
+  el nombre en `--crm-text-2` (6.8:1). En celular "Activo" no se repite en cada fila: solo se marca "De baja". La carga dibuja
+  la columna de acciones y "Nuevo producto" solo con `productos.editar` (lee la sesión ya cacheada del pedido).
 - **`⋮` "Acciones de <nombre>":** "Editar" + "Dar de baja" (danger, `ConfirmDialog` "Dar de baja el producto" con el texto de
   siempre) o "Reactivar" (directo). Misma mutación (`activo`), mismos avisos ("Producto dado de baja." / "Producto
   reactivado." / error). **Drawer** "Nuevo producto" / "Editar producto" (480): mismos campos e ids (`#nombre`, `#marca`,

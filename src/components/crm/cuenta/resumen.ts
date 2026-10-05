@@ -26,10 +26,15 @@ export function statsCuenta(
             detail: `${truncado.ventas ? "sumando solo las últimas " : "en "}${r.cantidadCompras} ${r.cantidadCompras === 1 ? "compra" : "compras"}`,
           }
         : { label: "Total comprado", value: "Sin compras", text: true },
-      r.primeraCompra
-        ? { label: "Primera compra", value: formatFecha(r.primeraCompra), text: true }
-        : { label: "Primera compra", value: "Todavía no compró", text: true },
-      { label: "Última compra", value: r.ultimaCompra ? formatFecha(r.ultimaCompra) : undefined, text: true },
+      // Con una sola fecha de compra, "Primera" y "Última" dirían lo mismo: una sola cifra.
+      ...(r.primeraCompra && r.primeraCompra === r.ultimaCompra
+        ? [{ label: "Compró el", value: formatFecha(r.primeraCompra), text: true }]
+        : [
+            r.primeraCompra
+              ? { label: "Primera compra", value: formatFecha(r.primeraCompra), text: true }
+              : { label: "Primera compra", value: "Todavía no compró", text: true },
+            { label: "Última compra", value: r.ultimaCompra ? formatFecha(r.ultimaCompra) : undefined, text: true },
+          ]),
     );
   }
   if (mostrar.oportunidades) {

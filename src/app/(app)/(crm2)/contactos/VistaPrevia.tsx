@@ -78,10 +78,7 @@ export default async function VistaPrevia({
           {contacto.cargo && <span>{contacto.cargo}</span>}
           <span className="inline-flex min-w-0 items-center gap-1.5">
             {responsable && <Avatar name={responsable} size="xs" />}
-            <span className="truncate">
-              <span className="sr-only">Responsable: </span>
-              {responsable ?? "Sin asignar"}
-            </span>
+            <span className="truncate">{responsable ?? "Sin asignar"}</span>
           </span>
         </>
       }

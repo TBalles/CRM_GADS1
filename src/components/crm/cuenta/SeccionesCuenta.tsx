@@ -117,7 +117,9 @@ export function ActividadReciente({ href, fuentes }: { href: string; fuentes: Fu
           </Link>
         }
       />
-      <div className="rounded-(--crm-radius) border border-(--crm-border) bg-(--crm-panel) px-3">
+      {/* Filas con hairline sobre el canvas, como "Últimos movimientos" de la vista previa: sin caja. Sin el sangrado
+          lateral de la lista compacta (que en el panel cae dentro de su padding): las reglas miden lo mismo que la columna. */}
+      <div className="border-t border-(--crm-border) [&>ol]:mx-0 [&>ol>li]:px-0">
         <MovimientosRecientes limite={5} {...fuentes} />
       </div>
     </section>

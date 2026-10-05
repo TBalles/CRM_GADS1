@@ -180,7 +180,8 @@ export function HistoriaCuenta({
 
       {ia}
 
-      <div ref={lista} tabIndex={-1} className="@container rounded-(--crm-radius) border border-(--crm-border) bg-(--crm-panel) outline-none">
+      {/* Filas de libro mayor sobre el canvas (sin caja): una regla arriba, hairline entre filas, el mes como cabecera. */}
+      <div ref={lista} tabIndex={-1} className="@container border-t border-(--crm-border) outline-none">
         {grupos.length === 0 ? (
           <EmptyState
             compact
@@ -196,7 +197,7 @@ export function HistoriaCuenta({
             <section key={g.mes} aria-labelledby={`mes-${g.mes}`}>
               <h3
                 id={`mes-${g.mes}`}
-                className={cn(TYPE.th, "border-b border-(--crm-border-strong) px-3 py-2 first-letter:uppercase")}
+                className={cn(TYPE.th, "border-b border-(--crm-border-strong) px-3 pb-2 pt-4 first-letter:uppercase")}
               >
                 {g.etiqueta}
               </h3>
@@ -322,7 +323,7 @@ function Fila({
     );
   }
   return (
-    <li className="grid grid-cols-[1rem_minmax(0,1fr)] gap-x-3 border-b border-(--crm-border) px-3 py-2.5 last:border-b-0 @[48rem]:grid-cols-[11rem_1rem_minmax(0,1fr)_minmax(0,13rem)]">
+    <li className="grid grid-cols-[1rem_minmax(0,1fr)] gap-x-3 border-b border-(--crm-border) px-3 py-2.5 @[48rem]:grid-cols-[11rem_1rem_minmax(0,1fr)_minmax(0,13rem)]">
       <p className={cn(TYPE.meta, "hidden whitespace-nowrap pt-px text-(--crm-text-2) @[48rem]:block")}>{cuando}</p>
       {icon}
       <div className="min-w-0">

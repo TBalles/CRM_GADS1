@@ -59,6 +59,15 @@ const texto = (t, opts = {}) => async (page) => {
     await contenido(page);
   }
 };
+/** La ficha de CRM 2.0 cargó: su tab Resumen está elegida. ("Resumen de la cuenta" ahora es un h2 solo para lectores
+ *  de pantalla y solo con cifras: no sirve de marcador visible.) */
+const fichaLista = async (page) => {
+  try {
+    await page.getByRole("tab", { name: /^Resumen/, selected: true }).first().waitFor({ state: "visible", timeout: 10_000 });
+  } catch {
+    await contenido(page);
+  }
+};
 const dialogo = (page) => page.locator('[role="dialog"]:visible').last();
 
 async function esperarCarga(page) {
@@ -101,10 +110,10 @@ const pestana = (nombre) => async (page) => {
 const PANTALLAS = [
   { id: "dashboard", ir: (p) => ir(p, "/dashboard"), esperar: texto("en juego") },
   { id: "empresas", ir: (p) => ir(p, "/empresas"), esperar: texto("Nueva empresa") },
-  { id: "empresa-ficha", ir: (p) => abrirFicha(p, "/empresas", "Club Atlético San Justo"), esperar: texto("Resumen de la cuenta") },
+  { id: "empresa-ficha", ir: (p) => abrirFicha(p, "/empresas", "Club Atlético San Justo"), esperar: fichaLista },
   { id: "empresa-nueva", ir: (p) => ir(p, "/empresas"), esperar: texto("Nueva empresa"), preparar: abrirDialogo("Nueva empresa"), viewport: true },
   { id: "contactos", ir: (p) => ir(p, "/contactos"), esperar: texto("Nuevo contacto") },
-  { id: "contacto-ficha", ir: (p) => abrirFicha(p, "/contactos", /Gutiérrez/), esperar: texto("Resumen de la cuenta") },
+  { id: "contacto-ficha", ir: (p) => abrirFicha(p, "/contactos", /Gutiérrez/), esperar: fichaLista },
   { id: "oportunidades-tablero", ir: (p) => ir(p, "/oportunidades"), esperar: texto("Embudo comercial") },
   { id: "oportunidades-lista", ir: (p) => ir(p, "/oportunidades?vista=lista"), esperar: texto("Mostrando") },
   { id: "oportunidad-detalle", ir: (p) => abrirOportunidad(p, /Dos arcos de fútbol 5/), esperar: texto("Cambiar etapa") },

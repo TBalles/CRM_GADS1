@@ -6,17 +6,13 @@ import type { Tables } from "@/lib/supabase/types";
 const LINK = cn("rounded-[2px] text-(--crm-accent-text) underline-offset-2 hover:underline break-all", FOCUS);
 
 /**
- * Los datos de la ficha de una empresa como `DefinitionList` (los mismos de siempre: CUIT, teléfono, email, sitio web,
- * dirección, responsable, origen, alta). Lo usan la vista previa y la ficha. Sin "use client".
+ * El riel "Datos" de la ficha de una empresa como `DefinitionList`: teléfono, email, sitio web, dirección, origen y alta.
+ * El estado, el tipo, el responsable y el CUIT ya están en la franja de identidad (`DetailHeader`): no se repiten acá.
+ * Sin "use client".
  */
-export function datosEmpresa(
-  empresa: Tables<"empresas">,
-  nombres: { responsable: string | null; origen: string | null },
-  opciones: { conResponsable?: boolean } = {},
-): Definition[] {
+export function datosEmpresa(empresa: Tables<"empresas">, nombres: { origen: string | null }): Definition[] {
   const web = empresa.sitio_web ? hrefSitioWeb(empresa.sitio_web) : null;
   return [
-    { term: "CUIT", value: empresa.cuit, mono: true },
     { term: "Teléfono", value: empresa.telefono, mono: true },
     {
       term: "Email",
@@ -39,7 +35,6 @@ export function datosEmpresa(
         )),
     },
     { term: "Dirección", value: empresa.direccion },
-    ...(opciones.conResponsable === false ? [] : [{ term: "Responsable", value: nombres.responsable ?? "Sin asignar" }]),
     { term: "Origen", value: nombres.origen },
     { term: "Alta", value: formatFechaAlta(empresa.created_at), mono: true },
   ];

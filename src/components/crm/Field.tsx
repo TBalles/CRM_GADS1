@@ -51,7 +51,8 @@ export function Field({
         {label}
       </Label>
       {children({ id, "aria-describedby": describedBy, "aria-invalid": error ? true : undefined, required }, `${id}-label`)}
-      {help && !error && (
+      {/* La ayuda sigue a la vista con un error: explica justo lo que hay que corregir (y su id está en aria-describedby). */}
+      {help && (
         <p id={helpId} className={cn(TYPE.meta, "text-(--crm-text-2)")}>
           {help}
         </p>

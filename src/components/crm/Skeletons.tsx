@@ -18,12 +18,15 @@ export function ListSkeleton({
   columns,
   head,
   chips,
+  action = true,
 }: {
   title: string;
   label: `Cargando${string}`;
   columns: number;
   head: React.ReactNode;
   chips: string[];
+  /** La acción primaria de la barra ("Nueva…"): solo si el rol la tiene, para que no salte el layout al llegar. */
+  action?: boolean;
 }) {
   return (
     <div className={cn(UI_ROOT, "flex h-full min-h-0 flex-col bg-(--crm-canvas) px-4 xl:px-6")}>
@@ -32,7 +35,7 @@ export function ListSkeleton({
           <h1 className={TYPE.title}>{title}</h1>
           <Skeleton className="w-40" />
         </div>
-        <Skeleton className="h-8 w-36" />
+        {action && <Skeleton className="h-8 w-36" />}
       </div>
       <div className="flex min-h-10 items-center gap-2 py-1.5">
         <Skeleton className="h-7 w-64" />
@@ -51,47 +54,87 @@ export function ListSkeleton({
   );
 }
 
-/** Ficha: franja de identidad + tabs + contenido en esqueleto. `tabs`: anchos de las tabs que vienen. */
+/**
+ * Ficha con la forma de la que viene (`DetailHeader` + Tabs + Resumen de §10.13): franja en panel con el h1, la fila de
+ * metadatos y la acción primaria + `⋮` a la derecha, las tabs pegadas abajo; debajo, sin caja, la franja de cifras con
+ * sus divisores, una sección con su barra y su tabla, y el riel "Datos" (término | valor con hairlines) desde 1280.
+ * `tabs`: anchos de las tabs que vienen.
+ */
 export function DetailSkeleton({ tabs }: { tabs: string[] }) {
   return (
     <div aria-busy="true" className={cn(UI_ROOT, "flex min-h-full flex-col bg-(--crm-canvas)")}>
       <LoadingStatus label="Cargando la ficha…" />
-      <div className="border-b border-(--crm-border) bg-(--crm-panel) px-4 pt-3 xl:px-6">
-        <Skeleton className="h-6 w-72" />
-        <div className="mt-2 flex gap-4">
-          <Skeleton className="w-20" />
-          <Skeleton className="w-24" />
-          <Skeleton className="w-32" />
+      <div className="border-b border-(--crm-border) bg-(--crm-panel) px-4 xl:px-6">
+        <div className="flex items-start justify-between gap-6 pt-3">
+          <div className="flex flex-col gap-2 pt-0.5">
+            <Skeleton className="h-6 w-72 max-w-[60vw]" />
+            <div className="flex gap-4">
+              <Skeleton className="w-16" />
+              <Skeleton className="w-40" />
+              <Skeleton className="w-28" />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-40" />
+            <Skeleton className="size-8" />
+          </div>
         </div>
-        <div className="mt-4 flex h-10 items-center gap-6">
+        <div className="mt-2 flex h-10 items-center gap-6">
           {tabs.map((w, i) => (
             <Skeleton key={i} className={w} />
           ))}
         </div>
       </div>
-      <div className="grid gap-x-6 gap-y-5 p-4 xl:grid-cols-[minmax(0,1fr)_340px] xl:p-6">
-        <div className="flex flex-col gap-5">
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+      <div className="grid items-start gap-x-6 gap-y-5 px-4 py-4 xl:grid-cols-[minmax(0,1fr)_340px] xl:px-6">
+        <div className="flex min-w-0 flex-col gap-5">
+          <div className="grid grid-cols-2 gap-y-3 sm:grid-cols-5 [&>div]:border-l [&>div]:border-(--crm-border) [&>div]:px-4 [&>div:first-child]:border-l-0 [&>div:first-child]:pl-0">
             {Array.from({ length: 5 }, (_, i) => (
               <div key={i} className="flex flex-col gap-2">
                 <Skeleton className="w-20" />
-                <Skeleton className="h-6 w-24" />
+                <Skeleton className="h-5 w-24" />
               </div>
             ))}
           </div>
-          <div className="flex flex-col gap-2 rounded-(--crm-radius) border border-(--crm-border) bg-(--crm-panel) p-3">
-            {Array.from({ length: 4 }, (_, i) => (
-              <Skeleton key={i} className={i % 2 ? "w-1/2" : "w-2/3"} />
-            ))}
+          <div className="flex flex-col">
+            <div className="flex h-10 items-center">
+              <Skeleton className="w-40" />
+            </div>
+            <div className="rounded-(--crm-radius) border border-(--crm-border) bg-(--crm-panel)">
+              <div className="h-8 border-b border-(--crm-border-strong)" />
+              {Array.from({ length: 3 }, (_, i) => (
+                <div key={i} className="flex h-9 items-center justify-between border-b border-(--crm-border) px-3 last:border-b-0">
+                  <Skeleton className={i % 2 ? "w-1/3" : "w-1/2"} />
+                  <Skeleton className="w-20" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col">
+            <div className="flex h-10 items-center">
+              <Skeleton className="w-36" />
+            </div>
+            <div className="border-t border-(--crm-border)">
+              {Array.from({ length: 3 }, (_, i) => (
+                <div key={i} className="flex flex-col gap-1.5 border-b border-(--crm-border) py-2.5">
+                  <Skeleton className={i % 2 ? "w-1/2" : "w-2/3"} />
+                  <Skeleton className="w-1/3" />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-        <div className="flex flex-col gap-3 xl:border-l xl:border-(--crm-border) xl:pl-6">
-          {Array.from({ length: 7 }, (_, i) => (
-            <div key={i} className="grid grid-cols-[7rem_1fr] gap-3">
-              <Skeleton className="w-16" />
-              <Skeleton className={i % 2 ? "w-2/3" : "w-1/2"} />
-            </div>
-          ))}
+        <div className="flex min-w-0 flex-col xl:border-l xl:border-(--crm-border) xl:pl-6">
+          <div className="flex h-10 items-center">
+            <Skeleton className="w-12" />
+          </div>
+          <div className="divide-y divide-(--crm-border)">
+            {Array.from({ length: 6 }, (_, i) => (
+              <div key={i} className="grid grid-cols-[7rem_minmax(0,1fr)] gap-x-3 py-2">
+                <Skeleton className="w-16" />
+                <Skeleton className={i % 2 ? "w-2/3" : "w-1/2"} />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

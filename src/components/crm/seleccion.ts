@@ -32,13 +32,17 @@ export function tabValida<T extends string>(pedida: string | string[] | undefine
 }
 
 /**
- * A qué fila llevar el foco después de una acción sobre `id` (dar de baja, reactivar). Si la fila sigue en la lista
- * (`sale` falso), a ella misma; si sale, a la siguiente, o a la anterior si era la última; si era la única, null (el
- * foco va al buscador).
+ * A qué fila llevar el foco cuando la lista vuelve del servidor después de una acción sobre `id` (dar de baja,
+ * reactivar): `antes` y `despues` son los ids de la página antes y después. Si la fila sigue, ella misma; si salió (el
+ * filtro de bajas, un estado elegido a mano), la siguiente de las de antes que siga en la lista, o si no hay, la anterior
+ * más cercana; si no queda ninguna, null (el foco va al buscador). Se mira el resultado en vez de predecirlo: al
+ * reactivar, la base decide si vuelve como Cliente o Potencial, y eso decide si sigue en un filtro por estado.
  */
-export function filaTrasAccion(ids: readonly string[], id: string, sale: boolean): string | null {
-  if (!sale) return id;
-  const i = ids.indexOf(id);
+export function filaTrasRefresco(antes: readonly string[], despues: readonly string[], id: string): string | null {
+  if (despues.includes(id)) return id;
+  const i = antes.indexOf(id);
   if (i < 0) return null;
-  return ids[i + 1] ?? ids[i - 1] ?? null;
+  for (let j = i + 1; j < antes.length; j++) if (despues.includes(antes[j])) return antes[j];
+  for (let j = i - 1; j >= 0; j--) if (despues.includes(antes[j])) return antes[j];
+  return null;
 }

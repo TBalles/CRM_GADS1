@@ -227,7 +227,7 @@ export default function ContactoDetalle({
               {puedeVerOportunidades && <OportunidadesAbiertas oportunidades={oportunidades} etapas={etapas} verTodas={`${fichaHref}?tab=oportunidades`} />}
               {tabs.includes("actividad") && <ActividadReciente href={`${fichaHref}?tab=actividad`} fuentes={fuentes} />}
             </div>
-            <RielDatos label="Datos del contacto" items={datosContacto(contacto, { empresa, responsable, origen })} notas={contacto.notas} />
+            <RielDatos label="Datos del contacto" items={datosContacto(contacto, { origen })} notas={contacto.notas} />
           </div>
         )}
 

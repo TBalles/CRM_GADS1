@@ -33,20 +33,15 @@ export function mailDe(email: string | null) {
 }
 
 /**
- * Los datos de la ficha de un contacto como `DefinitionList` (los mismos de siempre: empresa, documento, email, teléfono,
- * cargo, responsable, origen, alta; las observaciones van aparte). Sin "use client".
+ * El riel "Datos" de la ficha de un contacto como `DefinitionList`: documento, email, teléfono, origen y alta (las
+ * observaciones van aparte). El estado, la empresa (o "Cliente individual"), el cargo y el responsable ya están en la
+ * franja de identidad (`DetailHeader`): no se repiten acá. Sin "use client".
  */
-export function datosContacto(
-  contacto: Tables<"contactos">,
-  nombres: { empresa: EmpresaOpcion | null; responsable: string | null; origen: string | null },
-): Definition[] {
+export function datosContacto(contacto: Tables<"contactos">, nombres: { origen: string | null }): Definition[] {
   return [
-    { term: "Empresa", value: empresaDelContacto(contacto, nombres.empresa) },
     { term: "Documento", value: contacto.documento, mono: true },
     { term: "Email", value: mailDe(contacto.email) },
     { term: "Teléfono", value: contacto.telefono, mono: true },
-    { term: "Cargo", value: contacto.cargo },
-    { term: "Responsable", value: nombres.responsable ?? "Sin asignar" },
     { term: "Origen", value: nombres.origen },
     { term: "Alta", value: formatFechaAlta(contacto.created_at), mono: true },
   ];

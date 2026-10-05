@@ -31,27 +31,24 @@ const ESTADOS = [
 ];
 
 /**
- * "5 años" / "18 meses": la vida útil es la columna que le da sentido a las alertas de recambio, así que es un dato
- * propio. Sin cargar se ve distinto de un número ("Sin seguimiento": no hace seguimiento). La barra fina compara contra lo
- * que MÁS dura del catálogo entero (un arco de cinco años y una pelota de uno se distinguen sin leer): es decorativa,
- * el dato es el texto.
+ * "5 años" / "18 meses": la vida útil es la que dispara las alertas de recambio, así que es un dato propio y en texto
+ * plano. Sin cargar (el producto no lleva seguimiento) no hay texto: "—" en la columna (con "Sin seguimiento" para
+ * lectores de pantalla) y nada en la línea de apoyo del celular.
  */
-function textoVida(meses: number | null): string {
-  if (meses == null) return "Sin seguimiento";
+function textoVida(meses: number): string {
   const anios = meses / 12;
   return meses >= 12 && Number.isInteger(anios) ? `${anios} ${anios === 1 ? "año" : "años"}` : `${meses} ${meses === 1 ? "mes" : "meses"}`;
 }
 
-function VidaUtil({ meses, max }: { meses: number | null; max: number }) {
-  if (meses == null) return <span className="text-(--crm-text-2)">{textoVida(meses)}</span>;
-  return (
-    <span className="inline-flex items-center gap-2">
-      <span aria-hidden="true" className="relative h-1 w-10 shrink-0 overflow-hidden bg-(--crm-border)">
-        <span className="absolute inset-y-0 left-0 bg-(--crm-text-2)" style={{ width: `${max ? Math.min(100, (meses / max) * 100) : 0}%` }} />
+function VidaUtil({ meses }: { meses: number | null }) {
+  if (meses == null)
+    return (
+      <span className="text-(--crm-text-2)">
+        <span aria-hidden="true">—</span>
+        <span className="sr-only">Sin seguimiento</span>
       </span>
-      <span className="tabular-nums">{textoVida(meses)}</span>
-    </span>
-  );
+    );
+  return <span className="tabular-nums">{textoVida(meses)}</span>;
 }
 
 /** Activo / De baja: punto + palabra (el color nunca es la única señal). */
@@ -88,7 +85,6 @@ export default function ProductosList({
   cuentasOk,
   totalCatalogo,
   conSeguimiento,
-  maxVida,
   categorias,
   puedeEditar,
 }: {
@@ -106,8 +102,6 @@ export default function ProductosList({
   /** Productos del catálogo entero, sin filtros. */
   totalCatalogo: number;
   conSeguimiento: number;
-  /** La vida útil más larga del catálogo entero: la barra se mide contra ella. */
-  maxVida: number;
   categorias: string[];
   /** Sin `productos.editar`: solo lectura. La base igual lo exige. */
   puedeEditar: boolean;
@@ -150,7 +144,7 @@ export default function ProductosList({
     refrescar();
   }
 
-  /** El `⋮` de una fila. Con el filtro "Activos" (o "De baja") el cambio de estado saca la fila: el foco va a la siguiente. */
+  /** El `⋮` de una fila. Si el cambio de estado la saca de la lista (filtro "Activos" o "De baja"), el foco va a la siguiente. */
   function menuDe(p: Producto): MenuItem[] {
     const items: MenuItem[] = [
       { label: "Editar", icon: Pencil, onSelect: () => editor.abrir(p) },
@@ -158,7 +152,7 @@ export default function ProductosList({
         ? { label: "Dar de baja", icon: Power, variant: "danger", onSelect: () => setDandoDeBaja(p) }
         : { label: "Reactivar", icon: Power, onSelect: () => void cambiarActivo(p) },
     ];
-    return foco.conFoco(items, p.id, (label) => (label === "Dar de baja" ? estadoValor === "activo" : estadoValor === "baja"));
+    return foco.conFoco(items, p.id);
   }
 
   function nuevo() {
@@ -274,7 +268,7 @@ export default function ProductosList({
                     />
                   </TableMessage>
                 ) : (
-                  productos.map((p) => <Fila key={p.id} producto={p} maxVida={maxVida} menu={puedeEditar ? menuDe(p) : null} />)
+                  productos.map((p) => <Fila key={p.id} producto={p} menu={puedeEditar ? menuDe(p) : null} />)
                 )}
               </TBody>
             </DataTable>
@@ -315,11 +309,14 @@ export default function ProductosList({
 
 /**
  * Una fila (MASTER.md §10.14). Las columnas que el contenedor esconde pasan a una línea de apoyo bajo el nombre:
- * - < 30rem (celular): estado · precio · categoría · vida útil · marca (lo que más pesa primero: la línea recorta al final).
+ * - < 30rem (celular): "De baja" (solo si lo está: "Activo" en cada fila es ruido) · precio · categoría · vida útil · marca
+ *   (lo que más pesa primero: la línea recorta al final).
  * - 30–45rem: categoría · vida útil · marca (precio y estado en sus columnas).
  * - ≥ 45rem: una sola línea; la marca en gris junto al nombre.
+ * Un producto de baja lleva el nombre en `--crm-text-2` (6.8:1, AA) además del punto + palabra: se distingue sin atenuar
+ * la fila entera (la opacidad bajaba el contraste debajo de AA).
  */
-function Fila({ producto: p, maxVida, menu }: { producto: Producto; maxVida: number; menu: MenuItem[] | null }) {
+function Fila({ producto: p, menu }: { producto: Producto; menu: MenuItem[] | null }) {
   return (
     <Tr data-id={p.id}>
       <Td className="py-1">
@@ -328,17 +325,19 @@ function Fila({ producto: p, maxVida, menu }: { producto: Producto; maxVida: num
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-baseline gap-2">
               <Tooltip content={p.nombre} onlyWhenTruncated>
-                <span className="block min-w-0 truncate font-medium">{p.nombre}</span>
+                <span className={cn("block min-w-0 truncate font-medium", !p.activo && "text-(--crm-text-2)")}>{p.nombre}</span>
               </Tooltip>
               {p.marca && <span className="hidden min-w-0 shrink-[2] truncate text-(--crm-text-2) @[45rem]:block">{p.marca}</span>}
             </div>
             <div className={cn(TYPE.meta, "truncate text-(--crm-text-2) @[45rem]:hidden [&>span]:mr-3")}>
-              <span className="@[30rem]:hidden">
-                <EstadoProducto activo={p.activo} className="align-[-1px]" />
-              </span>
+              {!p.activo && (
+                <span className="@[30rem]:hidden">
+                  <EstadoProducto activo={false} className="align-[-1px]" />
+                </span>
+              )}
               {p.precio != null && <span className="tabular-nums @[30rem]:hidden">{formatMoney(p.precio)}</span>}
               {p.categoria && <span>{p.categoria}</span>}
-              <span className="tabular-nums">{textoVida(p.vida_util_meses)}</span>
+              {p.vida_util_meses != null && <span className="tabular-nums">{textoVida(p.vida_util_meses)}</span>}
               {p.marca && <span>{p.marca}</span>}
             </div>
           </div>
@@ -349,7 +348,7 @@ function Fila({ producto: p, maxVida, menu }: { producto: Producto; maxVida: num
         <Precio valor={p.precio} />
       </Td>
       <Td hideBelow="md">
-        <VidaUtil meses={p.vida_util_meses} max={maxVida} />
+        <VidaUtil meses={p.vida_util_meses} />
       </Td>
       <Td hideBelow="sm">
         <EstadoProducto activo={p.activo} />

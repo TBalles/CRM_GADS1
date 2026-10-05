@@ -326,7 +326,7 @@ export default function EmpresaDetalle({
             </div>
 
             {/* Riel de propiedades: una columna, término a la izquierda, hairlines entre filas. */}
-            <RielDatos label="Datos de la empresa" items={datosEmpresa(empresa, { responsable, origen })} notas={empresa.notas} />
+            <RielDatos label="Datos de la empresa" items={datosEmpresa(empresa, { origen })} notas={empresa.notas} />
           </div>
         )}
 

@@ -63,6 +63,11 @@ export function parseMoney(masked: string | number | null | undefined): number {
  * Lets a caret be anchored to a DIGIT COUNT instead of a character offset, so
  * the separators the mask inserts or removes shift around the caret rather
  * than dragging it to the end of the field. See MoneyInput.
+ *
+ * Past the last digit the caret goes to the END of the masked value: typing
+ * "1.500" + "," leaves "1.500," with 4 digits before the caret, and the caret
+ * must land after the comma (before the fix it stayed before it, so the next
+ * digits went into the integer part: "1500,50" became "150.050,").
  */
 export function offsetAfterDigits(masked: string, count: number): number {
   if (count <= 0) return 0;
@@ -72,7 +77,21 @@ export function offsetAfterDigits(masked: string, count: number): number {
     if (masked[i] >= "0" && masked[i] <= "9") seen++;
     i++;
   }
+  // Ran out of digits: everything after the last one (a trailing ",") stays before the caret.
+  if (!/\d/.test(masked.slice(i))) return masked.length;
   return i;
+}
+
+/**
+ * Where the caret goes after masking `raw` (what the field holds after a keystroke or paste, caret at `caret`) into
+ * `masked`. On top of `offsetAfterDigits`: a caret at the end of `raw` stays at the end, and a caret right after a
+ * decimal comma the mask kept stays after it ("1.5|00" + "," -> "15,|00", not "15|,00").
+ */
+export function caretAfterMask(raw: string, caret: number, masked: string): number {
+  if (caret >= raw.length) return masked.length;
+  const digitsBefore = raw.slice(0, caret).replace(/\D/g, "").length;
+  const at = offsetAfterDigits(masked, digitsBefore);
+  return raw[caret - 1] === "," && masked[at] === "," ? at + 1 : at;
 }
 
 const nf0 = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });

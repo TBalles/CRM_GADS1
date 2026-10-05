@@ -268,7 +268,7 @@ src/
     Cancha.tsx                  MarcasCancha: la cancha en SVG sobre la superficie .cesped
     Equipamiento.tsx            Íconos del rubro (arco, red, pelota…) + IconoEquipo
     FiltrosUrl.tsx              useFiltrosUrl (filtros en la URL con router.replace + useTransition), CajaBusqueda (300 ms),
-                                FiltroSelect, FiltroChip, FiltroFecha, BarraPendiente
+                                FiltroSelect, FiltroFecha, BarraPendiente
     Paginacion.tsx              nav accesible con links ?page=N, selector de filas por página y "Mostrando 21-40 de 134"
     ConfirmModal.tsx            Alert dialog centrado (lo usa el logout)
     CierreModal.tsx             Cambiar etapa / Marcar ganada / Marcar perdida / Reabrir / Cambiar resultado, por `cambiar_etapa`
@@ -280,6 +280,7 @@ src/
       Lista.tsx                 useSeleccionUrl (master-detail por `?sel=`), useFocoFilas, ListFooter, PanelVistaPrevia
       seleccion.ts(+.check)     Lógica pura: ↑/↓ (vecinoSel), tab válida, fila que recibe el foco tras una acción
       PreviewPanel.tsx / Skeletons.tsx / MoneyInput.tsx   Vista previa, cargas (lista y ficha), monto con máscara
+      Toolbar.tsx               SearchField, ToggleChip y "Más filtros" (MasFiltros: los filtros secundarios con poco ancho)
       cuenta/SeccionesCuenta.tsx  Secciones de ficha 360 y vista previa compartidas por empresa y contacto
     Drawer.tsx                   Panel lateral derecho para los formularios de alta/edición
     RowActions.tsx               Menú "⋮" portaled que usan las filas de cada lista

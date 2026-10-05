@@ -220,32 +220,6 @@ export function FiltroSelect({
   );
 }
 
-/** Interruptor en forma de pastilla ("Ver dadas de baja"), atado a un parámetro de la URL. */
-export function FiltroChip({
-  filtros,
-  param,
-  children,
-}: {
-  filtros: FiltrosUrl;
-  param: string;
-  children: React.ReactNode;
-}) {
-  const activo = filtros.valor(param) === "1";
-  return (
-    <button
-      type="button"
-      aria-pressed={activo}
-      onClick={() => filtros.aplicar({ [param]: activo ? null : "1" })}
-      className={cn(
-        "inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-        activo ? "border-brand bg-brand/10 text-brand" : "border-input bg-background text-foreground hover:bg-accent",
-      )}
-    >
-      {children}
-    </button>
-  );
-}
-
 /**
  * Línea fina sobre los resultados mientras el servidor recalcula. Reserva su
  * lugar siempre (no empuja la lista) y no atenúa el texto: el contraste de lo

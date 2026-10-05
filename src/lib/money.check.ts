@@ -9,7 +9,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { maskMoney, maskFromNumber, offsetAfterDigits, parseMoney } from "./money.ts";
+import { caretAfterMask, maskMoney, maskFromNumber, offsetAfterDigits, parseMoney } from "./money.ts";
 
 test("maskMoney groups thousands with dots", () => {
   assert.equal(maskMoney("1000"), "1.000");
@@ -85,4 +85,54 @@ test("maskFromNumber seeds an edit form, and parses back unchanged", () => {
   for (const n of [0.5, 1500, 450000, 23423424.56]) {
     assert.equal(parseMoney(maskFromNumber(n)), n, `round trip failed for ${n}`);
   }
+});
+
+/** Una edición del campo: reemplaza [desde, hasta) por `texto` y enmascara, como hace MoneyInput (crm). */
+function editar(v: { valor: string; caret: number }, texto: string, desde = v.caret, hasta = v.caret) {
+  const raw = v.valor.slice(0, desde) + texto + v.valor.slice(hasta);
+  const masked = maskMoney(raw);
+  return { valor: masked, caret: caretAfterMask(raw, desde + texto.length, masked) };
+}
+/** Lo mismo con la cuenta de dígitos sola (ui/MoneyInput legacy, que usa `offsetAfterDigits`). */
+function editarLegacy(v: { valor: string; caret: number }, texto: string) {
+  const raw = v.valor.slice(0, v.caret) + texto + v.valor.slice(v.caret);
+  const masked = maskMoney(raw);
+  const digitos = raw.slice(0, v.caret + texto.length).replace(/\D/g, "").length;
+  return { valor: masked, caret: offsetAfterDigits(masked, digitos) };
+}
+const tipear = (texto: string, paso = editar) => [...texto].reduce((v, c) => paso(v, c), { valor: "", caret: 0 });
+
+test("typing 1500,50 key by key keeps the decimals (crm and legacy caret)", () => {
+  assert.deepEqual(tipear("1500,50"), { valor: "1.500,50", caret: 8 });
+  assert.deepEqual(tipear("1500,50", editarLegacy), { valor: "1.500,50", caret: 8 });
+  assert.equal(parseMoney(tipear("1500,50").valor), 1500.5);
+});
+
+test("a comma typed at the end leaves the caret after it", () => {
+  assert.deepEqual(tipear("1500,"), { valor: "1.500,", caret: 6 });
+  assert.deepEqual(tipear("1500,", editarLegacy), { valor: "1.500,", caret: 6 });
+});
+
+test("a comma typed mid-amount leaves the caret after it", () => {
+  // "1.5|00" + "," -> raw "1.5,00" -> "15,00", caret after the comma.
+  assert.deepEqual(editar({ valor: "1.500", caret: 3 }, ","), { valor: "15,00", caret: 3 });
+});
+
+test("deleting (backspace) from the end and from the middle", () => {
+  const conDecimal = { valor: "1.500,5", caret: 7 };
+  const a = editar(conDecimal, "", 6, 7);
+  assert.deepEqual(a, { valor: "1.500,", caret: 6 });
+  assert.deepEqual(editar(a, "", 5, 6), { valor: "1.500", caret: 5 });
+  // "1.5|00" backspace -> raw "1.00" -> "100", caret after the "1".
+  assert.deepEqual(editar({ valor: "1.500", caret: 3 }, "", 2, 3), { valor: "100", caret: 1 });
+});
+
+test("pasting a whole amount, and over a selection", () => {
+  assert.deepEqual(editar({ valor: "", caret: 0 }, "1500,50"), { valor: "1.500,50", caret: 8 });
+  assert.deepEqual(editar({ valor: "1.500", caret: 0 }, "2000", 0, 5), { valor: "2.000", caret: 5 });
+});
+
+test("a rejected character leaves the value as it was", () => {
+  // MoneyInput detecta "no cambió" y repone el cursor donde estaba (el input controlado lo mandaría al final).
+  assert.equal(maskMoney("1.5a00"), "1.500");
 });
