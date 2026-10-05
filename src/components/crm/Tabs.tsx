@@ -92,7 +92,7 @@ export function Tabs({
       role="tablist"
       aria-label={label}
       className={cn(
-        "flex min-w-0 items-end gap-4 overflow-x-auto border-b border-(--crm-border) [scrollbar-width:none]",
+        "relative flex min-w-0 items-end gap-4 overflow-x-auto border-b border-(--crm-border) [scrollbar-width:none]",
         mas.der && mas.izq
           ? "[mask-image:linear-gradient(to_right,transparent,black_24px,black_calc(100%-32px),transparent)]"
           : mas.der

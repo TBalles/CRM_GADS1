@@ -34,7 +34,7 @@ export function DataTable({
   children: React.ReactNode;
 }) {
   return (
-    <div className={cn("@container min-h-0 overflow-auto rounded-(--crm-radius) border border-(--crm-border) bg-(--crm-panel)", className)}>
+    <div className={cn("@container relative min-h-0 overflow-auto rounded-(--crm-radius) border border-(--crm-border) bg-(--crm-panel)", className)}>
       <table aria-label={label} aria-busy={busy || undefined} className={cn(TYPE.table, "w-full table-fixed border-separate border-spacing-0 text-left")}>
         {children}
       </table>

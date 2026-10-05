@@ -1027,43 +1027,57 @@ avisos. No hay confirmaciones (el legacy no tenía: un emitido no se anula ni se
   misma ventana: la captura del `article` sin la escala de pantalla y a la misma fracción de píxel es idéntica por dentro (solo los
   píxeles del borde, semitransparentes, mezclan con un fondo distinto) y `page.pdf()` da las mismas páginas (1, 1, 2) y el mismo texto.
 - **Vista dividida (≥ 1280):** `DetailHeader` (h1 = título exacto de la oportunidad, `CrumbLabel` como siempre; meta: "Volver a la
-  oportunidad" + la frase de estado de siempre, "Armá las líneas…" / "Estás viendo el presupuesto N° …, emitido el …") y, debajo,
-  dos columnas iguales con scroll propio: a la izquierda los avisos, el editor y "Presupuestos de esta oportunidad"; a la derecha la
-  hoja. Acciones: borrador → "Imprimir / Guardar PDF" (secundaria) + **"Guardar presupuesto"** (primaria; sin `oportunidades.editar`
-  la primaria es imprimir); emitido → "Volver al borrador" (ghost), "Usar como base de uno nuevo" (secundaria) e **"Imprimir /
-  Guardar PDF"** (primaria). Son tres como máximo: no hace falta `⋮`. `DetailHeader` ahora deja que sus acciones bajen de renglón
-  (`max-w-full flex-wrap`) en vez de empujar la página de costado; con acciones que entran no cambia nada.
+  oportunidad"; la frase de estado de siempre —"Armá las líneas…" / "Estás viendo el presupuesto N° …, emitido el …"— en su propio
+  renglón con el nuevo `note` de `DetailHeader`, así una frase larga ya no baja las acciones debajo del título a 1024–1280) y, debajo,
+  dos columnas con scroll propio y el encabezado fijo: **editor | hoja** en `minmax(0,1fr) | round(down, 40%, 1px)` (el editor con
+  más lugar; el 40 % de la hoja redondeado a píxel entero, porque en una x fraccionaria Chrome dibuja el texto con suavizado gris);
+  con un **guardado en pantalla** no hay editor y queda `26rem | hoja` (la hoja a 0,84 a 1440 en vez de 0,49). A la izquierda los
+  avisos, el editor y "Presupuestos de esta oportunidad"; a la derecha la hoja. Acciones: borrador → "Imprimir / Guardar PDF"
+  (secundaria) + **"Guardar presupuesto"** (primaria; sin `oportunidades.editar` la primaria es imprimir); emitido → "Volver al
+  borrador" (ghost), "Usar como base de uno nuevo" (secundaria) e **"Imprimir / Guardar PDF"** (primaria). Son tres como máximo: no
+  hace falta `⋮`. `DetailHeader` deja que sus acciones bajen de renglón (`max-w-full flex-wrap`) en vez de empujar la página de costado.
 - **Hoja a escala** (`HojaEscalada`): se dibuja a su ancho natural (56rem, el máximo de siempre) y un `transform: scale()` la
-  achica para que entre entera en su columna (nunca la agranda: 0,63 a 1440, 0,54 a 1280, 0,88 a 1903, 1 a 1024). El marco toma el
-  alto ya escalado (medido con `ResizeObserver`; hasta medir, la hoja no se ve: sin salto). En `@media print` cada envoltorio vuelve
-  a bloque sin escala, alto, padding, fondo ni scroll (`print:` en las clases), así la hoja imprime como antes. Cada contenedor con
-  scroll tiene fondo opaco (`--crm-canvas`): Chrome solo dibuja el texto con suavizado LCD sobre una capa de scroll opaca, y sin eso
-  la hoja a escala 1 (1024) se veía con otro suavizado.
-- **Una columna (< 1280):** todo scrollea junto (sin scroll del documento ni de costado): editor, **hoja** y guardados, en el orden
-  de siempre (la columna izquierda es `display: contents` y cada bloque lleva `order`). La hoja también se escala a lo ancho (a 390,
-  0,4: se ve entera; las cifras están en el editor y el texto real en el PDF). No hay "Ver hoja" (el legacy no lo tenía).
+  achica para que entre entera en su columna (nunca la agranda; a escala 1, sin `transform`). Escalas medidas (borrador): 0,49 a
+  1440, 0,42 a 1280, 0,70 a 1903, 1 a 1024, 0,76 a 768, 0,40 a 390; el texto chico de la hoja (12 px) se ve de unos 6 px a 1440, 5 px
+  a 1280 y 4,8 px a 390: **es una vista de conjunto**. Para leerla, el interruptor **"Ver hoja a tamaño real"** (`ToggleChip`,
+  `aria-pressed`, apagado = "Ajustar"; estado solo de la pantalla) arriba de la hoja: escala 1 y el contenedor de la hoja scrollea
+  de costado (`role="region"` "Hoja a tamaño real", entra en el orden de Tab y se mueve con las flechas); el `<main>` no scrollea. En
+  el celular reemplaza a la miniatura de 0,4 como opción. El marco toma el alto ya escalado (medido con `ResizeObserver`; hasta medir
+  la hoja no se ve: sin salto). En `@media print` cada envoltorio vuelve a bloque sin escala, alto, padding, fondo ni scroll
+  (`print:` en las clases) y el interruptor no sale: la hoja imprime como antes, con o sin "tamaño real". Cada contenedor con scroll
+  tiene fondo opaco (`--crm-canvas`) y la columna de la hoja es `isolate`: sin eso Chrome dibujaba la hoja a escala 1 (1024) con otro
+  suavizado de texto que el legacy, por las textareas del editor que se pintan antes.
+- **Una columna (< 1280):** scrollea entera, **encabezado incluido** (en el celular el encabezado fijo ocupaba ~245 de 844 px):
+  editor, **hoja** y guardados, en el orden de siempre (la columna izquierda es `display: contents` y cada bloque lleva `order`).
+  La hoja también se escala a lo ancho, con el mismo interruptor.
 - **Grilla de líneas** (ARIA `table` "Líneas" con `columnheader`, `row` y `cell`; cabecera y filas con el MISMO template por ancho
-  de contenedor): ≥ 54rem una fila (Producto · Descripción* · Cantidad* · Precio unitario · Dto. % · Importe · acciones); 30–54rem
-  (la columna del editor a 1280 y 1440, 768) dos renglones bajo una cabecera de dos renglones (Producto · Descripción · acciones /
-  Cantidad · Precio · Dto. · Importe, que usa también la columna de las acciones); < 30rem (celular) un formulario corto por línea
-  con los labels a la vista y la cabecera solo para lectores. En la grilla los controles son los compactos de 28; en el celular, de
-  32 con texto de 16. Ids y nombres de siempre: `#linea-<key>-producto|descripcion|cantidad|precio|descuento` (E2E busca
-  `input[id$="-descripcion"]` y `-precio`), labels "Cantidad de la línea N"…, `importe-N`, "Subir / Bajar / Quitar la línea N"
-  (`IconButton sm` con `Tooltip`; ya sin `title=`). Precio con `MoneyInput`; cantidad y descuento con la máscara de siempre;
-  producto con el `Select` con buscador ("Texto libre" suelta el producto). Errores debajo de cada campo (`FieldError`,
-  `aria-invalid` + `aria-describedby`).
+  de contenedor): **30–64rem** (la columna del editor desde 1280 —también a 1903, ~60rem—, 1024 y 768) dos renglones bajo una
+  cabecera de dos renglones: **Descripción\* a todo el ancho** · acciones / Producto · Cantidad\* · Precio unitario · Dto. % ·
+  Importe (la descripción es lo que se imprime: 425 px a 1280, 521 a 1440, 772 a 1024, 799 a 1903); **≥ 64rem** (solo pantallas
+  muy anchas) una fila (Producto · Descripción · Cantidad · Precio · Dto. · Importe · acciones); **< 30rem** (celular) un formulario
+  corto por línea con los labels a la vista (descripción, producto, cantidad y precio a todo el ancho, dto. | importe) y la cabecera
+  solo para lectores. Precio de **10rem** en los dos templates ("$ 12.345.678,90" entero) e importe de 8rem ("$37.037.036,70"). En
+  la grilla los controles son los compactos de 28; en el celular, de 32 con texto de 16. Ids y nombres de siempre:
+  `#linea-<key>-producto|descripcion|cantidad|precio|descuento` (E2E busca `input[id$="-descripcion"]` y `-precio`), labels
+  "Cantidad de la línea N"…, `importe-N`, "Subir / Bajar / Quitar la línea N" (`IconButton sm` con `Tooltip`; ya sin `title=`).
+  Precio con `MoneyInput`; cantidad y descuento con la máscara de siempre; producto con el `Select` con buscador ("Texto libre"
+  suelta el producto). **Errores:** en su propia fila (`role="row"` con UNA celda `aria-colspan={7}`) debajo de la línea, a todo el
+  ancho; cada `FieldError` conserva su id (`aria-describedby` del campo, que queda en rojo). Adentro de la fila de la línea no eran
+  celdas (axe `aria-required-children`) y en una columna de 64 px quedaban en cinco renglones.
 - **Pie de la grilla:** "Agregar del catálogo" (`Select` con buscador, `#agregar-producto`) + "Agregar línea libre"
   (`#agregar-linea`) a la izquierda y los **totales del borrador** a la derecha (Subtotal y Descuentos si corresponden, Neto gravado
   e IVA 21 % si discrimina, Total: las mismas cuentas y condiciones que la hoja, sin `data-testid` para no duplicar los de la hoja).
   Debajo, "Validez (días)" (`#validez`), "Condiciones" (`#condiciones`) y "Observaciones" (`#notas`) con `Field`, y la ayuda de siempre.
-- **Foco:** agregar (del catálogo o libre) → el primer campo de la línea nueva; quitar → el primer campo de la línea que ocupa su
-  lugar (o de la anterior; sin líneas, "Agregar línea libre"); mover → el mismo botón de la línea movida (en el borde, el otro:
-  "Subir" en la primera pasa a "Bajar"); guardar bien → "Imprimir / Guardar PDF"; "Volver al borrador" / "Usar como base" →
-  "Agregar del catálogo" (el botón apretado desaparece). Lógica pura en `logica.ts` (+ `.check`): `lineasIniciales`,
+- **Foco:** agregar (del catálogo o libre) → la descripción de la línea nueva (su primer campo); quitar → la descripción de la
+  línea que ocupa su lugar (o de la anterior; sin líneas, "Agregar línea libre"); mover → el mismo botón de la línea movida (en el
+  borde, el otro: "Subir" en la primera pasa a "Bajar"); guardar bien → "Imprimir / Guardar PDF"; imprimir → vuelve a "Imprimir /
+  Guardar PDF" cuando se habilita (mientras imprime está deshabilitado y el foco caía en `<body>`; un destino deshabilitado queda
+  pendiente); "Volver al borrador" / "Usar como base" → "Agregar del catálogo" (el botón apretado desaparece). Lógica pura en `logica.ts` (+ `.check`): `lineasIniciales`,
   `aLinea`/`deLinea`, `lineaLibre`, `lineaDeProducto`, `cambioDeProducto`, `moverLinea`, `botonTrasMover`, `focoTrasQuitar`.
 - **Estado** en `usePresupuesto.ts` (el del legacy, misma conducta); el guardado corre con `sinTrabarse`: si la llamada TIRA,
   "Guardando…" se apaga y el error va al banner.
-- **Guardados:** `SectionBar` "Presupuestos de esta oportunidad" + contador y `DataTable` del mismo nombre: Número (mono; "(en
+- **Guardados:** región (`section aria-label`, la usa la figura `presupuesto-guardado` del manual) con `SectionBar` "Presupuestos de
+  esta oportunidad" + contador y `DataTable` del mismo nombre: Número (mono; "(en
   pantalla)" y la fila `selected`) · Fecha (< 30rem, debajo del número) · Total (`$` gris + mono) · Historial ("Registrado" / "Sin
   registrar"; < 60rem, debajo del número) · "Ver / reimprimir" (`sm`, con "el presupuesto N° …" para lectores). Vacío: "Todavía no
   guardaste ninguno." + "Al guardar, el presupuesto recibe su número.".
@@ -1073,6 +1087,15 @@ avisos. No hay confirmaciones (el legacy no tenía: un emitido no se anula ni se
   entrar desde la ficha (mismo route group) Next muestra esta carga. `(legacy)/loading.tsx` volvió a ser el cargador de marca de
   siempre (sin el caso especial del Lote C).
 - **Se borró** (sin usuarios): `components/cliente.tsx` (`Dato`, `Seccion`) y `components/AvisoMigracion.tsx`.
+- **Revisión (Lote D2):** `MoneyInput` ya no pierde dígitos tipeando rápido: después de una tecla rechazada el cursor se repone un
+  cuadro más tarde solo si el campo sigue con el foco y con el MISMO valor (`caretAfterRejected` / `shouldRestoreCaret` en
+  `lib/money`, probados en `money.check.ts` con un modelo de tipeo rápido); antes "-200" daba "20" y "a1500,50" daba "150,5".
+  **Contenedores con scroll propio = posicionados** (`relative`): un `sr-only` (absoluto) toma como bloque contenedor el ancestro
+  posicionado más cercano; si el scroll no lo es, el `sr-only` se sale de él y estira el scroll del `<main>` (que es `relative`). Se
+  vio en el tablero de Oportunidades a 390 (`main.scrollWidth` 1224 contra 390) y se corrigió en la raíz: la región "Columnas del
+  embudo" y sus columnas, el recorrido de la ficha, el contenedor de `DataTable`, la fila de `Tabs`, `PreviewPanel`, la matriz de
+  roles y las columnas del presupuesto. La sonda de regresión mide `main.scrollWidth <= main.clientWidth` (y, en las pantallas de
+  alto completo, que el `<main>` tampoco scrollee de alto) en todas las pantallas a 1903/1440/1280/1024/768/390.
 
 ### 10.21 Inicio (Lote E, construido)
 `src/app/(app)/(crm2)/dashboard/` (`git mv` de `page.tsx` y `loading.tsx` desde `(legacy)`; `charts.tsx` se borró: `MagnitudeBars` y

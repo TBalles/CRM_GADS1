@@ -471,7 +471,7 @@ export default function OportunidadesView({
             tabIndex={desborda ? 0 : undefined}
             className={cn(
               // Una sola barra horizontal (la del tablero); cada columna scrollea solo de alto, dentro del área de trabajo.
-              "-mx-4 flex min-h-0 flex-1 snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-3 sm:snap-none xl:-mx-6 xl:px-6",
+              "relative -mx-4 flex min-h-0 flex-1 snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-3 sm:snap-none xl:-mx-6 xl:px-6",
               "transition-opacity duration-(--crm-dur-fast)",
               filtros.pending && "opacity-60 motion-reduce:transition-none",
               FOCUS,
@@ -522,7 +522,7 @@ export default function OportunidadesView({
                       if (id) mover(id, etapa.id);
                     }}
                     className={cn(
-                      "-mx-1 flex min-h-24 flex-1 flex-col gap-2 overflow-y-auto rounded-(--crm-radius) px-1 py-2 transition-colors duration-(--crm-dur-fast)",
+                      "relative -mx-1 flex min-h-24 flex-1 flex-col gap-2 overflow-y-auto rounded-(--crm-radius) px-1 py-2 transition-colors duration-(--crm-dur-fast)",
                       sobre && "bg-(--crm-selected) shadow-[inset_0_0_0_2px_var(--crm-accent)]",
                     )}
                   >

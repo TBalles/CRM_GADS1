@@ -94,6 +94,24 @@ export function caretAfterMask(raw: string, caret: number, masked: string): numb
   return raw[caret - 1] === "," && masked[at] === "," ? at + 1 : at;
 }
 
+/**
+ * A rejected keystroke (a letter, a "-"): the mask leaves the value as it was and the controlled input would send the
+ * caret to the end. `caretAfterRejected` is where it was before typing (`valor` = the value kept, `raw` = what the field
+ * held with the rejected key, `caret` = the caret after it).
+ */
+export function caretAfterRejected(valor: string, raw: string, caret: number): number {
+  return Math.max(0, Math.min(valor.length, caret - (raw.length - valor.length)));
+}
+
+/**
+ * The caret is put back one frame later. Only if nothing happened meanwhile: the field still has the focus AND still
+ * holds the value kept at the rejection. With fast typing ("-200") valid keys land before that frame; moving the
+ * caret back then put the next digit in the wrong place and the mask dropped digits ("-200" -> "20").
+ */
+export function shouldRestoreCaret(focused: boolean, domValue: string, keptValue: string): boolean {
+  return focused && domValue === keptValue;
+}
+
 const nf0 = new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 });
 
 /** Display formatter for amounts already stored as numbers. */

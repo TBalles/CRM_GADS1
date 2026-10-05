@@ -44,12 +44,16 @@ export function DetailHeader({
   meta,
   actions,
   tabs,
+  note,
 }: {
   title: string;
   /** Estado (StatusDot), tipo, responsable, identificadores: separados por la propia fila. */
   meta?: React.ReactNode;
   actions?: React.ReactNode;
   tabs?: React.ReactNode;
+  /** Una frase de estado en su propio renglón, a todo el ancho, debajo del título y las acciones (Presupuesto): así una
+   *  frase larga no empuja las acciones debajo del título. */
+  note?: React.ReactNode;
 }) {
   return (
     <header className="shrink-0 border-b border-(--crm-border) bg-(--crm-panel) px-4 xl:px-6">
@@ -64,6 +68,7 @@ export function DetailHeader({
             empujar la página de costado. Cuando entran, no cambia nada. */}
         {actions && <div className="flex max-w-full shrink-0 flex-wrap items-center gap-2">{actions}</div>}
       </div>
+      {note && <p className={cn(TYPE.table, "mt-1 text-(--crm-text-2)")}>{note}</p>}
       {tabs && <div className="-mb-px mt-2">{tabs}</div>}
       {!tabs && <div className="h-3" />}
     </header>

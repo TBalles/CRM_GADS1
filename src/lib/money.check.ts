@@ -9,7 +9,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { caretAfterMask, maskMoney, maskFromNumber, offsetAfterDigits, parseMoney } from "./money.ts";
+import { caretAfterMask, caretAfterRejected, maskMoney, maskFromNumber, offsetAfterDigits, parseMoney, shouldRestoreCaret } from "./money.ts";
 
 test("maskMoney groups thousands with dots", () => {
   assert.equal(maskMoney("1000"), "1.000");
@@ -135,4 +135,43 @@ test("pasting a whole amount, and over a selection", () => {
 test("a rejected character leaves the value as it was", () => {
   // MoneyInput detecta "no cambió" y repone el cursor donde estaba (el input controlado lo mandaría al final).
   assert.equal(maskMoney("1.5a00"), "1.500");
+});
+
+test("a rejected key puts the caret back where it was, never past the value", () => {
+  // "1.5|00" + "a" -> raw "1.5a00", caret 4 -> back to 3.
+  assert.equal(caretAfterRejected("1.500", "1.5a00", 4), 3);
+  assert.equal(caretAfterRejected("", "-", 1), 0);
+  assert.equal(caretAfterRejected("12", "12x", 3), 2);
+});
+
+/**
+ * Tipeo rápido: el cursor se repone UN cuadro después del rechazo y para entonces pudieron llegar otras teclas. Se modela
+ * con `restos` = cuántas teclas válidas llegan antes de ese cuadro. Sin la guarda (`guarda: false`) se reproduce el bug.
+ */
+function tipearRapido(texto: string, restos: number, guarda = true) {
+  let v = { valor: "", caret: 0 };
+  let pendiente: { caret: number; conservado: string; quedan: number } | null = null;
+  for (const c of texto) {
+    const raw = v.valor.slice(0, v.caret) + c + v.valor.slice(v.caret);
+    const masked = maskMoney(raw);
+    if (masked === v.valor) pendiente = { caret: caretAfterRejected(v.valor, raw, v.caret + 1), conservado: v.valor, quedan: restos };
+    else v = { valor: masked, caret: caretAfterMask(raw, v.caret + 1, masked) };
+    if (pendiente && pendiente.quedan-- <= 0) {
+      if (!guarda || shouldRestoreCaret(true, v.valor, pendiente.conservado)) v = { ...v, caret: pendiente.caret };
+      pendiente = null;
+    }
+  }
+  return v.valor;
+}
+
+test("fast typing after a rejected key keeps every digit", () => {
+  for (const restos of [0, 1, 2]) {
+    assert.equal(tipearRapido("-200", restos), "200");
+    assert.equal(tipearRapido("a1500,50", restos), "1.500,50");
+    assert.equal(tipearRapido("1500,50", restos), "1.500,50");
+  }
+  // Sin la guarda, el cuadro tardío lleva el cursor al 0 y se pierden dígitos (en el navegador "-200" quedó en "20").
+  assert.notEqual(tipearRapido("-200", 1, false), "200");
+  assert.equal(shouldRestoreCaret(true, "1.500", "1.500"), true);
+  assert.equal(shouldRestoreCaret(false, "1.500", "1.500"), false);
 });

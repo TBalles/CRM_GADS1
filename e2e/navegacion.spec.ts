@@ -63,7 +63,7 @@ test.describe("listas, búsqueda global y presupuesto (solo lectura)", () => {
     await page.locator('input[id$="-descripcion"]').last().fill("Línea de prueba E2E");
     await page.locator('input[id$="-precio"]').last().fill("1000");
     // El seed deja la oportunidad en $50.000 (una línea) y se suman $1.000: neto $51.000, IVA 21 % = $10.710, total $61.710.
-    const importe = async (id: string) => Number((await page.getByTestId(id).innerText()).replace(/[^d,]/g, "").replace(",", "."));
+    const importe = async (id: string) => Number((await page.getByTestId(id).innerText()).replace(/[^\d,]/g, "").replace(",", "."));
     expect(await importe("neto")).toBe(51000);
     expect(await importe("iva")).toBe(10710);
     expect(await importe("total")).toBe(61710);

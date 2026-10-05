@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { caretAfterMask, maskMoney } from "@/lib/money";
+import { caretAfterMask, caretAfterRejected, maskMoney, shouldRestoreCaret } from "@/lib/money";
 import { Input } from "./Field";
 import { cn } from "./cx";
 
@@ -55,9 +55,12 @@ export function MoneyInput({
             // Nada cambió (carácter rechazado): React repone el valor controlado y el cursor saltaría al final; el
             // efecto de abajo no corre porque `value` no cambió, así que se repone acá, después de ese reseteo, donde
             // estaba antes de tipear.
-            const antes = Math.max(0, Math.min(value.length, caret - (crudo.length - value.length)));
+            // Solo si en ese cuadro no llegó otra tecla válida (`shouldRestoreCaret`): tipeando rápido "-200", reponer el
+            // cursor después del "2" ponía el "0" adelante y se perdían dígitos.
+            const conservado = value;
+            const antes = caretAfterRejected(conservado, crudo, caret);
             requestAnimationFrame(() => {
-              if (document.activeElement === el) el.setSelectionRange(antes, antes);
+              if (shouldRestoreCaret(document.activeElement === el, el.value, conservado)) el.setSelectionRange(antes, antes);
             });
             return;
           }

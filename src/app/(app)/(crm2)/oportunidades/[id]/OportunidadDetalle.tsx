@@ -270,7 +270,7 @@ export default function OportunidadDetalle({
               ref={recorrido}
               aria-label="Recorrido por el embudo"
               className={cn(
-                "flex min-w-0 flex-1 basis-full snap-x gap-1 overflow-x-auto scroll-px-6 [scrollbar-width:none] xl:basis-0",
+                "relative flex min-w-0 flex-1 basis-full snap-x gap-1 overflow-x-auto scroll-px-6 [scrollbar-width:none] xl:basis-0",
                 mas.der && mas.izq
                   ? "[mask-image:linear-gradient(to_right,transparent,black_24px,black_calc(100%-32px),transparent)]"
                   : mas.der

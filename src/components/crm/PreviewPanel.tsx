@@ -11,7 +11,7 @@ import { TYPE, cn } from "./cx";
  * (Empresas, Contactos) con sus datos. Solo existe desde 1280 (debajo, la lista quita `sel` de la URL).
  */
 
-const ASIDE = "hidden min-h-0 w-[400px] shrink-0 flex-col overflow-y-auto border-l border-(--crm-border) bg-(--crm-panel) xl:flex 2xl:w-[440px]";
+const ASIDE = "relative hidden min-h-0 w-[400px] shrink-0 flex-col overflow-y-auto border-l border-(--crm-border) bg-(--crm-panel) xl:flex 2xl:w-[440px]";
 
 /**
  * `aside` de 400 (440 desde 2xl), borde izquierdo, sin sombra. Header fijo: nombre (h2) + "Fuera de la lista actual" si

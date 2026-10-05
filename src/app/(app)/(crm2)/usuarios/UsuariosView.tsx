@@ -424,7 +424,7 @@ function Roles({
   // En el celular se ve una sola columna de rol: la elegida. Desde 30rem, todas.
   const columna = (id: string) => (id === rolVisto ? "" : "hidden @[30rem]:table-cell");
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-3">
+    <div className="relative flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-3">
       <section className="flex shrink-0 flex-col">
         <SectionBar title="Roles" count={roles.length} />
         <DataTable label="Roles">
