@@ -70,10 +70,10 @@ contratos de accesibilidad y la definición de terminado de una pantalla migrada
 - **Sumar un primitivo:** archivo nuevo en `components/crm/`; solo tokens (ningún color, radio, sombra ni z-index literal);
   todo lo flotante por `CrmPortal` con `UI_ROOT`, `position: fixed` y su `--crm-z-*`; Escape/clic afuera con `useLayer`; nunca
   `title=` (el TooltipHost legacy lo reescribe y rompe la hidratación); spec en MASTER §10; si suma un par de color, agregarlo a
-  `PARES` en `src/lib/contrasteCrm.ts` (`npm test` lo mide); una muestra en el laboratorio.
-- **Laboratorio:** `/crm-lab` (solo `next dev`; en producción da 404; no enlazado). Muestra cada primitivo en sus estados, en claro
-  y oscuro. Vive en `(crm2)` y se borra antes de lanzar la 2.0. Desde la Etapa 2 el shell (`components/crm/shell/`) también usa
-  los primitivos.
+  `PARES` en `src/lib/contrasteCrm.ts` (`npm test` lo mide).
+- **Laboratorio (borrado):** `/crm-lab` mostraba cada primitivo en sus estados, en claro y oscuro (solo `next dev`; en producción daba 404; no
+  estaba enlazado). Vivía en `(crm2)` y se borró antes de lanzar la 2.0; hoy los primitivos se ven en las pantallas y en el shell
+  (`components/crm/shell/`).
 - **Fuentes:** desde la Etapa 2 el chrome usa Plex Sans en toda pantalla del CRM: `preload: true` en Sans (next/font precarga un
   archivo, el de 400, que el shell usa en todo ancho); Mono sigue con `preload: false`. Desde el Lote F `/admin` también usa el marco
   nuevo (`AppFrame plataforma`), así que la precarga de Sans 400 se usa ahí también.

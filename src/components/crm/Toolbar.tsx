@@ -25,7 +25,7 @@ export function Toolbar({ label = "Filtros", children, className }: { label?: st
 }
 
 /**
- * Buscador atado a `?q=` (o `param`): mismo comportamiento que `CajaBusqueda` (300 ms o Enter; sigue a la URL si cambia
+ * Buscador atado a `?q=` (o `param`): mismo comportamiento que el antiguo `CajaBusqueda` (300 ms o Enter; sigue a la URL si cambia
  * por atrás/adelante), con el campo de 28 de CRM 2.0. `label` es su nombre accesible (contrato de E2E).
  */
 export function SearchField({

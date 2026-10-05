@@ -12,7 +12,7 @@ pegan en el SQL Editor de Supabase.
 | `npm run lint` (`eslint src e2e playwright.config.ts scripts/guard playwright.guard.config.ts --max-warnings=0`) | Sin advertencias |
 | `npm run guard:frozen` | Pasa: 39 archivos congelados intactos y ningún cambio respecto de `main`; `crm.css` solo bajo `[data-crm]` |
 | `npm run typecheck` | Sin errores |
-| `npm run build` | Compila. El listado de rutas tiene **26 entradas**: las 22 páginas (las 21 de la 1.0.0 más `/crm-lab`, la vitrina de primitivos, que en producción responde 404), los 2 route handlers, `/_not-found` e `/icon.svg` |
+| `npm run build` | Compila. El listado de rutas tiene **25 entradas**: las 21 páginas (las mismas de la 1.0.0), los 2 route handlers, `/_not-found` e `/icon.svg` |
 | `npm run guard` (con `GUARD_BASE_URL` apuntando a ese build) | `guard:frozen` pasa y `guard:landing`: **7 de 7** comparaciones de píxeles iguales (`/` a 1440, 768 y 390; `/login` y `/recuperar` a 1440 y 390) |
 | Manual de usuario | `npm run manual:capturas` contra ese build y la demo (solo navegación) y `npm run manual:pdf`: **93 páginas**, 6,6 MB, 61 de 65 figuras capturadas y 4 pendientes (IA y superadmin); el índice coincide con el PDF |
 | E2E (`npm run test:e2e`) | **No se corrieron** en el rediseño: escriben en la base. Se conservaron sus contratos (MASTER §13.2); tienen que correr en CI con los secretos después del merge |

@@ -208,7 +208,6 @@ src/
                                  cada pantalla arma su marco con los primitivos de `components/crm`
       (crm2)/loading.tsx / error.tsx   Carga (esqueleto + "Cargando…") y error ("Reintentar") de respaldo de CRM 2.0
       (crm2)/sin-permisos/       Destino cuando el rol no tiene ninguna sección (h1 + "Volver al inicio"; texto neutro si el rol sí tiene secciones)
-      (crm2)/crm-lab/            Laboratorio de los primitivos de `components/crm` (solo con `next dev`: en producción da 404; no está enlazado)
       (crm2)/configuracion/      CRM 2.0 (Lote F): sub-navegación por `?s=empresa|etapas|tipos|origenes|motivos` (columna desde 1024,
                                    tabs debajo; cambia con history.pushState, sin ir al servidor), catálogos como tablas compactas
         page.tsx / loading.tsx   Server Component: organización, etapas, tipos, orígenes, motivos y el logo firmado (sin cambios)
@@ -279,8 +278,7 @@ src/
   components/
     ui/                        Sumar UI Kit de la landing, el acceso y el layout raíz: ya no es la base del CRM, que usa `crm/` (congelados: UIComponents, Toast y Tooltip)
       UIComponents.tsx          cn, Card, Button, Input… (congelado: lo importan las pantallas de acceso)
-      Select.tsx                Select del kit (lo usa FiltroSelect de FiltrosUrl)
-      KpiCard.tsx               Sin usos (quedó de antes del Lote E; no se borró en el Lote F)
+      Select.tsx                Select del kit (sin usos desde que se borró FiltroSelect de FiltrosUrl)
       Toast.tsx / Tooltip.tsx   ToastProvider y TooltipHost del layout raíz (congelados)
       overlay.ts / backdropClose.ts   Hooks de capa y cierre a prueba de arrastre (backdropClose lo usan los overlays CRM)
     landing/                    Solo para la landing pública (ver design-overrides.md §12)
@@ -291,9 +289,8 @@ src/
     Logo.tsx                    GoalMark: isotipo en currentColor (sidebar, login, loader)
     Cancha.tsx                  MarcasCancha: la cancha en SVG sobre la superficie .cesped
     Equipamiento.tsx            Íconos del rubro (arco, red, pelota…) + IconoEquipo
-    FiltrosUrl.tsx              useFiltrosUrl (filtros en la URL con router.replace + useTransition), CajaBusqueda (300 ms),
-                                FiltroSelect, AnuncioResultados (las pantallas usan useFiltrosUrl y AnuncioResultados; FiltroFecha y BarraPendiente se borraron en el Lote E)
-    Paginacion.tsx              Sin usos (la reemplazó crm/Pagination con el mismo contrato; no se borró en el Lote F)
+    FiltrosUrl.tsx              useFiltrosUrl (filtros en la URL con router.replace + useTransition), useBusquedaUrl (300 ms),
+                                AnuncioResultados (FiltroFecha y BarraPendiente se borraron en el Lote E; CajaBusqueda y FiltroSelect, antes de la 2.0)
     crm/                        CRM 2.0 (design-system/crm-2/MASTER.md §10): primitivos, shell y composiciones. Se importan por archivo, sin barril
       Button / Field / Select / Menu / Popover / Tooltip / Tabs / Status / Panel / Feedback / Drawer / Dialog / Toast / Pagination / DataTable
                                 Primitivos de la Etapa 1 (Button y Field, Status, Panel, Feedback y DataTable son server-safe); consumen solo `--crm-*`

@@ -39,7 +39,7 @@ let siguienteId = 1;
  *   ya existe (así lo anuncian los lectores; una región que nace con el texto adentro a veces no se anuncia). Los avisos
  *   no llevan rol propio. E2E sigue encontrándolos con `getByRole("status").filter({ hasText })`.
  * - Se cierran solos (4 s); con el mouse encima o el foco adentro no. "Cerrar notificación" siempre.
- * - Lo monta el shell (Etapa 2). Mientras tanto solo lo monta el laboratorio.
+ * - Lo monta el shell.
  */
 export function CrmToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = React.useState<ToastItem[]>([]);

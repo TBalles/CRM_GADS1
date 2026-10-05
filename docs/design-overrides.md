@@ -52,8 +52,8 @@ archivo y sobre `docs/DESIGN.md`**.
 **Aplicado a archivos de la landing y el acceso.** Verificado contra el código: `src/app/page.tsx` usa Varela Round, Inter y el
 bloque `LANDING` de `globals.css`; `/login` usa `GoalMark`, `Cancha.tsx` (`MarcasCancha`), `.cesped` y los primitivos de
 `ui/UIComponents.tsx` (`Button`, `Input`); `/recuperar` y `/definir-clave` usan `AuthCard` y `ui/UIComponents.tsx`. `ui/Toast.tsx` y `ui/Tooltip.tsx`
-los monta el layout raíz. Del resto de `src/components/ui/` solo se usan `Select.tsx` (el `FiltroSelect` de `FiltrosUrl.tsx`),
-`overlay.ts` y `backdropClose.ts` (este último también lo importan los overlays del CRM); `KpiCard.tsx` no tiene usos.
+los monta el layout raíz. Del resto de `src/components/ui/` solo se usan `overlay.ts` y `backdropClose.ts` (este último también lo importan los overlays del CRM);
+`Select.tsx` quedó sin usos al borrarse `FiltroSelect` de `FiltrosUrl.tsx`.
 
 **Archivos que estas secciones nombran y ya no existen** (se borraron en CRM 2.0, Lote F, o antes): `components/Drawer.tsx`,
 `form.tsx`, `ConfirmModal.tsx`, `RowActions.tsx`, `AppShell.tsx`, `PaletaBusqueda.tsx`, `ThemeToggle.tsx`, `ui/EmptyState.tsx`,

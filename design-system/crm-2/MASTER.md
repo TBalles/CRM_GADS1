@@ -341,8 +341,8 @@ los pares de las barras y bordes indicadores; el par más justo es el foco sobre
 
 ## 10. Componentes
 
-Los de §10.1–§10.10 están construidos en `src/components/crm/` y se ven en `/crm-lab` (solo desarrollo). Los marcados **(server-safe)**
-no tienen `"use client"` ni hooks y se pueden usar desde server components (el laboratorio dibuja una DataTable con links y
+Los de §10.1–§10.10 están construidos en `src/components/crm/` y se vieron en un laboratorio (`/crm-lab`, solo desarrollo) que se borró antes de la 2.0. Los marcados **(server-safe)**
+no tienen `"use client"` ni hooks y se pueden usar desde server components (el laboratorio dibujaba una DataTable con links y
 tooltips de recorte desde su página servidor); los demás son de cliente. §10.11 es el shell (Etapa 2, construido); §10.12 es la
 especificación de las composiciones, §10.13 cómo quedaron construidas en Empresas (Etapa 3) y §10.14 Contactos y Productos
 (Lote A), con lo que se generalizó para todas las listas. §10.15 es el selector de fecha (`DatePicker` / `DateTimePicker`).
@@ -512,7 +512,7 @@ próximos slices (Contactos, Oportunidades…).
   igual: "Nueva empresa").
 - **Toolbar** (`Toolbar.tsx`, cliente): `role="group"` "Filtros", alto mínimo 40, `flex-wrap` (los chips bajan de línea, no se
   recortan). `SearchField` = campo de 28 (36 en mobile), 256 de ancho, `type="text"` (rol `textbox`, contrato E2E), misma lógica de
-  300 ms / Enter que `CajaBusqueda` (`useBusquedaUrl`). Cada filtro de opción única es un **`Menu` con `chip`**: disparador
+  300 ms / Enter que tenía `CajaBusqueda` (hoy `useBusquedaUrl`). Cada filtro de opción única es un **`Menu` con `chip`**: disparador
   `FilterChip` y items `menuitemradio` con `aria-checked` y tilde (mismo teclado del menú, typeahead, lista con scroll a 320). Los
   filtros on/off ("Ver dadas de baja") son `ToggleChip` (`aria-pressed`, tilde + acento). "Limpiar filtros" ghost `sm`, solo con
   filtros; no borra `sel`.
@@ -763,7 +763,7 @@ la semana de lunes). Un solo componente; `DateTimePicker` = `DatePicker time`. C
   Lote B, "Nueva venta" (`#fecha` y la entrega de cada línea, `#item-<key>-entrega`) y los filtros "Desde" / "Hasta" de Ventas
   (`FechaFiltro`, §10.16); desde el Lote C, Oportunidades: `#fecha_estimada_cierre` y `#licitacion_apertura` (drawer) y
   `#fecha_cierre` (diálogo de cierre, `max` = hoy); desde el Lote E, "Alta desde" / "hasta" de la Conversión del embudo
-  (`FechaFiltro`, §10.23). Ya no queda ningún `type="date"` en el CRM (el `FiltroFecha` legacy se borró). El presupuesto (§10.20) no tiene fechas que se elijan: "Validez (días)" es un número. Muestras en `/crm-lab` (sección "Fechas").
+  (`FechaFiltro`, §10.23). Ya no queda ningún `type="date"` en el CRM (el `FiltroFecha` legacy se borró). El presupuesto (§10.20) no tiene fechas que se elijan: "Validez (días)" es un número.
 
 ### 10.16 Ventas (Lote B, construido)
 `src/app/(app)/(crm2)/ventas/`, movida con `git mv` desde `(legacy)`. Mismos datos, filtros, parámetros, permisos, validaciones y
@@ -1317,8 +1317,8 @@ no hay UI que migrar y quedan en `(app)/`.
 `(legacy)/loading.tsx` y las carpetas vacías que quedaban. Toda ruta del CRM tiene los boundaries de `(crm2)` (más los suyos propios) y
 `/admin` los suyos. Impresión: `[data-app-main] > div` ahora alcanza la raíz de cada pantalla (verificado en el presupuesto: shell
 `block`, main sin overflow ni padding, chrome oculto). **Se borraron** por quedar sin usos (ninguno congelado): `components/{ConfirmModal,
-Drawer,RowActions,ThemeToggle,form}.tsx` y `components/ui/{EmptyState,OverlayCarga,PantallaCarga,Loader,MoneyInput}.tsx`. Quedan sin
-usos, de antes del Lote F y sin tocar: `components/Paginacion.tsx` y `components/ui/KpiCard.tsx`.
+Drawer,RowActions,ThemeToggle,form}.tsx` y `components/ui/{EmptyState,OverlayCarga,PantallaCarga,Loader,MoneyInput}.tsx`. Quedaban sin
+usos, de antes del Lote F, `components/Paginacion.tsx` y `components/ui/KpiCard.tsx`; se borraron antes de la 2.0, junto con `CajaBusqueda` y `FiltroSelect` de `FiltrosUrl.tsx`.
 
 **Generalizado en el Lote F:** `Tabs vertical`, `prefetch` y `dot` (§10.7); `Button loading` sin `disabled` (§10.1); `SectionBar` →
 `id` y contador en sans salvo una cifra suelta; `AppFrame`/`RailNav`/`Topbar` → `plataforma` (la marca va a `/admin`) / `onBuscar`

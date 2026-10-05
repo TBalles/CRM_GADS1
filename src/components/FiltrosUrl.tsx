@@ -1,12 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Loader2, Search, X } from "lucide-react";
-import { Input } from "@/components/ui/UIComponents";
-import { Select, type SelectOption } from "@/components/ui/Select";
 import { urlConParams } from "@/lib/paginacion";
-import { cn } from "@/lib/utils";
 
 /**
  * Los filtros de una lista viven en la URL (`?q=&estado=&page=`), no en el estado
@@ -73,7 +69,7 @@ export function useFiltrosUrl() {
 export type FiltrosUrl = ReturnType<typeof useFiltrosUrl>;
 
 /**
- * Estado del buscador de una lista, sin UI (lo comparten `CajaBusqueda` y el buscador de CRM 2.0): escribe en la URL
+ * Estado del buscador de una lista, sin UI (lo usa el buscador de CRM 2.0): escribe en la URL
  * 300 ms después de la última tecla, o al instante con `enviarYa` (Enter, borrar).
  */
 export function useBusquedaUrl(filtros: FiltrosUrl, param = "q") {
@@ -114,116 +110,9 @@ export function useBusquedaUrl(filtros: FiltrosUrl, param = "q") {
 }
 
 /**
- * Buscador de una lista. Escribe en la URL 300 ms después de la última tecla (o
- * al instante con Enter), así no se consulta la base por cada letra.
- */
-export function CajaBusqueda({
-  filtros,
-  etiqueta,
-  placeholder,
-  param = "q",
-  className,
-}: {
-  filtros: FiltrosUrl;
-  /** Texto para lectores de pantalla (el placeholder no alcanza como etiqueta). */
-  etiqueta: string;
-  placeholder: string;
-  param?: string;
-  className?: string;
-}) {
-  const { pending } = filtros;
-  const { texto, setTexto, enviarYa } = useBusquedaUrl(filtros, param);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  return (
-    <div className={cn("relative min-w-[7rem] flex-1 sm:w-64 sm:flex-none", className)}>
-      <Search aria-hidden="true" className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-      <Input
-        ref={inputRef}
-        placeholder={placeholder}
-        aria-label={etiqueta}
-        value={texto}
-        maxLength={100}
-        autoComplete="off"
-        enterKeyHint="search"
-        onChange={(e) => setTexto(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            enviarYa(texto);
-          }
-        }}
-        className="h-9 pl-8 pr-8 text-sm"
-      />
-      {texto ? (
-        <button
-          type="button"
-          aria-label="Borrar la búsqueda"
-          title="Borrar la búsqueda"
-          onClick={() => {
-            setTexto("");
-            enviarYa("");
-            // El botón desaparece al vaciar el campo: sin esto el foco caería al <body>.
-            inputRef.current?.focus();
-          }}
-          className="absolute right-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {pending ? <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin" /> : <X aria-hidden="true" className="h-3.5 w-3.5" />}
-        </button>
-      ) : null}
-    </div>
-  );
-}
-
-/**
- * Un filtro desplegable atado a un parámetro de la URL. `porDefecto` es el valor
- * que vale cuando el parámetro no está (no se escribe en la URL: la URL limpia es
- * la lista con sus valores de siempre).
- */
-export function FiltroSelect({
-  filtros,
-  param,
-  etiqueta,
-  opciones,
-  porDefecto = "",
-  className = "sm:w-48",
-  searchable,
-}: {
-  filtros: FiltrosUrl;
-  param: string;
-  /** Para lectores de pantalla: "Filtrar por estado". */
-  etiqueta: string;
-  /** Todas las opciones, incluida la de "Todos" (valor "" o el que corresponda). */
-  opciones: SelectOption[];
-  porDefecto?: string;
-  className?: string;
-  searchable?: boolean;
-}) {
-  const id = useId();
-  // Un valor de la URL que no es una opción (a mano, o de otra versión) se ve como el de por defecto, igual que en el servidor.
-  const crudo = filtros.valor(param);
-  const actual = opciones.some((o) => o.value === crudo) && crudo !== "" ? crudo : porDefecto;
-  return (
-    <div className={cn("w-full", className)}>
-      <span id={id} className="sr-only">
-        {etiqueta}
-      </span>
-      <Select
-        value={actual}
-        aria-labelledby={id}
-        onChange={(v) => filtros.aplicar({ [param]: v === porDefecto ? null : v })}
-        options={opciones}
-        searchable={searchable}
-        className="h-9"
-      />
-    </div>
-  );
-}
-
-/**
  * Anuncia a lectores de pantalla cuántos resultados hay. Una sola región viva por
  * lista, siempre presente (no cuelga de nada que se esconda cuando no hay filas),
- * así "Sin resultados" también se anuncia. Es invisible: el texto visible es el de `Paginacion`.
+ * así "Sin resultados" también se anuncia. Es invisible: el texto visible es el de `ListFooter`.
  */
 export function AnuncioResultados({ total }: { total: number }) {
   return (
