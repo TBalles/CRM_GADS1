@@ -4,13 +4,28 @@ Todo lo que se puede ejecutar para comprobar que el proyecto está sano, cómo c
 leer el resultado. No hay framework de pruebas: los self-checks usan el runner de Node y las pruebas SQL se
 pegan en el SQL Editor de Supabase.
 
-**Estado con la 1.0.0 (F8)** (ejecutado al cerrar la entrega, 2026-10-04):
+**Estado con la 2.0.0 (CRM 2.0)** (ejecutado al cerrar el rediseño, 2026-10-05; el rediseño no agregó migraciones ni cambió la base):
+
+| Verificación | Resultado |
+|---|---|
+| `npm test` (`node --test "src/**/*.check.ts"`) | **37 archivos, 442 pruebas, 442 pasan, 0 fallan** (12 archivos nuevos y 14 pruebas más en `money` y `oportunidades`; 123 de las 442 son los pares de contraste de `contrasteCrm.check.ts`) |
+| `npm run lint` (`eslint src e2e playwright.config.ts scripts/guard playwright.guard.config.ts --max-warnings=0`) | Sin advertencias |
+| `npm run guard:frozen` | Pasa: 39 archivos congelados intactos y ningún cambio respecto de `main`; `crm.css` solo bajo `[data-crm]` |
+| `npm run typecheck` | Sin errores |
+| `npm run build` | Compila. El listado de rutas tiene **26 entradas**: las 22 páginas (las 21 de la 1.0.0 más `/crm-lab`, la vitrina de primitivos, que en producción responde 404), los 2 route handlers, `/_not-found` e `/icon.svg` |
+| `npm run guard` (con `GUARD_BASE_URL` apuntando a ese build) | `guard:frozen` pasa y `guard:landing`: **7 de 7** comparaciones de píxeles iguales (`/` a 1440, 768 y 390; `/login` y `/recuperar` a 1440 y 390) |
+| Manual de usuario | `npm run manual:capturas` contra ese build y la demo (solo navegación) y `npm run manual:pdf`: **93 páginas**, 6,6 MB, 61 de 65 figuras capturadas y 4 pendientes (IA y superadmin); el índice coincide con el PDF |
+| E2E (`npm run test:e2e`) | **No se corrieron** en el rediseño: escriben en la base. Se conservaron sus contratos (MASTER §13.2); tienen que correr en CI con los secretos después del merge |
+
+Las pruebas SQL, el kit de migraciones y la CI son los de la 1.0.0 (el rediseño no tocó la base): su estado es el de la tabla siguiente.
+
+**Estado con la 1.0.0 (F8)** (ejecutado al cerrar esa entrega, 2026-10-04):
 
 | Verificación | Resultado |
 |---|---|
 | `npm test` (`node --test "src/**/*.check.ts"`) | **25 archivos, 243 pruebas, 243 pasan, 0 fallan** (F8 sumó `migraciones.check.ts`: 4 y `manual.check.ts`: 6) |
 | `npm run typecheck` (`tsc --noEmit` sobre `src` y sobre `e2e`) | Sin errores |
-| `npm run lint` (`eslint src e2e playwright.config.ts --max-warnings=0`) | Sin advertencias |
+| `npm run lint` (`eslint src e2e playwright.config.ts --max-warnings=0`; hoy también lleva `scripts/guard` y `playwright.guard.config.ts`) | Sin advertencias |
 | `npx next build` (con las variables públicas de relleno que usa la CI) | Compila. El listado de rutas de `next build` tiene **25 entradas**: las 21 páginas (`page.tsx`, con la landing, el acceso y `/admin`), los 2 route handlers (`/auth/confirm` y `/auth/signout`), `/_not-found` e `/icon.svg`; `/oportunidades/[id]/presupuesto` está entre ellas (la línea "Generating static pages (22/22)" cuenta otra cosa: páginas generadas, no rutas) |
 | Pruebas SQL `0005`, `0007`, `0008`, `0009`, `0011` y `0012` | Todas `TODO OK` en PGlite con `0001` a `0007` y después **solo** el kit `supabase/aplicar/aplicar_0008_a_0012.sql` (aplicado dos veces). **No se corrieron contra la base viva**: las migraciones `0008` a `0012` no están aplicadas ahí |
 | Kit de migraciones | Las 24 verificaciones del `select` final dicen `OK` y el `TOTAL`, `TODO OK`, también con el bloque `pg_trgm` encendido; sobre una base solo con la `0007` dice `HAY 22 FALTANTES` (prueba negativa) |
@@ -22,7 +37,8 @@ Contenido: [1. Resumen](#1-resumen) · [2. Self-checks](#2-self-checks-con-node-
 [3. Verificación estática](#3-verificación-estática-y-build) · [4. Pruebas SQL](#4-pruebas-sql) ·
 [5. Pruebas E2E con Playwright](#5-pruebas-e2e-con-playwright) · [6. Integración continua](#6-integración-continua) ·
 [7. Cómo leer un resultado](#7-cómo-leer-un-resultado) · [8. Antes de hacer push](#8-antes-de-hacer-push) ·
-[9. Lo que todavía no se prueba](#9-lo-que-todavía-no-se-prueba)
+[9. Lo que todavía no se prueba](#9-lo-que-todavía-no-se-prueba) ·
+[10. Guardas de aislamiento de CRM 2.0](#10-guardas-de-aislamiento-de-crm-20)
 
 ---
 
@@ -30,9 +46,10 @@ Contenido: [1. Resumen](#1-resumen) · [2. Self-checks](#2-self-checks-con-node-
 
 | Qué | Cómo se corre | Dónde | Qué prueba |
 |---|---|---|---|
-| Self-checks (25 archivos, 243 pruebas) | `npm test` (= `node --test "src/**/*.check.ts"`) | Terminal | Lógica pura: dinero, íconos, permisos, mails, mensajes, CUIT, sitio web, vocabulario de clientes, reglas de oportunidades, paginación y búsqueda por URL, errores de esquema faltante, licitaciones, parque instalado, equipamiento sugerido, recambio, ficha 360, tablero del responsable, conversión del embudo, búsqueda global, cuentas del presupuesto, la IA asistida (contexto sin datos personales, errores, límite), que el kit de migraciones esté al día con las migraciones (`migraciones.check.ts`) y que las figuras del manual de usuario existan y los scripts no lleven contraseñas (`manual.check.ts`) |
-| Tipos | `npm run typecheck` (= `tsc --noEmit && tsc --noEmit -p e2e`) | Terminal | Que todo el TypeScript compile, `src` y las pruebas E2E |
-| Lint | `npm run lint` (= `eslint src e2e playwright.config.ts --max-warnings=0`) | Terminal | Estilo y errores comunes, sin tolerar advertencias |
+| Self-checks (37 archivos, 442 pruebas) | `npm test` (= `node --test "src/**/*.check.ts"`) | Terminal | Lógica pura: dinero, íconos, permisos, mails, mensajes, CUIT, sitio web, vocabulario de clientes, reglas de oportunidades, paginación y búsqueda por URL, errores de esquema faltante, licitaciones, parque instalado, equipamiento sugerido, recambio, ficha 360, tablero del responsable, conversión del embudo, búsqueda global, cuentas del presupuesto, **el marco y los primitivos de CRM 2.0** (selección y teclado, fechas, rail y migas, barras de datos, la lógica de cada pantalla migrada, el contraste de los tokens `--crm-*` y `sinTrabarse`), la IA asistida (contexto sin datos personales, errores, límite), que el kit de migraciones esté al día con las migraciones (`migraciones.check.ts`) y que las figuras del manual de usuario existan y los scripts no lleven contraseñas (`manual.check.ts`) |
+| Tipos | `npm run typecheck` (= `next typegen && tsc --noEmit && tsc --noEmit -p e2e && tsc --noEmit -p scripts/guard`) | Terminal | Que todo el TypeScript compile: `src`, las pruebas E2E y las guardas |
+| Lint | `npm run lint` (= `eslint src e2e playwright.config.ts scripts/guard playwright.guard.config.ts --max-warnings=0`) | Terminal | Estilo y errores comunes, sin tolerar advertencias |
+| Guardas de CRM 2.0 | `npm run guard` (= `guard:frozen` + `guard:landing`) | Terminal | Que la landing y el acceso no cambien: hashes de los archivos congelados y pixel diff de `/`, `/login` y `/recuperar` (ver [§10](#10-guardas-de-aislamiento-de-crm-20)). **No corren en la CI** |
 | E2E | `npm run test:e2e` (= `playwright test`) | Terminal, contra una app y la organización de pruebas | La demo de punta a punta, los roles, la paginación por URL, Ctrl+K y la hoja del presupuesto. Se saltan sin credenciales |
 | CI | `.github/workflows/ci.yml` | GitHub Actions | Lint, tipos, self-checks y build en cada push; E2E en `main` si están los secretos |
 | Build | `npx next build` | Terminal | Que la aplicación se construya (incluye el chequeo de `server-only`) |
@@ -63,7 +80,11 @@ node --test src/lib/equipo.check.ts
 node --test src/lib/permisos.check.ts
 node --test src/lib/cuit.check.ts
 node --test src/lib/email/layout.check.ts
-node --test "src/app/(app)/alertas/plantillas.check.ts"
+node --test "src/app/(app)/(crm2)/alertas/plantillas.check.ts"
+node --test src/components/crm/seleccion.check.ts
+node --test src/components/crm/fecha.check.ts
+node --test src/lib/contrasteCrm.check.ts
+node --test src/lib/guardar.check.ts
 node --test src/lib/oportunidades.check.ts
 node --test src/lib/paginacion.check.ts
 node --test src/lib/timeline360.check.ts
@@ -82,13 +103,13 @@ Requiere un Node que ejecute TypeScript directamente; se verificó con Node 24.1
 
 | Archivo | Pruebas | Qué demuestra |
 |---|---|---|
-| `src/lib/money.check.ts` | 10 | La máscara de dinero es-AR agrupa miles con puntos, usa la coma como decimal (máximo 2), descarta basura y ceros iniciales; `parseMoney` nunca devuelve `NaN` ni lanza; el cursor se mantiene al editar en el medio del monto |
+| `src/lib/money.check.ts` | 18 | La máscara de dinero es-AR agrupa miles con puntos, usa la coma como decimal (máximo 2), descarta basura y ceros iniciales; `parseMoney` nunca devuelve `NaN` ni lanza; el cursor se mantiene al editar en el medio del monto; **CRM 2.0:** el cursor del `MoneyInput` tras tipear la coma o los decimales, borrar, pegar y la tecla rechazada ("1500" + "," + "50" da "1.500,50") |
 | `src/lib/equipo.check.ts` | 3 | El nombre manda sobre la categoría y "red para arco" es una red; una marca ("Redex") no se confunde con el producto; sin pista en el nombre decide la categoría, y sin nada es "otro" |
-| `src/lib/permisos.check.ts` | 7 | El CHECK de `roles.permisos` de la **migración 0007** tiene exactamente las claves del catálogo de TypeScript; los roles por defecto de SQL coinciden con `ROLES_POR_DEFECTO`; las dependencias apuntan a permisos que existen y se agregan de forma transitiva; el Administrador tiene los 19; `rutaInicial` elige la primera pantalla permitida |
+| `src/lib/permisos.check.ts` | 8 | El CHECK de `roles.permisos` de la **migración 0007** tiene exactamente las claves del catálogo de TypeScript; los roles por defecto de SQL coinciden con `ROLES_POR_DEFECTO`; las dependencias apuntan a permisos que existen y se agregan de forma transitiva; el Administrador tiene los 19; `rutaInicial` elige la primera pantalla permitida |
 | `src/lib/email/layout.check.ts` | 8 | El HTML de los mails escapa el contenido (no se puede inyectar `<script>`); `urlSegura()` solo deja `http(s)` y `mailto`, y `javascript:` no llega a un `href`; el logo es por CID, sin imágenes externas; la versión en texto plano trae contenido y link; las plantillas de activación y recuperación |
-| `src/lib/oportunidades.check.ts` | 17 | Qué etapas sirven para cada acción (columnas del tablero, cierre a ganada o perdida, reabrir); qué acciones se ofrecen según estado y permisos; validación del cierre (motivo al perder, fecha real no futura, razón al reabrir), probabilidad y fechas; los errores de la base (42501, 23514, 23503, P0001) en palabras; el cambio de resultado (ganada a perdida y al revés) pide razón y motivo, y no admite repetir la fecha del cierre anterior; la línea de tiempo mezcla actividades y cambios de etapa sin mutar y titula cada uno (alta, registro inicial, cierre, reapertura, cambio de resultado); la auditoría traduce campos e ids |
+| `src/lib/oportunidades.check.ts` | 23 | Qué etapas sirven para cada acción (columnas del tablero, cierre a ganada o perdida, reabrir); qué acciones se ofrecen según estado y permisos; validación del cierre (motivo al perder, fecha real no futura, razón al reabrir), probabilidad y fechas; los errores de la base (42501, 23514, 23503, P0001) en palabras; el cambio de resultado (ganada a perdida y al revés) pide razón y motivo, y no admite repetir la fecha del cierre anterior; la línea de tiempo mezcla actividades y cambios de etapa sin mutar y titula cada uno (alta, registro inicial, cierre, reapertura, cambio de resultado); la auditoría traduce campos e ids; **CRM 2.0:** la etapa propuesta y el aviso de cada acción de cambio de etapa, el recorrido del embudo (hechas, actual y pendientes; una cerrada no inventa el recorrido), un solo texto cuando el estado y la etapa de cierre dicen lo mismo y el aviso de cerrada |
 | `src/lib/paginacion.check.ts` | 14 | **F3.** `filtroOr` hace la búsqueda **literal**: `%`, `_`, `\` y `*` no son comodines de quien escribe, y una coma, un paréntesis o una comilla no rompen el `.or()` de PostgREST (el check emula lo que PostgREST y `ILIKE` hacen con el valor); `leerPaginacion` y los `*Param` rechazan `page=-4`, `pageSize=5000`, un estado inventado o un uuid falso; rango, total de páginas, "Mostrando 21–40 de 134" y la ventana de números con "…"; `urlConParams` conserva los demás parámetros y no escribe los valores por defecto; `leerPagina` detecta la página fuera de rango (`PGRST103`) y propaga los errores de la base en vez de devolver una lista vacía |
-| `src/app/(app)/alertas/plantillas.check.ts` | 10 | Formato de fecha sin zonas horarias; saludo con nombre de pila o al club; la frase distingue vencido de por vencer; el verbo concuerda en plural; sin fecha de vencimiento no inventa plazo; el mensaje de WhatsApp es más corto que el del mail; los links de WhatsApp y `mailto` codifican bien |
+| `src/app/(app)/(crm2)/alertas/plantillas.check.ts` | 10 | Formato de fecha sin zonas horarias; saludo con nombre de pila o al club; la frase distingue vencido de por vencer; el verbo concuerda en plural; sin fecha de vencimiento no inventa plazo; el mensaje de WhatsApp es más corto que el del mail; los links de WhatsApp y `mailto` codifican bien |
 | `src/lib/timeline360.check.ts` | 14 | **F5.** La historia junta las cinco fuentes, ordenada de más reciente a más vieja y sin depender del orden de entrada; los empates se resuelven siempre igual; la fila inicial del historial no es un cambio (salvo que ya naciera cerrada); cierre, reapertura y cambio de resultado se titulan bien; el filtro por chip ("Etapas" incluye las altas) y sus cuentas; el agrupado por mes **argentino** (las 22:00 del 30/09 no pasan a octubre); "Ver más" por tramos; el resumen con cifras calculadas a mano (y la primera compra consultada aparte), sus umbrales de 30 y 90 días y los casos sin datos |
 | `src/lib/tablero.check.ts` | 15 | **F5.** `?dias=` y `?mes=` no confían en la URL; el rango del mes (también diciembre); `sinActividad`: el día del umbral ya cuenta, vale la actividad de la oportunidad, de su empresa o de su contacto, la que nunca tuvo se cuenta desde el alta y la más vieja que lo leído sale con "más de"; pipeline por responsable, cierres del mes y ranking de motivos con empates |
 | `src/lib/embudo.check.ts` | 12 | **F5.** Fixtures calculados a mano con cinco oportunidades: una normal, una que **se salta una etapa**, una que **vuelve atrás**, una **reabierta** y una trabada. Entraron, avanzaron, conversión, mediana de estadías terminadas y "hasta hoy" para las que siguen, tasa de éxito y ciclo; sin historial; el orden del historial no cambia el resultado; la cohorte por día argentino y por origen |
@@ -97,6 +118,18 @@ Requiere un Node que ejecute TypeScript directamente; se verificó con Node 24.1
 | `src/lib/ia/errores.check.ts` | 20 | **F7.** `ANTHROPIC_API_KEY` vacía apaga la función; modelo por defecto `claude-opus-5-5`; `effort` solo con los modelos que lo aceptan; un solo tope de largo (2000); con **errores reales del SDK** (429, 401, 403, 529, 500, 400, sin conexión y timeout) cada uno da su frase y ninguna filtra el mensaje del proveedor ni una clave; `refusal`, `max_tokens`, respuesta vacía y otros `stop_reason` no son un borrador; el texto tiene tope |
 | `src/lib/ia/limite.check.ts` | 6 | **F7.** El límite por persona: deja pasar hasta el máximo, dice cuánto esperar, la ventana se desliza, cada persona tiene su cupo, una llamada rechazada no consume cupo y el Map no crece sin techo |
 | `src/lib/paleta.check.ts` | 10 | **F5.** Las rutas piden permisos que existen; el menú por rol (el Vendedor no ve las dos pantallas del equipo); en qué tablas se busca según el rol; la consulta se limpia y exige 2 caracteres; grupos en orden fijo con tope de 5; las acciones rápidas por rol, con la caja vacía y con texto; las flechas dan la vuelta; los ids de las opciones |
+| `src/lib/guardar.check.ts` | 2 | **CRM 2.0.** `sinTrabarse`: si el guardado termina no libera nada y devuelve `true`; si **tira**, llama a `liberar` con "No se pudo completar la acción. Intentá de nuevo.", devuelve `false` y no propaga el error |
+| `src/lib/contrasteCrm.check.ts` | 123 | **CRM 2.0.** Lee el `crm.css` real y mide el contraste de cada par texto/fondo y de UI en claro y oscuro contra su mínimo (`PARES` en `src/lib/contrasteCrm.ts`); falla con el nombre del par si alguien cambia un color. Además: el lector de colores (hsl, hex, `var`, `color-mix`), que cada token usado esté definido en los dos temas y que todo color esté medido o exceptuado con motivo |
+| `src/components/crm/seleccion.check.ts` | 7 | **CRM 2.0.** Master-detail por URL: ↑/↓ (`vecinoSel`) cuenta desde la fila con foco, sin vuelta en los bordes; ↓↓↓ seguidas terminan en la fila correcta; `tabValida` cae en la primera; a qué fila va el foco cuando una acción saca la suya de la lista (`filaTrasRefresco`) |
+| `src/components/crm/teclado.check.ts` | 6 | **CRM 2.0.** Teclado de los primitivos: flechas según la orientación, vuelta que salta los deshabilitados, búsqueda por letras sin mayúsculas ni tildes, tipeo acumulado (500 ms) y paradas de Tab de un grupo de radios |
+| `src/components/crm/fecha.check.ts` | 12 | **CRM 2.0.** `DatePicker`: bisiestos, fecha inexistente, "hoy" en hora local (no UTC), aritmética de días y meses sin desbordes, semana de lunes, grilla de 6 × 7, rangos min/max, textos es-AR, máscara dd/mm/aaaa, horas y minutos, y qué es un texto borrado frente a uno inválido |
+| `src/components/crm/barra.check.ts` | 3 | **CRM 2.0.** Barras de datos: `anchoBarra` proporcional a la mayor con piso de 2 % y sin barra para el cero; `porcentajeDe` y por qué las filas redondeadas no suman 100 |
+| `src/components/crm/shell/logica.check.ts` | 6 | **CRM 2.0.** El marco: secciones del rail por rol (las vacías no aparecen), ruta actual sin confundir prefijos, cookie del rail (ida y vuelta; otro valor es expandido) y migas (lista, ficha con y sin nombre, presupuesto, rutas desconocidas) |
+| `src/app/(app)/(crm2)/alertas/logica.check.ts` | 4 | **CRM 2.0.** Alertas: los tres contadores, filtro por grupo, búsqueda en cliente, producto y contacto, y el texto del vencimiento |
+| `src/app/(app)/(crm2)/ventas/logica.check.ts` | 6 | **CRM 2.0.** Ventas: ítems por venta, total, singular y plural, la entrega que sigue a la fecha de la venta, validación de líneas y "hoy" local |
+| `src/app/(app)/(crm2)/usuarios/logica.check.ts` | 4 | **CRM 2.0.** Usuarios: estado (la baja manda sobre pendiente), grupos de permisos que cubren el catálogo, tildado con dependencias y los mensajes del formulario de rol |
+| `src/app/(app)/(crm2)/configuracion/logica.check.ts` | 5 | **CRM 2.0.** Configuración: `?s=` válido y lo demás cae en "Datos de la empresa", el link de cada sección, renumerado de un catálogo al subir o bajar (solo escribe las filas que cambian) y detección de cambios sin guardar |
+| `src/app/(app)/(crm2)/oportunidades/[id]/presupuesto/logica.check.ts` | 9 | **CRM 2.0.** Editor de presupuesto: líneas iniciales, ida y vuelta con la máscara es-AR, líneas nuevas, cambio de producto, mover y quitar líneas con el foco que corresponde, y totales iguales a los de la hoja |
 
 `permisos.check.ts` lee `supabase/migrations/0007_entrega_final.sql`. **Si agregás un permiso, hay que
 tocarlo en `src/lib/permisos.ts` y en la migración que redefina el CHECK y los roles por defecto**, o este
@@ -120,8 +153,8 @@ de 0 si algo falla.
 ## 3. Verificación estática y build
 
 ```bash
-npm run typecheck        # tsc --noEmit (src) y tsc --noEmit -p e2e (las pruebas E2E, con su propio tsconfig)
-npm run lint             # eslint src e2e playwright.config.ts --max-warnings=0
+npm run typecheck        # next typegen, tsc --noEmit (src), tsc --noEmit -p e2e y tsc --noEmit -p scripts/guard (cada uno con su tsconfig)
+npm run lint             # eslint src e2e playwright.config.ts scripts/guard playwright.guard.config.ts --max-warnings=0
 npx next build
 ```
 
@@ -137,8 +170,8 @@ npx next build
 
 Los tres tienen que pasar antes de pushear (ver [CONTRIBUTING](../CONTRIBUTING.md)).
 
-`package.json` define desde F6 los scripts `dev`, `build`, `start`, `lint` (`eslint src e2e playwright.config.ts --max-warnings=0`, lo
-mismo que corre la CI), `typecheck`, `test` y `test:e2e`.
+`package.json` define los scripts `dev`, `build`, `start`, `lint` (lo mismo que corre la CI), `typecheck`, `test` y `test:e2e` (desde F6), y las
+guardas de CRM 2.0: `guard`, `guard:frozen`, `guard:landing` y `guard:baseline-crm` (ver [§10](#10-guardas-de-aislamiento-de-crm-20)).
 
 ---
 
@@ -327,7 +360,7 @@ pantalla: si cambia un texto de la interfaz que una prueba nombra, la prueba lo 
 
 | Paso | Comando |
 |---|---|
-| Lint | `npm run lint` (`src`, `e2e` y `playwright.config.ts`, sin advertencias) |
+| Lint | `npm run lint` (`src`, `e2e`, `playwright.config.ts`, `scripts/guard` y `playwright.guard.config.ts`, sin advertencias) |
 | Tipos | `npm run typecheck` |
 | Self-checks | `npm test` |
 | Build | `npx next build`, con `NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co` y `NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder`: **no usa ningún secreto** |
@@ -367,11 +400,13 @@ npm run lint
 npm run typecheck
 npm test
 npx next build
+npm run guard:frozen     # no es de la CI, pero tiene que pasar (no necesita la app levantada)
 ```
 
 Si el cambio toca `supabase/migrations/`, además: ensayar la migración en una transacción con rollback,
 aplicarla, correr `0005_permisos.sql` y `0007_reglas.sql` (o la prueba nueva que corresponda), y regenerar
-`src/lib/supabase/types.ts`. Si toca la interfaz, correr `npm run test:e2e` contra la organización de pruebas.
+`src/lib/supabase/types.ts`. Si toca la interfaz, correr `npm run test:e2e` contra la organización de pruebas y, si toca `src/app/globals.css`, la landing, el acceso
+o `crm.css`, también `npm run guard` completo (§10).
 Más en [CONTRIBUTING](../CONTRIBUTING.md).
 
 ---
@@ -392,4 +427,49 @@ Más en [CONTRIBUTING](../CONTRIBUTING.md).
   envío completo del aviso desde el panel de IA, que escribe en `alertas_enviadas`. Sin clave, los botones no existen (verificado).
 - **Los componentes React no tienen pruebas unitarias**: los self-checks cubren lógica pura (dinero, permisos, mails,
   mensajes, íconos, las cuentas del presupuesto) y lo demás lo cubren las E2E.
-- **La CI no corre las pruebas SQL** y no se ejecutó todavía en GitHub.
+- **La CI no corre las pruebas SQL** ni las guardas de CRM 2.0 (`npm run guard`), y no se ejecutó todavía en GitHub.
+- **Las pantallas migradas del CRM no tienen prueba visual automática**: el pixel diff cubre solo `/`, `/login` y `/recuperar`. Las del CRM se
+  comparan a mano con las fotos de `guard:baseline-crm` (§10) y las cubren las E2E por sus nombres accesibles.
+
+---
+
+## 10. Guardas de aislamiento de CRM 2.0
+
+El rediseño del CRM no puede cambiar la landing (`/`) ni `/login`, `/recuperar` y `/definir-clave`. Dos guardas lo hacen cumplir; el contrato completo
+(qué está congelado y por qué, lo no determinista y cómo se neutraliza, y los límites) está en
+[`design-system/crm-2/README.md`](../design-system/crm-2/README.md). **No corren en la CI** (necesitan una app construida y el `.env` de la landing).
+
+```bash
+npm run guard            # guard:frozen + guard:landing
+npm run guard:frozen     # hashes + git diff contra la base + árbol de trabajo + reglas de crm.css (rápida; no necesita app)
+npm run guard:landing    # pixel diff de /, /login y /recuperar contra la baseline commiteada
+npm run guard:baseline-crm   # fotos del CRM actual (fuera del repo), para comparar antes y después
+```
+
+**`guard:frozen`** (`scripts/guard/frozen-files.mjs`, con `design-system/crm-2/guard/frozen-files.json`). Falla, y dice por qué, si: cambia el hash de un archivo
+congelado (la clausura de imports de la landing, el layout raíz, el acceso, el proxy y `/auth/*`); aparece o desaparece un archivo de una carpeta congelada
+(`src/components/landing/`); `git diff <base>...HEAD` o el árbol de trabajo tocan una ruta congelada; o `crm.css` rompe la regla de aislamiento (solo selectores bajo
+`[data-crm]`, ningún at-rule global). La base es `GUARD_BASE`, o la `base` del manifiesto, o `main`; si no se puede resolver, falla (`GUARD_ALLOW_NO_BASE=1` omite
+solo el diff de git).
+
+**`guard:landing`** (`playwright.guard.config.ts` + `scripts/guard/landing.spec.ts`). Fotografía `/` a 1440, 768 y 390, y `/login` y `/recuperar` a 1440 y 390 (7 imágenes), con
+**tolerancia cero** (`maxDiffPixels: 0`, `threshold: 0`) y `prefers-reduced-motion: reduce`, y las compara con `design-system/crm-2/guard/landing/`. Las partículas del canvas se
+ocultan (`scripts/guard/landing.css`) y el año del pie se enmascara. Por defecto hace `npm run build` y `npm run start -p 3199`; variables: `GUARD_BASE_URL` (usar una app ya
+levantada), `GUARD_SKIP_BUILD=1` (solo `next start`; falla si `.next` es más viejo que `src/`, salvo `GUARD_ALLOW_STALE=1`), `GUARD_PORT` y `GUARD_REUSE_SERVER=1`. Necesita
+`NEXT_PUBLIC_SUPABASE_URL` y la clave pública en el `.env` (la guarda corre sin sesión y fotografía «Ingresar»).
+
+**`guard:baseline-crm`** (`scripts/guard/baseline-crm.mjs`). Solo navega: fotografía el CRM (25 pantallas del Administrador en claro y oscuro a 1440 y 390, más las del Vendedor) a
+`GUARD_BASELINE_OUT` (por defecto `../baseline-crm-actual/`, fuera del repo). Pide `GUARD_BASE_URL` y las credenciales de la demo (`MANUAL_EMAIL`, `MANUAL_PASSWORD`, y opcionalmente las
+del Vendedor) **del entorno**, que no se escriben nunca en el repo. Para comparar dos generaciones se corre dos veces con carpetas distintas y
+`node scripts/guard/compare-png.mjs <carpetaA> <carpetaB> [--solo=…]` (cuenta los píxeles distintos por par; sale con 1 si hay alguno). Lo atado al día de la demo ("Hace 72 d") cambia con
+los días.
+
+### Cómo refrescar las baselines (solo con un cambio aprobado de un archivo congelado)
+
+1. Tener la aprobación explícita (qué archivo y por qué) y hacer el cambio.
+2. **Commitearlo** (commit `C`).
+3. Si cambia lo visual: `npx playwright test -c playwright.guard.config.ts --update-snapshots` regenera las imágenes afectadas; mirarlas a ojo.
+4. `GUARD_BASE=C node scripts/guard/frozen-files.mjs --update`: regenera los hashes y fija `C` como `base` del manifiesto (sin `GUARD_BASE` conserva la que ya tenía).
+5. Commitear el manifiesto y las baselines **en el mismo PR**, y que quien revisa mire el diff del manifiesto y de los PNG: las guardas no se protegen a sí mismas.
+
+Las baselines son de Chromium en Windows; en una CI Linux hay que regenerarlas en ese entorno o correr solo `guard:frozen`.

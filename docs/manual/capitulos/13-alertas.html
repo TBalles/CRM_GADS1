@@ -1,20 +1,22 @@
 <section class="cap" id="cap-13" data-num="13" data-parte="El trabajo de todos los días" data-titulo="Alertas de recambio" data-bajada="Llegá antes que nadie: los equipos entregados que cumplieron su vida útil, o están por cumplirla, con el aviso ya redactado para el cliente.">
 
 <p>La pantalla <strong>Alertas</strong> lista los equipos que le entregaste a tus clientes y que <strong>ya vencieron o vencen en los próximos 60 días</strong>. Cada alerta trae el mensaje armado: lo revisás y lo mandás por mail o por WhatsApp. Es la forma más corta de convertir una venta de hace dos años en la próxima.</p>
-<figure class="fig" data-fig="alertas"><figcaption>Alertas de recambio. Arriba, los tres conteos; después las pestañas de filtro y el buscador; y una tarjeta por equipo con su «reloj» (de la entrega al recambio) y los botones de aviso.</figcaption></figure>
+<figure class="fig" data-fig="alertas"><figcaption>Alertas de recambio. Junto al título, los tres conteos; debajo, el filtro y el buscador; y una fila por equipo con su cliente, su vencimiento, el último aviso y los botones.</figcaption></figure>
 
 <h2>Leer la pantalla</h2>
 <table class="tabla compacta">
   <thead><tr><th style="width:40mm">Elemento</th><th>Qué significa</th></tr></thead>
   <tbody>
-    <tr><td><strong>Vencidas</strong></td><td>Equipos cuyo vencimiento es hoy o ya pasó. Se marcan con «Vencido hace 72 d».</td></tr>
-    <tr><td><strong>Por vencer (60 días)</strong></td><td>Vencen en los próximos 60 días: «Vence en 20 d».</td></tr>
-    <tr><td><strong>Sin avisar</strong></td><td>Alertas a las que todavía no les mandaste ningún aviso.</td></tr>
-    <tr><td><strong>Filtros</strong></td><td><span class="ui">Todas</span>, <span class="ui">Vencidas</span>, <span class="ui">Por vencer</span> y <span class="ui">Sin avisar</span>, más un buscador por cliente o producto.</td></tr>
-    <tr><td><strong>Cada tarjeta</strong></td><td>El producto, la cantidad (<span class="mono">×2</span>), el cliente y el contacto, la fecha de entrega, la vida útil y el vencimiento. El «reloj» es una barra de la entrega al recambio con la ventana de 60 días marcada al final.</td></tr>
-    <tr><td><strong>«Ya avisado»</strong></td><td>Cuando ya mandaste un aviso, lo dice con el canal y la fecha («Ya avisado por mail el 24/09/2026»).</td></tr>
+    <tr><td><strong>Los conteos</strong></td><td>Al lado del título: cuántas están <strong>vencidas</strong> (el vencimiento es hoy o ya pasó), cuántas <strong>por vencer</strong> en los próximos 60 días y cuántas están <strong>sin avisar</strong> (todavía no les mandaste ningún aviso). Por ejemplo, «3 vencidas · 2 por vencer (60 días) · 2 sin avisar».</td></tr>
+    <tr><td><strong>Filtro y buscador</strong></td><td>El selector <span class="ui">Todas</span> | <span class="ui">Vencidas</span> | <span class="ui">Por vencer</span> | <span class="ui">Sin avisar</span>, y a la derecha el buscador por cliente o producto.</td></tr>
+    <tr><td><strong>Equipo</strong></td><td>El producto con su ícono y la cantidad (<span class="mono">×2</span>), y debajo la fecha de entrega y la vida útil («Entregado el 24/01/2025 · vida útil 18 meses»).</td></tr>
+    <tr><td><strong>Cliente</strong></td><td>La empresa y, debajo, el contacto de la venta.</td></tr>
+    <tr><td><strong>Vencimiento</strong></td><td>«Vencido hace 73 d» (en rojo) o «Vence en 19 d», y debajo la fecha en que vence.</td></tr>
+    <tr><td><strong>Aviso</strong></td><td>El último aviso que mandaste, con su canal y su fecha («Por mail el 24/09/2026»), o «Sin avisar».</td></tr>
+    <tr><td><strong>Acciones</strong></td><td><span class="ui">Crear oportunidad</span> (o el enlace «Oportunidad abierta →»), y los botones <span class="ui">Mail</span> y <span class="ui">WhatsApp</span>. En pantallas más angostas el primero queda solo con su ícono; al pasar el mouse, cada botón dice qué hace.</td></tr>
   </tbody>
 </table>
+<p>El <strong>reloj del recambio</strong> está escrito en la fila: entregado el día tal, con tal vida útil, vence tal fecha. Si la pantalla es angosta, el aviso, el cliente y el vencimiento pasan a renglones debajo del equipo, sin perder ningún dato.</p>
 <div class="nota regla">
   <ul>
     <li><strong>Las alertas se calculan en vivo</strong>: no hay una lista guardada ni un proceso que corra de noche. Lo único que se guarda es lo que enviaste.</li>
@@ -25,13 +27,13 @@
 </div>
 
 <h2>Avisar al cliente</h2>
-<p>En cada tarjeta, con el permiso «Enviar alertas», ves los botones <span class="ui">Mail</span> y <span class="ui">WhatsApp</span>. El mensaje lo arma el sistema con los datos del equipo; el de WhatsApp es más corto que el del mail, y el verbo concuerda con la cantidad («la unidad superó su vida útil», «las 2 unidades superaron…»).</p>
+<p>En cada fila, con el permiso «Enviar alertas», ves los botones <span class="ui">Mail</span> y <span class="ui">WhatsApp</span>. El mensaje lo arma el sistema con los datos del equipo; el de WhatsApp es más corto que el del mail, y el verbo concuerda con la cantidad («la unidad superó su vida útil», «las 2 unidades superaron…»).</p>
 <ol class="pasos">
   <li>Buscá la alerta (o filtrá por <span class="ui">Sin avisar</span>).</li>
-  <li>Tocá <span class="ui">Mail</span> o <span class="ui">WhatsApp</span>.</li>
+  <li>Tocá <span class="ui">Mail</span> o <span class="ui">WhatsApp</span>. Mientras se procesa, la fila queda ocupada y no se puede tocar dos veces.</li>
   <li><strong>Mail</strong>: si tu instalación tiene el correo configurado, el mensaje <strong>sale solo</strong> desde la casilla de tu empresa y te avisa «Mail enviado a…». Si no, se abre <strong>tu programa de correo</strong> con el mensaje listo para que lo mandes vos. En los dos casos el envío queda registrado.</li>
   <li><strong>WhatsApp</strong>: se abre WhatsApp con el mensaje escrito para el teléfono del cliente. Lo mandás desde ahí; el sistema registra el aviso.</li>
-  <li>La tarjeta pasa a mostrar «Ya avisado por … el …».</li>
+  <li>La columna <strong>Aviso</strong> pasa a decir «Por mail el …» o «Por WhatsApp el …». Si estabas filtrando «Sin avisar», la alerta sale de la lista.</li>
 </ol>
 <div class="nota atencion">
   <ul>
@@ -48,15 +50,15 @@
   </ul>
 </div>
 
-<p>En el celular cada alerta es una tarjeta, con los mismos botones.</p>
+<p>En el celular cada alerta ocupa una fila: el equipo y, debajo, el cliente, el vencimiento y el aviso, uno por renglón; los botones van debajo.</p>
 <figure class="fig" data-fig="alertas-movil" data-ancho="64"><figcaption>Las alertas en el celular.</figcaption></figure>
 
 <h2>Recambio en 1 clic</h2>
-<p>Con el botón <span class="ui">Crear oportunidad de recambio</span> la alerta se convierte en un negocio, sin formulario:</p>
-<figure class="fig" data-fig="alerta-recambio"><figcaption>La primera acción de cada alerta es «Crear oportunidad de recambio».</figcaption></figure>
+<p>Con el botón <span class="ui">Crear oportunidad</span> (su nombre completo es «Crear oportunidad de recambio») la alerta se convierte en un negocio, sin formulario:</p>
+<figure class="fig" data-fig="alerta-recambio"><figcaption>La primera acción de cada fila es «Crear oportunidad» (de recambio).</figcaption></figure>
 <ul>
   <li>Se crea una oportunidad con el título <em>«Recambio: &lt;producto&gt; — &lt;empresa&gt;»</em>, la empresa, el contacto de la venta, el producto, un <strong>valor igual al precio × cantidad</strong> (vacío si el producto no tenía precio), el origen <em>«Recambio por vida útil»</em>, la primera etapa abierta y vos como responsable.</li>
-  <li>Un aviso te lo confirma con un enlace: <em>«Ver la oportunidad →»</em>. Desde ese momento la alerta muestra <em>«Oportunidad abierta →»</em>.</li>
+  <li>Un aviso te lo confirma, con el título de la oportunidad nueva y el enlace <em>«Ver la oportunidad →»</em>. Desde ese momento, en lugar del botón, la fila muestra el enlace <em>«Oportunidad abierta →»</em>.</li>
   <li><strong>No se duplica</strong>: si ya hay una oportunidad abierta para ese equipo, no crea otra: te lleva a la existente. Cuando esa se cierra (ganada o perdida), podés abrir otra.</li>
   <li>Hace falta el permiso <strong>Gestionar oportunidades</strong>.</li>
 </ul>
@@ -65,7 +67,7 @@
 </div>
 
 <h2>Redactar con IA</h2>
-<p>Si tu instalación tiene la IA activada, junto al flujo de mail y WhatsApp aparece <span class="ui">Redactar con IA</span>: arma un <strong>borrador</strong> del aviso usando el equipo, sus fechas, las compras anteriores, las canchas y los avisos ya enviados, para que no suene a mensaje automático.</p>
+<p>Si tu instalación tiene la IA activada, junto a los botones de mail y WhatsApp aparece <span class="ui">Redactar con IA</span>: arma un <strong>borrador</strong> del aviso usando el equipo, sus fechas, las compras anteriores, las canchas y los avisos ya enviados, para que no suene a mensaje automático.</p>
 <figure class="fig" data-fig="alerta-ia"><figcaption>El botón «Redactar con IA» en una alerta.</figcaption></figure>
 <ol class="pasos">
   <li>Tocá <span class="ui">Redactar con IA</span>. Se abre un panel con el borrador en un <strong>cuadro de texto editable</strong>.</li>
@@ -76,7 +78,7 @@
 <div class="nota regla">
   <ul>
     <li><strong>La IA solo redacta.</strong> No envía, no guarda y no cambia ningún dato. Nada sale hasta que vos lo mandes.</li>
-    <li>Todo borrador lleva la etiqueta <em>«Borrador generado con IA: revisalo antes de enviar»</em>.</li>
+    <li>Todo borrador lleva la etiqueta <em>«Borrador generado con IA — revisalo antes de enviar»</em>.</li>
     <li>Si la IA falla (sin conexión, límite de pedidos, servicio caído), el cuadro se llena con la <strong>plantilla fija</strong> y un aviso dice por qué. Siempre tenés con qué avisar.</li>
     <li>Los borradores de IA <strong>no pasan por el correo del servidor</strong>: salen desde tu WhatsApp o tu correo.</li>
     <li>Límite: 10 borradores cada 10 minutos por persona.</li>

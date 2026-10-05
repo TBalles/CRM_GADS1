@@ -59,8 +59,8 @@ function medida(archivo) {
 
 const ANCHO_PAGINA_MM = 170;
 const ALTO_MAX_FIGURA_MM = 110;
-/** Escala común a todas las capturas: 1178 px de ancho (el área de contenido) = 170 mm. Así el texto de cada figura tiene el mismo tamaño. */
-const MM_POR_PX = ANCHO_PAGINA_MM / 1178;
+/** Escala común a todas las capturas: 1218 px de ancho (el área de contenido del CRM 2.0 en 1440: la ventana menos el menú lateral) = 170 mm. Así el texto de cada figura tiene el mismo tamaño. */
+const MM_POR_PX = ANCHO_PAGINA_MM / 1218;
 /** Un recuadro de pendiente no lleva información: conserva la proporción de la captura pero no ocupa más que esto de alto. */
 const ALTO_MAX_PENDIENTE_MM = 80;
 
@@ -73,7 +73,7 @@ function leerPendientes() {
 }
 
 /** El tamaño en el papel de una figura: a escala común (MM_POR_PX); si queda más alta que la página, se achica. */
-function anchoMm(ratio, tope = ANCHO_PAGINA_MM, anchoPx = 1178) {
+function anchoMm(ratio, tope = ANCHO_PAGINA_MM, anchoPx = 1218) {
   // Las figuras de a dos (tope chico) son más bajas todavía: tienen que entrar al lado de otra.
   const altoMax = tope <= 80 ? 92 : ALTO_MAX_FIGURA_MM;
   return Math.round(Math.min(tope, altoMax * ratio, anchoPx * MM_POR_PX) * 10) / 10;
@@ -93,7 +93,7 @@ function armarFigura(id, titulo, numero, pendientes, usadas, avisos, tope) {
     mm = anchoMm(w / h, tope, (w / (def?.movil ? 2 : 1)) * (def?.zoom ?? 1));
     marco = `<div class="fig-marco" style="width:${mm}mm"><img src="capturas/${path.basename(archivo)}" alt="${esc(titulo)}"></div>`;
   } else {
-    const [aw, ah] = (def?.aspecto ?? "1184/800").split("/").map(Number);
+    const [aw, ah] = (def?.aspecto ?? "1218/800").split("/").map(Number);
     mm = Math.round(Math.min(anchoMm(aw / ah, tope, aw * (def?.zoom ?? 1)), ALTO_MAX_PENDIENTE_MM * (aw / ah)) * 10) / 10;
     const p = pendientes.get(id);
     const motivo = p?.motivo ?? "Se completa sola al correr npm run manual con la pantalla disponible.";

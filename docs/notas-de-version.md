@@ -1,4 +1,80 @@
-# Notas de la versión: entrega final (1.0.0)
+# Notas de la versión
+
+Este documento junta las notas de cada versión, la más nueva arriba. La 2.0.0 (CRM 2.0) es un rediseño de la interfaz; la
+1.0.0 (entrega final) sigue más abajo, completa y sin cambios.
+
+- [2.0.0: CRM 2.0, la interfaz nueva](#200-crm-20-la-interfaz-nueva-2026-10-05)
+- [1.0.0: entrega final](#notas-de-la-versión-entrega-final-100)
+
+---
+
+## 2.0.0: CRM 2.0, la interfaz nueva (2026-10-05)
+
+**Qué es.** Todas las pantallas del CRM (desde el Inicio hasta el panel de plataforma) pasaron al diseño nuevo, «Ledger»: una
+interfaz de trabajo densa y sobria, pensada para usar muchas horas, con tablas en lugar de tarjetas, una sola acción principal por
+pantalla y el resto en un menú `⋮`. **No cambió qué hace el sistema**: los mismos datos, permisos, reglas y flujos, con otra forma de
+mostrarlos y de recorrerlos. La fuente de verdad del diseño es [`design-system/crm-2/MASTER.md`](../design-system/crm-2/MASTER.md)
+(§10.1 a §10.25: cada pantalla, cómo es y por qué); la decisión de cómo se hizo el rediseño está en el
+[ADR 0014](./decisiones/0014-crm-2-redisenio-por-slices-con-aislamiento-de-la-landing.md). Se hizo en la rama `crm-2.0`, en 17 commits
+por slices verticales (una pantalla o un grupo de pantallas por vez), cada uno revisado antes del siguiente.
+
+### Qué cambia para quien usa el CRM
+
+| Área | Antes | Ahora |
+|---|---|---|
+| **Navegación** | Menú verde a la izquierda con la búsqueda, el tema y «Cerrar sesión» al pie. | **Menú lateral** agrupado en Comercial, Operación, Análisis y Administración, que se contrae a íconos (y **recuerda** la preferencia en el navegador); **barra de arriba** con la ruta (*Empresas › Club…*), «Buscar…» (Ctrl/⌘+K, igual que antes), modo claro u oscuro y el **menú de usuario** (rol, organización, tema, «Cerrar sesión» con confirmación). En el celular, el menú se abre como cajón y el menú de usuario también trae tema y salir. |
+| **Listas** | Tablas con tarjetas en el celular. | **Tablas densas** en todas las pantallas, con el mismo markup en cualquier ancho: lo que no entra pasa a una línea debajo del nombre, sin perder datos. Filtros como botones («Estado: Cliente»), que se juntan en «Más filtros» cuando falta lugar. Pie fijo con «Mostrando…», páginas y filas por página. |
+| **Empresas y Contactos** | Lista y ficha. | **Lista + vista previa**: tocar la fila abre a la derecha lo esencial de la cuenta (contactos, oportunidades, últimos movimientos y acciones) sin salir de la lista; ↑/↓ recorren la lista y Esc la cierra. La fila elegida queda en la URL (`?sel=`), así un enlace abre con la misma vista previa. |
+| **Fichas** | Una página larga con tarjetas apiladas. | **Encabezado** con una acción principal («Registrar actividad») y «Más acciones», y **pestañas en la URL** (`?tab=`): Resumen, Actividad, Oportunidades, Ventas, Contactos, Canchas y parque. El Resumen es una superficie de trabajo (cifras, tablas y un riel de datos), no una pila de tarjetas. |
+| **Oportunidades** | Tablero y lista. | Mismo tablero (columnas sobre todo el alto) y lista; **«Presupuesto» a la vista** en el encabezado de la oportunidad y en el `⋮` de cada tarjeta y fila (respuesta a «no encuentro dónde crear presupuestos»); recorrido por el embudo en la ficha; acciones de etapa agrupadas. |
+| **Presupuesto** | Editor arriba y hoja abajo. | **Vista dividida**: editor a la izquierda y la hoja a la derecha, escalada para entrar entera, con «Ver hoja a tamaño real». **La hoja que se imprime no cambió** (se comparó píxel a píxel y por PDF contra la versión anterior). |
+| **Fechas** | El calendario del navegador. | **DatePicker propio**: se escribe `dd/mm/aaaa` (las barras se ponen solas) o se elige en un calendario que sigue el tema, con la semana de lunes y teclado completo (flechas, RePág/AvPág, Enter, Esc); con hora donde hace falta. |
+| **Inicio** | Marcador gigante sobre el césped, dos gráficos que repetían el dato y la guía «De la venta al recambio». | **Sin portada ni tutorial**: franja de cifras (con «Recambios vencidos» si el rol ve alertas), «Recambios que vienen» primero, «Oportunidades por etapa» como tabla y «Empresas con más valor en juego». |
+| **Tablero comercial y Embudo** | Marcadores sobre la cancha. | Franja de cifras y tablas con barras de dato (la tabla es la alternativa accesible). Mismas cuentas. |
+| **Alertas** | Tarjetas con la barra del «reloj». | Tabla con el reloj escrito (entrega, vida útil, vencimiento), los conteos junto al título y las acciones a la vista. |
+| **Usuarios** | Roles como tarjetas con pastillas de color. | Tabla de roles y **matriz «Permisos por rol»** (un permiso por fila, un rol por columna; en el celular, un rol por vez). |
+| **Configuración** | Cinco pestañas. | **Subnavegación** vertical en la URL (`?s=empresa|etapas|tipos|origenes|motivos`), datos de la empresa en grupos y una barra «Cambios sin guardar» con «Descartar» y «Guardar cambios». |
+| **Panel de plataforma** (`/admin`) | Otro marco, con tarjetas. | **El mismo marco** del CRM con un menú de una sola sección (Plataforma › Clientes) y una tabla de clientes; «Reenviar» a la vista junto a un administrador pendiente y también en el `⋮`. |
+| **Accesibilidad** | Foco que no siempre se veía. | **Foco visible** en todo, **teclado completo** (menús, selects, pestañas, calendario, tablas con ↑/↓), el foco vuelve a su lugar después de cada acción, contraste AA medido por `npm test`, estados nunca solo por color. |
+
+### Qué no cambió
+
+- **Datos, permisos y reglas**: ninguna migración, ninguna capacidad nueva; las mismas consultas, validaciones, mensajes y avisos.
+- **La landing (`/`) y el acceso** (`/login`, `/recuperar`, `/definir-clave`): idénticos al píxel; lo garantiza una guarda (más abajo).
+- **La hoja imprimible del presupuesto**: igual por dentro y en el PDF.
+- **La búsqueda global** (Ctrl/⌘+K): mismo comportamiento y mismos resultados, en un diálogo nuevo.
+
+### Correcciones que vienen con el rediseño
+
+- **Scroll del marco**: solo scrollea el área de contenido; el menú lateral y la barra de arriba quedan fijos, y ninguna pantalla scrollea de costado a 390 px de ancho (se mide en todas las pantallas a 6 anchos).
+- **Máscara de dinero**: tipear `1500,50` da `1.500,50` (antes el cursor quedaba antes de la coma y salía `150.050,`), y tipear rápido ya no pierde dígitos.
+- **Foco después de las acciones**: al dar de baja, reactivar, mover una etapa o cerrar un diálogo, el foco queda en la fila, la flecha o el botón correspondiente (antes caía al principio de la página).
+- **Drawers que no se traban**: si un guardado falla por la red o un despliegue, el panel deja de decir «Guardando…» y muestra «No se pudo completar la acción. Intentá de nuevo.» (`sinTrabarse`, `src/lib/guardar.ts`).
+- **Filtros de fecha**: una fecha inválida en «Desde» o «Hasta» ya no borra en silencio el filtro aplicado.
+- **Reactivar** una empresa o un contacto vuelve a *Cliente* si ya compró y a *Potencial* si no (el manual decía siempre *Potencial*; se corrigió el texto, la conducta es la de siempre).
+
+### Error conocido que se mantiene a propósito
+
+- **Inicio: la cifra «Contactos» lleva a `/empresas`** y no a `/contactos`. Es un bug heredado que se decidió no corregir dentro del rediseño (que no cambia conductas); queda marcado en el código con un comentario `ponytail:` y se corrige aparte. El manual lo avisa.
+
+### Riesgos y límites
+
+- **`/admin` no se verificó con un superadmin real**: la demo no tiene esa cuenta. Se verificó la redirección de los demás roles y el árbol de la pantalla con datos falsos; las dos figuras del capítulo 18 del manual siguen como «Captura pendiente».
+- **Los E2E (Playwright, `e2e/`) no se corrieron durante el rediseño**, porque escriben en la base. Se mantuvieron sus contratos (nombres accesibles, ids, textos; MASTER §13.2), pero **tienen que correr en CI con los secretos después del merge**.
+- La IA no se probó contra la API real en esta versión (igual que en la 1.0.0): las figuras de «Resumir con IA» y «Redactar con IA» siguen pendientes.
+- La base de la demostración tiene algunos datos de prueba anteriores al rediseño (por ejemplo, la oportunidad «ZZ prueba F2», perdida el 04/10/2026), que aparecen en el tablero comercial y en las listas.
+
+### Para quien mantiene el código
+
+- Pantallas del CRM en `src/app/(app)/(crm2)/` (el grupo `(legacy)` se retiró al terminar); marco en `src/components/crm/shell/` y primitivos en `src/components/crm/`. Detalle en [arquitectura](./arquitectura.md).
+- Aislamiento: el CSS del CRM cuelga de `[data-crm]` (`src/app/(app)/crm.css`), los tokens son `--crm-*` y las fuentes se cargan solo en el layout del CRM.
+- **Guarda** `npm run guard`: `guard:frozen` (hashes de los archivos de la landing y del acceso, archivos nuevos en carpetas congeladas, `git diff` contra la base y el alcance de `crm.css`) + `guard:landing` (comparación de píxeles de `/`, `/login` y `/recuperar` contra las imágenes de `design-system/crm-2/guard/landing/`). Cómo se usa y cómo se actualizan las referencias: [pruebas](./pruebas.md) y [`design-system/crm-2/README.md`](../design-system/crm-2/README.md).
+- `npm test`: 442 pruebas en 37 archivos (los `*.check.ts` nuevos cubren selección y teclado de las listas, fechas, barras, migas, contraste del CRM, `sinTrabarse` y la lógica de cada pantalla).
+- **Manual de usuario** regenerado para 2.0.0: 93 páginas (antes 89), capítulos reescritos para la navegación nueva, figuras nuevas (vista previa, acceso al presupuesto, calendario) y 61 de 65 figuras capturadas del build nuevo contra la demo.
+
+---
+
+## Notas de la versión: entrega final (1.0.0)
 
 Estas notas cuentan todo lo que se agregó al proyecto desde la primera versión funcional hasta la entrega final
 (versión 1.0.0, 2026-10-04), organizado por área. Cada punto dice qué hace, dónde vive, qué regla de

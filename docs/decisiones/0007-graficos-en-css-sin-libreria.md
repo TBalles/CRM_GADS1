@@ -26,6 +26,10 @@ El tablero no usa ninguna librería de gráficos. Las dos formas se construyen c
 
 Queda registrado como la divergencia 5 de `docs/design-overrides.md`.
 
+> **Nota (CRM 2.0, 2026-10-05).** La decisión sigue vigente (sin librería de gráficos), pero la implementación se movió: `dashboard/charts.tsx`
+> (`MagnitudeBars`, `ShareBar`) se borró y hoy cada dato es una tabla con una barra fina en la fila (`CellBar` en `src/components/crm/DataTable.tsx`, ancho de
+> `anchoBarra` en `crm/barra.ts`); ya no hay barra apilada al 100 %. Ver el override 5 de `docs/design-overrides.md` y `design-system/crm-2/MASTER.md` §10.21–§10.23.
+
 ## Consecuencias
 
 - Los gráficos heredan los tokens de color y funcionan en claro y oscuro sin código adicional.

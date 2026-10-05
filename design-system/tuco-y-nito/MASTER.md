@@ -1,3 +1,9 @@
+> **SUPERSEDED para el CRM (CRM 2.0, v2.0.0).** El CRM y el panel de plataforma se rigen por
+> [`design-system/crm-2/MASTER.md`](../crm-2/MASTER.md) (sistema "Ledger", tokens `--crm-*`, IBM Plex). Este archivo se conserva para
+> la **landing pública** (`/`) y las **pantallas de acceso** (`/login`, `/recuperar`, `/definir-clave`), que no cambiaron y están
+> congeladas; lo que dice de `src/app/(app)`, de `src/components/ui/` como primitivos del CRM o de Jakarta/Varela/`.cesped` en el CRM
+> ya no aplica.
+
 # Design System Master File — Tuco & Nito (CRM)
 
 > **LOGIC:** When building a specific page, first check `design-system/tuco-y-nito/pages/[page-name].md`.

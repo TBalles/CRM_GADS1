@@ -18,7 +18,8 @@ Dos advertencias de este repositorio:
 - Next.js 16 tiene cambios que rompen APIs y convenciones respecto de lo que se suele saber. Antes de escribir
   código de Next, leé la guía correspondiente en `node_modules/next/dist/docs/` (lo recuerda el bloque
   `nextjs-agent-rules` de [CLAUDE.md](./CLAUDE.md), que no hay que borrar).
-- `docs/DESIGN.md` es una copia de solo lectura del kit de diseño (ver la sección 6).
+- `docs/DESIGN.md` es una copia de solo lectura del kit de diseño (ver la sección 6). Desde la 2.0.0 el CRM sigue otro sistema
+  (`design-system/crm-2/MASTER.md`) y la landing y el acceso están **congelados**: leé la sección 6 antes de tocar interfaz.
 
 ## 2. Commits
 
@@ -65,11 +66,15 @@ Los cuatro tienen que pasar. Son los scripts de `package.json` y **los mismos qu
 (`.github/workflows/ci.yml`, en cada push y pull request a `main`), así que conviene correrlos antes de pushear:
 
 ```bash
-npm run lint                          # eslint src e2e playwright.config.ts --max-warnings=0 (lint, sin advertencias)
-npm run typecheck                     # tsc --noEmit sobre src y sobre e2e
+npm run lint                          # eslint src e2e playwright.config.ts scripts/guard playwright.guard.config.ts --max-warnings=0
+npm run typecheck                     # next typegen + tsc --noEmit sobre src, e2e y scripts/guard
 npm test                              # node --test "src/**/*.check.ts" (self-checks)
 npx next build                        # build de producción
 ```
+
+Además corré `npm run guard:frozen`: falla si tocaste un archivo congelado de la landing o del acceso, o si `crm.css` rompe su regla de aislamiento. No está en la CI
+todavía, así que depende de vos. Si el cambio puede alterar la landing, `/login` o `/recuperar` (por ejemplo, `globals.css`), corré también `npm run guard`
+completo (pixel diff; necesita el `.env`). Cómo se leen y cómo se refrescan las baselines: [docs/pruebas.md](./docs/pruebas.md#10-guardas-de-aislamiento-de-crm-20).
 
 Si el cambio toca la interfaz, además `npm run test:e2e` contra la organización de pruebas (necesita las variables
 `E2E_*` y el seed `supabase/seeds/e2e_tests.sql`; sin ellas las pruebas se saltan). Las pruebas SQL no corren en la CI: las corre
@@ -115,18 +120,33 @@ migraciones de reversa**. Por eso importan estas reglas:
 
 ## 6. Diseño e interfaz
 
-- [`docs/DESIGN.md`](./docs/DESIGN.md) es el kit canónico, una copia **de solo lectura**: no se edita. Antes de
-  crear o cambiar interfaz, leelo.
-- Si la aplicación necesita apartarse del kit, **no lo edites**: agregá un bloque a
-  [`docs/design-overrides.md`](./docs/design-overrides.md) con el formato kit, esta app, dónde y por qué.
-- Reutilizá los primitivos de CRM 2.0 (`src/components/crm/`, spec en `design-system/crm-2/MASTER.md`) y los campos de
-  `src/components/crm/cuenta/FormDrawer.tsx`; no inventes variantes de Button o Drawer ni reimplementes selects.
-- Respetá los tokens: no escribas colores de marca a mano fuera de `--brand` y compañía (`src/app/globals.css`).
-  Si cambiás un token de color, verificá el contraste: el piso es 4.5:1 (WCAG AA).
-- Montos siempre con `MoneyInput` y `parseMoney`, nunca `type="number"`. Tablas responsive en dos bloques
-  (tarjetas en móvil, tabla en escritorio). Tooltips con `title="..."`.
+**El CRM** (las pantallas de `src/app/(app)/(crm2)/`, `/admin` y el marco `src/components/crm/shell/`) sigue el sistema "Ledger": la fuente de verdad es
+[`design-system/crm-2/MASTER.md`](./design-system/crm-2/MASTER.md) y el contrato de aislamiento, [`design-system/crm-2/README.md`](./design-system/crm-2/README.md).
+Antes de crear o cambiar interfaz del CRM, leelos.
+
+- Reutilizá los primitivos de `src/components/crm/` (`Button`, `DataTable`, `Drawer`, `Dialog`, `Field`, `Select`, `DatePicker`…) y los campos de
+  `src/components/crm/cuenta/FormDrawer.tsx`; no uses `src/components/ui/*` ni inventes variantes de Button o Drawer ni reimplementes selects. Una pantalla
+  nueva va en `(app)/(crm2)/`.
+- Tokens: solo `--crm-*`, definidos en `src/app/(app)/crm.css` bajo `[data-crm]` y usados con utilidades de Tailwind (`bg-(--crm-panel)`). Ningún color, radio,
+  sombra ni z-index literal. Un token nuevo va en claro y oscuro y, si es un par de colores, se suma a `PARES` en `src/lib/contrasteCrm.ts` (`npm test` mide el
+  contraste; el piso es 4.5:1, WCAG AA). `crm.css` no puede tener selectores ni at-rules globales y solo lo importan los layouts de `(app)` y `admin`.
+- Montos siempre con `MoneyInput` (`crm/MoneyInput.tsx`) y `parseMoney`, nunca `type="number"`; fechas con `DatePicker`, no `type="date"`. Los botones de solo ícono
+  son `IconButton` con `label`. **Nunca `title="..."`** en el CRM: usá `Tooltip` o `label`. En pantallas chicas la grilla muestra menos columnas con el mismo markup (no se
+  duplica tabla y tarjetas). Lo flotante se portaliza a `#crm-portal` (`CrmPortal`).
+- Si un guardado puede tirar (red, despliegue), usá `sinTrabarse` (`src/lib/guardar.ts`) para que el formulario no quede en "Guardando…".
 - Las mutaciones del CRUD se hacen desde el cliente de Supabase del navegador y las Server Actions se reservan
   para lo privilegiado: [decisión 0001](./docs/decisiones/0001-mutaciones-desde-el-cliente.md).
+
+**La landing (`/`) y el acceso (`/login`, `/recuperar`, `/definir-clave`) no se tocan**: ellos y todo lo que importan (la lista está en
+`design-system/crm-2/guard/frozen-files.json`) están congelados, y `npm run guard` lo verifica. Si un cambio exige tocar un archivo congelado, frená y pedí una
+decisión explícita: el procedimiento (commitear el cambio, regenerar baselines y manifiesto, revisar el diff de los PNG) está en el README de crm-2.
+Para esas pantallas siguen valiendo el kit y la identidad anterior:
+
+- [`docs/DESIGN.md`](./docs/DESIGN.md) es el kit canónico, una copia **de solo lectura**: no se edita.
+- Si la landing o el acceso necesitan apartarse del kit, **no lo edites**: agregá un bloque a
+  [`docs/design-overrides.md`](./docs/design-overrides.md) con el formato kit, esta app, dónde y por qué. Ese archivo y
+  `design-system/tuco-y-nito/MASTER.md` quedaron como historia para el CRM (están marcados como superseded).
+- Color de marca de la landing: `--brand` y compañía en `src/app/globals.css`, sin escribirlo a mano en otro lado.
 
 ## 7. Convenciones de código y nombres
 
@@ -136,7 +156,7 @@ migraciones de reversa**. Por eso importan estas reglas:
   alias `@/`, para poder correr con `node --test`.
 - Los textos de interfaz siguen la voz que ya tiene la aplicación: español rioplatense con voseo ("Ingresá",
   "Elegí un rol"), directo y sin jerga. Los errores dicen qué pasó y qué hacer.
-- Los formularios usan `FormDrawer` y los campos de `src/components/crm/` (`Field`, `CampoTexto`, `CampoOpciones`…).
+- Los formularios del CRM usan `FormDrawer` y los campos de `src/components/crm/` (`Field`, `CampoTexto`, `CampoOpciones`…).
 - Cuando algo cambia el esquema, hay que regenerar los tipos en el mismo cambio.
 
 ## 8. Documentación
@@ -151,6 +171,8 @@ Tocaste comportamiento, esquema, permisos o despliegue: actualizá la documentac
 | Algo visible para quien usa el sistema | [CHANGELOG.md](./CHANGELOG.md) y, si corresponde, [notas de versión](./docs/notas-de-version.md) |
 | Variables de entorno o pasos de despliegue | [docs/deploy.md](./docs/deploy.md) |
 | Estructura del proyecto o convenciones para sesiones de IA | [CLAUDE.md](./CLAUDE.md) |
+| Una pantalla o un primitivo del CRM, o un token `--crm-*` | [`design-system/crm-2/MASTER.md`](./design-system/crm-2/MASTER.md) |
+| Un archivo congelado (con aprobación) | Las baselines y el manifiesto de `design-system/crm-2/guard/` (ver [docs/pruebas.md, sección 10](./docs/pruebas.md#10-guardas-de-aislamiento-de-crm-20)) |
 
 Distinguí siempre qué está **implementado**, qué está en la **base de datos sin interfaz** y qué está
 **planificado**; no documentes como existente lo que no se construyó.

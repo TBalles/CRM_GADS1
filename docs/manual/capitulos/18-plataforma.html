@@ -9,15 +9,22 @@
 <p>El superadmin <strong>no pertenece a ninguna organización</strong>. Por eso <strong>no ve datos comerciales de ningún cliente</strong>: ni sus empresas, ni sus ventas. Opera la plataforma, no el negocio de cada proveedor. Al iniciar sesión, es llevado directamente a <span class="mono">/admin</span> y no puede entrar al CRM.</p>
 
 <h2>El panel</h2>
-<figure class="fig" data-fig="admin-panel"><figcaption>El panel de plataforma: la lista de clientes (organizaciones), cada uno con su estado y sus administradores.</figcaption></figure>
-<p>Cada cliente aparece con su nombre, si está <strong>activo</strong> o <strong>de baja</strong>, y sus administradores (con el estado de su invitación). El menú <span class="mono">⋮</span> de cada cliente permite <span class="ui">Agregar administrador</span> y <span class="ui">Suspender</span> o <span class="ui">Reactivar</span>; al lado de una invitación pendiente hay un botón <span class="ui">Reenviar invitación</span>.</p>
+<p>El panel usa el mismo marco que el CRM, pero su menú lateral tiene una sola sección, <strong>Plataforma › Clientes</strong>: el superadmin no ve ninguna pantalla del CRM de un cliente. Arriba están el modo claro u oscuro y su menú de usuario (con «Cerrar sesión»); no hay búsqueda global.</p>
+<figure class="fig" data-fig="admin-panel"><figcaption>El panel de plataforma: la tabla de clientes (organizaciones), cada uno con sus administradores, sus usuarios activos y su estado.</figcaption></figure>
+<ul>
+  <li>Junto al título se lee cuántos clientes hay. El buscador («Buscar cliente o admin…») filtra por el nombre del cliente o por el nombre o el mail de sus administradores.</li>
+  <li>Cada fila de la tabla <strong>Clientes</strong> muestra el nombre del cliente, sus <strong>administradores</strong> (nombre y mail, con «Pendiente» si todavía no activó su cuenta o «De baja»), cuántos <strong>usuarios activos</strong> tiene y su estado: <strong>Activo</strong> o <strong>Suspendido</strong>. Si tiene más de un administrador se ve el primero y un botón <span class="ui">+N</span> para ver el resto; si no tiene ninguno, la fila lo dice en rojo («Sin administrador: agregale uno.»).</li>
+  <li>Al lado de un administrador <em>Pendiente</em> está el botón <span class="ui">Reenviar</span>, que vuelve a mandarle la invitación.</li>
+  <li>El menú <span class="mono">⋮</span> «Acciones de &lt;cliente&gt;» reúne <span class="ui">Agregar administrador</span>, <span class="ui">Reenviar invitación a &lt;mail&gt;</span> (una por cada administrador pendiente, lo mismo que el botón de la fila) y <span class="ui">Suspender</span> (con confirmación) o <span class="ui">Reactivar</span>.</li>
+  <li>Las acciones van de a una: mientras una está en curso, las demás esperan.</li>
+</ul>
 
 <h2>Dar de alta un cliente nuevo</h2>
 <ol class="pasos">
   <li>Tocá <span class="ui">Nuevo cliente</span>.</li>
   <li>Escribí el <strong>Nombre del cliente</strong> (el de la organización).</li>
   <li>En <strong>Administrador del cliente</strong> completá el <strong>Nombre y apellido</strong> y el <strong>Email</strong> de la primera persona: recibe un mail para elegir su contraseña y entra con el rol <strong>Administrador</strong>, desde donde invita al resto de su equipo.</li>
-  <li>Confirmá. El sistema crea la organización con sus <strong>cuatro roles</strong> (Administrador, Vendedor, Responsable comercial y Solo lectura), las <strong>seis etapas del embudo del rubro</strong> y los catálogos iniciales (orígenes, motivos de pérdida y tipos de actividad).</li>
+  <li>Tocá <span class="ui">Crear cliente</span>. El sistema crea la organización con sus <strong>cuatro roles</strong> (Administrador, Vendedor, Responsable comercial y Solo lectura), las <strong>seis etapas del embudo del rubro</strong> y los catálogos iniciales (orígenes, motivos de pérdida y tipos de actividad).</li>
 </ol>
 <figure class="fig" data-fig="admin-nuevo"><figcaption>El panel para dar de alta un cliente, con los datos de su primer Administrador.</figcaption></figure>
 

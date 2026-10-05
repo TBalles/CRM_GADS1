@@ -12,13 +12,13 @@
 <figure class="fig" data-fig="lic-form"><figcaption>El formulario de oportunidad con el tipo «Licitación municipal» elegido: abajo se despliegan los datos propios de la licitación.</figcaption></figure>
 
 <h2>El detalle de una licitación</h2>
-<p>En el detalle aparece un bloque <strong>Licitación</strong> con el organismo, el expediente, la apertura, el monto oficial y la garantía. Arriba te avisa <strong>cuánto falta para la apertura</strong> («Abre en 12 días»). Si la oportunidad todavía no tiene datos, el bloque ofrece <span class="ui">Cargar datos</span>; después, <span class="ui">Editar datos</span>.</p>
+<p>En el detalle aparece un bloque <strong>Licitación</strong> con el organismo, el expediente, la apertura, el monto oficial y la garantía. Arriba del historial, un aviso dice <strong>cuánto falta para la apertura</strong> («Abre en 11 días.») y, mientras no llegue, que todavía no se puede marcar ganada. Si la oportunidad todavía no tiene datos, el bloque ofrece <span class="ui">Cargar datos</span>; después, <span class="ui">Editar datos</span>.</p>
 <figure class="fig" data-fig="lic-detalle"><figcaption>El detalle de una licitación, con su bloque de datos y el aviso de cuánto falta para la apertura.</figcaption></figure>
 
 <h2>La regla de la apertura</h2>
 <div class="nota regla">
   <ul>
-    <li><strong>Una licitación no puede pasar a ganada antes de su fecha de apertura.</strong> El botón <span class="ui">Marcar ganada</span> queda bloqueado con el mensaje «No se puede marcar ganada una licitación antes de su apertura (fecha de apertura: dd/mm/aaaa)». <strong>El mismo día de la apertura ya se puede.</strong></li>
+    <li><strong>Una licitación no puede pasar a ganada antes de su fecha de apertura.</strong> Si tocás <span class="ui">Marcar ganada</span>, el cuadro muestra «No se puede marcar ganada antes de la apertura (dd/mm/aaaa).» y no deja confirmar. <strong>El mismo día de la apertura ya se puede.</strong></li>
     <li><strong>Una licitación sin datos tampoco se gana</strong>: sin fecha de apertura no hay contra qué compararla. Primero usá <span class="ui">Cargar datos</span>.</li>
     <li>La regla vale <strong>para cualquier camino</strong>: el menú, el detalle o un cambio de etapa. No es solo un bloqueo de pantalla; la hace cumplir la base de datos.</li>
     <li>Se compara con la <strong>fecha de Argentina</strong>, no con la del servidor.</li>
@@ -26,7 +26,7 @@
 </div>
 
 <h2>Filtrar y volver a «Directa»</h2>
-<p>En la lista de oportunidades, el filtro <span class="ui">Tipo</span> separa las licitaciones de las directas. En el tablero se reconocen por la insignia <span class="pill azul">Licitación</span>.</p>
+<p>En la lista de oportunidades, el filtro <span class="ui">Tipo</span> separa las licitaciones de las directas. En el tablero, en la lista y en el detalle se reconocen por la etiqueta <span class="pill gris">Licitación</span>.</p>
 <figure class="fig" data-fig="lic-lista"><figcaption>La lista filtrada por tipo «Licitaciones».</figcaption></figure>
 <p>Si una oportunidad deja de ser licitación y vuelve a «Directa», <strong>los datos de la licitación se conservan</strong> (no se borran), por si volvés a marcarla. Mientras sea directa no se muestran y la regla de la apertura no los mira.</p>
 
@@ -42,7 +42,7 @@
   <p>Si <strong>cambiás la fecha de apertura</strong> de una licitación que <em>ya está ganada</em> hacia el futuro, el sistema no lo impide: la regla se juzga al ganar, no después. Evitalo.</p>
 </div>
 <div class="nota pendiente">
-  <p>Las licitaciones con sus datos se activan cuando la plataforma tiene aplicada la última versión de la base de datos. Sin ella, «Licitación» es solo una insignia en la lista y no ves el bloque de datos. Si no lo ves, avisá a quien administra el sistema.</p>
+  <p>Las licitaciones con sus datos se activan cuando la plataforma tiene aplicada la última versión de la base de datos. Sin ella, «Licitación» es solo una etiqueta en la lista y no ves el bloque de datos. Si no lo ves, avisá a quien administra el sistema.</p>
 </div>
 
 <h2>Qué ve cada rol</h2>

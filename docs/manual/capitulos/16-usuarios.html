@@ -1,11 +1,11 @@
 <section class="cap" id="cap-16" data-num="16" data-parte="Supervisión y administración" data-titulo="Usuarios y roles" data-bajada="Invitar al equipo, cambiarle el rol, darlo de baja y armar roles a medida. Es la pantalla del Administrador.">
 
-<p>La pantalla <strong>Usuarios</strong> (permiso «Gestionar usuarios y roles», hoy solo del Administrador) tiene dos pestañas: <span class="ui">Usuarios</span> y <span class="ui">Roles</span>.</p>
+<p>La pantalla <strong>Usuarios</strong> (permiso «Gestionar usuarios y roles», hoy solo del Administrador) tiene dos pestañas: <span class="ui">Usuarios</span> y <span class="ui">Roles</span>. Junto al título se lee cuántos usuarios tienen acceso, y el botón de la derecha cambia según la pestaña: <span class="ui">Invitar usuario</span> o <span class="ui">Nuevo rol</span>.</p>
 
 <h2>La lista de usuarios</h2>
-<figure class="fig" data-fig="usuarios-lista"><figcaption>Los usuarios de la organización con su rol y su estado. Tu propio usuario lleva «(vos)» y no tiene menú de acciones: no podés cambiarte el rol ni darte de baja.</figcaption></figure>
+<figure class="fig" data-fig="usuarios-lista"><figcaption>Los usuarios de la organización. Cada uno con su mail, su rol y su estado. Tu propio usuario lleva «(vos)» y no tiene menú de acciones: no podés cambiarte el rol ni darte de baja.</figcaption></figure>
 <ul>
-  <li>Buscador por <strong>nombre, email o rol</strong>; filtros <span class="ui">Todos los roles</span> y <span class="ui">Todos los estados</span>.</li>
+  <li>Buscador por <strong>nombre, email o rol</strong>; filtros <span class="ui">Rol</span> y <span class="ui">Estado</span>.</li>
   <li>Estados: <span class="pill verde">Activo</span>, <span class="pill ambar">Invitación pendiente</span> (todavía no eligió su contraseña) y <span class="pill gris">De baja</span>.</li>
 </ul>
 
@@ -41,15 +41,15 @@
 </div>
 
 <h2>Roles a medida</h2>
-<p>La pestaña <span class="ui">Roles</span> muestra los roles de tu organización, cada uno con sus permisos y cuántas personas lo tienen. El <strong>Administrador</strong> aparece como <em>Fijo</em>: no se puede modificar.</p>
-<figure class="fig" data-fig="usuarios-roles"><figcaption>La pestaña Roles con los cuatro roles por defecto. Los permisos se agrupan por color según su tema (clientes, oportunidades, ventas…).</figcaption></figure>
+<p>La pestaña <span class="ui">Roles</span> tiene dos partes. Arriba, la tabla <strong>Roles</strong>: cada rol con su descripción, cuántas personas lo tienen y su menú <span class="mono">⋮</span> (<span class="ui">Editar</span> y <span class="ui">Borrar</span>). El <strong>Administrador</strong> aparece como <em>Fijo</em>, con un candado: no se puede modificar. Debajo, la matriz <strong>Permisos por rol</strong>: un permiso por fila, agrupados por tema (clientes, oportunidades, ventas…), y un rol por columna, con una tilde (✓) donde el rol lo tiene y una raya (—) donde no. Sirve para comparar roles de un vistazo; si es larga, se desplaza dejando fijos los nombres de los roles. En el celular se ve un rol por vez, elegido con <span class="ui">Ver el rol</span>.</p>
+<figure class="fig" data-fig="usuarios-roles"><figcaption>La pestaña Roles con los cuatro roles por defecto y, debajo, la matriz de permisos por rol.</figcaption></figure>
 
 <h3>Crear o editar un rol</h3>
 <ol class="pasos">
   <li>Tocá <span class="ui">Nuevo rol</span> (o <span class="ui">Editar</span> en el menú de uno existente).</li>
   <li>Poné un <strong>nombre</strong> («Administrativa», «Vendedor senior») y una descripción.</li>
-  <li>Tildá los <strong>permisos</strong>, agrupados por tema. El panel te los explica uno por uno.</li>
-  <li>Guardá. Al guardar, <strong>el sistema agrega los permisos que hacen falta</strong>: si tildás «Registrar ventas», se agregan «Ver ventas», «Ver clientes» y «Ver el catálogo».</li>
+  <li>Tildá los <strong>permisos</strong> en «Qué puede hacer», agrupados por tema. Cada uno tiene su explicación al lado.</li>
+  <li>Tocá <span class="ui">Crear rol</span> (o <span class="ui">Guardar rol</span>). Al guardar, <strong>el sistema agrega los permisos que hacen falta</strong>: si tildás «Registrar ventas», se agregan «Ver ventas», «Ver clientes» y «Ver el catálogo».</li>
 </ol>
 <div class="nota regla">
   <ul>
@@ -61,7 +61,7 @@
 </div>
 <figure class="fig" data-fig="rol-form"><figcaption>El panel de un rol: nombre, descripción y los permisos para tildar.</figcaption></figure>
 <div class="nota atencion">
-  <p>Antes de borrar o recortar un rol, mirá cuántas personas lo tienen (se ve en la tarjeta). Y no edites roles <em>mientras se está actualizando el sistema</em>: una versión vieja de la aplicación no conoce los permisos nuevos y los descartaría al guardar.</p>
+  <p>Antes de borrar o recortar un rol, mirá cuántas personas lo tienen (columna «Usuarios» de la tabla de roles). Y no edites roles <em>mientras se está actualizando el sistema</em>: una versión vieja de la aplicación no conoce los permisos nuevos y los descartaría al guardar.</p>
 </div>
 
 <h2>Qué ve cada rol</h2>

@@ -19,6 +19,8 @@
 | Desplegar o actualizar | [deploy.md](./deploy.md) |
 | Verificar que todo anda | [pruebas.md](./pruebas.md) |
 | Entender por qué se decidió algo | [decisiones/](./decisiones/README.md) |
+| Entender el rediseño CRM 2.0 y cómo se protege la landing | [ADR 0014](./decisiones/0014-crm-2-redisenio-por-slices-con-aislamiento-de-la-landing.md), [design-system/crm-2/README.md](../design-system/crm-2/README.md) y [pruebas.md, sección 10](./pruebas.md#10-guardas-de-aislamiento-de-crm-20) |
+| Armar o cambiar una pantalla del CRM | [design-system/crm-2/MASTER.md](../design-system/crm-2/MASTER.md) |
 | Revisar o reportar seguridad | [seguridad.md](./seguridad.md) y [SECURITY.md](../SECURITY.md) |
 | Aportar código | [CONTRIBUTING.md](../CONTRIBUTING.md) |
 | Ver el historial por hito | [CHANGELOG.md](../CHANGELOG.md) |
@@ -42,17 +44,21 @@
 | Documento | Para qué sirve |
 |---|---|
 | [deploy.md](./deploy.md) | Runbook de Supabase y Vercel, orden de migraciones, seed, SMTP, variables de entorno y lista de verificación |
-| [Manual-de-usuario-Tuco-y-Nito.pdf](./Manual-de-usuario-Tuco-y-Nito.pdf) | El manual para el personal del proveedor (89 páginas). Su fuente y cómo regenerarlo con `npm run manual`: [manual/LEEME.md](./manual/LEEME.md) |
-| [pruebas.md](./pruebas.md) | Self-checks, verificación estática, pruebas SQL (cuál va antes o después de la `0007`), pruebas E2E con Playwright, la CI y cómo leer un resultado |
+| [Manual-de-usuario-Tuco-y-Nito.pdf](./Manual-de-usuario-Tuco-y-Nito.pdf) | El manual para el personal del proveedor (93 páginas). Su fuente y cómo regenerarlo con `npm run manual`: [manual/LEEME.md](./manual/LEEME.md) |
+| [pruebas.md](./pruebas.md) | Self-checks (37 archivos, 442 pruebas), verificación estática, pruebas SQL (cuál va antes o después de la `0007`), pruebas E2E con Playwright, la CI, las guardas de aislamiento de CRM 2.0 y cómo leer un resultado |
 | [seguridad.md](./seguridad.md) | Modelo de amenazas y controles, secretos, límites conocidos |
 
 ## Diseño
 
+Desde la 2.0.0 **el CRM sigue el sistema "Ledger"**; el kit y la identidad anterior quedan para la landing y las pantallas de acceso.
+
 | Documento | Para qué sirve |
 |---|---|
-| [DESIGN.md](./DESIGN.md) | Sumar UI Kit canónico. **Copia de solo lectura: no se edita** |
-| [design-overrides.md](./design-overrides.md) | Dónde esta aplicación se aparta del kit a propósito y por qué (15 divergencias) |
-| [`design-system/tuco-y-nito/MASTER.md`](../design-system/tuco-y-nito/MASTER.md) | Reglas de identidad de la marca: color, tipografía, estructura, voz, motivos |
+| [`design-system/crm-2/MASTER.md`](../design-system/crm-2/MASTER.md) | **Fuente de verdad visual del CRM** (sistema "Ledger"): tokens `--crm-*`, tipografía, componentes y la spec de cada pantalla (§10.1–§10.25) |
+| [`design-system/crm-2/README.md`](../design-system/crm-2/README.md) | Contrato de aislamiento: qué está congelado, reglas de `crm.css`, route groups, portales y cómo correr las guardas |
+| [DESIGN.md](./DESIGN.md) | Sumar UI Kit canónico. **Copia de solo lectura: no se edita**. Rige la landing y el acceso |
+| [design-overrides.md](./design-overrides.md) | Dónde esta aplicación se aparta del kit a propósito y por qué (17 divergencias, varias **superseded** para el CRM por CRM 2.0) |
+| [`design-system/tuco-y-nito/MASTER.md`](../design-system/tuco-y-nito/MASTER.md) | Identidad de la marca (color, tipografía, voz, motivos): **superseded para el CRM**, vigente para la landing y el acceso |
 
 ## Fuera de esta carpeta
 
@@ -64,7 +70,8 @@
 | [`supabase/tests/`](../supabase/tests) | Pruebas SQL con rollback |
 | [`supabase/seeds/demo_catedra.sql`](../supabase/seeds/demo_catedra.sql) | Datos de demostración y cuentas por rol |
 | [`supabase/seeds/demo_rubro.sql`](../supabase/seeds/demo_rubro.sql) | Complemento de la demo: canchas, datos de licitación y un presupuesto guardado (requiere las migraciones 0011 y 0012) |
-| [`scripts/`](../scripts) | `manual/` (capturas y PDF del manual) y `migraciones/` (genera el kit consolidado) |
+| [`scripts/`](../scripts) | `manual/` (capturas y PDF del manual), `migraciones/` (genera el kit consolidado) y `guard/` (guardas de aislamiento de CRM 2.0) |
+| [`design-system/`](../design-system) | `crm-2/` (sistema "Ledger" del CRM, contrato de aislamiento y baselines de las guardas) y `tuco-y-nito/` (identidad anterior, para la landing y el acceso) |
 | `.github/` | Plantillas de pull request y de issues |
 | `Guia-demostracion-Tuco-y-Nito.pdf` | PDF en la raíz que, por su nombre, es una guía de demostración. No se revisó su contenido y al escribir este índice no estaba versionado en git |
 

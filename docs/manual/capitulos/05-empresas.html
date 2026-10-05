@@ -1,28 +1,40 @@
 <section class="cap" id="cap-05" data-num="5" data-parte="El trabajo de todos los días" data-titulo="Empresas" data-bajada="Tus clientes: clubes, complejos, escuelas, colegios y predios. Cómo cargarlos, buscarlos, ordenarlos y darlos de baja sin perder su historia.">
 
-<p>La pantalla <strong>Empresas</strong> es el listado de todos los clientes de tu cartera. Desde acá das de alta empresas nuevas y entrás a la ficha de cada una (capítulo 7).</p>
-<figure class="fig" data-fig="empresas-lista"><figcaption>La lista de empresas. Cada nombre lleva a la ficha; el menú ⋮ de la derecha reúne las acciones de la fila.</figcaption></figure>
+<p>La pantalla <strong>Empresas</strong> es el listado de todos los clientes de tu cartera. Desde acá das de alta empresas nuevas, mirás una empresa de un vistazo sin salir de la lista y entrás a la ficha de cada una (capítulo 7). Arriba, junto al título, se lee cuántas empresas y cuántos contactos hay.</p>
+<figure class="fig" data-fig="empresas-lista"><figcaption>La lista de empresas. Cada nombre lleva a la ficha; el menú ⋮ de la derecha reúne las acciones de la fila; al pie, «Mostrando…», las páginas y las filas por página.</figcaption></figure>
 
 <h2>Leer la lista</h2>
 <table class="tabla compacta">
   <thead><tr><th style="width:30mm">Columna</th><th>Qué es</th></tr></thead>
   <tbody>
-    <tr><td><strong>Empresa</strong></td><td>La razón social, con el mail y el teléfono debajo.</td></tr>
+    <tr><td><strong>Empresa</strong></td><td>La razón social, con el mail (o el teléfono) al lado, en gris.</td></tr>
     <tr><td><strong>Tipo</strong></td><td>Club, Complejo de fútbol 5, Escuela de fútbol, Predio municipal, Colegio u Otro.</td></tr>
-    <tr><td><strong>Estado</strong></td><td>Potencial, Cliente, Inactivo o No contactar (ver más abajo).</td></tr>
+    <tr><td><strong>Estado</strong></td><td>Potencial, Cliente, Inactivo o No contactar (ver más abajo), con un punto de color.</td></tr>
     <tr><td><strong>Responsable</strong></td><td>La persona del equipo a cargo de la cuenta.</td></tr>
     <tr><td><strong>Origen</strong></td><td>De dónde llegó el cliente: web, referido, redes, torneo, licitación…</td></tr>
     <tr><td><strong>Contactos</strong></td><td>Cuántas personas tiene cargadas.</td></tr>
   </tbody>
 </table>
+<p>Si la pantalla es angosta (o tenés la vista previa abierta), algunas columnas se esconden y sus datos pasan a una línea en gris debajo del nombre: no se pierde ninguno.</p>
+
+<h2>La vista previa</h2>
+<p>En una pantalla ancha, <strong>tocá la fila de una empresa</strong> (en cualquier lugar que no sea el nombre ni el menú ⋮) y se abre a la derecha su <strong>vista previa</strong>: lo esencial para atender una llamada sin perder la lista.</p>
+<figure class="fig" data-fig="empresas-vista-previa"><figcaption>La vista previa de una empresa: estado, tipo y responsable; «Registrar actividad» y el menú ⋮; teléfono, mail, CUIT y último contacto; sus contactos, sus oportunidades abiertas y los últimos movimientos. Abajo, «Abrir ficha completa».</figcaption></figure>
+<ul>
+  <li>Arriba, el nombre, el estado, el tipo y el responsable, y las acciones: <span class="ui">Registrar actividad</span> y el menú <span class="mono">⋮</span> «Más acciones» (Editar, Dar de baja o Reactivar).</li>
+  <li>Debajo, el teléfono, el mail, el CUIT y el último contacto; hasta tres contactos, tres oportunidades abiertas y los tres últimos movimientos.</li>
+  <li><span class="ui">Abrir ficha completa →</span> lleva a la ficha; <span class="ui">Cerrar vista previa</span> (la X) o <kbd>Esc</kbd> la cierran.</li>
+  <li>Con el teclado, con el foco en la tabla, las flechas <kbd>↑</kbd> <kbd>↓</kbd> pasan a la empresa de arriba o de abajo y la vista previa la sigue. <kbd>Enter</kbd> sobre el nombre abre la ficha.</li>
+  <li>La empresa elegida queda en la dirección de la pantalla: si copiás el enlace, se abre con la misma vista previa. En pantallas más chicas no hay vista previa: tocar la fila abre la ficha.</li>
+</ul>
 
 <h2>Buscar y filtrar</h2>
 <ul>
-  <li>El buscador mira la razón social, el CUIT, el mail, el teléfono y la dirección de la empresa, <strong>y también el nombre, apellido, mail y cargo de sus contactos</strong>. Buscar «Martín» encuentra la empresa donde trabaja Martín.</li>
-  <li><strong>Filtros</strong>: estado, tipo de cliente, responsable (solo si tu rol ve la cartera de todos) y origen.</li>
+  <li>El buscador («Buscar empresa o contacto») mira la razón social, el CUIT, el mail, el teléfono y la dirección de la empresa, <strong>y también el nombre, apellido, mail y cargo de sus contactos</strong>. Buscar «Martín» encuentra la empresa donde trabaja Martín.</li>
+  <li><strong>Filtros</strong>: <span class="ui">Estado</span>, <span class="ui">Tipo</span>, <span class="ui">Responsable</span> (solo si tu rol ve la cartera de todos) y <span class="ui">Origen</span>. Con la vista previa abierta, todos menos Estado se juntan en <span class="ui">Más filtros</span>.</li>
   <li>El botón <span class="ui">Ver dadas de baja</span> (con su cantidad) muestra también las empresas inactivas o «No contactar», que normalmente están escondidas.</li>
 </ul>
-<figure class="fig" data-fig="empresas-filtros-baja"><figcaption>Con <em>Ver dadas de baja</em> activado, la lista incluye también las empresas inactivas o «No contactar», y el menú ⋮ de cada una ofrece Reactivar.</figcaption></figure>
+<figure class="fig" data-fig="empresas-filtros-baja"><figcaption>Con <em>Ver dadas de baja</em> activado, la lista incluye también las empresas inactivas o «No contactar», y el menú ⋮ de una inactiva ofrece Reactivar.</figcaption></figure>
 <div class="nota tip">
   <p>La búsqueda no distingue mayúsculas, pero <strong>sí tildes</strong>: «perez» no encuentra «Pérez». Si no aparece, probá con la grafía exacta.</p>
 </div>
@@ -66,12 +78,12 @@
 
 <h2>Editar, dar de baja y reactivar</h2>
 <ol class="pasos">
-  <li><strong>Editar</strong>: menú ⋮ de la fila (o el botón de la ficha) → <span class="ui">Editar</span>. Se abre el mismo panel con los datos cargados.</li>
+  <li><strong>Editar</strong>: menú ⋮ de la fila (o «Más acciones» en la vista previa o en la ficha) → <span class="ui">Editar</span>. Se abre el mismo panel con los datos cargados.</li>
   <li><strong>Dar de baja</strong>: menú ⋮ → <span class="ui">Dar de baja</span>. Te pide confirmación. La empresa pasa a <em>Inactivo</em> y se esconde de la lista.</li>
-  <li><strong>Reactivar</strong>: activá el filtro <span class="ui">Ver dadas de baja</span>, abrí el menú ⋮ de la empresa y elegí <span class="ui">Reactivar</span>. Vuelve como <em>Potencial</em>.</li>
+  <li><strong>Reactivar</strong>: activá el filtro <span class="ui">Ver dadas de baja</span>, abrí el menú ⋮ de la empresa y elegí <span class="ui">Reactivar</span> (también está en la ficha de una empresa inactiva). Vuelve como <em>Cliente</em> si ya te compró (tiene ventas) o como <em>Potencial</em> si no; el aviso te dice cuál.</li>
 </ol>
 <div class="nota regla">
-  <p><strong>Una empresa no se borra nunca.</strong> La interfaz no tiene el botón y, una vez aplicadas las últimas migraciones, la base de datos tampoco lo permite. Es una decisión de diseño: una empresa tiene ventas, actividades y oportunidades, y borrarla rompería esa historia. La baja es solo cambiar su estado, y siempre se puede revertir.</p>
+  <p><strong>Una empresa no se borra nunca.</strong> La interfaz no tiene el botón y, una vez aplicadas las últimas migraciones, la base de datos tampoco lo permite. Es una decisión de diseño: una empresa tiene ventas, actividades y oportunidades, y borrarla rompería esa historia. La baja es solo cambiar su estado, y siempre se puede revertir. Una empresa en <em>No contactar</em> no se reactiva con un clic: es un pedido del cliente, y se cambia a propósito desde <span class="ui">Editar</span>.</p>
 </div>
 
 <h2>La cartera: quién ve y quién asigna</h2>

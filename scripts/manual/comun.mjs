@@ -18,5 +18,5 @@ export const HTML_FUENTE = path.join(DIR_MANUAL, "manual.html");
 export const HTML_GENERADO = path.join(DIR_MANUAL, "_manual.generado.html");
 export const PDF_SALIDA = path.join(RAIZ, "docs", "Manual-de-usuario-Tuco-y-Nito.pdf");
 
-/** Versión y fecha que lleva la tapa. La versión sale de package.json; la fecha de la entrega final. */
-export const FECHA_MANUAL = "4 de octubre de 2026";
+/** Versión y fecha que lleva la tapa. La versión sale de package.json; la fecha, la de esa versión (2.0.0: CRM 2.0). */
+export const FECHA_MANUAL = "5 de octubre de 2026";

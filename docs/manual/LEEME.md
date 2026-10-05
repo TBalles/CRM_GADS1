@@ -57,7 +57,7 @@ npm run manual:capturas
 Los marcadores del PDF se corrigen al final con `scripts/manual/outline.py` (necesita Python con `pymupdf`; si no está, `generar.mjs` avisa y deja el PDF igual, con el índice y las páginas intactos pero algún título de marcador sin su espacio).
 
 `generar.mjs` completa la matriz de permisos y la tabla de pantallas **leyendo `src/lib/permisos.ts` y
-`src/lib/navegacion.ts`** (siempre coinciden con la aplicación), pone cada captura a una escala común (1178 px de
+`src/lib/navegacion.ts`** (siempre coinciden con la aplicación), pone cada captura a una escala común (1218 px de
 contenido = 170 mm) y arma el índice con los **números de página reales**: imprime cada capítulo por separado, suma
 sus páginas y, al final, comprueba que la suma coincide con las páginas del PDF completo (si no, falla).
 

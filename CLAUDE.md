@@ -14,7 +14,8 @@ gestionar oportunidades comerciales. La **segunda entrega** (2026-09-18 a 09-24)
 pública, catálogo con vida útil, historial de ventas, alertas de recambio, bitácora, multitenancy,
 roles con permisos y cuentas. Se trabaja hacia la **entrega final (2026-11-12)**: la migración
 `0007_entrega_final.sql` ya está aplicada (la base cumple casi todo el módulo comercial de la
-consigna) y la interfaz de esas capacidades se construyó en las fases F1 a F8 (hechas; versión 1.0.0). El estado real,
+consigna) y la interfaz de esas capacidades se construyó en las fases F1 a F8 (hechas; versión 1.0.0). La **versión 2.0.0 (CRM 2.0)** rediseñó toda la interfaz del CRM con el sistema "Ledger"
+(ver "Diseño / UI") sin capacidades, datos ni permisos nuevos: es la misma aplicación con otra cara. El estado real,
 requisito por requisito, está en [`docs/notas-de-version.md`](./docs/notas-de-version.md); el resto
 de la documentación se indexa en [`docs/README.md`](./docs/README.md).
 
@@ -73,8 +74,8 @@ Incluido:
 - **Listas en el servidor (F3)**: empresas, contactos, oportunidades (Lista), productos, ventas y usuarios
   piden solo la página que se ve. **La URL es el estado** (`?q=&page=&pageSize=&estado=...`); la página
   servidor lee `searchParams` (una Promise en Next 16), sanea cada parámetro con `src/lib/paginacion.ts` y
-  consulta con `.range()`. Para sumar una lista nueva: `useFiltrosUrl`, `CajaBusqueda`, `FiltroSelect` y
-  `Paginacion`, y `filtroOr` para el texto (escapa `%`, `_` y las comas del `.or()`).
+  consulta con `.range()`. Para sumar una lista nueva: `useFiltrosUrl` y `AnuncioResultados`, `SearchField` y los chips de
+  `crm/Toolbar.tsx`, `crm/Pagination` y `ListFooter` (`crm/Lista.tsx`), y `filtroOr` para el texto (escapa `%`, `_` y las comas del `.or()`).
 - **Etapas**: las crea el trigger al dar de alta una organización (embudo del rubro: Consulta
   recibida, Relevamiento de cancha, Presupuesto enviado, Negociación, Entregado, Perdida). La base
   se configuran en `/configuracion` (`configuracion.gestionar`, F1a).
@@ -127,7 +128,7 @@ como respaldo ante cualquier falla) y "Resumir con IA" en la ficha 360 de empres
 redacta**: no envía, no guarda, no cambia datos; una persona revisa todo. Se enciende con `ANTHROPIC_API_KEY` (sin ella no hay botones) y
 se prueba solo contra un servidor simulado: **no se llamó a la API real**. Detalle, datos y costo en [`docs/ia.md`](./docs/ia.md).
 
-**Manual de usuario y kit de entrega (F8, versión 1.0.0)**: `docs/Manual-de-usuario-Tuco-y-Nito.pdf` (A4, 89 páginas), fuente en `docs/manual/` y
+**Manual de usuario y kit de entrega (F8; el manual acompaña la versión 2.0.0)**: `docs/Manual-de-usuario-Tuco-y-Nito.pdf` (A4, 93 páginas), fuente en `docs/manual/` y
 scripts en `scripts/manual/`; `npm run manual` saca las capturas (Playwright, solo navegación, credenciales por entorno `MANUAL_*`, nunca en el
 repo) y arma el PDF. Las figuras que no se pueden capturar todavía quedan en `docs/manual/pendientes.json` y salen como «Captura pendiente».
 Las migraciones `0008` a `0012` se aplican con **un solo archivo**, `supabase/aplicar/aplicar_0008_a_0012.sql` (generado por
@@ -185,8 +186,9 @@ del tablero se conserva. Ver `docs/arquitectura.md` §2.1.
 ```
 src/
   app/
-    globals.css               Tokens del UI Kit (:root + .dark), @theme de Tailwind v4, keyframes
-    layout.tsx                Fuentes (Jakarta, JetBrains Mono, Varela Round), anti-flash, Toast + Tooltip
+    globals.css               Tokens del UI Kit (:root + .dark), @theme de Tailwind v4, keyframes y bloque LANDING (congelado: lo usan la landing y el acceso)
+    layout.tsx                Raíz (congelado): fuentes de la landing y el acceso (Inter, Jakarta, JetBrains Mono, Varela Round), anti-flash, Toast + Tooltip.
+                                 Las fuentes del CRM (IBM Plex) NO están acá: las carga `components/crm/CrmRoot.tsx`
     icon.svg                  Favicon (isotipo con el verde de marca horneado)
     login/                    Login (fuera del grupo protegido), Server Action en actions.ts
       page.tsx                 Split-screen: panel de marca (cancha en SVG) + panel de form
@@ -200,10 +202,13 @@ src/
                                  layout.tsx (guardas: sin sesión → /login, no superadmin → /dashboard), AdminView.tsx (tabla densa,
                                  drawers CRM, ConfirmDialog "Suspender cliente"), actions.ts (sin cambios), loading.tsx, error.tsx
     (app)/                    Grupo de rutas protegidas (layout valida sesión)
-      layout.tsx               CrmRoot + AppFrame + guards: superadmin va a /admin; baja o suspensión = "Sin acceso"
-      (crm2)/                  TODAS las pantallas (desde el Lote F no queda `(legacy)`); su layout no impone nada
+      layout.tsx               CrmRoot + AppFrame + guards: superadmin va a /admin; baja o suspensión = "Sin acceso". Importa crm.css
+      crm.css                  Tokens `--crm-*` (claro y .dark) y solo selectores bajo `[data-crm]`; lo importan únicamente (app)/layout.tsx y admin/layout.tsx
+      (crm2)/                  TODAS las pantallas del CRM (el grupo `(legacy)` ya no existe: se retiró en el Lote F); su layout no impone nada,
+                                 cada pantalla arma su marco con los primitivos de `components/crm`
       (crm2)/loading.tsx / error.tsx   Carga (esqueleto + "Cargando…") y error ("Reintentar") de respaldo de CRM 2.0
       (crm2)/sin-permisos/       Destino cuando el rol no tiene ninguna sección (h1 + "Volver al inicio"; texto neutro si el rol sí tiene secciones)
+      (crm2)/crm-lab/            Laboratorio de los primitivos de `components/crm` (solo con `next dev`: en producción da 404; no está enlazado)
       (crm2)/configuracion/      CRM 2.0 (Lote F): sub-navegación por `?s=empresa|etapas|tipos|origenes|motivos` (columna desde 1024,
                                    tabs debajo; cambia con history.pushState, sin ir al servidor), catálogos como tablas compactas
         page.tsx / loading.tsx   Server Component: organización, etapas, tipos, orígenes, motivos y el logo firmado (sin cambios)
@@ -214,7 +219,7 @@ src/
       (crm2)/dashboard/          CRM 2.0 (Lote E): Inicio. h1 "Inicio", franja de 4 cifras + "Recambios vencidos" con alertas.ver (StatStrip
                                    lg; Contactos sigue yendo a /empresas, bug conocido sin corregir) y tablas: recambios (alertas.ver,
                                    PRIMERO en el DOM), por etapa (sin barra), empresas con más valor (con barra)
-        page.tsx / loading.tsx   Server Component: mismas lecturas y cuentas que el legacy; carga con TableroSkeleton
+        page.tsx / loading.tsx   Server Component: mismas lecturas y cuentas que antes del rediseño; carga con TableroSkeleton
       (crm2)/empresas/          CRM 2.0 (Etapa 3): lista + vista previa (master-detail, `?sel=`) y ficha con tabs (`?tab=`)
         page.tsx                 Server Component: searchParams → UNA página (.range) + catálogos; vista previa en <Suspense key={sel}>
         EmpresasList.tsx          Client: PageBar, toolbar (filtros por URL), DataTable, selección optimista ↑/↓/Esc, banda de pie; recibe el panel
@@ -269,12 +274,12 @@ src/
         [id]/presupuesto/         CRM 2.0 (Lote D): presupuesto imprimible (F6). page.tsx (server: oportunidad, proveedor, logo firmado,
                                    catálogo, anteriores); PresupuestoView.tsx (client: encabezado, vista dividida desde 1280 — editor en
                                    grilla densa + totales + guardados | hoja escalada —, una columna debajo); Hoja.tsx (EL PAPEL, sin cambios
-                                   desde el legacy, fuera de UI_ROOT); usePresupuesto.ts (estado, guardar con sinTrabarse, imprimir y
+                                   respecto de la 1.0.0, fuera de UI_ROOT); usePresupuesto.ts (estado, guardar con sinTrabarse, imprimir y
                                    actividad); logica.ts(+.check) (pura: líneas, mover, foco tras quitar/mover); loading.tsx
   components/
-    ui/                        Primitivos legacy (Sumar UI Kit) que siguen vivos: los usan el login (congelado) y el layout raíz
+    ui/                        Sumar UI Kit de la landing, el acceso y el layout raíz: ya no es la base del CRM, que usa `crm/` (congelados: UIComponents, Toast y Tooltip)
       UIComponents.tsx          cn, Card, Button, Input… (congelado: lo importan las pantallas de acceso)
-      Select.tsx                Select legacy (lo usa FiltroSelect de FiltrosUrl)
+      Select.tsx                Select del kit (lo usa FiltroSelect de FiltrosUrl)
       KpiCard.tsx               Sin usos (quedó de antes del Lote E; no se borró en el Lote F)
       Toast.tsx / Tooltip.tsx   ToastProvider y TooltipHost del layout raíz (congelados)
       overlay.ts / backdropClose.ts   Hooks de capa y cierre a prueba de arrastre (backdropClose lo usan los overlays CRM)
@@ -287,15 +292,23 @@ src/
     Cancha.tsx                  MarcasCancha: la cancha en SVG sobre la superficie .cesped
     Equipamiento.tsx            Íconos del rubro (arco, red, pelota…) + IconoEquipo
     FiltrosUrl.tsx              useFiltrosUrl (filtros en la URL con router.replace + useTransition), CajaBusqueda (300 ms),
-                                FiltroSelect, AnuncioResultados (FiltroFecha y BarraPendiente se borraron en el Lote E: sin usuarios)
+                                FiltroSelect, AnuncioResultados (las pantallas usan useFiltrosUrl y AnuncioResultados; FiltroFecha y BarraPendiente se borraron en el Lote E)
     Paginacion.tsx              Sin usos (la reemplazó crm/Pagination con el mismo contrato; no se borró en el Lote F)
-    crm/                        CRM 2.0 (design-system/crm-2/MASTER.md §10): primitivos, shell y composiciones. Del Lote A:
+    crm/                        CRM 2.0 (design-system/crm-2/MASTER.md §10): primitivos, shell y composiciones. Se importan por archivo, sin barril
+      Button / Field / Select / Menu / Popover / Tooltip / Tabs / Status / Panel / Feedback / Drawer / Dialog / Toast / Pagination / DataTable
+                                Primitivos de la Etapa 1 (Button y Field, Status, Panel, Feedback y DataTable son server-safe); consumen solo `--crm-*`
+      DatePicker.tsx / fecha.ts(+.check)   DatePicker y DateTimePicker propios: campo con máscara dd/mm/aaaa (+ hh:mm) que se tipea y calendario con
+                                teclado en `#crm-portal`; mismo valor que el input nativo ("YYYY-MM-DD")
+      PageBar.tsx / StatStrip.tsx   Barra de página (PageBar, DetailHeader, SectionBar) y franja de cifras, server-safe
+      cx.ts / portal.tsx / overlay.ts / teclado.ts(+.check) / CrmRoot.tsx   Clases compartidas (UI_ROOT, TYPE, FOCUS…), `CrmPortal` → `#crm-portal`, pila de capas y
+                                anclaje (`useLayer`, `useAnchor`), lógica pura del teclado, y el wrapper `[data-crm]` con las fuentes IBM Plex
+      Del Lote A:
       Lista.tsx                 useSeleccionUrl (master-detail por `?sel=`), useFocoFilas, ListFooter, PanelVistaPrevia
       seleccion.ts(+.check)     Lógica pura: ↑/↓ (vecinoSel), tab válida, fila que recibe el foco tras una acción
       PreviewPanel.tsx / Skeletons.tsx / MoneyInput.tsx   Vista previa, cargas (lista, ficha y tablero), monto con máscara
       barra.ts(+.check)         Lote E: ancho de la barra de dato (anchoBarra) y % del total (porcentajeDe); DataTable → CellBar y TFoot
       Toolbar.tsx               SearchField / SearchInput, FechaFiltro, ToggleChip y "Más filtros" (MasFiltros: los filtros secundarios con poco ancho)
-      FilaCompleta.tsx          Fila que ocupa las columnas VISIBLES (vacíos de toda lista y el detalle de Ventas)
+      FilaCompleta.tsx          Fila que ocupa las columnas VISIBLES: ajusta su `colSpan` a las cabeceras que el contenedor no esconde (vacíos de toda lista y el detalle de Ventas)
       cuenta/SeccionesCuenta.tsx  Secciones de ficha 360 y vista previa compartidas por empresa y contacto
       cuenta/HistoriaCuenta.tsx   Historia de la cuenta; exporta FilaHistoria / FilaActividad (también la usa la ficha de oportunidad)
       cuenta/FormDrawer.tsx       FormDrawer (Cancelar / Guardar → "Guardando…"), CampoTexto/Fecha/Area/Opciones, Par, useApertura
@@ -326,6 +339,9 @@ src/
     navegacion.ts              Pantallas del CRM y sus permisos: la lista única del menú y de las acciones de Ctrl+K
     paleta.ts                  Búsqueda global (F5): grupos permitidos, consulta limpia, acciones rápidas, navegación con flechas
     cambiarEtapa.ts            Único camino del navegador para cambiar de etapa: la RPC `cambiar_etapa`
+    guardar.ts                 `sinTrabarse(guardar, liberar)`: corre un guardado y, si TIRA (red caída, Server Action abortada), llama a `liberar` con
+                               "No se pudo completar la acción. Intentá de nuevo." y devuelve false; sin eso un drawer queda en "Guardando…" para siempre
+    contrasteCrm.ts            Lee `crm.css` y mide el contraste de los pares de `PARES` (lo corre `contrasteCrm.check.ts`)
     money.ts                   Máscara/parseo es-AR + formatters de display
     money.check.ts             Self-check: node --test src/lib/money.check.ts
     equipo.ts                  tipoEquipo(): qué equipo es un producto, para su ícono
@@ -384,6 +400,10 @@ supabase/
   seeds/e2e_tests.sql           Organización "E2E Tuco & Nito" (admin y vendedor) para las pruebas E2E; nunca la demo
 scripts/manual/                 Manual de usuario: figuras.mjs (lista de figuras), capturas.mjs (Playwright) y generar.mjs (PDF con Chromium); fuentes.mjs
 scripts/migraciones/consolidar.mjs  Arma el kit de migraciones
+scripts/guard/                  Guardas de CRM 2.0: frozen-files.mjs (hashes), landing.spec.ts + landing.css (pixel diff), compare-png.mjs, baseline-crm.mjs
+playwright.guard.config.ts      Config de Playwright de `guard:landing` (baselines en design-system/crm-2/guard/landing/)
+design-system/crm-2/            CRM 2.0: README.md (contrato de aislamiento), MASTER.md (fuente de verdad visual), guard/ (frozen-files.json y baselines) y preview/
+design-system/tuco-y-nito/      MASTER.md de la marca: SUPERSEDED para el CRM, vigente para la landing y el acceso
 docs/manual/                    Fuente del manual: manual.html, manual.css, capitulos/, capturas/, fuentes/, pendientes.json y LEEME.md
 e2e/                            Pruebas E2E de Playwright (F6): acceso.spec.ts, demo.spec.ts, navegacion.spec.ts, helpers.ts y su tsconfig
 playwright.config.ts            Config de Playwright (chromium, E2E_BASE_URL, se saltan sin E2E_EMAIL/E2E_PASSWORD)
@@ -467,30 +487,48 @@ asumir que el proyecto no existe.
 
 ## Diseño / UI
 
-Esta app usa el **Sumar UI Kit**, documentado en [`docs/DESIGN.md`](./docs/DESIGN.md). Antes de
-crear o modificar cualquier UI (componentes, modales, vistas, tablas, dashboards):
+Desde la 2.0.0 el CRM (todas las pantallas de `(app)/(crm2)`, `/admin` y el marco `components/crm/shell/`) sigue el sistema **"Ledger"**:
+[`design-system/crm-2/MASTER.md`](./design-system/crm-2/MASTER.md) (§10.1–§10.25) es la fuente de verdad visual y
+[`design-system/crm-2/README.md`](./design-system/crm-2/README.md) el contrato de aislamiento. Antes de crear o modificar UI del CRM, leé los dos.
 
-- Leé `docs/DESIGN.md` y **reutilizá** los primitivos de `src/components/ui/` — no inventes
-  variantes nuevas de Button/Card/Drawer ni reimplementes dropdowns/selects.
-- Leé también [`docs/design-overrides.md`](./docs/design-overrides.md): **`DESIGN.md` manda
-  salvo lo listado ahí**. Si te desviás del kit por una razón nueva, agregá un bloque a ese
-  archivo (kit → esta app → dónde → por qué); nunca edites `DESIGN.md`.
-- Respetá los tokens: el color de marca vive en `--brand` (`src/app/globals.css`) y en esta
-  app **`primary` y `ring` lo aliasean**, así que el verde es el color principal de la
-  interfaz — botones, nav activo, links y focus rings salen de ahí. Ojo que esto se desvía
-  del kit, que manda un `primary` negro fijo: ver el override #2.
-  **No hardcodees colores de marca fuera de esos tokens** — la única excepción documentada es
-  `src/app/icon.svg`, que es estático y no puede leer CSS.
-- Si cambiás un token de color, **verificá contraste** antes de shipear. Los actuales dan
-  6.34:1 (claro) y 7.25:1 (oscuro) para texto sobre `primary`; el piso es 4.5:1 (WCAG AA).
-- Seguí las recetas de composición de `DESIGN.md` (página estándar §4.4, drawer §4.3,
-  sidebar §4.5, dashboard §4.6) y las "Reglas de oro" (§15).
-- Notá en particular: **montos siempre por `MoneyInput` + `parseMoney`, nunca `type="number"`**
-  (regla #4); tablas responsive en dos bloques (`md:hidden` cards + `hidden md:block` tabla,
-  regla #9); tooltips poniendo `title="…"` (el `TooltipHost` global se encarga, regla #10).
+- **Primitivos:** solo `src/components/crm/` (importados por archivo, sin barril). No uses `components/ui/*` ni inventes variantes de
+  Button, Drawer o Select. Una pantalla nueva va en `(app)/(crm2)/`, aplica `UI_ROOT` en su raíz y cumple la definición de terminado de MASTER §15
+  (cero capacidades nuevas: mismos datos, permisos, filtros y mensajes).
+- **Tokens:** solo `--crm-*`, definidos en `src/app/(app)/crm.css` bajo `[data-crm]` (claro y `.dark`) y consumidos con utilidades de
+  Tailwind v4 (`bg-(--crm-panel)`, `text-(--crm-text)`…). Ningún color, radio, sombra ni z-index literal en un primitivo. Un token nuevo va en los dos
+  temas y, si es un par texto/fondo, se suma a `PARES` en `src/lib/contrasteCrm.ts`: `npm test` mide el contraste (piso AA, 4.5:1).
+- **`crm.css`:** solo selectores que cuelgan de `[data-crm]` y ningún at-rule global (nada de `@theme`, `@layer`, `@font-face`; `@keyframes crm-*` sí). Lo
+  importan solo `(app)/layout.tsx` y `admin/layout.tsx`, nunca el layout raíz. `npm run guard:frozen` lo verifica.
+- **Fuentes:** IBM Plex Sans y Mono, cargadas únicamente en `CrmRoot` (la landing y el acceso no las descargan).
+- **Portales:** lo flotante va a `#crm-portal` con `CrmPortal` (`position: fixed`, `UI_ROOT`, su `--crm-z-*`). Escape y clic afuera, con `useLayer`.
+- **Reglas de campo:** montos con `crm/MoneyInput` + `parseMoney`, nunca `type="number"`; fechas con `DatePicker` (ya no queda `type="date"`); un botón de solo
+  ícono es un `IconButton` con `label`; **nunca `title="…"`** (el `TooltipHost` del layout raíz lo reescribe y rompe la hidratación): usá `Tooltip` o `label`.
+- **Landing y acceso: no se tocan.** `/`, `/login`, `/recuperar` y `/definir-clave`, y todo lo que importan (lista en `design-system/crm-2/guard/frozen-files.json`),
+  están congelados. `docs/DESIGN.md` (kit, solo lectura), `docs/design-overrides.md` y `design-system/tuco-y-nito/MASTER.md` quedaron como historia y para esas
+  pantallas: **para el CRM mandan MASTER y README de crm-2**. Si un cambio exige tocar un archivo congelado, se frena y se pide la decisión (procedimiento en el README de crm-2).
 
-Como el stack es Tailwind v4 (no v3 como el kit), los tokens se declaran con `@theme inline` en
-`globals.css` en vez de `tailwind.config.js` — el detalle está en el override #2.
+### Técnicas de CRM 2.0 que conviene conocer
+
+- **Master-detail por URL, sin rutas paralelas.** Empresas y Contactos: la fila elegida es `?sel=<id>` (`useSeleccionUrl` en `crm/Lista.tsx`, lógica pura en
+  `crm/seleccion.ts`: ↑/↓ con `vecinoSel`, Esc cierra). La página servidor dibuja la `VistaPrevia` (`PreviewPanel`) en un `<Suspense key={sel}>`, así que la
+  selección es compartible y atrás/adelante anda; el panel existe desde 1280 px (debajo, la fila abre la ficha y un `?sel=` se quita de la URL). La selección se
+  marca al instante (optimista) y se suelta cuando el servidor contesta con ese mismo `sel`.
+- **Más estado en la URL.** Las fichas llevan su tab en `?tab=` (`tabValida`: una tab inexistente o sin permiso cae en Resumen); Oportunidades alterna `?vista=`;
+  Usuarios usa `?tab=roles`; **Configuración** usa `?s=empresa|etapas|tipos|origenes|motivos` y cambia de sección con `history.pushState`, sin ir al servidor.
+- **`sinTrabarse`** (`src/lib/guardar.ts`). Los guardados manejan sus errores esperados (`{ error }` de Supabase, `{ ok: false }` de una Server Action); lo que no manejan
+  es que la llamada **tire** (red caída, despliegue en curso). `sinTrabarse(guardar, liberar)` corre el guardado dentro de un `try`: si termina, devuelve `true`; si tira,
+  lo registra en consola, llama a `liberar` con "No se pudo completar la acción. Intentá de nuevo." y devuelve `false`. Quien llama apaga su `saving` y muestra el
+  mensaje en el banner; sin esto el drawer queda en "Guardando…" con Cancelar, Escape y la X deshabilitados. Lo usan los formularios y confirmaciones del CRM.
+- **`DatePicker` propio** (`crm/DatePicker.tsx`, lógica en `fecha.ts`). Se tipea dd/mm/aaaa (más hh:mm con `time`) y se confirma al salir o con Enter; "Abrir calendario"
+  o Alt+↓ abre un calendario no modal (semana de lunes, es-AR) con el teclado del patrón APG; Escape lo cierra solo a él. El valor es el mismo que el del input nativo
+  ("YYYY-MM-DD" o "YYYY-MM-DDTHH:mm" en hora local).
+- **`FilaCompleta`** (`crm/FilaCompleta.tsx`). Una fila de `DataTable` que ocupa las columnas VISIBLES: el contenedor esconde columnas con `hideBelow`
+  (`display: none`) y un `colSpan` fijo dejaría columnas fantasma; la fila lo ajusta en el navegador a las cabeceras que se ven.
+- **Guardas del aislamiento.** `npm run guard` = `guard:frozen` (`scripts/guard/frozen-files.mjs` + `design-system/crm-2/guard/frozen-files.json`: hashes de los archivos
+  congelados, chequeo de la carpeta `landing/`, `git diff` contra la base y reglas de `crm.css`) + `guard:landing` (`playwright.guard.config.ts` + `scripts/guard/landing.spec.ts`:
+  pixel diff, tolerancia cero, de `/`, `/login` y `/recuperar` contra `design-system/crm-2/guard/landing/`). Detalle, variables y límites: README de crm-2 y [`docs/pruebas.md`](./docs/pruebas.md).
+  Un cambio aprobado de un archivo congelado se commitea y recién después se regeneran las baselines (`npx playwright test -c playwright.guard.config.ts --update-snapshots`)
+  y el manifiesto (`GUARD_BASE=<commit> node scripts/guard/frozen-files.mjs --update`).
 
 ## Convenciones de código
 
@@ -522,20 +560,24 @@ Como el stack es Tailwind v4 (no v3 como el kit), los tokens se declaran con `@t
 ```bash
 npm run dev      # servidor de desarrollo (http://localhost:3000)
 npm run build    # build de producción
-npm run lint     # eslint src e2e playwright.config.ts --max-warnings=0 (sin advertencias)
-npm run typecheck  # tsc --noEmit sobre src y sobre e2e (e2e tiene su propio tsconfig)
+npm run lint     # eslint src e2e playwright.config.ts scripts/guard playwright.guard.config.ts --max-warnings=0 (sin advertencias)
+npm run typecheck  # next typegen + tsc --noEmit sobre src, sobre e2e y sobre scripts/guard (cada uno con su tsconfig)
 
 # Self-checks (sin framework, runner de Node): money, equipo, permisos, email/layout, alertas/plantillas, clientes, oportunidades, presupuesto, ia, migraciones, manual...
-npm test                             # node --test "src/**/*.check.ts": 25 archivos, 243 pruebas
+npm test                             # node --test "src/**/*.check.ts": 37 archivos, 442 pruebas (123 son los pares de contraste de contrasteCrm.check.ts)
 node --test src/lib/money.check.ts   # o uno solo
 
 npm run manual              # manual de usuario: capturas (app + MANUAL_EMAIL…) y PDF; `manual:capturas` y `manual:pdf` por separado
 npm run migraciones:consolidar   # regenera supabase/aplicar/aplicar_0008_a_0012.sql
 
+npm run guard           # guardas de CRM 2.0 = guard:frozen (hashes, git diff, reglas de crm.css; no necesita app) + guard:landing (pixel diff; build + start, necesita .env)
+npm run guard:frozen    # solo la mitad rápida; es la que conviene correr siempre
+npm run guard:baseline-crm   # fotos del CRM (necesita la app en producción y MANUAL_EMAIL/MANUAL_PASSWORD) para comparar antes/después
+
 npm run test:e2e   # Playwright (e2e/); necesita E2E_EMAIL, E2E_PASSWORD, E2E_EMAIL_VENDEDOR, E2E_PASSWORD_VENDEDOR y E2E_BASE_URL; sin credenciales se saltan
 ```
 
-Antes de pushear pasan `lint`, `typecheck`, `test` y `next build` (la CI de `.github/workflows/ci.yml` corre lo mismo). Las pruebas SQL de
+Antes de pushear pasan `lint`, `typecheck`, `test` y `next build` (la CI de `.github/workflows/ci.yml` corre lo mismo) y `npm run guard:frozen` (la CI todavía no corre las guardas). Las pruebas SQL de
 `supabase/tests/` se pegan en el SQL Editor (hacen rollback); `0005_permisos.sql` y `0007_reglas.sql`
 se corren después de la 0007, y `0007_reejecucion.sql` solo en una base que no la tiene. Detalle en
 [`docs/pruebas.md`](./docs/pruebas.md).

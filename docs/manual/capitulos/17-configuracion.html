@@ -1,10 +1,12 @@
 <section class="cap" id="cap-17" data-num="17" data-parte="Supervisión y administración" data-titulo="Configuración" data-bajada="Dónde se ajusta el sistema a tu empresa: tus datos y tu logo, las etapas del embudo, y las listas de tipos de actividad, orígenes y motivos de pérdida.">
 
-<p>La pantalla <strong>Configuración</strong> (permiso «Configurar el CRM», hoy del Administrador) tiene cinco pestañas. Debajo del título, una línea indica el nombre de tu organización y si la <strong>IA</strong> está <em>activa</em> o <em>desactivada</em> en tu instalación.</p>
+<p>La pantalla <strong>Configuración</strong> (permiso «Configurar el CRM», hoy del Administrador) se divide en cinco secciones, que se eligen en la columna de la izquierda (en pantallas chicas, en una fila arriba): <span class="ui">Datos de la empresa</span>, <span class="ui">Etapas</span>, <span class="ui">Tipos de actividad</span>, <span class="ui">Orígenes</span> y <span class="ui">Motivos de pérdida</span>. Junto al título, una línea indica la razón social de tu empresa y si la <strong>IA</strong> está <em>activa</em> o <em>desactivada</em> en tu instalación.</p>
+<p>La sección elegida queda en la dirección de la pantalla (por ejemplo, <span class="mono">/configuracion?s=etapas</span>): podés guardar el enlace o volver con «atrás». Cambiar de sección no pierde lo que estabas escribiendo en «Datos de la empresa»: mientras haya cambios sin guardar, su nombre en la columna lleva un punto.</p>
 
 <h2>Datos de la empresa y logo</h2>
 <p>Son los datos que salen en tus <strong>presupuestos</strong> y en los mails de aviso. Cargalos antes de emitir el primero.</p>
-<figure class="fig" data-fig="config-datos"><figcaption>Los datos de la empresa, el logo y, a la derecha, una vista previa de cómo se ve el encabezado de tus presupuestos.</figcaption></figure>
+<figure class="fig" data-fig="config-datos"><figcaption>Los datos de la empresa en tres grupos (identidad fiscal, contacto y presupuestos), el logo y, a la derecha, una vista previa de cómo se ve el encabezado de tus presupuestos.</figcaption></figure>
+<p>Los campos están agrupados en <strong>Identidad fiscal</strong>, <strong>Contacto</strong> y <strong>Presupuestos</strong>. Cuando cambiás algo, abajo aparece una barra con «Cambios sin guardar», <span class="ui">Descartar</span> (vuelve a lo que estaba guardado) y <span class="ui">Guardar cambios</span>. Si falta o está mal un dato, el foco va al primer campo con error.</p>
 <table class="tabla compacta">
   <thead><tr><th style="width:42mm">Campo</th><th>Para qué sirve</th></tr></thead>
   <tbody>
@@ -19,7 +21,7 @@
 
 <h3>Subir el logo</h3>
 <ol class="pasos">
-  <li>Tocá <span class="ui">Subir logo</span> y elegí el archivo.</li>
+  <li>En <strong>Logo</strong>, tocá <span class="ui">Subir logo</span> (o <span class="ui">Cambiar logo</span>) y elegí el archivo. <span class="ui">Quitar logo</span> lo borra, con confirmación.</li>
   <li>Tiene que ser <strong>PNG, JPG o WebP</strong> de hasta <strong>1 MB</strong>. Funciona mejor con fondo transparente o blanco.</li>
   <li>Se guarda y la vista previa «Así va a verse en tus presupuestos» se actualiza.</li>
 </ol>
@@ -31,10 +33,10 @@
 </div>
 
 <h2>Etapas del embudo</h2>
-<p>Son los pasos por los que va una oportunidad, de izquierda a derecha en el tablero.</p>
+<p>Son los pasos por los que va una oportunidad, de izquierda a derecha en el tablero. La tabla muestra el número de orden, el nombre con su color, el tipo y los botones para ordenar.</p>
 <ul>
   <li><span class="ui">Nueva etapa</span>: elegí un <strong>nombre</strong>, un <strong>color</strong> y un <strong>tipo</strong>. <em>Abierta</em>: la oportunidad sigue en juego. <em>Ganada</em>: la cierra como ganada. <em>Perdida</em>: la cierra como perdida y pide el motivo.</li>
-  <li>Las flechas <span class="mono">^</span> y <span class="mono">v</span> cambian el <strong>orden</strong>; el orden del tablero es este.</li>
+  <li>Las flechas <span class="ui">Subir</span> y <span class="ui">Bajar</span> de cada fila cambian el <strong>orden</strong>; el orden del tablero es este. Con el teclado, el foco se queda en la flecha: podés apretar <kbd>Enter</kbd> varias veces para mover una etapa varios lugares.</li>
   <li>El menú <span class="mono">⋮</span> permite <strong>Editar</strong> (renombrar, cambiar el color) o <strong>Borrar</strong>.</li>
 </ul>
 <figure class="fig" data-fig="config-etapas"><figcaption>Las seis etapas del rubro. Cada una tiene un <em>tipo</em> (Abierta, Ganada o Perdida) y un orden que se cambia con las flechas.</figcaption></figure>
@@ -48,7 +50,7 @@
 </div>
 
 <h2>Tipos de actividad, orígenes y motivos de pérdida</h2>
-<p>Son tres listas que alimentan los desplegables del resto del sistema. Funcionan igual: <span class="ui">Nuevo …</span> agrega un ítem, las flechas lo ordenan, y el menú <span class="mono">⋮</span> permite <strong>Editar</strong> y <strong>Desactivar</strong> / <strong>Reactivar</strong>.</p>
+<p>Son tres listas que alimentan los desplegables del resto del sistema. Funcionan igual: <span class="ui">Nuevo …</span> agrega un ítem, las flechas <span class="ui">Subir</span> y <span class="ui">Bajar</span> lo ordenan, y el menú <span class="mono">⋮</span> permite <strong>Editar</strong> y <strong>Desactivar</strong> (con confirmación) / <strong>Reactivar</strong>. Un ítem desactivado dice «Inactivo» al lado del nombre.</p>
 <div class="fig-par">
 <figure class="fig" data-fig="config-tipos" data-ancho="par"><figcaption>Tipos de actividad: lo que elegís al anotar algo en un cliente.</figcaption></figure>
 <figure class="fig" data-fig="config-origenes" data-ancho="par"><figcaption>Orígenes: de dónde llegó la consulta. Sirve para saber qué canal te trae clientes.</figcaption></figure>
@@ -70,6 +72,6 @@
 </div>
 
 <h2>La IA, en una línea</h2>
-<p>El encabezado de la pantalla dice <em>«IA: activa»</em> o <em>«IA: desactivada»</em>. La IA es <strong>opcional</strong>: depende de que tu instalación tenga una clave cargada y no se enciende desde esta pantalla. Si está desactivada, no hay botones de IA en ningún lado y el CRM funciona igual.</p>
+<p>La línea junto al título dice <em>«IA: activa»</em> o <em>«IA: desactivada»</em>. La IA es <strong>opcional</strong>: depende de que tu instalación tenga una clave cargada y no se enciende desde esta pantalla. Si está desactivada, no hay botones de IA en ningún lado y el CRM funciona igual.</p>
 
 </section>

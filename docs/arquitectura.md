@@ -6,7 +6,8 @@ Cómo está armado Tuco & Nito y por qué. Los diagramas usan Mermaid y se ven d
 Supabase, donde la seguridad y las reglas de negocio viven en la base (RLS y triggers) y no en el código de
 la aplicación.
 
-Contenido: [1. Componentes y capas](#1-componentes-y-capas) · [2. Flujo de un pedido](#2-flujo-de-un-pedido) ·
+Contenido: [1. Componentes y capas](#1-componentes-y-capas) ·
+[1.1 La interfaz del CRM (CRM 2.0)](#11-la-interfaz-del-crm-crm-20-ledger) · [2. Flujo de un pedido](#2-flujo-de-un-pedido) ·
 [2.1 Listas paginadas en el servidor](#21-listas-paginadas-en-el-servidor-la-url-es-el-estado-f3) ·
 [2.2 Búsqueda global](#22-búsqueda-global-ctrlk-f5) ·
 [2.3 IA asistida](#23-ia-asistida-f7-una-server-action-por-el-secreto) ·
@@ -57,7 +58,7 @@ flowchart TB
 | Capa | Dónde vive | Responsabilidad |
 |---|---|---|
 | Presentación | `src/app/**/page.tsx` (servidor) y `*View.tsx`, `*Form.tsx`, `*List.tsx` (cliente) | Pintar, pedir datos, esconder lo que el rol no puede usar |
-| Componentes compartidos | `src/components/` y `src/components/ui/` | Sumar UI Kit (primitivas), formularios, `Drawer`, `AppShell`, íconos del rubro |
+| Componentes compartidos | `src/components/crm/` (CRM), `src/components/ui/` y `landing/` (landing y acceso), `src/components/` | Primitivos y marco del CRM (`crm/`: `Button`, `DataTable`, `Drawer`, `Dialog`, `DatePicker`…, `crm/shell/`: `AppFrame`, `Rail`, `Topbar`), Sumar UI Kit de la landing y el acceso, íconos del rubro |
 | Sesión y permisos | `src/lib/sesion.ts`, `src/lib/permisos.ts`, `src/proxy.ts` | Quién es el usuario, qué permisos tiene, guardas de página |
 | Cuentas y mails | `src/lib/cuentas.ts`, `src/lib/email/` | Alta, activación, recuperación; único punto de salida de mails |
 | Acceso a datos | `src/lib/supabase/` (`client.ts`, `server.ts`, `admin.ts`, `middleware.ts`) | Tres clientes de Supabase, uno por contexto |
@@ -74,6 +75,40 @@ flowchart TB
 El cliente de administración se usa únicamente después de verificar en el servidor que quien pide tiene
 permiso, y solo para lo que la RLS no permite a propósito (crear usuarios de Auth, modificar `perfiles`,
 generar links de acceso).
+
+---
+
+### 1.1 La interfaz del CRM (CRM 2.0, "Ledger")
+
+Desde la 2.0.0 todo el CRM usa un sistema de diseño propio, aislado de la landing y del acceso. Se partió del código de la 1.0.0 sin cambiar datos,
+permisos ni flujos: las lecturas, las mutaciones y las Server Actions de abajo son las mismas. La fuente de verdad visual es
+[`design-system/crm-2/MASTER.md`](../design-system/crm-2/MASTER.md) y el contrato de aislamiento, [`design-system/crm-2/README.md`](../design-system/crm-2/README.md)
+(el porqué, en la [decisión 0014](./decisiones/0014-crm-2-redisenio-por-slices-con-aislamiento-de-la-landing.md)).
+
+```
+src/app/(app)/layout.tsx       getSesion() y guards ──► CrmRoot ([data-crm], fuentes IBM Plex, #crm-portal) ──► AppFrame (marco)
+  └─ (crm2)/layout.tsx         no impone nada; (crm2)/loading.tsx y error.tsx son el respaldo de toda pantalla
+       └─ <pantalla>/page.tsx  Server Component: lecturas + searchParams; arma la pantalla con los primitivos de src/components/crm/
+src/app/admin/layout.tsx       el panel de plataforma: mismo CrmRoot y mismo AppFrame (variante `plataforma`), fuera de (app)
+```
+
+- **Grupos de rutas.** Todas las pantallas del CRM viven en `src/app/(app)/(crm2)/`; las URLs no cambian. Durante la migración convivió un grupo
+  `(legacy)` con las pantallas todavía no migradas; se fue vaciando pantalla por pantalla y se **retiró** al final (ya no existe). `buscar/` e `ia/`
+  (Server Actions compartidas, no pantallas) quedan en `(app)/`.
+- **Marco** (`src/components/crm/shell/`): `AppFrame` (rail + barra superior + migas + paleta), `Rail`, `Topbar` (búsqueda, tema y menú de usuario), `Crumbs`,
+  `CommandPalette` (Ctrl/Cmd+K) y `logica.ts` (lógica pura: cookie del rail y migas, con `logica.check.ts`). El menú sale de `src/lib/navegacion.ts`.
+- **Primitivos** (`src/components/crm/`, importados por archivo, sin barril): `Button`, `DataTable`, `DatePicker`, `Dialog`, `Drawer`, `Field`, `FilaCompleta`,
+  `Lista`, `Menu`, `MoneyInput`, `PageBar`, `Pagination`, `Panel`, `Popover`, `PreviewPanel`, `Select`, `Skeletons`, `StatStrip`, `Status`, `Tabs`, `Toast`,
+  `Toolbar`, `Tooltip`, `Feedback`, la carpeta `cuenta/` (drawers y secciones de la ficha de empresa y de contacto) y lo compartido: `cx.ts`, `portal.tsx`,
+  `overlay.ts`, `teclado.ts`, `fecha.ts`, `barra.ts`, `seleccion.ts`. Los que no tienen estado ni hooks son server-safe.
+- **Aislamiento.** Los tokens son `--crm-*` y viven solo en `src/app/(app)/crm.css`, bajo `[data-crm]` (el wrapper de `CrmRoot`, `display: contents`: no genera caja).
+  `crm.css` solo lo importan `(app)/layout.tsx` y `admin/layout.tsx`, y no puede tener selectores ni at-rules globales. Las fuentes IBM Plex se cargan únicamente
+  en `CrmRoot`, así que la landing y el acceso no las descargan. Lo flotante se portaliza a `#crm-portal`, dentro de `[data-crm]`, para heredar los tokens.
+- **Estado en la URL, sin rutas paralelas.** El master-detail de Empresas y Contactos es `?sel=<id>` (`useSeleccionUrl`, `seleccion.ts`): la página servidor dibuja la
+  vista previa en un `<Suspense key={sel}>`; no hay `@slot` ni rutas interceptadas. Las fichas llevan su pestaña en `?tab=` y Configuración su sección en `?s=`.
+  Detalle en [CLAUDE.md](../CLAUDE.md#técnicas-de-crm-20-que-conviene-conocer).
+- **Guardas.** `npm run guard` falla si cambia un archivo congelado (la landing, `/login`, `/recuperar`, `/definir-clave` y todo lo que importan) o si la imagen de
+  esas pantallas cambia aunque sea un píxel. Cómo se corre y se refresca: [pruebas](./pruebas.md#10-guardas-de-aislamiento-de-crm-20).
 
 ---
 
@@ -123,10 +158,10 @@ servidor. Detalle en la [decisión 0001](./decisiones/0001-mutaciones-desde-el-c
 | `src/app/login/actions.ts` | `login` | Escribe la cookie de sesión; reenvía la activación a cuentas pendientes |
 | `src/app/recuperar/actions.ts` | `recuperar` | Dispara el mail de recuperación con la clave de servicio |
 | `src/app/definir-clave/actions.ts` | `definirClave` | Cambia la contraseña y marca `activado_at` |
-| `src/app/(app)/usuarios/actions.ts` | `invitarUsuario`, `cambiarRol`, `cambiarActivo`, `reenviarInvitacion`, `guardarRol`, `borrarRol` | Los `perfiles` no tienen política de escritura: solo el servidor los toca |
+| `src/app/(app)/(crm2)/usuarios/actions.ts` | `invitarUsuario`, `cambiarRol`, `cambiarActivo`, `reenviarInvitacion`, `guardarRol`, `borrarRol` | Los `perfiles` no tienen política de escritura: solo el servidor los toca |
 | `src/app/admin/actions.ts` | `crearCliente`, `agregarAdministrador`, `cambiarEstadoCliente`, `reenviarInvitacionAdmin` | Operaciones de plataforma |
-| `src/app/(app)/alertas/actions.ts` | `enviarAlertaEmail`, `registrarEnvioWhatsapp` | Envía por SMTP; deriva destinatario y texto de la base, no del navegador |
-| `src/app/(app)/alertas/actions.ts` | `registrarEnvioConBorrador` (F7) | Solo REGISTRA un aviso que la persona mandó desde su WhatsApp o su correo con el borrador de la IA; no envía nada |
+| `src/app/(app)/(crm2)/alertas/actions.ts` | `enviarAlertaEmail`, `registrarEnvioWhatsapp` | Envía por SMTP; deriva destinatario y texto de la base, no del navegador |
+| `src/app/(app)/(crm2)/alertas/actions.ts` | `registrarEnvioConBorrador` (F7) | Solo REGISTRA un aviso que la persona mandó desde su WhatsApp o su correo con el borrador de la IA; no envía nada |
 | `src/app/(app)/ia/actions.ts` | `redactarAvisoRecambio`, `resumirCuenta` (F7) | **Excepción a propósito** (ver 2.3): llamar a Claude exige `ANTHROPIC_API_KEY`, un secreto que no puede llegar al navegador |
 | `src/app/(app)/buscar/actions.ts` | `buscarGlobal` | **Excepción a propósito** (ver 2.2): no usa secretos; consulta con la sesión de la persona y resuelve la búsqueda global en una sola ida |
 
@@ -152,7 +187,7 @@ solo la página que se ve. Antes un `select("*")` traía todo y PostgREST cortab
 
 - **La URL manda.** Búsqueda (`q`), filtros, página y tamaño viven en la URL: se pueden compartir, sobreviven
   a un reload y "atrás/adelante" anda. Un filtro reemplaza la entrada del historial (`replace`) y vuelve a la
-  página 1; cambiar de página, de vista (`?vista=lista`) o de pestaña (`?tab=roles`) agrega una entrada
+  página 1; cambiar de página, de vista (`?vista=lista`), de pestaña (`?tab=roles`) o elegir una fila para su vista previa (`?sel=`) agrega una entrada
   (`push`). Los valores por defecto no se escriben (página 1, 20 por página, estado "abierta").
 - **Nunca se confía en la URL.** `leerPaginacion`, `textoParam`, `opcionParam`, `uuidParam` y `fechaParam`
   descartan lo que no sea válido (un `page=-4`, un `estado=hack`, un id que no es uuid). Una página fuera de
@@ -180,16 +215,16 @@ solo la página que se ve. Antes un `select("*")` traía todo y PostgREST cortab
   (en la Conversión del embudo, además, una línea fina de progreso y "Actualizando…" para lectores, sin atenuar el texto).
 
 Piezas reutilizables: `src/lib/paginacion.ts` (lógica pura), `src/components/FiltrosUrl.tsx`
-(`useFiltrosUrl`, `useBusquedaUrl`, `CajaBusqueda`, `FiltroSelect`, `AnuncioResultados`; los filtros de fecha de CRM 2.0
-son `FechaFiltro` en `src/components/crm/Toolbar.tsx`) y
-`src/components/Paginacion.tsx` (`nav` accesible con links `?page=N`, que funcionan sin JavaScript).
+(`useFiltrosUrl` y `AnuncioResultados`, que usan las pantallas), `src/components/crm/Toolbar.tsx` (`SearchField`, los chips de filtro y
+`FechaFiltro`) y `src/components/crm/Pagination.tsx` (`nav` accesible con links `?page=N`, que funcionan sin JavaScript; la banda de pie
+de las listas es `ListFooter`, en `crm/Lista.tsx`).
 Los índices que ayudan a estas consultas están en `supabase/migrations/0010_indices_busqueda.sql`
 (**pendiente de aplicar a mano en la base viva**; la app funciona igual sin ella).
 
 ### 2.2 Búsqueda global (Ctrl+K, F5)
 
 ```
-AppShell (cliente)  Ctrl/Cmd+K o el botón "Buscar…" ──► PaletaBusqueda (diálogo)
+AppFrame (cliente)  Ctrl/Cmd+K o el botón "Buscar…" ──► CommandPalette (diálogo, crm/shell/)
                                                           │  desde 2 letras, 200 ms después de la última tecla
                                                           ▼
                                        Server Action buscarGlobal(texto)
@@ -354,7 +389,7 @@ sequenceDiagram
 |---|---|---|
 | Único punto de salida | `src/lib/email/enviar.ts` | Alertas, activación y recuperación. Sin `SMTP_USER` y `SMTP_PASS` devuelve "sin SMTP" |
 | Diseño del mail | `src/lib/email/layout.ts` | HTML con logo por CID; todo texto interpolado se escapa; `urlSegura()` solo deja `http(s)` y `mailto` |
-| Contenido | `src/lib/email/plantillas.ts`, `src/app/(app)/alertas/plantillas.ts` | Funciones puras con self-check |
+| Contenido | `src/lib/email/plantillas.ts`, `src/app/(app)/(crm2)/alertas/plantillas.ts` | Funciones puras con self-check |
 | Límite de envíos | `registrar_envio_auth()` | 1 por minuto y 5 por hora por casilla y tipo, con lock en la base |
 | Origen de los links | `origenPublico()` en `sesion.ts` | `SITE_URL`, o el dominio de Vercel, o `localhost`; nunca el `Host` del pedido |
 | Destino del link | `src/app/auth/confirm/route.ts` | Token de un solo uso; `next` solo acepta rutas internas |
@@ -404,5 +439,6 @@ aplicación vieja no conoce los permisos nuevos de la 0007.
 
 - [Modelo de datos](./modelo-de-datos.md) · [Reglas de negocio](./reglas-de-negocio.md) · [IA asistida](./ia.md) ·
   [Seguridad](./seguridad.md) · [Decisiones de arquitectura](./decisiones/README.md)
-- Diseño visual: [`docs/DESIGN.md`](./DESIGN.md) (vendoreado, solo lectura) y
-  [`docs/design-overrides.md`](./design-overrides.md) (dónde esta app se aparta del kit y por qué).
+- Diseño visual del CRM: [`design-system/crm-2/MASTER.md`](../design-system/crm-2/MASTER.md) y su
+  [README](../design-system/crm-2/README.md) (sistema "Ledger" y contrato de aislamiento). La landing y el acceso siguen el kit:
+  [`docs/DESIGN.md`](./DESIGN.md) (vendoreado, solo lectura) y [`docs/design-overrides.md`](./design-overrides.md) (dónde esta app se aparta del kit y por qué).

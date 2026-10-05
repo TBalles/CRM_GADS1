@@ -19,6 +19,7 @@ tomado de los comentarios del código, las migraciones y el historial de git, no
 | [0011](./0011-self-checks-con-node-test.md) | Self-checks con `node --test`, sin framework de pruebas | Aceptada | `8326161`, `a72f794`, `2908420` |
 | [0012](./0012-reglas-del-rubro.md) | Reglas del rubro: medidas estáticas, sugerencia (no diagnóstico) y la regla de la apertura en un trigger aparte | Aceptada | F4, sin commit todavía |
 | [0013](./0013-ia-asistida.md) | IA asistida: borradores que una persona revisa, una Server Action por el secreto y apagada por defecto | Aceptada | F7, sin commit todavía |
+| [0014](./0014-crm-2-redisenio-por-slices-con-aislamiento-de-la-landing.md) | CRM 2.0: rediseño por slices verticales con aislamiento de la landing | Aceptada | `341dc27` a `064ba3d` (rama `crm-2.0`) |
 
 ## Cómo agregar una decisión
 

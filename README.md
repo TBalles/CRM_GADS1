@@ -11,7 +11,8 @@ vendedor avise al cliente por mail o WhatsApp antes que nadie.
 Trabajo práctico de *Gestión Aplicada al Desarrollo de Software II* (Ingeniería en Informática, UNLaM).
 Producción: [crmgads1.vercel.app](https://crmgads1.vercel.app). Entrega final: 2026-11-12.
 
-> **Estado en una línea.** Versión 1.0.0 (entrega final): el CRM está completo (fases F0 a F8). Falta aplicar a mano en
+> **Estado en una línea.** Versión 2.0.0 (CRM 2.0): el CRM está completo (fases F0 a F8, entrega final 1.0.0) y toda su interfaz se
+> rediseñó con el sistema "Ledger", sin capacidades, datos ni permisos nuevos; la landing y el acceso no cambiaron. Falta aplicar a mano en
 > Supabase las migraciones `0008` a `0012` (hay un [kit de un solo archivo](./supabase/aplicar/LEEME.md)); mientras tanto la
 > aplicación esconde canchas, licitaciones, recambio en un clic y la numeración de presupuestos, y anda igual. Este README
 > distingue siempre lo que ya funciona de lo que no.
@@ -28,7 +29,8 @@ Producción: [crmgads1.vercel.app](https://crmgads1.vercel.app). Entrega final: 
 
 - **Acceso y cuentas.** Ingreso con email y contraseña; invitación por mail, activación, recuperación de
   contraseña y reenvío automático de la activación. Sin registro público. Mails por SMTP propio.
-- **Empresas y contactos.** Alta, edición y búsqueda; cada empresa se despliega y muestra sus contactos.
+- **Empresas y contactos.** Listas con búsqueda, filtros y vista previa de la fila elegida (desde 1280 px), y fichas por pestañas (resumen, actividad,
+  oportunidades, ventas, contactos, canchas y parque); alta y edición en paneles laterales.
 - **Productos** con vida útil estimada en meses; se dan de baja, no se borran.
 - **Ventas** con cabecera e ítems; cada ítem copia la vida útil del catálogo (snapshot) y tiene su propia
   fecha de entrega.
@@ -168,16 +170,17 @@ cartera. El superadmin es la cuenta que cada instalación define en la migració
 npm run dev                          # servidor de desarrollo (http://localhost:3000)
 npm run build                        # build de producción
 npm run start                        # sirve el build de producción
-npm run lint                         # eslint src e2e playwright.config.ts --max-warnings=0 (sin advertencias)
-npm run typecheck                    # tsc --noEmit sobre src y sobre e2e
-npm test                             # self-checks: node --test "src/**/*.check.ts" (243 pruebas en 25 archivos)
+npm run lint                         # eslint (src, e2e, scripts/guard y las configs de Playwright) --max-warnings=0 (sin advertencias)
+npm run typecheck                    # next typegen + tsc --noEmit sobre src, e2e y scripts/guard
+npm test                             # self-checks: node --test "src/**/*.check.ts" (442 pruebas en 37 archivos)
+npm run guard                        # guardas de CRM 2.0: archivos congelados (guard:frozen) + pixel diff de la landing y el acceso (guard:landing, necesita .env)
 npm run test:e2e                     # pruebas de extremo a extremo (Playwright); sin credenciales E2E_* se saltan
 npm run manual                       # manual de usuario: capturas (necesita la app y MANUAL_EMAIL…) + PDF en docs/
 npm run manual:pdf                   # solo el PDF (sin la app ni internet, salvo la primera vez por las fuentes)
 npm run migraciones:consolidar       # regenera supabase/aplicar/aplicar_0008_a_0012.sql (npm test lo verifica)
 ```
 
-`lint`, `typecheck`, `test` y `build` son los pasos de la integración continua (`.github/workflows/ci.yml`). Las
+`lint`, `typecheck`, `test` y `build` son los pasos de la integración continua (`.github/workflows/ci.yml`); las guardas (`npm run guard`) todavía no están en la CI. Las
 pruebas SQL (`supabase/tests/`) se pegan en el SQL Editor. Las E2E corren contra una organización de pruebas aparte
 (`supabase/seeds/e2e_tests.sql`), nunca contra la demo. Qué prueba cada una, las variables y cuál SQL va antes o
 después de la `0007`: [docs/pruebas.md](./docs/pruebas.md).
@@ -187,12 +190,13 @@ después de la `0007`: [docs/pruebas.md](./docs/pruebas.md).
 ```text
 src/
   app/                  Páginas (App Router)
-    (app)/              CRM protegido: dashboard, empresas, oportunidades, productos, ventas,
-                        alertas, usuarios, sin-permisos
-    admin/              Panel de plataforma (superadmin)
+    (app)/              CRM protegido: el layout valida la sesión y monta el marco; `crm.css` (tokens `--crm-*`)
+      (crm2)/           Todas las pantallas: dashboard, empresas, contactos, oportunidades, productos, ventas,
+                        alertas, usuarios, configuración, tablero comercial, embudo, sin-permisos
+    admin/              Panel de plataforma (superadmin), con el mismo marco del CRM
     login, recuperar, definir-clave, auth/   Acceso y cuentas
     page.tsx            Landing pública
-  components/           Primitivos del UI Kit, formularios, shell, íconos del rubro
+  components/           crm/ (primitivos y marco del CRM, `crm/shell/`), ui/ y landing/ (landing y acceso), íconos del rubro
   lib/                  sesion, permisos, cuentas, email, ia (F7), supabase (3 clientes), money, equipo
   proxy.ts              Refresca la sesión y exige login
 supabase/
@@ -200,9 +204,9 @@ supabase/
   aplicar/              Kit: las migraciones 0008 a 0012 en un solo archivo, con verificación, y su LEEME
   tests/                Pruebas SQL con rollback
   seeds/                demo_catedra.sql, demo_rubro.sql (canchas, licitación, presupuesto) y e2e_tests.sql
-scripts/                manual/ (capturas y PDF del manual) y migraciones/ (el kit consolidado)
+scripts/                manual/ (capturas y PDF del manual), migraciones/ (el kit consolidado) y guard/ (guardas de CRM 2.0)
 docs/                   Documentación (ver abajo) y el manual de usuario (docs/manual/ y el PDF)
-design-system/          Sistema de diseño de la marca
+design-system/          crm-2/ (sistema "Ledger" del CRM, contrato de aislamiento y baselines) y tuco-y-nito/ (marca; vigente para la landing)
 ```
 
 La estructura detallada está en [CLAUDE.md](./CLAUDE.md).
@@ -221,7 +225,8 @@ La estructura detallada está en [CLAUDE.md](./CLAUDE.md).
 | [docs/reglas-de-negocio.md](./docs/reglas-de-negocio.md) | Cada regla y dónde se hace cumplir |
 | [docs/seguridad.md](./docs/seguridad.md) y [SECURITY.md](./SECURITY.md) | Modelo de seguridad y cómo reportar |
 | [docs/deploy.md](./docs/deploy.md) | Supabase, Vercel, SMTP y variables de entorno |
-| [docs/pruebas.md](./docs/pruebas.md) | Pruebas y verificaciones |
+| [docs/pruebas.md](./docs/pruebas.md) | Pruebas y verificaciones, incluidas las guardas de aislamiento de CRM 2.0 |
+| [design-system/crm-2/](./design-system/crm-2/README.md) | Sistema de diseño del CRM (`MASTER.md`) y contrato de aislamiento de la landing (`README.md`) |
 | [docs/decisiones/](./docs/decisiones/README.md) | Decisiones de arquitectura (ADR) |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | Commits, ramas, migraciones y diseño |
 
@@ -237,7 +242,7 @@ mano y **antes** del deploy cuando la aplicación vieja no es compatible. Resume
 | Entrega | Fecha | Estado |
 |---|---|---|
 | Primera: login, empresas y contactos, oportunidades, embudo | 2026-09-24 | Alcance cubierto por la aplicación, que además ya incluye multitenencia, roles, ventas y alertas |
-| Final: CRM completo según la consigna | 2026-11-12 | Hecho (1.0.0): interfaz y base completas; falta aplicar las migraciones `0008` a `0012` en la base viva |
+| Final: CRM completo según la consigna | 2026-11-12 | Hecho (1.0.0, rediseño de la interfaz en la 2.0.0): interfaz y base completas; falta aplicar las migraciones `0008` a `0012` en la base viva |
 
 Las fases F0 a F8 están hechas; el plan y el requisito por requisito frente a la consigna están en
 [docs/notas-de-version.md](./docs/notas-de-version.md#e-estado-frente-a-la-consigna).

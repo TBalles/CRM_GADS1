@@ -69,12 +69,13 @@ function ayudas(page) {
       await page.goto(BASE + ruta, { waitUntil: "domcontentloaded", timeout: 120_000 });
       await esperarCarga(page);
     },
-    /** Desde una lista, entra a la ficha cuyo link tiene ese nombre. */
-    async abrirFicha(lista, nombre) {
+    /** Desde una lista, entra a la ficha cuyo link tiene ese nombre; con `tab` ("actividad", "canchas"…), a esa pestaña (`?tab=`). */
+    async abrirFicha(lista, nombre, tab = "") {
       await h.ir(lista);
       await page.getByRole("link", { name: nombre }).first().click({ timeout: 30_000 });
       await page.waitForURL(/\/(empresas|contactos)\/[0-9a-f-]{36}/, { timeout: 60_000 });
       await esperarCarga(page);
+      if (tab) await h.ir(`${new URL(page.url()).pathname}?tab=${tab}`);
     },
     /** Desde la lista de oportunidades (todas), entra al detalle de la que tiene ese título; con `sufijo`, a una subpágina. */
     async abrirOportunidad(titulo, sufijo = "") {
@@ -171,13 +172,30 @@ async function sacar(browser, estados, fig) {
     if (fig.modo === "main") {
       const main = page.locator("[data-app-main]");
       if (fig.alto === "auto") {
-        // El alto del contenido: donde termina lo último que hay, más el relleno de abajo (si no, una pantalla corta saldría con aire de sobra).
-        const alto = await main.evaluate((el) => {
-          const arriba = el.getBoundingClientRect().top - el.scrollTop;
-          const fondo = Math.max(0, ...[...el.children].map((h) => h.getBoundingClientRect().bottom - arriba));
-          return Math.ceil(fondo + parseFloat(getComputedStyle(el).paddingBottom || "0"));
-        });
-        await page.setViewportSize({ width: ancho, height: Math.min(Math.max(alto, 420), fig.altoMax ?? 1700) });
+        // CRM 2.0: el <main> es el que scrollea y las listas se estiran a todo su alto (la banda de pie va pegada abajo).
+        // Si el contenido no entra (fichas, tableros), la ventana crece hasta mostrarlo entero (tope `altoMax`, alto del
+        // <main>). Si entra, se mide su alto natural con una ventana baja (ahí el <main> desborda y `scrollHeight` es el
+        // contenido, más lo que esconden los scrolls de adentro) y se fotografía a ese alto, sin aire de sobra. `altoMin` para las pantallas que llenan el alto con
+        // scroll propio (el tablero de oportunidades, el presupuesto, la matriz de roles): esas no se achican.
+        const medir = () =>
+          main.evaluate((el) => {
+            // Lo que esconden los scrolls de adentro (la tabla de una lista se achica y scrollea si no entra) también es contenido.
+            let escondido = 0;
+            for (const d of el.querySelectorAll("*")) {
+              const oy = getComputedStyle(d).overflowY;
+              if ((oy === "auto" || oy === "scroll") && d.scrollHeight > d.clientHeight + 1) escondido += d.scrollHeight - d.clientHeight;
+            }
+            return { contenido: el.scrollHeight + escondido, visible: el.clientHeight, chrome: window.innerHeight - el.clientHeight };
+          });
+        const m = await medir();
+        let alto = m.contenido;
+        if (m.contenido <= m.visible + 1 && (fig.altoMin ?? 0) < m.visible) {
+          await page.setViewportSize({ width: ancho, height: m.chrome + 200 });
+          await page.waitForTimeout(400);
+          alto = (await medir()).contenido;
+        }
+        alto = Math.min(Math.max(alto, fig.altoMin ?? 300), fig.altoMax ?? 1700);
+        await page.setViewportSize({ width: ancho, height: m.chrome + alto });
         await page.waitForTimeout(400);
       }
       archivo = await guardar(destino, (o) => main.screenshot(o));

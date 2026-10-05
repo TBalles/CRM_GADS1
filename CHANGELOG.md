@@ -2,26 +2,57 @@
 
 Todos los cambios relevantes de Tuco & Nito se documentan acá. El formato sigue
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). Con la entrega final el proyecto pasa a la versión
-**1.0.0** (`package.json`); antes de eso las secciones se agrupan por hito y fecha.
+**1.0.0** y con el rediseño CRM 2.0, a la **2.0.0** (`package.json`); antes de la 1.0.0 las secciones se agrupan por hito y fecha.
 
 Las etiquetas de hito ("primera entrega", "segunda entrega") están inferidas del historial de git y de
 `CLAUDE.md`, porque el repositorio no tiene etiquetas (`git tag` vacío). Cada línea cita el commit.
 La versión larga, con explicación por área, está en [docs/notas-de-version.md](./docs/notas-de-version.md).
 
-## Sin publicar
+## 2.0.0 - CRM 2.0 - 2026-10-05
+
+Rediseño completo de la interfaz del CRM («Ledger», [`design-system/crm-2/MASTER.md`](./design-system/crm-2/MASTER.md)), hecho en la rama
+`crm-2.0` por slices verticales. Sin migraciones ni capacidades nuevas: mismos datos, permisos, reglas y flujos. La landing y las
+pantallas de acceso no cambian (guarda de píxeles y de hashes). El detalle, con lo que no cambió, los riesgos y el error conocido que
+se mantiene: [notas de versión](./docs/notas-de-version.md#200-crm-20-la-interfaz-nueva-2026-10-05). Decisión: [ADR 0014](./docs/decisiones/0014-crm-2-redisenio-por-slices-con-aislamiento-de-la-landing.md).
 
 ### Agregado
 
+- Guardarrailes del rediseño: el CSS del CRM cuelga de `[data-crm]`, tokens `--crm-*`, fuentes solo en el layout del CRM, y
+  `npm run guard` (`guard:frozen`: hashes de la landing y del acceso, `git diff` contra la base y alcance de `crm.css`; `guard:landing`:
+  comparación de píxeles de `/`, `/login` y `/recuperar`) (`341dc27`).
+- Sistema de diseño CRM 2.0 y primitivos en `src/components/crm/` (`64ed7e4`); marco nuevo en `src/components/crm/shell/`: menú lateral
+  que se contrae y recuerda la preferencia, barra de arriba con migas, búsqueda, tema y menú de usuario (`8c59a36`).
+- Empresas y Contactos con lista densa, **vista previa** al costado (`?sel=`) y ficha por pestañas en la URL (`?tab=`) (`a3f61a3`, `7e1da09`).
+- **DatePicker** y selector de fecha y hora propios: se escribe `dd/mm/aaaa` o se elige en un calendario con teclado completo (`3dfc00d`).
+- Oportunidades con **«Presupuesto» a la vista** en la ficha y en el `⋮` de tarjetas y filas, recorrido por el embudo y acciones de
+  etapa agrupadas (`335beb1`); editor de presupuesto con vista dividida y la hoja imprimible intacta (`3ef72fa`).
+- Usuarios con la matriz «Permisos por rol»; Configuración con subnavegación por URL (`?s=`) y barra «Cambios sin guardar»; `/admin`
+  con el mismo marco del CRM (`087aab7`, `69cbd6e`, `064ba3d`).
 - `npm run demo:rubro` (`scripts/demo/cargar-rubro.mjs`): carga la demo del rubro por la API con la cuenta de Administrador de la demo, para quien no tiene SQL Editor. Idempotente (clave natural), con `--dry` de solo lectura; vincula la oportunidad «Recambio de redes de fútbol 11» a su equipo entregado.
 
 ### Cambiado
 
+- Todas las pantallas del CRM pasaron a `src/app/(app)/(crm2)/`; el grupo `(legacy)` y sus primitivos sin uso se retiraron (`69cbd6e`).
+- Inicio, Tablero comercial y Conversión del embudo sin portada ni tutorial: franjas de cifras y tablas con barras de dato (`761b4da`, `e0c995e`).
+- Ventas, Alertas y Usuarios en tablas densas, sin tarjetas (`087aab7`).
+- `package.json` pasa a la versión 2.0.0.
+- Manual de usuario regenerado para 2.0.0 (93 páginas, 6,6 MB): capítulos reescritos para la navegación nueva, figuras nuevas
+  (vista previa, acceso al presupuesto, calendario), 61 de 65 figuras capturadas del build nuevo y 4 pendientes (IA sin
+  `ANTHROPIC_API_KEY` y panel de plataforma sin superadmin). `scripts/manual/figuras.mjs` usa selectores por rol y nombre.
 - Las migraciones `0008` a `0012` están aplicadas en la base viva. Verificado por lectura: las tablas `canchas`, `licitaciones` y `presupuestos` responden, existe `oportunidades.venta_item_id` y el Vendedor ve solo su cartera. Las reglas que se prueban escribiendo siguen sin ejercitarse contra la base viva (ver [notas de versión](./docs/notas-de-version.md#verificación-posterior-a-la-migración-2026-10-04)).
-- Manual regenerado (89 páginas, 7,3 MB): 59 figuras con captura y 4 pendientes (IA sin `ANTHROPIC_API_KEY` y panel de plataforma sin superadmin).
 
 ### Corregido
 
+- Máscara de dinero: el cursor ya no queda antes de la coma (`1500,50` da `1.500,50`) y tipear rápido no pierde dígitos (`196ee7f`, `f1fe0cb`).
+- Foco después de las acciones (baja, reactivar, mover, cerrar diálogos) y drawers que no se traban en «Guardando…» si la llamada falla (`sinTrabarse`, `src/lib/guardar.ts`) (`196ee7f`, `cbadda7`, `064ba3d`).
+- El marco solo scrollea el área de contenido (`7e1da09`).
 - Manual: la figura `presupuesto-guardado` mostraba el borrador; ahora fotografía la lista «Presupuestos de esta oportunidad» con el N° 000001.
+- Manual: «Reactivar» devuelve una empresa o un contacto a *Cliente* si ya compró (el texto decía siempre *Potencial*).
+
+### Conocido
+
+- Inicio: la cifra «Contactos» lleva a `/empresas`; se corrige aparte.
+- Los E2E no se corrieron durante el rediseño (escriben en la base): tienen que correr en CI con los secretos después del merge.
 
 ## 1.0.0 - Entrega final - 2026-10-04
 

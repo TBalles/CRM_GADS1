@@ -5,12 +5,73 @@ read-only**. No se edita: su valor es ser un espejo exacto del kit del estudio, 
 nueva que lo siga se ve indistinguible.
 
 Este archivo registra dónde **Tuco & Nito se desvía a propósito** del kit. Regla general:
-al crear o modificar UI, **DESIGN.md manda salvo lo listado acá**. Cada override abajo tiene
+al crear o modificar UI, **DESIGN.md manda salvo lo listado acá**, con una excepción: **el CRM
+(desde CRM 2.0) se rige por `design-system/crm-2/MASTER.md`**, ver la sección siguiente. Cada override abajo tiene
 qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
 
 ---
 
+## CRM 2.0 (Ledger)
+
+Desde CRM 2.0 (v2.0.0) **todo el CRM** (las pantallas de `src/app/(app)/(crm2)/`, el panel de plataforma `/admin` y el
+marco `src/components/crm/shell/`) sigue [`design-system/crm-2/MASTER.md`](../design-system/crm-2/MASTER.md) (§10.1–§10.25), el
+sistema "Ledger": denso, sobrio, un solo acento verde, tipografía IBM Plex. Para el CRM, **MASTER.md de crm-2 manda sobre este
+archivo y sobre `docs/DESIGN.md`**.
+
+- **Tokens:** `--crm-*`, definidos en `src/app/(app)/crm.css` y colgados de `[data-crm]` (claro y `.dark`). No se redefine ninguna
+  variable global.
+- **Primitivos:** `src/components/crm/` (Button, DataTable, DatePicker, Dialog, Drawer, Field, Menu, Select, Tabs, Toast…).
+- **Fuentes:** IBM Plex Sans y Mono se cargan solo en `CrmRoot` (`src/components/crm/CrmRoot.tsx`, lo usan los layouts de `(app)` y
+  de `admin`); la landing y el acceso no las descargan.
+- **Aislamiento:** la landing (`/`) y `/login`, `/recuperar`, `/definir-clave` no cambian: sus archivos y todo lo que importan
+  están congelados y `npm run guard` lo verifica. El contrato está en [`design-system/crm-2/README.md`](../design-system/crm-2/README.md).
+  Decisión: [ADR 0014](./decisiones/0014-crm-2-redisenio-por-slices-con-aislamiento-de-la-landing.md).
+
+**Qué sigue valiendo de este archivo.** Las secciones de abajo se conservan como historia, y se leen así:
+
+| § | Tema | Estado |
+|---|---|---|
+| 1 | Verde cancha como marca | Vigente para la landing y el acceso (`globals.css`, `icon.svg`). El CRM usa `--crm-accent` |
+| 2 | `primary` aliasea `brand` | Vigente para la landing y el acceso (los formularios de `/login`, `/recuperar` y `/definir-clave` usan `ui/UIComponents.tsx`). **Superseded** para el CRM |
+| 3 | Tailwind v4, tokens en `@theme` | **Vigente** (es el stack de toda la app) |
+| 4 | Next App Router | **Vigente**. Inter (y las demás fuentes del layout raíz) siguen para landing y acceso; el CRM carga IBM Plex aparte |
+| 5 | Sin `recharts` | **Vigente** (ya describe CRM 2.0) |
+| 6 | Primitivos y hooks separados | Vigente para `src/components/ui/` (congelado). El CRM tiene su propio `src/components/crm/overlay.ts` |
+| 7 | Pill de etapa tintada | **Superseded** por `StatusDot` / `StatusBadge` (ya describe CRM 2.0) |
+| 8 | Formularios en Drawer | La decisión sigue; el `Drawer` y `form.tsx` de esta sección ya no existen (ver la sección) |
+| 9 | `useAnchoredPortal` | Vigente solo para `ui/Select.tsx`. **Superseded** para el CRM por `useAnchor` (`crm/overlay.ts`) |
+| 10 | Escala de z-index | Vigente para el toast y el tooltip del layout raíz. **Superseded** para el CRM por `--crm-z-*` |
+| 11 | Accesibilidad desde el arranque | La regla sigue; los campos ahora son `crm/Field.tsx` (ver la sección) |
+| 12 | Estética de marketing de la landing | **Vigente** |
+| 13 | Estados vacíos con escena de cancha | **Superseded**: `EmptyState` del CRM no lleva ilustración (`crm/Feedback.tsx`, MASTER §10.9) y `ui/EmptyState.tsx` se borró |
+| 14 | El CRM viste la cancha | **Superseded** para el CRM. `.cesped`, `MarcasCancha` y los tokens `--pitch*` quedan solo para `/login` |
+| 15 | Iconografía del rubro | **Vigente** (`Equipamiento.tsx` se usa en Productos, Ventas, Alertas, Inicio, Oportunidades y la ficha de empresa) |
+| 16 | Embudo en barras y búsqueda global | **Superseded**: ver §5 (`CellBar`) y `CommandPalette` (`crm/shell/`) |
+| 17 | DatePicker propio | **Vigente**; ya no queda ningún `type="date"` en el CRM |
+
+**Aplicado a archivos de la landing y el acceso.** Verificado contra el código: `src/app/page.tsx` usa Varela Round, Inter y el
+bloque `LANDING` de `globals.css`; `/login` usa `GoalMark`, `Cancha.tsx` (`MarcasCancha`), `.cesped` y los primitivos de
+`ui/UIComponents.tsx` (`Button`, `Input`); `/recuperar` y `/definir-clave` usan `AuthCard` y `ui/UIComponents.tsx`. `ui/Toast.tsx` y `ui/Tooltip.tsx`
+los monta el layout raíz. Del resto de `src/components/ui/` solo se usan `Select.tsx` (el `FiltroSelect` de `FiltrosUrl.tsx`),
+`overlay.ts` y `backdropClose.ts` (este último también lo importan los overlays del CRM); `KpiCard.tsx` no tiene usos.
+
+**Archivos que estas secciones nombran y ya no existen** (se borraron en CRM 2.0, Lote F, o antes): `components/Drawer.tsx`,
+`form.tsx`, `ConfirmModal.tsx`, `RowActions.tsx`, `AppShell.tsx`, `PaletaBusqueda.tsx`, `ThemeToggle.tsx`, `ui/EmptyState.tsx`,
+`ui/MoneyInput.tsx`, `ui/Loader.tsx`, `ui/PantallaCarga.tsx`, `ui/OverlayCarga.tsx` y `components/oportunidades.tsx`. Sus equivalentes
+viven en `src/components/crm/`: `Drawer.tsx`, `Dialog.tsx` (incluye `ConfirmDialog`), `Field.tsx`, `Menu.tsx`, `MoneyInput.tsx`,
+`Feedback.tsx` (`Skeleton`, `LoadingStatus`, `EmptyState`), `Status.tsx` y `shell/` (`AppFrame`, `Topbar`, `CommandPalette`).
+
+**`docs/DESIGN.md` y los archivos que ya no existen.** El kit (que es una copia de solo lectura y no se edita) describe su propio código
+de ejemplo: `components/ui/MoneyInput.tsx` (§3.10, ~línea 741), `components/ui/Loader.tsx` (§3.12, ~838), `components/ConfirmModal.tsx`
+(§4.2, ~1359) y `components/HomeDetailDrawer.tsx` con su `Loader` (§4.3, ~1397). Son recetas para pegar en un repo nuevo, no archivos de
+este repo: acá esos componentes **no se copiaron** y su lugar lo ocupan `crm/MoneyInput.tsx`, `crm/Feedback.tsx`
+(`LoadingStatus`, `Skeleton`), `crm/Dialog.tsx` (`ConfirmDialog`) y `crm/Drawer.tsx`.
+
+---
+
 ## 1. Color de marca — verde cancha, no wine
+
+> **Vigente para la landing y el acceso.** En el CRM el acento es `--crm-accent` (`crm.css`); ver "CRM 2.0 (Ledger)" arriba.
 
 - **Kit**: brand token = wine `#800020`; es el único parámetro por cliente
   (`docs/DESIGN.md` §1.4, §1.5).
@@ -25,6 +86,8 @@ qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
   marca como el único parámetro por cliente.
 
 ## 2. `primary` ES la marca — el verde es el color principal, no el negro
+
+> **SUPERSEDED para el CRM.** Sigue describiendo `globals.css` y los primitivos de `ui/UIComponents.tsx` que usan la landing y las pantallas de acceso. El CRM usa los tokens `--crm-*` (MASTER crm-2 §3).
 
 - **Kit**: `primary` = `#1a1a1a`, un negro **fijo** que no cambia entre clientes; el color de
   marca se reserva para logo, acentos, KPI destacado y charts. Es la regla de oro #3:
@@ -114,6 +177,8 @@ qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
 
 ## 6. Primitivos y hooks en módulos separados, no un único `UIComponents.tsx`
 
+> **Vigente para `src/components/ui/`** (congelado: lo importan las pantallas de acceso y el layout raíz). El CRM aplica la misma idea en `src/components/crm/` (`overlay.ts` con los hooks, primitivos puros sin `"use client"`; `design-system/crm-2/README.md`).
+
 - **Kit**: todos los primitivos viven en **un solo** `components/ui/UIComponents.tsx`, junto
   con `cn` y `useModalAnimation` (`docs/DESIGN.md` §2, §3).
 - **Tuco & Nito**: los primitivos puros quedan en `src/components/ui/UIComponents.tsx`
@@ -135,6 +200,8 @@ qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
 
 ## 7. Pill de etapa tintada, no `StatusBadge` con fill sólido
 
+> **SUPERSEDED por CRM 2.0** (Lote C): la etapa se dibuja con `StatusDot` / `StatusBadge` (`crm/Status.tsx`), como dice el texto de abajo.
+
 - **Kit**: `StatusBadge` mapea un estado canónico a un par `bg-{c}-100 text-{c}-700`
   (`docs/DESIGN.md` §3.11, regla de oro #7).
 - **Tuco & Nito**: las etapas son **datos**, no un enum de código: nombre y color (hex) vienen
@@ -152,27 +219,33 @@ qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
 
 ## 8. Formularios en Drawer, no en modal centrado
 
+> **La decisión sigue** (toda alta/edición va en un drawer lateral) **pero la implementación cambió**: el `Drawer` y `form.tsx` de abajo se borraron. Hoy es `src/components/crm/Drawer.tsx` (MASTER crm-2 §10.8) con `crm/cuenta/FormDrawer.tsx` (Cancelar / Guardar) y los campos de `crm/Field.tsx`.
+
 - **Kit**: todo formulario va en el **modal centrado** de §4.1; el drawer lateral (§4.3) es
   para drill-down read-only.
 - **Tuco & Nito**: toda alta/edición (empresa, contacto, oportunidad) vive en el `Drawer`
   lateral derecho. El panel toma la estructura header / body scrolleable / footer del modal
   de §4.1 y la animación `drawer-enter-right` de §4.3; la barra de acción va pineada al pie
   del área de scroll con `FormActions` (§5.7), con negativos que cancelan el `p-5` del body.
-- **Dónde vive**: `src/components/Drawer.tsx`, `FormActions` en `src/components/form.tsx`.
+- **Dónde vive** (histórico, archivos borrados): `src/components/Drawer.tsx` y `FormActions` en `src/components/form.tsx`. Hoy: `src/components/crm/Drawer.tsx` y `crm/cuenta/FormDrawer.tsx`.
 - **Por qué**: decisión de producto previa al rediseño, documentada en `CLAUDE.md` — es la
   razón por la que el CRUD muta desde Client Components en vez de Server Actions. No se toca.
 
 ## 9. `useAnchoredPortal` extraído — el kit lo prescribe y no lo hace
 
+> **Vigente solo para `ui/Select.tsx`** (`RowActions` se borró). **SUPERSEDED para el CRM** por `useAnchor` y `useLayer` de `src/components/crm/overlay.ts` (anclaje, flip, cierre por Escape y clic afuera).
+
 - **Kit**: §8.4 describe el patrón de popover portaled y dice explícitamente
   *"extraé esto a un hook `useAnchoredPortal()` en vez de repetirlo"*, pero su propio código
   lo duplica en 5+ lugares.
-- **Tuco & Nito**: el hook existe (`src/components/ui/UIComponents.tsx`) y lo comparten `Select`
-  y `RowActions`: medición del trigger, flip vertical, clamp horizontal, y cierre por
+- **Tuco & Nito**: el hook existe (hoy en `src/components/ui/overlay.ts`) y lo compartían `Select`
+  y `RowActions` (este último se borró; hoy solo lo usa `ui/Select.tsx`): medición del trigger, flip vertical, clamp horizontal, y cierre por
   mousedown afuera / scroll / Escape.
 - **Por qué**: es la prescripción del kit, cumplida.
 
 ## 10. Escala de z-index saneada (la de §8.2, no los `z-[9999]`)
+
+> **SUPERSEDED para el CRM**, que usa `--crm-z-*` (MASTER crm-2 §7). La escala de abajo sigue en el toast (`z-130`) y el tooltip (`z-140`) de `ui/`, que monta el layout raíz.
 
 - **Kit**: §8.2 define la escala saneada y aclara que el código real tiene `z-[9999]` y
   `zIndex: 999999` desprolijos.
@@ -182,9 +255,11 @@ qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
 
 ## 11. Accesibilidad — se cumple la regla #24 desde el arranque
 
+> **La regla sigue; el archivo cambió.** `src/components/form.tsx` se borró: hoy los campos son `src/components/crm/Field.tsx` (`aria-invalid`, `aria-describedby`, error con `role="alert"`) y `crm/Select.tsx` (combobox + listbox). Todo botón-ícono del CRM es un `IconButton` con `label` obligatorio.
+
 - **Kit**: regla de oro #24 pide `aria-invalid` / `role="alert"` en errores de campo y
   `aria-label` en botones-ícono, y avisa *"el código base no los tiene — no heredes esa deuda"*.
-- **Tuco & Nito**: los campos de `src/components/form.tsx` emiten `aria-invalid` +
+- **Tuco & Nito**: los campos de `src/components/form.tsx` (borrado; hoy `crm/Field.tsx`) emitían `aria-invalid` +
   `aria-describedby` y el error va con `role="alert"`; todo botón-ícono lleva `aria-label`.
   El trigger del `Select` usa `role="combobox"` con `aria-controls` / `aria-expanded` sobre un
   panel `role="listbox"` con hijos `role="option"` y `aria-selected` — un `<button>` pelado no
@@ -200,8 +275,8 @@ qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
     `.landing-root` en `globals.css` redefine los tokens (casi negro con tinte verde) y **sube la
     luz del verde de marca** (`--brand: 156 74% 50%`) para que brille sobre negro. `--primary` y
     `--ring` siguen solos, porque ya aliasean `--brand` (§2).
-  - **Tipografía de display** Varela Round (`font-display`) para titulares. Desde el §14 el CRM
-    también la usa en sus títulos; el cuerpo de la landing sigue en Inter y el del CRM en Jakarta.
+  - **Tipografía de display** Varela Round (`font-display`) para titulares. (El §14, que la llevaba
+    también a los títulos del CRM, quedó superseded: el CRM usa IBM Plex.) El cuerpo de la landing sigue en Inter.
   - **Partículas en canvas** (`src/components/landing/ParticleField.tsx`): el isotipo armado con
     partículas en el hero, un halo detrás de la vitrina de producto y un cielo fijo. El verde lo
     lee del token `--glow`, no está duplicado en JS.
@@ -217,6 +292,8 @@ qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
 
 ## 13. Estados vacíos con escena de cancha, no ícono en un círculo
 
+> **SUPERSEDED por CRM 2.0.** `src/components/ui/EmptyState.tsx` se borró. El `EmptyState` del CRM (`crm/Feedback.tsx`, MASTER crm-2 §10.9) es título + una línea + una acción, sin ilustraciones, y `/sin-permisos` tampoco lleva escena.
+
 - **Kit**: §9.3 define el empty state como borde punteado + ícono genérico en un círculo gris.
 - **Tuco & Nito**: el borde punteado se mantiene, pero en lugar del ícono va una **escena**
   dibujada en SVG inline con el mismo lenguaje de línea que el login y el GoalMark. Son tres, una
@@ -229,12 +306,14 @@ qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
   ranking del tablero) van **solo con texto**: una escena repetida en cada acordeón sería
   decoración. El copy sigue la voz de la landing: concreto, rioplatense, del oficio.
   El ícono sigue disponible para vacíos que no son del rubro (`/sin-permisos`).
-- **Dónde**: `src/components/ui/EmptyState.tsx` (prop `escena`).
+- **Dónde** (histórico): `src/components/ui/EmptyState.tsx` (prop `escena`), ya borrado.
 - **Por qué**: el vacío es donde un producto muestra personalidad, y donde una app generada es
   más genérica. Las escenas son `aria-hidden`, sin animación, y el texto carga todo el sentido.
   De paso, el hint dejó de usar `text-muted-foreground/70`, que quedaba por debajo de AA.
 
 ## 14. El CRM viste la cancha — sidebar, marcadores y títulos de la landing
+
+> **SUPERSEDED por CRM 2.0.** El CRM ya no usa `.cesped`, `MarcasCancha`, los tokens `--pitch*`, Varela Round ni `AppShell`: tiene el marco `crm/shell/` y tipografía IBM Plex. Esos recursos siguen en `globals.css` y `Cancha.tsx` solo para `/login` (congelados). Se conserva como historia.
 
 - **Kit**: sidebar `bg-card` neutro (§4.5), títulos de página en la sans del sistema, métricas en
   `KpiCard` iguales (§4.6).
@@ -261,9 +340,9 @@ qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
     días en ámbar. Usa `dias_restantes` de la vista (no `new Date()`), así no desfasa la hidratación.
     (CRM 2.0, Lote B: la barra se reemplazó por texto —entrega, vida útil y vencimiento— en la tabla de `/alertas`;
     ver `design-system/crm-2/MASTER.md` §10.17.)
-- **Dónde**: `globals.css`, `layout.tsx`, `components/Cancha.tsx`, `AppShell.tsx`,
+- **Dónde** (histórico): `globals.css`, `layout.tsx`, `components/Cancha.tsx`, `AppShell.tsx` (borrado),
   `UIComponents.tsx` (`PageHeader`), `dashboard/page.tsx`, `alertas/AlertasView.tsx`,
-  `login/page.tsx`, y el `eyebrow` de cada pantalla.
+  `login/page.tsx`, y el `eyebrow` de cada pantalla. De todo eso, hoy solo siguen en uso `globals.css`, `Cancha.tsx` y `login/page.tsx`.
 - **Por qué**: después de dos pases de tokens y estructura la app seguía pudiendo ser el CRM de
   cualquier rubro. Lo que ves siempre (el marco, los títulos, la primera cifra) es lo que tiene que
   decir de qué se trata. Contraste medido en el punto MÁS claro del césped: blanco 11.1:1,
@@ -279,13 +358,16 @@ qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
   (la vista de alertas no trae categoría, y "Red para arco" es una red), después la categoría,
   después la caja. Aparece en Productos (con una barrita de vida útil relativa al catálogo), en cada
   ítem de Ventas y apilado en la fila cerrada, en Alertas y en la tarjeta de recambios del tablero.
-- **Dónde**: `components/Equipamiento.tsx`, `lib/equipo.ts`, `productos/ProductosList.tsx`,
-  `ventas/VentasList.tsx`, `alertas/AlertasView.tsx`, `dashboard/page.tsx`.
+- **Dónde**: `components/Equipamiento.tsx`, `lib/equipo.ts`, y las pantallas de `src/app/(app)/(crm2)/`:
+  `productos/ProductosList.tsx`, `ventas/VentasList.tsx`, `alertas/AlertasView.tsx`, `dashboard/page.tsx`,
+  `oportunidades/OportunidadesView.tsx` y la ficha de empresa (`empresas/[id]/`).
 - **Por qué**: una caja dice "producto" en cualquier rubro; un arco dice este. Es siempre
   decorativo (`aria-hidden`): el nombre del producto va impreso al lado, así que un ícono mal
   adivinado no cuesta nada.
 
 ## 16. Embudo en barras centradas y búsqueda global como diálogo (F5)
+
+> **SUPERSEDED por CRM 2.0.** El embudo es hoy una tabla con `CellBar` (override §5, MASTER crm-2 §10.23) y la búsqueda global es `CommandPalette` (`src/components/crm/shell/`, MASTER §10.11); `AppShell.tsx` y `PaletaBusqueda.tsx` se borraron. Siguen igual el atajo Ctrl/Cmd+K y el contrato ARIA (combobox + listbox).
 
 - **Kit**: los charts van con Recharts (§4.6) y no define una paleta de comandos.
 - **Tuco & Nito**: `/embudo` dibuja el embudo con `div`s de ancho proporcional, centrados y de **un solo tono de marca**
@@ -294,7 +376,7 @@ qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
   (`Ctrl/Cmd+K`) es un diálogo `role="dialog"` con el patrón combobox + listbox de ARIA (`aria-activedescendant`, foco
   atrapado y devuelto al cerrar); en pantallas chicas es una hoja a todo el ancho y alto. El botón que la abre va en el
   menú (la cancha) con su atajo escrito, y en la barra superior en mobile.
-- **Dónde**: `src/app/(app)/embudo/page.tsx`, `src/components/PaletaBusqueda.tsx`, `src/components/AppShell.tsx`.
+- **Dónde** (histórico): `src/app/(app)/embudo/page.tsx`, `src/components/PaletaBusqueda.tsx`, `src/components/AppShell.tsx`. Hoy: `src/app/(app)/(crm2)/embudo/page.tsx` y `src/components/crm/shell/CommandPalette.tsx`.
 - **Por qué**: el embudo es una sola magnitud por etapa, no una proporción del total, y la búsqueda es el único atajo
   de teclado global del CRM: tiene que ser accesible sin ratón y usable con el pulgar.
 
@@ -304,7 +386,7 @@ qué dice el kit, qué hace Tuco & Nito, dónde vive el cambio real y por qué.
 - **Tuco & Nito**: en las pantallas CRM 2.0 las fechas usan `DatePicker` / `DateTimePicker` (campo con máscara
   dd/mm/aaaa + calendario no modal en `#crm-portal`, semana de lunes, es-AR), con el mismo valor que el input nativo
   ("YYYY-MM-DD" / "YYYY-MM-DDTHH:mm" local). La spec completa (look Ledger, teclado APG, celular) está en MASTER crm-2 §10.15.
-  Las pantallas legacy siguen con `type="date"` / `datetime-local` hasta que se migren.
+  Todas las pantallas del CRM ya lo usan: no queda ningún `type="date"` ni `datetime-local` (los filtros de fecha son `FechaFiltro`).
 - **Dónde**: `src/components/crm/DatePicker.tsx`, `src/components/crm/fecha.ts` (+ `fecha.check.ts`).
 - **Por qué**: el calendario nativo no sigue el tema claro/oscuro, ni la tipografía, ni el formato y la semana de es-AR.
 

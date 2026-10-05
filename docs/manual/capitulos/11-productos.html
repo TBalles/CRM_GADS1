@@ -1,16 +1,17 @@
 <section class="cap" id="cap-11" data-num="11" data-parte="El trabajo de todos los días" data-titulo="Productos y vida útil" data-bajada="Tu catálogo. El dato más importante de cada producto no es el precio: es cuánto dura.">
 
-<p>El <strong>catálogo de productos</strong> es la lista de lo que vendés: arcos, redes, pelotas, pecheras, conos, vallas. Cada producto tiene, además de su nombre y su precio, una <strong>vida útil estimada en meses</strong>. Ese número es el que alimenta todo el sistema de alertas de recambio (capítulo 13).</p>
-<figure class="fig" data-fig="productos-lista"><figcaption>El catálogo, filtrado por «Activos». Cada producto muestra el ícono de su equipo y una barra de vida útil relativa al resto del catálogo. El kit de mantenimiento está «Sin seguimiento» a propósito.</figcaption></figure>
+<p>El <strong>catálogo de productos</strong> es la lista de lo que vendés: arcos, redes, pelotas, pecheras, conos, vallas. Cada producto tiene, además de su nombre y su precio, una <strong>vida útil estimada en meses</strong>. Ese número es el que alimenta todo el sistema de alertas de recambio (capítulo 13). Junto al título se lee cuántos productos hay y cuántos tienen vida útil.</p>
+<figure class="fig" data-fig="productos-lista"><figcaption>El catálogo, filtrado por «Activos». Cada producto muestra el ícono de su equipo, su categoría, su precio y su vida útil; el que no tiene vida útil cargada muestra «—» (no se sigue).</figcaption></figure>
 
 <h2>Leer la lista</h2>
 <ul>
-  <li><strong>Producto</strong>: nombre y marca, con el ícono del equipo (arco, red, pelota, cono, pechera, banderín, escalera, valla…).</li>
-  <li><strong>Categoría</strong>: una etiqueta de color (Arcos, Redes, Pelotas, Entrenamiento…).</li>
-  <li><strong>Precio</strong> de lista.</li>
-  <li><strong>Vida útil</strong>: una barra y el plazo en años o meses. <em>Sin seguimiento</em> significa que no tiene vida útil cargada y no genera alertas.</li>
+  <li><strong>Producto</strong>: el ícono del equipo (arco, red, pelota, cono, pechera, banderín, escalera, valla…), el nombre y, al lado en gris, la marca.</li>
+  <li><strong>Categoría</strong>: Arcos, Redes, Pelotas, Entrenamiento…</li>
+  <li><strong>Precio</strong> de lista («—» si no tiene).</li>
+  <li><strong>Vida útil</strong>: el plazo en años o meses («5 años», «18 meses»). Un «—» significa <em>sin seguimiento</em>: no tiene vida útil cargada y no genera alertas.</li>
   <li><strong>Estado</strong>: <span class="pill verde">Activo</span> o <span class="pill gris">De baja</span>.</li>
-  <li>Filtros: <span class="ui">Todas las categorías</span> y <span class="ui">Activos y de baja</span> / <span class="ui">Activos</span> / <span class="ui">De baja</span>; buscador por nombre.</li>
+  <li>Buscador por nombre y filtros <span class="ui">Categoría</span> y <span class="ui">Estado</span> (<em>Activos y de baja</em>, <em>Activos</em> o <em>De baja</em>).</li>
+  <li>Los productos no tienen ficha ni vista previa: todo se hace desde la fila.</li>
 </ul>
 
 <h2>Cargar un producto</h2>
@@ -21,7 +22,7 @@
   <li>En <strong>Seguimiento de recambio</strong> poné la <strong>Duración estimada (meses)</strong>: una red de fútbol 11, 18; un arco, 60; una pelota, 12. <strong>Dejalo vacío</strong> si el producto no se recambia.</li>
   <li>Agregá una <strong>Descripción</strong> si querés (material, medidas) y tocá <span class="ui">Guardar</span>.</li>
 </ol>
-<figure class="fig" data-fig="producto-form"><figcaption>El panel de alta de un producto. El bloque «Seguimiento de recambio» explica cómo se usa la duración.</figcaption></figure>
+<figure class="fig" data-fig="producto-form"><figcaption>El panel de alta de un producto. La sección «Seguimiento de recambio» explica cómo se usa la duración.</figcaption></figure>
 
 <div class="nota regla">
   <ul>
@@ -32,7 +33,7 @@
 </div>
 
 <h2>Editar, dar de baja y reactivar</h2>
-<p>En el menú <span class="mono">⋮</span> de la fila: <span class="ui">Editar</span>, y <span class="ui">Dar de baja</span> (con confirmación) o <span class="ui">Reactivar</span>. Un producto de baja se ve atenuado y con la etiqueta «De baja».</p>
+<p>En el menú <span class="mono">⋮</span> de la fila: <span class="ui">Editar</span>, y <span class="ui">Dar de baja</span> (con confirmación) o <span class="ui">Reactivar</span>. Un producto de baja muestra el nombre en gris y el estado «De baja».</p>
 
 <div class="nota tip">
   <p>El sistema elige el <strong>ícono</strong> de cada producto leyendo su <em>nombre</em> («Red para arco…» muestra una red, «Pelota…» una pelota) y, si no lo reconoce, su categoría. Si ponés nombres claros, el catálogo se lee mejor de un vistazo.</p>
