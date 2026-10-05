@@ -69,7 +69,7 @@ Incluido:
   tiempo por mes, `src/lib/timeline360.ts` y `src/lib/cuenta360.ts`). `/tablero-comercial` (pipeline por responsable,
   oportunidades sin actividad, cierres del mes y motivos de pérdida) y `/embudo` (conversión por etapa, mediana de días,
   tasa de éxito y ciclo) piden `clientes.ver_todos` y `oportunidades.ver`. `Ctrl/Cmd+K` abre la búsqueda global
-  (`PaletaBusqueda`, Server Action `buscarGlobal` con la sesión de la persona: la RLS limita lo que aparece).
+  (`CommandPalette` del shell, Server Action `buscarGlobal` con la sesión de la persona: la RLS limita lo que aparece).
 - **Listas en el servidor (F3)**: empresas, contactos, oportunidades (Lista), productos, ventas y usuarios
   piden solo la página que se ve. **La URL es el estado** (`?q=&page=&pageSize=&estado=...`); la página
   servidor lee `searchParams` (una Promise en Next 16), sanea cada parámetro con `src/lib/paginacion.ts` y
@@ -195,12 +195,22 @@ src/
     definir-clave/            Elegir contraseña tras activar o recuperar (Server Action)
     auth/signout/route.ts     Logout (POST, borra la sesión)
     auth/confirm/route.ts     Canjea el token de los mails con verifyOtp (solo rutas internas en `next`)
-    admin/                    Panel del superadmin (alta/suspensión de clientes), fuera del CRM
+    admin/                    Panel del superadmin (alta/suspensión de clientes), fuera del CRM. CRM 2.0 (Lote F): el mismo
+                                 AppFrame en variante `plataforma` (rail de una sola sección "Plataforma › Clientes", sin Ctrl+K);
+                                 layout.tsx (guardas: sin sesión → /login, no superadmin → /dashboard), AdminView.tsx (tabla densa,
+                                 drawers CRM, ConfirmDialog "Suspender cliente"), actions.ts (sin cambios), loading.tsx, error.tsx
     (app)/                    Grupo de rutas protegidas (layout valida sesión)
-      layout.tsx               AppShell + guards: superadmin va a /admin; baja o suspensión = "Sin acceso"
-      sin-permisos/            Destino cuando el rol no tiene ninguna sección
-      */loading.tsx            Loader de marca por módulo
-      error.tsx                Aviso con "Reintentar" si la base no responde (las lecturas ya no se tragan el error)
+      layout.tsx               CrmRoot + AppFrame + guards: superadmin va a /admin; baja o suspensión = "Sin acceso"
+      (crm2)/                  TODAS las pantallas (desde el Lote F no queda `(legacy)`); su layout no impone nada
+      (crm2)/loading.tsx / error.tsx   Carga (esqueleto + "Cargando…") y error ("Reintentar") de respaldo de CRM 2.0
+      (crm2)/sin-permisos/       Destino cuando el rol no tiene ninguna sección (h1 con el texto de siempre, sin escena)
+      (crm2)/configuracion/      CRM 2.0 (Lote F): sub-navegación por `?s=empresa|etapas|tipos|origenes|motivos` (columna desde 1024,
+                                   tabs debajo; cambia con history.pushState, sin ir al servidor), catálogos como tablas compactas
+        page.tsx / loading.tsx   Server Component: organización, etapas, tipos, orígenes, motivos y el logo firmado (sin cambios)
+        ConfiguracionView.tsx     Client: PageBar + Tabs vertical + las 5 secciones montadas (lo escrito no se pierde)
+        DatosEmpresa.tsx          Formulario (mismos ids) + logo (bucket `logos`, mismas validaciones) + vista previa de la hoja
+        EtapasTab.tsx / CatalogoTab.tsx / Mover.tsx   Tablas con reordenado en línea (flechas con aria-disabled) y drawers CRM
+        logica.ts(+.check)        Pura: sección de `?s=` y su link, renumerado de un catálogo al subir/bajar
       (crm2)/dashboard/          CRM 2.0 (Lote E): Inicio. h1 "Inicio", franja de 4 cifras + "Recambios vencidos" con alertas.ver (StatStrip
                                    lg; Contactos sigue yendo a /empresas, bug conocido sin corregir) y tablas: recambios (alertas.ver,
                                    PRIMERO en el DOM), por etapa (sin barra), empresas con más valor (con barra)
@@ -262,31 +272,23 @@ src/
                                    desde el legacy, fuera de UI_ROOT); usePresupuesto.ts (estado, guardar con sinTrabarse, imprimir y
                                    actividad); logica.ts(+.check) (pura: líneas, mover, foco tras quitar/mover); loading.tsx
   components/
-    ui/                        Primitivos del Sumar UI Kit — reusar, no reinventar
-      UIComponents.tsx          cn, useModalAnimation, useAnchoredPortal, Card, Button, Input,
-                                Textarea, FieldLabel, Badge, Table, Avatar, initials, SectionTitle
-      Select.tsx                Reemplazo portaled del <select> nativo (flip, buscador, a11y)
-      MoneyInput.tsx            Input de dinero con máscara es-AR
-      KpiCard.tsx               Tile de métrica canónico del dashboard
-      Loader.tsx                Spinner de marca (loading de página/lista)
-      Toast.tsx                 ToastProvider + useToast()
-      Tooltip.tsx               TooltipHost: convierte todo title= del DOM en un pill propio
-      EmptyState.tsx            Empty state canónico (dashed + ícono en círculo)
-      backdropClose.ts          Cierre de overlay a prueba de arrastre
+    ui/                        Primitivos legacy (Sumar UI Kit) que siguen vivos: los usan el login (congelado) y el layout raíz
+      UIComponents.tsx          cn, Card, Button, Input… (congelado: lo importan las pantallas de acceso)
+      Select.tsx                Select legacy (lo usa FiltroSelect de FiltrosUrl)
+      KpiCard.tsx               Sin usos (quedó de antes del Lote E; no se borró en el Lote F)
+      Toast.tsx / Tooltip.tsx   ToastProvider y TooltipHost del layout raíz (congelados)
+      overlay.ts / backdropClose.ts   Hooks de capa y cierre a prueba de arrastre (backdropClose lo usan los overlays CRM)
     landing/                    Solo para la landing pública (ver design-overrides.md §12)
       ParticleField.tsx         Canvas de partículas: isotipo, halo y cielo; reacciona al mouse
       BallCursor.tsx            Cursor pelota de fútbol + spotlight de las cards
       ProductShowcase.tsx       Ventanas simuladas del CRM (datos de ejemplo)
-    AppShell.tsx                Sidebar colapsable desktop + header/drawer mobile + logout (NAV por permiso)
     AuthCard.tsx                Tarjeta de las pantallas de acceso (login, recuperar, sin acceso)
     Logo.tsx                    GoalMark: isotipo en currentColor (sidebar, login, loader)
     Cancha.tsx                  MarcasCancha: la cancha en SVG sobre la superficie .cesped
     Equipamiento.tsx            Íconos del rubro (arco, red, pelota…) + IconoEquipo
     FiltrosUrl.tsx              useFiltrosUrl (filtros en la URL con router.replace + useTransition), CajaBusqueda (300 ms),
                                 FiltroSelect, AnuncioResultados (FiltroFecha y BarraPendiente se borraron en el Lote E: sin usuarios)
-    Paginacion.tsx              nav accesible con links ?page=N, selector de filas por página y "Mostrando 21-40 de 134"
-    ConfirmModal.tsx            Alert dialog centrado (lo usa el logout)
-    ParqueInstalado.tsx         Parque instalado de una empresa, agrupado por urgencia (server-safe)
+    Paginacion.tsx              Sin usos (la reemplazó crm/Pagination con el mismo contrato; no se borró en el Lote F)
     crm/                        CRM 2.0 (design-system/crm-2/MASTER.md §10): primitivos, shell y composiciones. Del Lote A:
       Lista.tsx                 useSeleccionUrl (master-detail por `?sel=`), useFocoFilas, ListFooter, PanelVistaPrevia
       seleccion.ts(+.check)     Lógica pura: ↑/↓ (vecinoSel), tab válida, fila que recibe el foco tras una acción
@@ -296,15 +298,12 @@ src/
       FilaCompleta.tsx          Fila que ocupa las columnas VISIBLES (vacíos de toda lista y el detalle de Ventas)
       cuenta/SeccionesCuenta.tsx  Secciones de ficha 360 y vista previa compartidas por empresa y contacto
       cuenta/HistoriaCuenta.tsx   Historia de la cuenta; exporta FilaHistoria / FilaActividad (también la usa la ficha de oportunidad)
-    Drawer.tsx                   Panel lateral derecho para los formularios de alta/edición
-    RowActions.tsx               Menú "⋮" portaled que usan las filas de cada lista
-    ThemeToggle.tsx              Toggle de modo oscuro (localStorage + prefers-color-scheme)
+      cuenta/FormDrawer.tsx       FormDrawer (Cancelar / Guardar → "Guardando…"), CampoTexto/Fecha/Area/Opciones, Par, useApertura
+      LinkManual.tsx            Lote F: link de activación sin SMTP ("Copiar" / "Cerrar"), de Usuarios y del panel de plataforma
+      shell/                    AppFrame (variante `plataforma` para /admin), Rail, Topbar, Crumbs, CommandPalette, logica.ts(+.check)
     ActividadesTimeline.tsx     ICONO_POR_CODIGO: ícono de cada tipo de actividad (las filas las dibuja crm/cuenta/HistoriaCuenta)
     ResumenIA.tsx               useResumenIA: estado de "Resumir con IA" (F7; lo dibuja crm/cuenta); IaAviso.tsx: "Cómo usamos la IA"
-    PaletaBusqueda.tsx          Búsqueda global Ctrl/Cmd+K (F5): diálogo combobox + listbox, foco atrapado
     BajaCliente.tsx             Baja lógica y reactivación de empresas y contactos, sin UI (la dibuja crm/cuenta/BajaDialog)
-    form.tsx                    <Campo>, <CampoTextarea>, <CampoSelect>, <CampoMoney>,
-                                <CampoGrupo>, <FormBanner>, <FormActions>
   lib/
     utils.ts                   cn() — merge de clases Tailwind
     brand.ts                   APP_NAME — única fuente del nombre de la app
@@ -510,8 +509,8 @@ Como el stack es Tailwind v4 (no v3 como el kit), los tokens se declaran con `@t
 - Migraciones: aditivas si se puede, idempotentes, probadas dentro de `begin ... rollback`, con su
   prueba en `supabase/tests/`. Ver [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 - Commits: Conventional Commits y **sin líneas de atribución de IA** (nada de `Co-Authored-By`).
-- Los formularios usan los componentes de `src/components/form.tsx` en vez de reinventar inputs
-  estilizados en cada página.
+- Los formularios usan los primitivos de CRM 2.0 (`src/components/crm/Field.tsx` y `crm/cuenta/FormDrawer.tsx`:
+  FormDrawer, CampoTexto, CampoOpciones…) en vez de reinventar inputs estilizados en cada página.
 - Los tipos de la base (`src/lib/supabase/types.ts`) están generados contra el proyecto real de
   Supabase (`generate_typescript_types` del MCP de Supabase, equivalente a
   `supabase gen types typescript`). Si se agrega o modifica una tabla/columna en las migraciones

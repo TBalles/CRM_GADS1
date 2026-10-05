@@ -5,8 +5,9 @@
 > Si un valor de acá no coincide con el código, **gana el código y este archivo se corrige** (el contraste lo verifica
 > `npm test`; el resto, la revisión).
 >
-> **Precedencia.** Este archivo gobierna las pantallas migradas a CRM 2.0. Las pantallas legacy (todavía no migradas) siguen
-> gobernadas por `design-system/tuco-y-nito/MASTER.md` y `docs/design-overrides.md` hasta su slice. El contrato de
+> **Precedencia.** Este archivo gobierna TODO el CRM y el panel de plataforma: desde el Lote F no queda ninguna pantalla legacy
+> (`(app)/(legacy)` se retiró). `design-system/tuco-y-nito/MASTER.md` y `docs/design-overrides.md` quedan para la landing y las
+> pantallas de acceso (`/login`, `/recuperar`, `/definir-clave`), que están fuera de alcance y congeladas. El contrato de
 > aislamiento (qué no se toca, cómo se carga el CSS, portales) está en `design-system/crm-2/README.md` y es obligatorio.
 >
 > **Origen.** Se partió de una corrida de UI/UX Pro Max (`--design-system --persist`). De esa salida genérica quedan solo el
@@ -346,7 +347,8 @@ tooltips de recorte desde su página servidor); los demás son de cliente. §10.
 especificación de las composiciones, §10.13 cómo quedaron construidas en Empresas (Etapa 3) y §10.14 Contactos y Productos
 (Lote A), con lo que se generalizó para todas las listas. §10.15 es el selector de fecha (`DatePicker` / `DateTimePicker`).
 §10.16–§10.18 son Ventas, Alertas y Usuarios (Lote B); §10.19, Oportunidades (Lote C); §10.20, el editor de presupuesto (Lote D);
-§10.21–§10.23, las pantallas de análisis: Inicio, Tablero comercial y Conversión del embudo (Lote E).
+§10.21–§10.23, las pantallas de análisis: Inicio, Tablero comercial y Conversión del embudo (Lote E); §10.24 Configuración y §10.25 el
+panel de plataforma, «Sin permisos» y el retiro de `(legacy)` (Lote F).
 
 ### 10.1 Button, IconButton, FilterChip — `Button.tsx` (server-safe)
 - Variantes: `primary` (acento sólido; **una por pantalla**), `secondary` (panel + hairline; la normal), `ghost` (sin caja; acciones
@@ -396,7 +398,9 @@ especificación de las composiciones, §10.13 cómo quedaron construidas en Empr
 ### 10.7 Tabs, SegmentedControl — `Tabs.tsx`
 - `Tabs`: subrayado de 2 px, 40 de alto, contador opcional en mono. **Por URL** (`?tab=`, un `<Link>` por tab, activación manual
   con Enter **o Espacio**) o controladas (activación automática). `TabPanel` con `role="tabpanel"`, lo puede dibujar el servidor.
-  Una sola implementación.
+  Una sola implementación. `vertical` (Lote F, Configuración): desde 1024 la lista es una columna de ítems de 32 con el aspecto del
+  rail (tinte `--crm-selected` + texto `--crm-accent-text` + barra de 2 px); debajo, la fila de siempre. Mismo markup;
+  `aria-orientation` sigue al ancho y las flechas de los dos ejes mueven en cualquier ancho.
 - `SegmentedControl`: 2–4 vistas (Tablero/Lista); `radiogroup`, 28/32 de alto; el elegido en panel con texto y borde de acento.
 
 ### 10.8 Drawer, Dialog, ConfirmDialog, Toast — `Drawer.tsx`, `Dialog.tsx`, `Toast.tsx`
@@ -436,7 +440,7 @@ especificación de las composiciones, §10.13 cómo quedaron construidas en Empr
   página"; la página actual con texto y borde de acento.
 
 ### 10.11 Shell (Etapa 2, construido) — `src/components/crm/shell/`
-`AppFrame` (lo monta `(app)/layout.tsx` para TODO el CRM) = `Rail` + `Topbar` (con `UserMenu`) + `Crumbs` + `CommandPalette`; la
+`AppFrame` (lo monta `(app)/layout.tsx` para TODO el CRM y `admin/layout.tsx` con `plataforma`, §10.25) = `Rail` + `Topbar` (con `UserMenu`) + `Crumbs` + `CommandPalette`; la
 lógica pura (cookie del rail, ruta → migas) está en `logica.ts` (probada en `logica.check.ts`).
 - **Raíz:** grilla `[rail | topbar / main]` de alto `100dvh`; `data-app-shell` en la grilla, `data-app-chrome` en rail, topbar, cajón,
   paleta, avisos y el link de salto, `data-app-main` en el `<main id="contenido">` que scrollea. Sin envoltorios entre la grilla y el
@@ -1213,6 +1217,93 @@ fuerte), `Td rowHeader` (`th scope="row"` con el aspecto de una celda) y `TBody 
 Vendedor, Responsable comercial y Solo lectura, y con `?dias=7|30`, `?mes=2026-09|2026-08`, `?desde=`, `?hasta=`, `?origen=sin`, un origen
 real y un período vacío: 1080 de 1080 iguales (montos exactos comparados en su forma compacta), incluidas las redirecciones por permiso
 (el Vendedor va a `/dashboard` desde Tablero y Embudo; Solo lectura, a `/empresas` desde las tres).
+
+### 10.24 Configuración (Lote F, construido)
+`src/app/(app)/(crm2)/configuracion/` (`git mv` desde `(legacy)`). Mismas lecturas (organización, etapas, tipos de actividad, orígenes,
+motivos de pérdida, el logo con URL firmada de 1 h), mismas escrituras (cliente del navegador + RLS), mismo permiso
+(`configuracion.gestionar`; sin él, `rutaInicial`), mismos mensajes y nombres accesibles. Lógica pura en `configuracion/logica.ts` (+ `.check`).
+
+- **PageBar:** "Configuración" + la línea de siempre como contador ("<razón social> · IA: activa|desactivada"). Sin eyebrow ni bajada.
+- **Sub-navegación por URL** (`?s=empresa|etapas|tipos|origenes|motivos`; sin parámetro, "Datos de la empresa", como abría el legacy; un
+  valor desconocido cae ahí con `tabValida`): `Tabs vertical` con el tablist de siempre, **"Secciones de la configuración"**, y una tab
+  por nombre ("Etapas", "Tipos de actividad"…: los usan el manual y la baseline). Desde 1024 es una columna de 208 a la izquierda
+  (pegada arriba al scrollear); debajo, la fila de tabs con scroll. **Cambiar de sección no va al servidor:** la página ya trae todo, así
+  que el `navigate` de las tabs hace `history.pushState` (Next lo integra: `useSearchParams` se entera; atrás/adelante y el deep link
+  funcionan; Ctrl/Cmd+clic abre otra pestaña). Las cinco secciones quedan montadas (como antes): lo escrito en "Datos de la empresa" no se
+  pierde al mirar otra sección.
+- **Secciones sin caja:** `SectionBar` (h2 = nombre de la sección, contador mono, la primaria "Nuevo …" `sm`) + la línea de siempre que
+  explica para qué sirve la lista + la tabla; ancho tope 64rem (una tabla de 4 columnas a 1800 px separaba el nombre del estado).
+- **Catálogos** (tipos, orígenes, motivos; `CatalogoTab`) y **Etapas** (`EtapasTab`): `DataTable` con las mismas columnas: N.º (mono) ·
+  Nombre / Etapa · Estado / Tipo (punto + palabra; Abierta info, Ganada éxito, Perdida peligro) · **Orden** (`Mover`) · `⋮`
+  **"Acciones de <nombre>"** (Editar; Desactivar → `ConfirmDialog` "Desactivar <singular>" / Reactivar; en Etapas Editar y Borrar →
+  "Borrar la etapa"). La etapa lleva su color como cuadradito (`StatusDot color`, un dato de la organización en `style`) y su nombre de
+  color para lectores de pantalla ("(color Azul)"). Debajo de 30rem de tabla, N.º y Estado/Tipo se esconden y "Inactivo" / el tipo
+  bajan bajo el nombre. Vacío: `EmptyState compact` en la tabla con el texto de siempre + "Nuevo …".
+- **Reordenar** (`Mover`): "Subir <nombre>" / "Bajar <nombre>" (`IconButton sm` + `Tooltip`), la misma lógica (catálogos: renumerado
+  1..N escribiendo solo las filas que cambian, `moverEnCatalogo`; etapas: los tres pasos por el número libre con su vuelta atrás y la
+  recarga). **Cambio:** se bloquean con `aria-disabled` (no `disabled`) y el foco vuelve a la flecha usada tras el movimiento
+  (`useFocoMover`, `data-mover`): antes cada movimiento tiraba el foco al `body` (el botón se deshabilitaba con el foco adentro o la fila
+  cambiaba de lugar en el DOM). Con teclado se puede bajar una fila varias veces seguidas con Enter.
+- **Drawers** (`FormDrawer`, 480): "Nuevo/Editar <singular>" (`#catalogo-nombre`), "Nueva/Editar etapa" (`#etapa-nombre`, `#etapa-tipo`
+  con `Select` CRM y la ayuda del tipo, fieldset "Color" con radios nativos `name="etapa-color"`: círculos de 32, el elegido con un anillo
+  en `--crm-text`, el foco con el anillo de foco por fuera; un color fuera de la paleta se conserva como "Color actual"). Mismas
+  validaciones y reglas (al menos una Ganada y una Perdida, antes de escribir; CHECK/FK/UNIQUE con sus mensajes). Guardado con
+  `sinTrabarse`; las acciones de fila (activar, mover, borrar) liberan su `ocupado` en `finally` aunque la llamada tire.
+- **Datos de la empresa:** formulario de hasta 640 sin caja (h2 "Datos de la empresa"; Razón social · CUIT | Condición frente al IVA ·
+  Dirección · Teléfono | Mail · Sitio web; `FormSection` "Presupuestos": Validez (días) y Condiciones con su ayuda) con los mismos ids
+  (`#razon_social`, `#cuit`, `#condicion_iva`, `#direccion`, `#telefono`, `#email`, `#sitio_web`, `#presupuesto_validez_dias`,
+  `#presupuesto_condiciones`), las mismas validaciones y "Guardar cambios" (primaria, `sinTrabarse`). Al lado desde 1280 (debajo con
+  menos): **Logo** (la ayuda `#logo-ayuda`, el `#logo-archivo` oculto "Elegir el archivo del logo", "Subir logo" / "Cambiar logo" /
+  "Procesando…", "Quitar logo" → `ConfirmDialog` "Quitar el logo"; mismo flujo de storage: ruta fija por organización, PNG/JPG/WebP ≤ 1 MB,
+  sin SVG, renovación de la URL firmada; el error en un `InlineBanner`) y **"Así va a verse en tus presupuestos"**: la vista previa de la
+  hoja. **La hoja es papel:** blanca en claro y en oscuro, con clases de paleta (`bg-white`, `slate-*`), la misma excepción que
+  `Hoja.tsx` (§10.20); nunca lleva la marca de Tuco & Nito.
+- **Sin organización / sin datos:** h1 "Configuración" + `EmptyState` con los textos de siempre.
+- **Carga:** barra con el h1, la sub-navegación y el formulario en esqueleto + "Cargando la configuración…" (el texto de siempre).
+
+### 10.25 Panel de plataforma, «Sin permisos» y el retiro de `(legacy)` (Lote F, construido)
+**Panel de plataforma** (`src/app/admin/`, superadmin). Antes era otro shell (header propio con `ThemeToggle`, `min-h-dvh`, sin
+contenedor de scroll); ahora es el **mismo marco**: `AppFrame plataforma` (`admin/layout.tsx`), con el rail de una sola sección
+("Plataforma" › **Clientes**, de `SECCIONES_PLATAFORMA` en `lib/navegacion.ts`: ninguna pantalla del CRM de un cliente), sin búsqueda
+global ni Ctrl/Cmd+K (busca datos de un cliente), tema y "Cerrar sesión" (con su confirmación) en la topbar y el menú de usuario
+("Superadmin · Plataforma"). La miga es "Clientes". Las guardas son las de siempre: sin sesión → `/login`; sesión que no es de superadmin
+→ `/dashboard` (layout) o `rutaInicial` (página). `actions.ts` y `page.tsx` sin cambios.
+
+- **PageBar:** "Clientes" + "N clientes en la plataforma" / "N de T clientes" + **"Nuevo cliente"**. Toolbar: textbox **"Buscar cliente"**
+  ("Buscar cliente o admin…", filtra en el cliente por nombre del cliente, nombre o mail de sus administradores, como antes).
+- **Tabla "Clientes"** (antes, tarjetas en dos columnas): Cliente (nombre 500, "(la tuya)") · Administradores (escudo + "nombre · mail" y
+  "Pendiente" o "De baja" como punto + palabra; sin ninguno, "Sin administrador: agregale uno." en peligro) · Usuarios activos (mono) ·
+  Estado (Activo / Suspendido; el suspendido lleva el nombre en `--crm-text-2` en vez de la opacidad de antes) · `⋮` **"Acciones de
+  <cliente>"**: "Agregar administrador", **"Reenviar invitación a <mail>"** por cada administrador pendiente (**se movió**: antes era el
+  botón "Pendiente" junto al administrador) y "Suspender" (danger → `ConfirmDialog` "Suspender cliente", mismo texto) / "Reactivar". Con
+  menos de 45rem de tabla, los administradores, los usuarios y "Suspendido" bajan bajo el nombre.
+- **Drawers:** "Nuevo cliente" ("Se crea con su administrador"; `#cli-nombre`, `FormSection` "Administrador del cliente" con
+  `#cli-admin-nombre` y `#cli-admin-email`, los textos de siempre; "Crear cliente") y "Agregar administrador" (descripción = el cliente;
+  "Agregar administrador"). `sinTrabarse`; las acciones de fila atrapan si la Server Action tira. Sin SMTP, el link de activación en
+  `LinkManual` (generalizado desde Usuarios: `components/crm/LinkManual.tsx`). El overlay "Guardando…/Actualizando…" pasó a una región
+  viva `sr-only` + la tabla `busy`.
+- **Estados:** vacío "Todavía no hay clientes en la plataforma"; sin resultados "Ningún cliente con «…»"; carga `ListSkeleton` "Cargando
+  clientes…"; error: `admin/error.tsx` reexporta el de `(crm2)` (antes /admin no tenía boundary).
+- **Verificación:** la demo no tiene superadmin. Se verificó en vivo la redirección de no superadmins (Administrador, Vendedor,
+  Responsable comercial → `/dashboard`; Solo lectura → `/empresas`) y, con un arnés de desarrollo borrado al terminar (datos falsos,
+  Server Actions abortadas), el árbol nuevo en 6 anchos × claro/oscuro. La pantalla real con un superadmin queda sin ver.
+
+**Sin permisos** (`(crm2)/sin-permisos/`, `git mv`): el texto de siempre como h1 ("Tu rol todavía no tiene secciones habilitadas") + la
+indicación, en el área de trabajo; sin escena ni ícono. **Sin acción**, como el legacy: alguien sin secciones no tiene a dónde ir y
+"Cerrar sesión" ya está en el menú de usuario.
+
+**Buscar / IA:** `(app)/buscar/` y `(app)/ia/` son solo Server Actions (la paleta Ctrl+K y la IA de Alertas y de la ficha), no pantallas:
+no hay UI que migrar y quedan en `(app)/`.
+
+**Retiro de `(legacy)`:** se borraron `(legacy)/layout.tsx` (el wrapper `p-3 md:p-8 print:p-0` + `max-w-7xl`), `(legacy)/error.tsx` y
+`(legacy)/loading.tsx` y las carpetas vacías que quedaban. Toda ruta del CRM tiene los boundaries de `(crm2)` (más los suyos propios) y
+`/admin` los suyos. Impresión: `[data-app-main] > div` ahora alcanza la raíz de cada pantalla (verificado en el presupuesto: shell
+`block`, main sin overflow ni padding, chrome oculto). **Se borraron** por quedar sin usos (ninguno congelado): `components/{ConfirmModal,
+Drawer,RowActions,ThemeToggle,form}.tsx` y `components/ui/{EmptyState,OverlayCarga,PantallaCarga,Loader,MoneyInput}.tsx`. Quedan sin
+usos, de antes del Lote F y sin tocar: `components/Paginacion.tsx` y `components/ui/KpiCard.tsx`.
+
+**Generalizado en el Lote F:** `Tabs vertical` (§10.7); `AppFrame`/`RailNav`/`Topbar` → `plataforma` / `onBuscar` opcional;
+`LinkManual`; `lib/navegacion.ts` → `SECCIONES_PLATAFORMA`; migas → `/admin` = "Clientes".
 
 ---
 

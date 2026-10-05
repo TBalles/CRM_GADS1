@@ -45,10 +45,12 @@ los siguen usando). Dejar de usarlos en el shell del CRM está bien (el `AppShel
 7. **Fuentes IBM Plex** solo en `CrmRoot` (usado por los layouts de `(app)` y `admin`): `--font-crm-sans` y
    `--font-crm-mono` en el wrapper. La landing no las descarga. Desde la Etapa 2, Sans con `preload: true` (el chrome la usa en
    todo el CRM) y Mono con `preload: false` (ver el comentario de `CrmRoot`).
-8. **Route groups** (Etapa 2): `src/app/(app)/(legacy)/` tiene las pantallas no migradas (su `layout.tsx` les da el padding y el
-   ancho de antes, más su `loading.tsx`/`error.tsx` legacy); `src/app/(app)/(crm2)/` las migradas (su layout no impone nada; trae `loading.tsx`/`error.tsx` de CRM 2.0).
-   Migrar = `git mv` de `(legacy)` a `(crm2)`; las URLs no cambian. `buscar/` e `ia/` (Server Actions compartidas, no pantallas)
-   quedan en `(app)/`.
+8. **Route groups** (Etapa 2 → Lote F): `src/app/(app)/(crm2)/` tiene TODAS las pantallas del CRM (su layout no impone nada; trae
+   `loading.tsx`/`error.tsx` de CRM 2.0). Hasta el Lote F existía `(app)/(legacy)/` con las no migradas (su `layout.tsx` les daba el
+   padding y el ancho de antes, `max-w-7xl p-8 print:p-0`, y su `loading.tsx`/`error.tsx` legacy); se migró pantalla por pantalla con
+   `git mv` de `(legacy)` a `(crm2)` (las URLs no cambian) y en el Lote F se retiró. **Una pantalla nueva** va directo a `(crm2)` y se
+   arma con los primitivos de `components/crm` y su `UI_ROOT`. `buscar/` e `ia/` (Server Actions compartidas, no pantallas) quedan en
+   `(app)/`. El panel de plataforma (`src/app/admin/`) vive fuera de `(app)` y usa el mismo `AppFrame` en su variante `plataforma`.
 
 ## Sistema de diseño y primitivos (Etapa 1)
 
@@ -73,8 +75,8 @@ contratos de accesibilidad y la definición de terminado de una pantalla migrada
   y oscuro. Vive en `(crm2)` y se borra antes de lanzar la 2.0. Desde la Etapa 2 el shell (`components/crm/shell/`) también usa
   los primitivos.
 - **Fuentes:** desde la Etapa 2 el chrome usa Plex Sans en toda pantalla del CRM: `preload: true` en Sans (next/font precarga un
-  archivo, el de 400, que el shell usa en todo ancho); Mono sigue con `preload: false`. **Pendiente:** `/admin` también monta
-  `CrmRoot` y todavía no usa Plex: ahí la precarga de Sans 400 queda sin uso hasta que el admin pase al marco nuevo.
+  archivo, el de 400, que el shell usa en todo ancho); Mono sigue con `preload: false`. Desde el Lote F `/admin` también usa el marco
+  nuevo (`AppFrame plataforma`), así que la precarga de Sans 400 se usa ahí también.
 
 ### Cómo es el wrapper
 

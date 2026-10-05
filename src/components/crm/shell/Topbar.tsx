@@ -116,7 +116,8 @@ export function Topbar({
   rol: string | null;
   organizacion: string | null;
   onMenu: () => void;
-  onBuscar: () => void;
+  /** Sin `onBuscar` (panel de plataforma) no hay búsqueda global. */
+  onBuscar?: () => void;
   onSalir: () => void;
   className?: string;
 }) {
@@ -142,22 +143,24 @@ export function Topbar({
         <Breadcrumb />
       </div>
 
-      <button
-        type="button"
-        {...disparador}
-        aria-label="Buscar"
-        className={cn(
-          FOCUS,
-          "hidden h-8 w-56 shrink-0 cursor-pointer items-center gap-2 rounded-(--crm-radius-sm) border border-(--crm-border) bg-(--crm-panel-2) pl-3 pr-1.5 text-(--crm-text-2) transition-colors duration-(--crm-dur-fast) ease-(--crm-ease) hover:border-(--crm-border-strong) hover:text-(--crm-text) md:flex lg:w-72",
-        )}
-      >
-        <Search aria-hidden="true" strokeWidth={1.75} className="size-4 shrink-0" />
-        <span className="flex-1 text-left text-[13px]">Buscar…</span>
-        <Kbd>{esMac ? "⌘ K" : "Ctrl K"}</Kbd>
-      </button>
+      {onBuscar && (
+        <button
+          type="button"
+          {...disparador}
+          aria-label="Buscar"
+          className={cn(
+            FOCUS,
+            "hidden h-8 w-56 shrink-0 cursor-pointer items-center gap-2 rounded-(--crm-radius-sm) border border-(--crm-border) bg-(--crm-panel-2) pl-3 pr-1.5 text-(--crm-text-2) transition-colors duration-(--crm-dur-fast) ease-(--crm-ease) hover:border-(--crm-border-strong) hover:text-(--crm-text) md:flex lg:w-72",
+          )}
+        >
+          <Search aria-hidden="true" strokeWidth={1.75} className="size-4 shrink-0" />
+          <span className="flex-1 text-left text-[13px]">Buscar…</span>
+          <Kbd>{esMac ? "⌘ K" : "Ctrl K"}</Kbd>
+        </button>
+      )}
 
       <div className="flex shrink-0 items-center gap-1">
-        <IconButton label="Buscar" icon={Search} {...disparador} className="md:hidden" />
+        {onBuscar && <IconButton label="Buscar" icon={Search} {...disparador} className="md:hidden" />}
         <ThemeButton className="hidden md:inline-flex" />
         <span aria-hidden="true" className="mx-1 hidden h-5 border-l border-(--crm-border) md:block" />
         <UserMenu nombre={nombre} rol={rol} organizacion={organizacion} onSalir={onSalir} />

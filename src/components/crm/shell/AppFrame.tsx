@@ -24,11 +24,13 @@ function Cajon({
   onCerrar,
   permisos,
   organizacion,
+  plataforma,
 }: {
   abierto: boolean;
   onCerrar: () => void;
   permisos: string[];
   organizacion: string | null;
+  plataforma: boolean;
 }) {
   const { montada, cerrando } = usePresence(abierto, 200); // = --crm-dur-slow
   const panel = React.useRef<HTMLDivElement>(null);
@@ -72,7 +74,7 @@ function Cajon({
         >
           {/* Primero en el orden de Tab (y foco inicial); se ve arriba a la derecha, en la franja de la marca. */}
           <IconButton label="Cerrar menú" icon={X} onClick={onCerrar} className="absolute right-2 top-2" />
-          <RailNav permisos={permisos} modo="cajon" onNavigate={onCerrar} organizacion={organizacion} />
+          <RailNav permisos={permisos} modo="cajon" onNavigate={onCerrar} organizacion={organizacion} plataforma={plataforma} />
         </div>
       </div>
     </CrmPortal>
@@ -80,19 +82,19 @@ function Cajon({
 }
 
 /**
- * Shell de CRM 2.0 (Etapa 2; MASTER.md §10.11): rail + topbar + área de trabajo, para TODO el CRM. El contenido legacy
- * se dibuja adentro como siempre (`(legacy)/layout.tsx` le da su ancho y padding de antes); las pantallas migradas
- * (`(crm2)`) usan el área completa.
+ * Shell de CRM 2.0 (Etapa 2; MASTER.md §10.11): rail + topbar + área de trabajo, para TODO el CRM (desde el Lote F todas
+ * las pantallas son de `(crm2)` y usan el área completa) y, con `plataforma`, para el panel del superadmin (`/admin`):
+ * el mismo marco con un rail de una sola sección y sin la búsqueda global (que busca datos de un cliente).
  *
  * Contratos que se preservan:
  * - Impresión y capturas: `data-app-shell` en la raíz, `data-app-chrome` en todo lo que no va al papel (rail, topbar,
  *   cajón, paleta, avisos), `data-app-main` en el `<main>` que scrollea. `[data-app-shell]` y `[data-app-main]` son la grilla y el
  *   `<main>` mismos (sin envoltorios en el medio), así que las reglas `@media print` de globals.css (`display: block`,
  *   alto y overflow libres, padding 0) les llegan igual que antes. `[data-app-main] > div` alcanza al primer div del
- *   contenido: en `(legacy)` es el wrapper de su layout (ver ese archivo).
+ *   contenido: la raíz de cada pantalla.
  * - `nav` "Secciones" con los links por nombre; Ctrl/Cmd+K con el contrato de siempre; cerrar sesión con confirmación
  *   y POST a `/auth/signout`.
- * - La fuente Plex va SOLO en el chrome (rail, topbar, capas): el contenido legacy sigue con la fuente global.
+ * - La fuente Plex va en el chrome (rail, topbar, capas) y en cada pantalla por su `UI_ROOT`.
  */
 export default function AppFrame({
   nombre,
@@ -100,6 +102,7 @@ export default function AppFrame({
   rol,
   permisos,
   railColapsado,
+  plataforma = false,
   children,
 }: {
   nombre: string;
@@ -108,6 +111,8 @@ export default function AppFrame({
   permisos: string[];
   /** Preferencia guardada (cookie leída en el servidor): el primer pintado ya sale bien. */
   railColapsado: boolean;
+  /** Panel de plataforma (`/admin`): rail de una sola sección, sin búsqueda global ni Ctrl/Cmd+K. */
+  plataforma?: boolean;
   children: React.ReactNode;
 }) {
   const [colapsado, setColapsado] = React.useState(railColapsado);
@@ -134,6 +139,7 @@ export default function AppFrame({
 
   // Ctrl/Cmd+K abre (o cierra) la búsqueda global desde cualquier pantalla.
   React.useEffect(() => {
+    if (plataforma) return;
     const alTeclear = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === "k") {
         e.preventDefault();
@@ -147,7 +153,7 @@ export default function AppFrame({
     };
     window.addEventListener("keydown", alTeclear);
     return () => window.removeEventListener("keydown", alTeclear);
-  }, []);
+  }, [plataforma]);
 
   return (
     <CrumbsProvider>
@@ -197,6 +203,7 @@ export default function AppFrame({
               onToggle={alternarRail}
               controlsId={asideId}
               organizacion={organizacion}
+              plataforma={plataforma}
             />
           </aside>
 
@@ -206,7 +213,7 @@ export default function AppFrame({
             rol={rol}
             organizacion={organizacion}
             onMenu={() => setCajon(true)}
-            onBuscar={() => setBusqueda(true)}
+            onBuscar={plataforma ? undefined : () => setBusqueda(true)}
             onSalir={() => setSalir(true)}
           />
 
@@ -215,8 +222,8 @@ export default function AppFrame({
           </main>
         </div>
 
-        <Cajon abierto={cajon} onCerrar={cerrarCajon} permisos={permisos} organizacion={organizacion} />
-        <CommandPalette abierta={busqueda} onCerrar={() => setBusqueda(false)} permisos={permisos} />
+        <Cajon abierto={cajon} onCerrar={cerrarCajon} permisos={permisos} organizacion={organizacion} plataforma={plataforma} />
+        {!plataforma && <CommandPalette abierta={busqueda} onCerrar={() => setBusqueda(false)} permisos={permisos} />}
 
         {/* Cerrar sesión pasa por una confirmación antes del POST que borra la sesión. */}
         <form ref={signoutRef} action="/auth/signout" method="post" hidden />

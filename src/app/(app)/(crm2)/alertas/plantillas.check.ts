@@ -1,7 +1,7 @@
 /**
  * Auto-chequeo de las plantillas de alerta.
  *
- *   node --test "src/app/(app)/(legacy)/alertas/plantillas.check.ts"
+ *   node --test "src/app/(app)/(crm2)/alertas/plantillas.check.ts"
  *
  * Sin framework: Node 24 saca los tipos solo y `node:test` ya viene incluido.
  * Lo que se prueba es lo unico que tiene logica de verdad — el formateo de

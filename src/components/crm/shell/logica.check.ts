@@ -73,6 +73,7 @@ test("migas: lista, ficha (con y sin nombre) y presupuesto", () => {
 test("migas: pantallas sin ficha, rutas desconocidas y basura en la URL", () => {
   assert.deepEqual(migas("/alertas/xyz").map((m) => m.label), ["Alertas"]);
   assert.deepEqual(migas("/sin-permisos").map((m) => m.label), ["Sin permisos"]);
+  assert.deepEqual(migas("/admin").map((m) => m.label), ["Clientes"]);
   assert.deepEqual(migas("/"), []);
   assert.deepEqual(migas("/no-existe/1"), []);
   assert.deepEqual(migas("/empresas?q=hola#x").map((m) => m.label), ["Empresas"]);

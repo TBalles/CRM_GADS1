@@ -1,17 +1,23 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Building2, Copy, MailPlus, Plus, Power, Search, ShieldCheck, UserPlus } from "lucide-react";
-import Drawer from "@/components/Drawer";
-import RowActions from "@/components/RowActions";
-import ConfirmModal from "@/components/ConfirmModal";
-import { Campo, CampoGrupo, FormActions, FormBanner } from "@/components/form";
-import { Button, Card, Input, PageHeader, Pill } from "@/components/ui/UIComponents";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { useToast } from "@/components/ui/Toast";
-import { OverlayCarga } from "@/components/ui/OverlayCarga";
-import { cn } from "@/lib/utils";
+import { MailPlus, Plus, Power, ShieldCheck, UserPlus } from "lucide-react";
+import { Button } from "@/components/crm/Button";
+import { CellActions, DataTable, TBody, THead, TableMessage, Td, Th, Tr } from "@/components/crm/DataTable";
+import { ConfirmDialog } from "@/components/crm/Dialog";
+import { FormSection } from "@/components/crm/Drawer";
+import { EmptyState } from "@/components/crm/Feedback";
+import { LinkManual } from "@/components/crm/LinkManual";
+import { Menu, type MenuItem } from "@/components/crm/Menu";
+import { PageBar } from "@/components/crm/PageBar";
+import { StatusDot } from "@/components/crm/Status";
+import { useCrmToast } from "@/components/crm/Toast";
+import { SearchInput, Toolbar } from "@/components/crm/Toolbar";
+import { Tooltip } from "@/components/crm/Tooltip";
+import { CampoTexto, FormDrawer, useApertura } from "@/components/crm/cuenta/FormDrawer";
+import { TYPE, UI_ROOT, cn } from "@/components/crm/cx";
+import { sinTrabarse } from "@/lib/guardar";
 import { agregarAdministrador, cambiarEstadoCliente, crearCliente, reenviarInvitacionAdmin } from "./actions";
 
 type AdminFila = { id: string; nombre: string | null; email: string | null; pendiente: boolean; activo: boolean };
@@ -23,27 +29,257 @@ type Cliente = {
   usuarios: number;
   admins: AdminFila[];
 };
+type Resultado = { ok: boolean; error?: string; linkManual?: string };
 
 type Panel = { tipo: "nuevo" } | { tipo: "admin"; cliente: Cliente };
 
+/**
+ * Panel de plataforma (CRM 2.0, Lote F): las empresas que usan el CRM como una tabla densa, con las mismas acciones
+ * que antes (Nuevo cliente; por cliente: Agregar administrador, Suspender / Reactivar; por administrador pendiente:
+ * reenviar la invitación) y los mismos mensajes. La búsqueda filtra en el cliente (nombre del cliente, nombre o mail
+ * de sus administradores), como antes.
+ */
+export default function AdminView({ clientes, miOrgId }: { clientes: Cliente[]; miOrgId: string | null }) {
+  const router = useRouter();
+  const [refrescando, startTransition] = React.useTransition();
+  const [ocupado, setOcupado] = React.useState(false);
+  const { showToast } = useCrmToast();
+  const [query, setQuery] = React.useState("");
+  const editor = useApertura<Panel>();
+  const [linkManual, setLinkManual] = React.useState<string | null>(null);
+  const [suspender, setSuspender] = React.useState<Cliente | null>(null);
+
+  const filtrados = React.useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return clientes;
+    return clientes.filter((c) => `${c.nombre} ${c.admins.map((a) => `${a.nombre} ${a.email}`).join(" ")}`.toLowerCase().includes(q));
+  }, [clientes, query]);
+
+  /** Una acción de fila: si tira (red caída, Server Action abortada) también se libera y se avisa. */
+  async function ejecutar(accion: () => Promise<Resultado>, exito: string) {
+    setOcupado(true);
+    let res: Resultado;
+    try {
+      res = await accion();
+    } catch {
+      res = { ok: false, error: "No se pudo completar la acción." };
+    } finally {
+      setOcupado(false);
+    }
+    if (!res.ok) {
+      showToast(res.error ?? "No se pudo completar la acción.", "error");
+      return;
+    }
+    if (res.linkManual) setLinkManual(res.linkManual);
+    else showToast(exito, "success");
+    startTransition(() => router.refresh());
+  }
+
+  function menuDe(c: Cliente): MenuItem[] {
+    const items: MenuItem[] = [{ label: "Agregar administrador", icon: UserPlus, onSelect: () => editor.abrir({ tipo: "admin", cliente: c }) }];
+    // Antes era el botón "Pendiente" junto al administrador; ahora va con las demás acciones del cliente.
+    for (const a of c.admins.filter((x) => x.activo && x.pendiente)) {
+      items.push({
+        label: `Reenviar invitación a ${a.email}`,
+        icon: MailPlus,
+        onSelect: () => void ejecutar(() => reenviarInvitacionAdmin({ id: a.id }), `Invitación reenviada a ${a.email}.`),
+      });
+    }
+    items.push(
+      c.activa
+        ? { label: "Suspender", icon: Power, variant: "danger", onSelect: () => setSuspender(c) }
+        : { label: "Reactivar", icon: Power, onSelect: () => void ejecutar(() => cambiarEstadoCliente({ id: c.id, activa: true }), "Cliente reactivado.") },
+    );
+    return items;
+  }
+
+  const q = query.trim();
+  const panel = editor.valor;
+
+  return (
+    <div className={cn(UI_ROOT, "flex h-full min-h-0 flex-col bg-(--crm-canvas) px-4 xl:px-6")}>
+      <PageBar
+        title="Clientes"
+        count={q ? `${filtrados.length} de ${clientes.length} clientes` : `${clientes.length} clientes en la plataforma`}
+        actions={
+          <Button variant="primary" icon={Plus} onClick={() => editor.abrir({ tipo: "nuevo" })} aria-label="Nuevo cliente" className="max-sm:w-8 max-sm:px-0">
+            <span className="max-sm:sr-only">Nuevo cliente</span>
+          </Button>
+        }
+      />
+      {/* Lo que antes decía el overlay de "Guardando…" / "Actualizando…", para lectores de pantalla. */}
+      <p role="status" className="sr-only">
+        {ocupado ? "Guardando…" : refrescando ? "Actualizando…" : ""}
+      </p>
+
+      {clientes.length > 0 && (
+        <Toolbar>
+          <SearchInput label="Buscar cliente" placeholder="Buscar cliente o admin…" value={query} onChange={setQuery} onClear={() => setQuery("")} />
+        </Toolbar>
+      )}
+
+      {linkManual && (
+        <LinkManual link={linkManual} onClose={() => setLinkManual(null)}>
+          Compartí este link de activación con el administrador por otro medio. Vence en poco tiempo.
+        </LinkManual>
+      )}
+
+      {!clientes.length ? (
+        <div className="rounded-(--crm-radius) border border-(--crm-border) bg-(--crm-panel)">
+          <EmptyState title="Todavía no hay clientes en la plataforma" description="Dá de alta el primero junto con su administrador." />
+        </div>
+      ) : (
+        <div className="flex min-h-0 flex-col pb-3">
+          <DataTable label="Clientes" busy={ocupado || refrescando} className="min-h-0">
+            <THead>
+              <Th>Cliente</Th>
+              <Th hideBelow="md">Administradores</Th>
+              <Th width={136} align="right" hideBelow="sm">
+                Usuarios activos
+              </Th>
+              <Th width={128} hideBelow="sm">
+                Estado
+              </Th>
+              <Th width={48}>
+                <span className="sr-only">Acciones</span>
+              </Th>
+            </THead>
+            <TBody>
+              {!filtrados.length ? (
+                <TableMessage colSpan={5}>
+                  <EmptyState compact title={`Ningún cliente con «${q}»`} description="Probá por nombre o por el mail de su administrador." />
+                </TableMessage>
+              ) : (
+                filtrados.map((c) => <Fila key={c.id} cliente={c} esMia={c.id === miOrgId} menu={menuDe(c)} />)
+              )}
+            </TBody>
+          </DataTable>
+        </div>
+      )}
+
+      {panel && (
+        <ClienteForm
+          key={editor.n}
+          open={editor.abierto}
+          onClose={editor.cerrar}
+          cliente={panel.tipo === "admin" ? panel.cliente : undefined}
+          onDone={(link) => {
+            if (link) setLinkManual(link);
+            editor.cerrar();
+            startTransition(() => router.refresh());
+          }}
+        />
+      )}
+
+      <ConfirmDialog
+        open={Boolean(suspender)}
+        onClose={() => setSuspender(null)}
+        onConfirm={async () => {
+          if (suspender) await ejecutar(() => cambiarEstadoCliente({ id: suspender.id, activa: false }), "Cliente suspendido.");
+        }}
+        title="Suspender cliente"
+        description={
+          suspender
+            ? `Todos los usuarios de "${suspender.nombre}" pierden el acceso al instante. Sus datos se conservan y lo podés reactivar cuando quieras.`
+            : ""
+        }
+        confirmText="Suspender"
+        variant="danger"
+      />
+    </div>
+  );
+}
+
+/** Un administrador: nombre · mail y, si corresponde, "Pendiente" (no activó su cuenta) o "De baja". */
+function Admin({ a }: { a: AdminFila }) {
+  return (
+    <li className="flex min-w-0 items-center gap-2">
+      <ShieldCheck aria-hidden="true" strokeWidth={1.75} className="size-3.5 shrink-0 text-(--crm-accent-text)" />
+      <Tooltip content={`${a.nombre ?? ""} · ${a.email ?? ""}`} onlyWhenTruncated>
+        <span className="min-w-0 truncate">
+          {a.nombre} <span className="text-(--crm-text-2)">· {a.email}</span>
+        </span>
+      </Tooltip>
+      {!a.activo ? (
+        <StatusDot tone="neutral" className="shrink-0">
+          De baja
+        </StatusDot>
+      ) : a.pendiente ? (
+        <StatusDot tone="warning" className="shrink-0">
+          Pendiente
+        </StatusDot>
+      ) : null}
+    </li>
+  );
+}
+
+/**
+ * Una fila. Los administradores van en su columna desde 45rem de tabla; con menos, debajo del nombre (junto con el
+ * estado si está suspendido y los usuarios activos), sin perder ninguno. Un cliente suspendido lleva el nombre en
+ * `--crm-text-2` además de "Suspendido" (antes se atenuaba la tarjeta entera, debajo de AA).
+ */
+function Fila({ cliente: c, esMia, menu }: { cliente: Cliente; esMia: boolean; menu: MenuItem[] }) {
+  const usuarios = `${c.usuarios} ${c.usuarios === 1 ? "usuario activo" : "usuarios activos"}`;
+  const admins = c.admins.length ? (
+    <ul className="flex min-w-0 flex-col gap-0.5">
+      {c.admins.map((a) => (
+        <Admin key={a.id} a={a} />
+      ))}
+    </ul>
+  ) : (
+    <p className="text-(--crm-danger)">Sin administrador: agregale uno.</p>
+  );
+  return (
+    <Tr className="h-auto">
+      <Td className="whitespace-normal py-2 align-top">
+        <p className={cn("truncate font-medium", !c.activa && "text-(--crm-text-2)")}>
+          {c.nombre}
+          {esMia && <span className="ml-1.5 font-normal text-(--crm-text-2)">(la tuya)</span>}
+        </p>
+        <div className={cn(TYPE.meta, "flex flex-col gap-1 text-(--crm-text-2) @[45rem]:hidden")}>
+          <p className="@[30rem]:hidden">
+            {!c.activa && <span className="mr-3">Suspendido</span>}
+            <span className="tabular-nums">{usuarios}</span>
+          </p>
+          <div className="text-(--crm-text)">{admins}</div>
+        </div>
+      </Td>
+      <Td hideBelow="md" className="whitespace-normal py-2 align-top">
+        {admins}
+      </Td>
+      <Td align="right" hideBelow="sm" className="py-2 align-top">
+        <span className={TYPE.mono}>{c.usuarios}</span>
+      </Td>
+      <Td hideBelow="sm" className="py-2 align-top">
+        <StatusDot tone={c.activa ? "success" : "neutral"}>{c.activa ? "Activo" : "Suspendido"}</StatusDot>
+      </Td>
+      <Td className="overflow-visible px-1 py-1 align-top">
+        <CellActions menu={<Menu label={`Acciones de ${c.nombre}`} size="sm" items={menu} />} />
+      </Td>
+    </Tr>
+  );
+}
+
 function ClienteForm({
+  open,
+  onClose,
   cliente,
   onDone,
-  onCancel,
 }: {
+  open: boolean;
+  onClose: () => void;
   /** Sin cliente: alta de cliente + su admin. Con cliente: otro admin para ese cliente. */
   cliente?: Cliente;
   onDone: (linkManual?: string) => void;
-  onCancel: () => void;
 }) {
-  const [nombre, setNombre] = useState("");
-  const [adminNombre, setAdminNombre] = useState("");
-  const [adminEmail, setAdminEmail] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const { showToast } = useToast();
+  const [nombre, setNombre] = React.useState("");
+  const [adminNombre, setAdminNombre] = React.useState("");
+  const [adminEmail, setAdminEmail] = React.useState("");
+  const [error, setError] = React.useState<string | null>(null);
+  const [saving, setSaving] = React.useState(false);
+  const { showToast } = useCrmToast();
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function guardar(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setError(null);
@@ -55,37 +291,35 @@ function ClienteForm({
       setError(res.error);
       return;
     }
-    showToast(
-      res.linkManual ? "Listo. Compartí el link de activación." : `Invitación enviada a ${adminEmail.trim()}.`,
-      "success",
-    );
+    showToast(res.linkManual ? "Listo. Compartí el link de activación." : `Invitación enviada a ${adminEmail.trim()}.`, "success");
     onDone(res.linkManual);
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-      {error && <FormBanner message={error} />}
+    <FormDrawer
+      open={open}
+      onClose={onClose}
+      title={cliente ? "Agregar administrador" : "Nuevo cliente"}
+      description={cliente ? cliente.nombre : "Se crea con su administrador"}
+      saving={saving}
+      error={error}
+      submitLabel={cliente ? "Agregar administrador" : "Crear cliente"}
+      onSubmit={(e) =>
+        void sinTrabarse(
+          () => guardar(e),
+          (m) => {
+            setSaving(false);
+            setError(m);
+          },
+        )
+      }
+    >
       {!cliente && (
-        <Campo
-          id="cli-nombre"
-          label="Nombre del cliente"
-          required
-          autoFocus
-          placeholder="Distribuidora Deportiva del Oeste"
-          value={nombre}
-          onChange={setNombre}
-        />
+        <CampoTexto id="cli-nombre" label="Nombre del cliente" required placeholder="Distribuidora Deportiva del Oeste" value={nombre} onChange={setNombre} />
       )}
-      <CampoGrupo title="Administrador del cliente" icon={ShieldCheck}>
-        <Campo
-          id="cli-admin-nombre"
-          label="Nombre y apellido"
-          required
-          autoFocus={Boolean(cliente)}
-          value={adminNombre}
-          onChange={setAdminNombre}
-        />
-        <Campo
+      <FormSection title="Administrador del cliente">
+        <CampoTexto id="cli-admin-nombre" label="Nombre y apellido" required value={adminNombre} onChange={setAdminNombre} />
+        <CampoTexto
           id="cli-admin-email"
           label="Email"
           type="email"
@@ -95,227 +329,17 @@ function ClienteForm({
           value={adminEmail}
           onChange={setAdminEmail}
         />
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          Recibe un mail para elegir su contraseña. Entra con el rol <strong>Administrador</strong>: puede
-          invitar a su equipo, asignar roles y crear roles nuevos.
+        <p className={cn(TYPE.meta, "text-(--crm-text-2)")}>
+          Recibe un mail para elegir su contraseña. Entra con el rol <strong className="font-semibold text-(--crm-text)">Administrador</strong>:
+          puede invitar a su equipo, asignar roles y crear roles nuevos.
         </p>
-      </CampoGrupo>
+      </FormSection>
       {!cliente && (
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          El cliente arranca con los roles Administrador, Vendedor, Responsable comercial y Solo lectura, y con las
-          etapas del embudo por defecto. Sus datos quedan aislados del resto.
+        <p className={cn(TYPE.meta, "text-(--crm-text-2)")}>
+          El cliente arranca con los roles Administrador, Vendedor, Responsable comercial y Solo lectura, y con las etapas del
+          embudo por defecto. Sus datos quedan aislados del resto.
         </p>
       )}
-      <FormActions saving={saving} onCancel={onCancel} submitLabel={cliente ? "Agregar administrador" : "Crear cliente"} />
-    </form>
-  );
-}
-
-export default function AdminView({ clientes, miOrgId }: { clientes: Cliente[]; miOrgId: string | null }) {
-  const router = useRouter();
-  const [refrescando, startTransition] = useTransition();
-  const [ocupado, setOcupado] = useState(false);
-  const { showToast } = useToast();
-  const [query, setQuery] = useState("");
-  const [panel, setPanel] = useState<Panel | null>(null);
-  const [open, setOpen] = useState(false);
-  const [linkManual, setLinkManual] = useState<string | null>(null);
-  const [suspender, setSuspender] = useState<Cliente | null>(null);
-
-  const filtrados = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return clientes;
-    return clientes.filter((c) =>
-      `${c.nombre} ${c.admins.map((a) => `${a.nombre} ${a.email}`).join(" ")}`.toLowerCase().includes(q),
-    );
-  }, [clientes, query]);
-
-  function abrir(p: Panel) {
-    setPanel(p);
-    setOpen(true);
-  }
-
-  async function ejecutar(accion: Promise<{ ok: boolean; error?: string; linkManual?: string }>, exito: string) {
-    setOcupado(true);
-    const res = await accion;
-    setOcupado(false);
-    if (!res.ok) {
-      showToast(res.error ?? "No se pudo completar la acción.", "error");
-      return;
-    }
-    if (res.linkManual) setLinkManual(res.linkManual);
-    else showToast(exito, "success");
-    startTransition(() => router.refresh());
-  }
-
-  return (
-    <div className="flex w-full flex-col gap-4">
-      <OverlayCarga visible={ocupado || refrescando} texto={ocupado ? "Guardando…" : "Actualizando…"} />
-      <PageHeader
-        titulo="Clientes"
-        eyebrow="La plataforma"
-        tituloEnMobile
-        meta={query.trim() ? `${filtrados.length} de ${clientes.length} clientes` : `${clientes.length} clientes en la plataforma`}
-        bajada="Empresas que usan el CRM. Cada una ve solo sus propios datos."
-      >
-        <div className="relative flex-1 sm:w-64 sm:flex-none">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Buscar cliente o admin…"
-            aria-label="Buscar cliente"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="h-9 pl-8 text-sm"
-          />
-        </div>
-        <Button onClick={() => abrir({ tipo: "nuevo" })} className="h-9 shrink-0 gap-1.5 px-3 text-sm">
-          <Plus className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Nuevo cliente</span>
-        </Button>
-      </PageHeader>
-
-      {linkManual && (
-        <Card className="border-brand/40 p-4">
-          <p className="text-sm font-semibold">El envío de mails no está configurado</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Compartí este link de activación con el administrador por otro medio. Vence en poco tiempo.
-          </p>
-          <div className="mt-3 flex gap-2">
-            <Input readOnly value={linkManual} className="h-9 font-mono text-xs" onFocus={(e) => e.target.select()} />
-            <Button
-              size="sm"
-              className="shrink-0 gap-1.5"
-              onClick={() =>
-                navigator.clipboard.writeText(linkManual).then(
-                  () => showToast("Link copiado.", "success"),
-                  () => showToast("No se pudo copiar: seleccionalo a mano.", "error"),
-                )
-              }
-            >
-              <Copy className="h-3.5 w-3.5" /> Copiar
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setLinkManual(null)}>
-              Cerrar
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {!clientes.length ? (
-        <EmptyState
-          escena="cancha"
-          text="Todavía no hay clientes en la plataforma"
-          hint="Dá de alta el primero junto con su administrador."
-        />
-      ) : !filtrados.length ? (
-        <EmptyState
-          escena="afuera"
-          text={`Ningún cliente con «${query.trim()}»`}
-          hint="Probá por nombre o por el mail de su administrador."
-        />
-      ) : (
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          {filtrados.map((c) => (
-            <Card key={c.id} className={cn("p-4", !c.activa && "opacity-60")}>
-              <div className="flex items-start gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand/10">
-                  <Building2 className="h-5 w-5 text-brand" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold">
-                    {c.nombre}
-                    {c.id === miOrgId && <span className="ml-1.5 text-xs font-normal text-muted-foreground">(la tuya)</span>}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {c.usuarios} {c.usuarios === 1 ? "usuario activo" : "usuarios activos"}
-                  </p>
-                </div>
-                <Pill tono={c.activa ? "verde" : "gris"} className="shrink-0">
-                  {c.activa ? "Activo" : "Suspendido"}
-                </Pill>
-                <RowActions
-                  label={`Acciones de ${c.nombre}`}
-                  items={[
-                    { label: "Agregar administrador", icon: UserPlus, onClick: () => abrir({ tipo: "admin", cliente: c }) },
-                    c.activa
-                      ? { label: "Suspender", icon: Power, variant: "destructive", onClick: () => setSuspender(c) }
-                      : {
-                          label: "Reactivar",
-                          icon: Power,
-                          onClick: () => ejecutar(cambiarEstadoCliente({ id: c.id, activa: true }), "Cliente reactivado."),
-                        },
-                  ]}
-                />
-              </div>
-
-              <ul className="mt-3 space-y-1.5 border-t pt-3">
-                {c.admins.length ? (
-                  c.admins.map((a) => (
-                    <li key={a.id} className="flex items-center gap-2 text-sm">
-                      <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-brand" />
-                      <span className="min-w-0 flex-1 truncate">
-                        {a.nombre} <span className="text-muted-foreground">· {a.email}</span>
-                      </span>
-                      {!a.activo ? (
-                        <Pill tono="gris">De baja</Pill>
-                      ) : a.pendiente ? (
-                        <button
-                          type="button"
-                          onClick={() => ejecutar(reenviarInvitacionAdmin({ id: a.id }), `Invitación reenviada a ${a.email}.`)}
-                          className="flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium text-brand transition-colors hover:bg-brand/10"
-                          title="Reenviar invitación"
-                        >
-                          <MailPlus className="h-3.5 w-3.5" /> Pendiente
-                        </button>
-                      ) : null}
-                    </li>
-                  ))
-                ) : (
-                  <li className="text-xs text-destructive">Sin administrador: agregale uno.</li>
-                )}
-              </ul>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      <Drawer
-        open={open}
-        onClose={() => setOpen(false)}
-        title={panel?.tipo === "admin" ? "Agregar administrador" : "Nuevo cliente"}
-        subtitle={panel?.tipo === "admin" ? panel.cliente.nombre : "Se crea con su administrador"}
-        icon={panel?.tipo === "admin" ? UserPlus : Building2}
-      >
-        {panel && (
-          <ClienteForm
-            key={panel.tipo === "admin" ? panel.cliente.id : "nuevo"}
-            cliente={panel.tipo === "admin" ? panel.cliente : undefined}
-            onCancel={() => setOpen(false)}
-            onDone={(link) => {
-              if (link) setLinkManual(link);
-              setOpen(false);
-              startTransition(() => router.refresh());
-            }}
-          />
-        )}
-      </Drawer>
-
-      <ConfirmModal
-        isOpen={Boolean(suspender)}
-        onClose={() => setSuspender(null)}
-        onConfirm={() => {
-          if (suspender) ejecutar(cambiarEstadoCliente({ id: suspender.id, activa: false }), "Cliente suspendido.");
-          setSuspender(null);
-        }}
-        title="Suspender cliente"
-        description={
-          suspender
-            ? `Todos los usuarios de "${suspender.nombre}" pierden el acceso al instante. Sus datos se conservan y lo podés reactivar cuando quieras.`
-            : ""
-        }
-        confirmText="Suspender"
-        variant="danger"
-        icon={<Power className="h-6 w-6" />}
-      />
-    </div>
+    </FormDrawer>
   );
 }

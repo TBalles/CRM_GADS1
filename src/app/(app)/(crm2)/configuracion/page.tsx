@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { exigirPermiso } from "@/lib/sesion";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { EmptyState } from "@/components/crm/Feedback";
+import { PageBar } from "@/components/crm/PageBar";
+import { UI_ROOT, cn } from "@/components/crm/cx";
 import { iaDisponible } from "@/lib/ia/config";
 import ConfiguracionView from "./ConfiguracionView";
 
@@ -14,10 +16,9 @@ export default async function ConfiguracionPage() {
   // aca: sus clientes se manejan desde /admin.
   if (!orgId) {
     return (
-      <EmptyState
-        escena="afuera"
-        text="Tu usuario no pertenece a ninguna empresa"
-        hint="La configuración es de cada empresa cliente. Los clientes se administran desde el panel de plataforma."
+      <SinDatos
+        titulo="Tu usuario no pertenece a ninguna empresa"
+        texto="La configuración es de cada empresa cliente. Los clientes se administran desde el panel de plataforma."
       />
     );
   }
@@ -34,10 +35,9 @@ export default async function ConfiguracionPage() {
 
   if (!organizacion) {
     return (
-      <EmptyState
-        escena="afuera"
-        text="No se pudieron leer los datos de tu empresa"
-        hint="Recargá la página. Si sigue pasando, avisale a quien administra la plataforma."
+      <SinDatos
+        titulo="No se pudieron leer los datos de tu empresa"
+        texto="Recargá la página. Si sigue pasando, avisale a quien administra la plataforma."
       />
     );
   }
@@ -60,5 +60,17 @@ export default async function ConfiguracionPage() {
       motivos={motivos ?? []}
       iaActiva={iaDisponible()}
     />
+  );
+}
+
+/** Los dos casos sin configuración para mostrar (mismos textos que el legacy), con el h1 de la pantalla. */
+function SinDatos({ titulo, texto }: { titulo: string; texto: string }) {
+  return (
+    <div className={cn(UI_ROOT, "flex min-h-full flex-col bg-(--crm-canvas) px-4 xl:px-6")}>
+      <PageBar title="Configuración" />
+      <div className="rounded-(--crm-radius) border border-(--crm-border) bg-(--crm-panel)">
+        <EmptyState title={titulo} description={texto} />
+      </div>
+    </div>
   );
 }

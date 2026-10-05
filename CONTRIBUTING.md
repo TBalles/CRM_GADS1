@@ -119,8 +119,8 @@ migraciones de reversa**. Por eso importan estas reglas:
   crear o cambiar interfaz, leelo.
 - Si la aplicación necesita apartarse del kit, **no lo edites**: agregá un bloque a
   [`docs/design-overrides.md`](./docs/design-overrides.md) con el formato kit, esta app, dónde y por qué.
-- Reutilizá los primitivos de `src/components/ui/` y los campos de `src/components/form.tsx`; no inventes
-  variantes de Button, Card o Drawer ni reimplementes selects.
+- Reutilizá los primitivos de CRM 2.0 (`src/components/crm/`, spec en `design-system/crm-2/MASTER.md`) y los campos de
+  `src/components/crm/cuenta/FormDrawer.tsx`; no inventes variantes de Button o Drawer ni reimplementes selects.
 - Respetá los tokens: no escribas colores de marca a mano fuera de `--brand` y compañía (`src/app/globals.css`).
   Si cambiás un token de color, verificá el contraste: el piso es 4.5:1 (WCAG AA).
 - Montos siempre con `MoneyInput` y `parseMoney`, nunca `type="number"`. Tablas responsive en dos bloques
@@ -136,7 +136,7 @@ migraciones de reversa**. Por eso importan estas reglas:
   alias `@/`, para poder correr con `node --test`.
 - Los textos de interfaz siguen la voz que ya tiene la aplicación: español rioplatense con voseo ("Ingresá",
   "Elegí un rol"), directo y sin jerga. Los errores dicen qué pasó y qué hacer.
-- Los formularios usan los componentes de `src/components/form.tsx`.
+- Los formularios usan `FormDrawer` y los campos de `src/components/crm/` (`Field`, `CampoTexto`, `CampoOpciones`…).
 - Cuando algo cambia el esquema, hay que regenerar los tipos en el mismo cambio.
 
 ## 8. Documentación

@@ -27,7 +27,7 @@ export function cookieRail(colapsado: boolean): string {
 export type Miga = { label: string; href: string };
 
 /** Pantallas que no están en el rail pero tienen nombre propio. */
-const OTRAS: Record<string, string> = { "/sin-permisos": "Sin permisos", "/crm-lab": "Laboratorio" };
+const OTRAS: Record<string, string> = { "/sin-permisos": "Sin permisos", "/crm-lab": "Laboratorio", "/admin": "Clientes" };
 /** Secciones con ficha por id (`/empresas/[id]`). */
 const CON_FICHA = new Set(["/empresas", "/contactos", "/oportunidades"]);
 /** Subpáginas de una ficha (`/oportunidades/[id]/presupuesto`). */

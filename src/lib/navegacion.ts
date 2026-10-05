@@ -74,6 +74,14 @@ export function seccionesVisibles(permisos: readonly string[]): { titulo: Seccio
   );
 }
 
+/**
+ * El rail del panel de plataforma (`/admin`, superadmin): una sola sección con una sola pantalla. Ninguna ruta del CRM
+ * de un cliente (no tiene datos comerciales). El acceso lo decide `admin/layout.tsx` (`esSuperadmin`), no esta lista.
+ */
+export const SECCIONES_PLATAFORMA: { titulo: string; rutas: Pick<Ruta, "href" | "label">[] }[] = [
+  { titulo: "Plataforma", rutas: [{ href: "/admin", label: "Clientes" }] },
+];
+
 /** La ruta del rail a la que pertenece un pathname (`/empresas/123` → Empresas), o undefined. */
 export function rutaActual(pathname: string): Ruta | undefined {
   return RUTAS.find((r) => pathname === r.href || pathname.startsWith(`${r.href}/`));

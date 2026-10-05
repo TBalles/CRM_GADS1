@@ -2,12 +2,12 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Check, Copy, KeyRound, Lock, MailPlus, Pencil, Plus, Power, ShieldCheck, Trash2, UserPlus } from "lucide-react";
+import { Check, KeyRound, Lock, MailPlus, Pencil, Plus, Power, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { Button } from "@/components/crm/Button";
 import { DataTable, TBody, THead, Td, Th, TableMessage, Tr, CellNumber } from "@/components/crm/DataTable";
 import { ConfirmDialog } from "@/components/crm/Dialog";
-import { EmptyState, InlineBanner } from "@/components/crm/Feedback";
-import { Input } from "@/components/crm/Field";
+import { EmptyState } from "@/components/crm/Feedback";
+import { LinkManual } from "@/components/crm/LinkManual";
 import { ListFooter, useFocoFilas } from "@/components/crm/Lista";
 import { Menu, type MenuItem } from "@/components/crm/Menu";
 import { PageBar, SectionBar } from "@/components/crm/PageBar";
@@ -202,7 +202,11 @@ export default function UsuariosView({
         {ocupado ? "Guardando…" : ""}
       </p>
 
-      {linkManual && <LinkManual link={linkManual} onClose={() => setLinkManual(null)} />}
+      {linkManual && (
+        <LinkManual link={linkManual} onClose={() => setLinkManual(null)}>
+          Compartile este link a la persona por otro medio. Es personal y vence en poco tiempo.
+        </LinkManual>
+      )}
 
       <TabPanel tabsId={TABS_ID} value={tab} busy={cambiandoTab} className="flex min-h-0 flex-1 flex-col">
         {tab === "usuarios" ? (
@@ -561,40 +565,6 @@ function Roles({
         </div>
       </section>
     </div>
-  );
-}
-
-/** Link de activación para compartir a mano cuando no hay SMTP configurado (mismo texto y acciones de siempre). */
-function LinkManual({ link, onClose }: { link: string; onClose: () => void }) {
-  const { showToast } = useCrmToast();
-  return (
-    <InlineBanner
-      tone="info"
-      title="El envío de mails no está configurado"
-      className="my-2"
-      action={
-        <Button size="sm" variant="ghost" onClick={onClose}>
-          Cerrar
-        </Button>
-      }
-    >
-      <p className={cn(TYPE.meta, "text-(--crm-text-2)")}>Compartile este link a la persona por otro medio. Es personal y vence en poco tiempo.</p>
-      <div className="mt-2 flex gap-2">
-        <Input readOnly dense aria-label="Link de activación" value={link} className={cn(TYPE.mono, "sm:text-[12px]")} onFocus={(e) => e.target.select()} />
-        <Button
-          size="sm"
-          icon={Copy}
-          onClick={() => {
-            navigator.clipboard.writeText(link).then(
-              () => showToast("Link copiado.", "success"),
-              () => showToast("No se pudo copiar: seleccionalo a mano.", "error"),
-            );
-          }}
-        >
-          Copiar
-        </Button>
-      </div>
-    </InlineBanner>
   );
 }
 

@@ -6,6 +6,14 @@ import { moverIndice, pasoDeTecla } from "./teclado";
 import { LoadingStatus } from "./Feedback";
 import { FOCUS, TYPE, cn } from "./cx";
 
+const LG = "(min-width: 1024px)";
+const suscribirLg = (cb: () => void) => {
+  const mq = window.matchMedia(LG);
+  mq.addEventListener("change", cb);
+  return () => mq.removeEventListener("change", cb);
+};
+const noSuscribir = () => () => {};
+
 export type TabItem = {
   value: string;
   label: string;
@@ -30,6 +38,9 @@ export type TabItem = {
  * - `navigate` (modo URL): quien llama navega (p. ej. `router.push` dentro de `startTransition`) y marca el `TabPanel`
  *   con `busy` mientras llega el contenido. Ctrl/Cmd/Shift/botón del medio siguen siendo links normales.
  * - Si las tabs no entran (celular), se scrollean y el borde con más tabs se desvanece: se ve que hay más.
+ * - `vertical` (Configuración, Lote F): desde 1024 px la lista es una columna a la izquierda del contenido (ítems de 32
+ *   con el aspecto de los del rail: tinte + barra de 2 px en acento); debajo, la fila de tabs de siempre. Un solo
+ *   markup: el cambio es CSS; `aria-orientation` sigue al ancho y las flechas de los dos ejes mueven en cualquier ancho.
  */
 export function Tabs({
   id,
@@ -38,6 +49,7 @@ export function Tabs({
   value,
   onValueChange,
   navigate,
+  vertical = false,
   className,
 }: {
   id: string;
@@ -46,8 +58,10 @@ export function Tabs({
   value: string;
   onValueChange?: (value: string) => void;
   navigate?: (href: string) => void;
+  vertical?: boolean;
   className?: string;
 }) {
+  const columna = React.useSyncExternalStore(vertical ? suscribirLg : noSuscribir, () => vertical && window.matchMedia(LG).matches, () => false);
   const refs = React.useRef<(HTMLElement | null)[]>([]);
   const lista = React.useRef<HTMLDivElement>(null);
   // Qué bordes tienen tabs escondidas (para desvanecerlos). Se mide al montar, al scrollear y al cambiar el tamaño.
@@ -77,7 +91,7 @@ export function Tabs({
       e.currentTarget.click();
       return;
     }
-    const paso = pasoDeTecla(e.key, "horizontal");
+    const paso = pasoDeTecla(e.key, "horizontal") ?? (vertical ? pasoDeTecla(e.key, "vertical") : null);
     if (!paso) return;
     e.preventDefault();
     const j = moverIndice(i, items.length, paso, off);
@@ -91,8 +105,10 @@ export function Tabs({
       ref={lista}
       role="tablist"
       aria-label={label}
+      aria-orientation={columna ? "vertical" : undefined}
       className={cn(
         "relative flex min-w-0 items-end gap-4 overflow-x-auto border-b border-(--crm-border) [scrollbar-width:none]",
+        vertical && "lg:flex-col lg:items-stretch lg:gap-px lg:overflow-visible lg:border-b-0 lg:[mask-image:none]",
         mas.der && mas.izq
           ? "[mask-image:linear-gradient(to_right,transparent,black_24px,black_calc(100%-32px),transparent)]"
           : mas.der
@@ -120,6 +136,13 @@ export function Tabs({
             sel
               ? "border-(--crm-accent) text-(--crm-text)"
               : "border-transparent text-(--crm-text-2) hover:border-(--crm-border-strong) hover:text-(--crm-text)",
+            vertical &&
+              cn(
+                "lg:mb-0 lg:h-8 lg:rounded-(--crm-radius-sm) lg:border-b-0 lg:px-3 lg:duration-(--crm-dur-fast)",
+                sel
+                  ? "lg:bg-(--crm-selected) lg:text-(--crm-accent-text) lg:shadow-[inset_2px_0_0_var(--crm-accent)]"
+                  : "lg:hover:bg-(--crm-hover)",
+              ),
             t.disabled && "pointer-events-none opacity-45",
             FOCUS,
             "focus-visible:outline-offset-[-2px]",

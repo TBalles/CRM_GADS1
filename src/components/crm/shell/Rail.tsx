@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { GoalMark } from "@/components/Logo";
 import { APP_NAME } from "@/lib/brand";
-import { seccionesVisibles } from "@/lib/navegacion";
+import { SECCIONES_PLATAFORMA, seccionesVisibles } from "@/lib/navegacion";
 import { IconButton } from "../Button";
 import { Tooltip } from "../Tooltip";
 import { FOCUS, cn } from "../cx";
@@ -37,6 +37,7 @@ const ICONOS: Record<string, React.ElementType> = {
   "/embudo": Funnel,
   "/usuarios": UsersRound,
   "/configuracion": Settings,
+  "/admin": Building2,
 };
 
 const DESKTOP = "(min-width: 1280px)";
@@ -75,6 +76,7 @@ export function RailNav({
   onNavigate,
   controlsId,
   organizacion,
+  plataforma = false,
 }: {
   permisos: string[];
   modo: "rail" | "cajon";
@@ -85,11 +87,13 @@ export function RailNav({
   controlsId?: string;
   /** Nombre de la organización (ya lo tiene la sesión): segunda línea de la marca. */
   organizacion?: string | null;
+  /** Panel del superadmin (`/admin`): el rail de una sola sección ("Plataforma"), sin las pantallas del CRM. */
+  plataforma?: boolean;
 }) {
   const pathname = usePathname();
   const soloIconosJs = useSoloIconos(colapsado);
   const soloIconos = modo === "rail" && soloIconosJs;
-  const secciones = seccionesVisibles(permisos);
+  const secciones = plataforma ? SECCIONES_PLATAFORMA : seccionesVisibles(permisos);
   const activa = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   // Lo que solo se ve con el rail expandido: en el cajón siempre; en el rail, desde 1280 y sin la preferencia.
   const expandido = modo === "cajon" ? "" : colapsado ? "hidden" : "hidden xl:block";
