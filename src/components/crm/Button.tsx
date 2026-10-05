@@ -8,8 +8,11 @@ import { DISABLED, FOCUS, cn } from "./cx";
  *
  * - Un solo `primary` por pantalla. `danger` solo para la acción que destruye o da de baja.
  * - Alto 32 (`md`), 28 (`sm`, toolbars y filas), 36 (`lg`, footers de drawer en mobile).
- * - `loading`: deshabilita, marca `aria-busy` y cambia el ícono por el indicador. El texto lo cambia quien llama
- *   ("Guardando…"), así el nombre accesible dice lo que pasa.
+ * - `loading`: bloquea, marca `aria-busy` y cambia el ícono por el indicador. El texto lo cambia quien llama
+ *   ("Guardando…"), así el nombre accesible dice lo que pasa. Bloquea con `aria-disabled` + un guardia en el clic, NO con
+ *   `disabled` (Lote F): un botón que se deshabilita con el foco adentro tira el foco al `body` (el lector de pantalla y el
+ *   teclado pierden el lugar a mitad del guardado). El guardia cancela el clic, también el que el navegador dispara en el
+ *   botón de envío al apretar Enter en un campo (envío implícito): un segundo Enter no manda el formulario dos veces.
  */
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 export type ButtonSize = "sm" | "md" | "lg";
@@ -62,15 +65,24 @@ export function Button({
   disabled,
   className,
   children,
+  onClick,
   ...props
 }: ButtonProps) {
   return (
     <button
       type={type}
-      disabled={disabled || loading}
+      disabled={disabled}
       aria-busy={loading || undefined}
       className={buttonClass({ variant, size, className })}
       {...props}
+      aria-disabled={loading || props["aria-disabled"] || undefined}
+      onClick={(e) => {
+        if (loading) {
+          e.preventDefault();
+          return;
+        }
+        onClick?.(e);
+      }}
     >
       {loading ? (
         <Loader2 aria-hidden="true" className="animate-spin motion-reduce:animate-none" />

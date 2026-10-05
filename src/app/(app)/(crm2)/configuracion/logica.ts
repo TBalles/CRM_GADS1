@@ -43,3 +43,51 @@ export function moverEnCatalogo<T extends { id: string; orden: number }>(
   const cambios = nueva.map((item, i) => ({ item, orden: i + 1 })).filter(({ item, orden }) => item.orden !== orden);
   return { nueva, cambios };
 }
+
+/** Los nueve campos de "Datos de la empresa" como texto, tal como los muestra el formulario. */
+export type ValoresEmpresa = {
+  razonSocial: string;
+  cuit: string;
+  condicionIva: string;
+  direccion: string;
+  telefono: string;
+  email: string;
+  sitioWeb: string;
+  validez: string;
+  condiciones: string;
+};
+
+type OrganizacionDatos = {
+  razon_social: string | null;
+  cuit: string | null;
+  condicion_iva: string | null;
+  direccion: string | null;
+  telefono: string | null;
+  email: string | null;
+  sitio_web: string | null;
+  presupuesto_validez_dias: number;
+  presupuesto_condiciones: string | null;
+};
+
+/** Los valores guardados de la organización (los que carga el formulario y a los que vuelve "Descartar"). */
+export function valoresDe(o: OrganizacionDatos): ValoresEmpresa {
+  return {
+    razonSocial: o.razon_social ?? "",
+    cuit: o.cuit ?? "",
+    condicionIva: o.condicion_iva ?? "",
+    direccion: o.direccion ?? "",
+    telefono: o.telefono ?? "",
+    email: o.email ?? "",
+    sitioWeb: o.sitio_web ?? "",
+    validez: String(o.presupuesto_validez_dias),
+    condiciones: o.presupuesto_condiciones ?? "",
+  };
+}
+
+/**
+ * ¿Hay algo sin guardar? Compara lo que se GUARDARÍA (sin espacios de los bordes, como el guardado), así un espacio
+ * suelto no muestra la barra de "cambios sin guardar".
+ */
+export function hayCambios(actual: ValoresEmpresa, guardado: ValoresEmpresa): boolean {
+  return (Object.keys(actual) as (keyof ValoresEmpresa)[]).some((k) => actual[k].trim() !== guardado[k].trim());
+}

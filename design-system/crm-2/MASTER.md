@@ -353,7 +353,9 @@ panel de plataforma, «Sin permisos» y el retiro de `(legacy)` (Lote F).
 ### 10.1 Button, IconButton, FilterChip — `Button.tsx` (server-safe)
 - Variantes: `primary` (acento sólido; **una por pantalla**), `secondary` (panel + hairline; la normal), `ghost` (sin caja; acciones
   terciarias), `danger` (solo destruir/dar de baja). Tamaños `sm` 28 · `md` 32 · `lg` 36. Ícono 16 a la izquierda (`icon`).
-- `loading`: deshabilita, `aria-busy`, cambia el ícono por el indicador; el texto lo cambia quien llama ("Guardando…").
+- `loading`: `aria-busy`, cambia el ícono por el indicador; el texto lo cambia quien llama ("Guardando…"). Bloquea con `aria-disabled` + un
+  guardia en el clic, **no** con `disabled` (Lote F): deshabilitar el botón con el foco adentro tiraba el foco al `body` a mitad del
+  guardado; el guardia también cancela el clic del envío implícito (Enter en un campo), así un segundo Enter no envía dos veces.
 - `IconButton`: cuadrado 28/32, `label` obligatorio → `aria-label`. `buttonClass()` para `<Link>` con forma de botón.
 - `FilterChip`: disparador de un `Popover` en la toolbar (spec en §10.12).
 
@@ -400,7 +402,9 @@ panel de plataforma, «Sin permisos» y el retiro de `(legacy)` (Lote F).
   con Enter **o Espacio**) o controladas (activación automática). `TabPanel` con `role="tabpanel"`, lo puede dibujar el servidor.
   Una sola implementación. `vertical` (Lote F, Configuración): desde 1024 la lista es una columna de ítems de 32 con el aspecto del
   rail (tinte `--crm-selected` + texto `--crm-accent-text` + barra de 2 px); debajo, la fila de siempre. Mismo markup;
-  `aria-orientation` sigue al ancho y las flechas de los dos ejes mueven en cualquier ancho.
+  `aria-orientation` sigue al ancho (64rem, el mismo corte que `lg:`) y las flechas de los dos ejes mueven en cualquier ancho. `prefetch`
+  (se pasa a cada `<Link>`; `false` si `navigate` no va al servidor) y `dot` + `dotLabel` (un punto de acento junto al nombre, con su
+  texto para lectores de pantalla).
 - `SegmentedControl`: 2–4 vistas (Tablero/Lista); `radiogroup`, 28/32 de alto; el elegido en panel con texto y borde de acento.
 
 ### 10.8 Drawer, Dialog, ConfirmDialog, Toast — `Drawer.tsx`, `Dialog.tsx`, `Toast.tsx`
@@ -1223,21 +1227,25 @@ real y un período vacío: 1080 de 1080 iguales (montos exactos comparados en su
 motivos de pérdida, el logo con URL firmada de 1 h), mismas escrituras (cliente del navegador + RLS), mismo permiso
 (`configuracion.gestionar`; sin él, `rutaInicial`), mismos mensajes y nombres accesibles. Lógica pura en `configuracion/logica.ts` (+ `.check`).
 
-- **PageBar:** "Configuración" + la línea de siempre como contador ("<razón social> · IA: activa|desactivada"). Sin eyebrow ni bajada.
+- **PageBar:** "Configuración" + la línea de siempre como contador ("<razón social> · IA: activa|desactivada"; "IA: …" no se corta de
+  renglón en el celular). Sin eyebrow ni bajada.
 - **Sub-navegación por URL** (`?s=empresa|etapas|tipos|origenes|motivos`; sin parámetro, "Datos de la empresa", como abría el legacy; un
   valor desconocido cae ahí con `tabValida`): `Tabs vertical` con el tablist de siempre, **"Secciones de la configuración"**, y una tab
   por nombre ("Etapas", "Tipos de actividad"…: los usan el manual y la baseline). Desde 1024 es una columna de 208 a la izquierda
   (pegada arriba al scrollear); debajo, la fila de tabs con scroll. **Cambiar de sección no va al servidor:** la página ya trae todo, así
   que el `navigate` de las tabs hace `history.pushState` (Next lo integra: `useSearchParams` se entera; atrás/adelante y el deep link
-  funcionan; Ctrl/Cmd+clic abre otra pestaña). Las cinco secciones quedan montadas (como antes): lo escrito en "Datos de la empresa" no se
-  pierde al mirar otra sección.
-- **Secciones sin caja:** `SectionBar` (h2 = nombre de la sección, contador mono, la primaria "Nuevo …" `sm`) + la línea de siempre que
-  explica para qué sirve la lista + la tabla; ancho tope 64rem (una tabla de 4 columnas a 1800 px separaba el nombre del estado).
+  funcionan; Ctrl/Cmd+clic abre otra pestaña; `prefetch={false}`: prefetchear links que no van al servidor era en vano). Las cinco
+  secciones quedan montadas (como antes): lo escrito en "Datos de la empresa" no se pierde al mirar otra sección, y mientras haya cambios
+  sin guardar su tab lleva un punto de acento (+ "(cambios sin guardar)" para lectores de pantalla).
+- **Secciones sin caja:** `SectionBar` (h2 = nombre de la sección, que nombra la sección por `aria-labelledby`; contador en sans con
+  numerales tabulares —es una frase—; la primaria "Nuevo …" `sm`) + la línea de siempre que explica para qué sirve la lista + la tabla;
+  ancho tope 48rem (una tabla de columnas angostas a 1800 px separaba el nombre de su estado).
 - **Catálogos** (tipos, orígenes, motivos; `CatalogoTab`) y **Etapas** (`EtapasTab`): `DataTable` con las mismas columnas: N.º (mono) ·
-  Nombre / Etapa · Estado / Tipo (punto + palabra; Abierta info, Ganada éxito, Perdida peligro) · **Orden** (`Mover`) · `⋮`
+  Nombre / Etapa · Estado (solo "Inactivo" a la vista; "Activo" queda para lectores de pantalla: repetido en cada fila era ruido) /
+  Tipo (punto + palabra; Abierta info, Ganada éxito, Perdida peligro) · **Orden** (`Mover`) · `⋮`
   **"Acciones de <nombre>"** (Editar; Desactivar → `ConfirmDialog` "Desactivar <singular>" / Reactivar; en Etapas Editar y Borrar →
-  "Borrar la etapa"). La etapa lleva su color como cuadradito (`StatusDot color`, un dato de la organización en `style`) y su nombre de
-  color para lectores de pantalla ("(color Azul)"). Debajo de 30rem de tabla, N.º y Estado/Tipo se esconden y "Inactivo" / el tipo
+  "Borrar la etapa"). La etapa lleva su color como cuadradito de 12 (el dato que se configura acá; en el resto del CRM es el de 8), en
+  `style`, y su nombre de color para lectores de pantalla ("(color Azul)"). N.º se queda: el orden no está en el nombre de las flechas. Debajo de 30rem de tabla, N.º y Estado/Tipo se esconden y "Inactivo" / el tipo
   bajan bajo el nombre. Vacío: `EmptyState compact` en la tabla con el texto de siempre + "Nuevo …".
 - **Reordenar** (`Mover`): "Subir <nombre>" / "Bajar <nombre>" (`IconButton sm` + `Tooltip`), la misma lógica (catálogos: renumerado
   1..N escribiendo solo las filas que cambian, `moverEnCatalogo`; etapas: los tres pasos por el número libre con su vuelta atrás y la
@@ -1249,17 +1257,23 @@ motivos de pérdida, el logo con URL firmada de 1 h), mismas escrituras (cliente
   en `--crm-text`, el foco con el anillo de foco por fuera; un color fuera de la paleta se conserva como "Color actual"). Mismas
   validaciones y reglas (al menos una Ganada y una Perdida, antes de escribir; CHECK/FK/UNIQUE con sus mensajes). Guardado con
   `sinTrabarse`; las acciones de fila (activar, mover, borrar) liberan su `ocupado` en `finally` aunque la llamada tire.
-- **Datos de la empresa:** formulario de hasta 640 sin caja (h2 "Datos de la empresa"; Razón social · CUIT | Condición frente al IVA ·
-  Dirección · Teléfono | Mail · Sitio web; `FormSection` "Presupuestos": Validez (días) y Condiciones con su ayuda) con los mismos ids
-  (`#razon_social`, `#cuit`, `#condicion_iva`, `#direccion`, `#telefono`, `#email`, `#sitio_web`, `#presupuesto_validez_dias`,
-  `#presupuesto_condiciones`), las mismas validaciones y "Guardar cambios" (primaria, `sinTrabarse`). Al lado desde 1280 (debajo con
-  menos): **Logo** (la ayuda `#logo-ayuda`, el `#logo-archivo` oculto "Elegir el archivo del logo", "Subir logo" / "Cambiar logo" /
+- **Datos de la empresa:** formulario sin caja (h2 "Datos de la empresa") en tres grupos (`Grupo`: h3 13/600 + una línea): **Identidad
+  fiscal** (Razón social · CUIT | Condición frente al IVA · Dirección; "Va en el encabezado de cada presupuesto."), **Contacto**
+  (Teléfono | Mail · Sitio web) y **Presupuestos** (Validez (días) · Condiciones con su ayuda). Con 84rem de contenedor (la pantalla de
+  1903) cada grupo toma la forma de una página de ajustes: título y ayuda a la izquierda (14rem), campos a la derecha (hasta 40rem). Los
+  mismos ids (`#razon_social`, `#cuit`, `#condicion_iva`, `#direccion`, `#telefono`, `#email`, `#sitio_web`,
+  `#presupuesto_validez_dias`, `#presupuesto_condiciones`) y validaciones. **"Guardar cambios"** es un solo botón (el de siempre,
+  primaria, `sinTrabarse`); con cambios sin guardar (`hayCambios`, que compara sin espacios de los bordes) su fila se vuelve una barra
+  flotante pegada abajo del área de trabajo: "Cambios sin guardar" · **"Descartar"** (vuelve a los valores guardados, `valoresDe`; solo
+  estado local) · "Guardar cambios". Si la validación frena, el foco va al primer campo con error; si el guardado falla, al aviso
+  (`tabIndex -1`), que en el celular quedaba arriba, fuera de la vista. Al lado desde 56rem de contenedor (debajo con menos): **Logo** (la ayuda `#logo-ayuda`, el `#logo-archivo` oculto "Elegir el archivo del logo", "Subir logo" / "Cambiar logo" /
   "Procesando…", "Quitar logo" → `ConfirmDialog` "Quitar el logo"; mismo flujo de storage: ruta fija por organización, PNG/JPG/WebP ≤ 1 MB,
   sin SVG, renovación de la URL firmada; el error en un `InlineBanner`) y **"Así va a verse en tus presupuestos"**: la vista previa de la
   hoja. **La hoja es papel:** blanca en claro y en oscuro, con clases de paleta (`bg-white`, `slate-*`), la misma excepción que
   `Hoja.tsx` (§10.20); nunca lleva la marca de Tuco & Nito.
 - **Sin organización / sin datos:** h1 "Configuración" + `EmptyState` con los textos de siempre.
-- **Carga:** barra con el h1, la sub-navegación y el formulario en esqueleto + "Cargando la configuración…" (el texto de siempre).
+- **Carga:** barra con el h1, la sub-navegación y un bloque neutro (barra de sección + renglones: un deep link abre una tabla, no el
+  formulario) + "Cargando la configuración…" (el texto de siempre).
 
 ### 10.25 Panel de plataforma, «Sin permisos» y el retiro de `(legacy)` (Lote F, construido)
 **Panel de plataforma** (`src/app/admin/`, superadmin). Antes era otro shell (header propio con `ThemeToggle`, `min-h-dvh`, sin
@@ -1272,14 +1286,17 @@ global ni Ctrl/Cmd+K (busca datos de un cliente), tema y "Cerrar sesión" (con s
 - **PageBar:** "Clientes" + "N clientes en la plataforma" / "N de T clientes" + **"Nuevo cliente"**. Toolbar: textbox **"Buscar cliente"**
   ("Buscar cliente o admin…", filtra en el cliente por nombre del cliente, nombre o mail de sus administradores, como antes).
 - **Tabla "Clientes"** (antes, tarjetas en dos columnas): Cliente (nombre 500, "(la tuya)") · Administradores (escudo + "nombre · mail" y
-  "Pendiente" o "De baja" como punto + palabra; sin ninguno, "Sin administrador: agregale uno." en peligro) · Usuarios activos (mono) ·
+  "Pendiente" o "De baja" como punto + palabra; "Pendiente" con **"Reenviar"** al lado, como el botón de antes; con más de uno, el primero
+  y **"+N"** (`aria-expanded`, "Ver N administradores más") para ver el resto, así la fila mantiene los 36 px; sin ninguno, "Sin
+  administrador: agregale uno." en peligro) · Usuarios activos (mono) ·
   Estado (Activo / Suspendido; el suspendido lleva el nombre en `--crm-text-2` en vez de la opacidad de antes) · `⋮` **"Acciones de
-  <cliente>"**: "Agregar administrador", **"Reenviar invitación a <mail>"** por cada administrador pendiente (**se movió**: antes era el
-  botón "Pendiente" junto al administrador) y "Suspender" (danger → `ConfirmDialog` "Suspender cliente", mismo texto) / "Reactivar". Con
+  <cliente>"**: "Agregar administrador", "Reenviar invitación a <mail>" por cada administrador pendiente (también a la vista, arriba) y
+  "Suspender" (danger → `ConfirmDialog` "Suspender cliente", mismo texto) / "Reactivar". Con
   menos de 45rem de tabla, los administradores, los usuarios y "Suspendido" bajan bajo el nombre.
 - **Drawers:** "Nuevo cliente" ("Se crea con su administrador"; `#cli-nombre`, `FormSection` "Administrador del cliente" con
   `#cli-admin-nombre` y `#cli-admin-email`, los textos de siempre; "Crear cliente") y "Agregar administrador" (descripción = el cliente;
-  "Agregar administrador"). `sinTrabarse`; las acciones de fila atrapan si la Server Action tira. Sin SMTP, el link de activación en
+  "Agregar administrador"). `sinTrabarse`; las acciones de fila atrapan si la Server Action tira y van **de a una**: mientras corre una,
+  `ejecutar` no arranca otra y los ítems del menú quedan bloqueados (`aria-disabled`; en Usuarios, igual). Sin SMTP, el link de activación en
   `LinkManual` (generalizado desde Usuarios: `components/crm/LinkManual.tsx`). El overlay "Guardando…/Actualizando…" pasó a una región
   viva `sr-only` + la tabla `busy`.
 - **Estados:** vacío "Todavía no hay clientes en la plataforma"; sin resultados "Ningún cliente con «…»"; carga `ListSkeleton` "Cargando
@@ -1288,9 +1305,10 @@ global ni Ctrl/Cmd+K (busca datos de un cliente), tema y "Cerrar sesión" (con s
   Responsable comercial → `/dashboard`; Solo lectura → `/empresas`) y, con un arnés de desarrollo borrado al terminar (datos falsos,
   Server Actions abortadas), el árbol nuevo en 6 anchos × claro/oscuro. La pantalla real con un superadmin queda sin ver.
 
-**Sin permisos** (`(crm2)/sin-permisos/`, `git mv`): el texto de siempre como h1 ("Tu rol todavía no tiene secciones habilitadas") + la
-indicación, en el área de trabajo; sin escena ni ícono. **Sin acción**, como el legacy: alguien sin secciones no tiene a dónde ir y
-"Cerrar sesión" ya está en el menú de usuario.
+**Sin permisos** (`(crm2)/sin-permisos/`, `git mv`): texto + una acción discreta, en el área de trabajo; sin escena ni ícono. Para un rol
+sin ninguna sección, el h1 de siempre ("Tu rol todavía no tiene secciones habilitadas"); para alguien que sí tiene secciones y entró
+directo, uno neutro que no contradiga al rail ("No tenés permisos para ver esta sección."); la indicación de siempre y **"Volver al
+inicio"** (secundario, link a `/dashboard`, que manda a cada rol a su primera pantalla o de vuelta acá).
 
 **Buscar / IA:** `(app)/buscar/` y `(app)/ia/` son solo Server Actions (la paleta Ctrl+K y la IA de Alertas y de la ficha), no pantallas:
 no hay UI que migrar y quedan en `(app)/`.
@@ -1302,8 +1320,9 @@ no hay UI que migrar y quedan en `(app)/`.
 Drawer,RowActions,ThemeToggle,form}.tsx` y `components/ui/{EmptyState,OverlayCarga,PantallaCarga,Loader,MoneyInput}.tsx`. Quedan sin
 usos, de antes del Lote F y sin tocar: `components/Paginacion.tsx` y `components/ui/KpiCard.tsx`.
 
-**Generalizado en el Lote F:** `Tabs vertical` (§10.7); `AppFrame`/`RailNav`/`Topbar` → `plataforma` / `onBuscar` opcional;
-`LinkManual`; `lib/navegacion.ts` → `SECCIONES_PLATAFORMA`; migas → `/admin` = "Clientes".
+**Generalizado en el Lote F:** `Tabs vertical`, `prefetch` y `dot` (§10.7); `Button loading` sin `disabled` (§10.1); `SectionBar` →
+`id` y contador en sans salvo una cifra suelta; `AppFrame`/`RailNav`/`Topbar` → `plataforma` (la marca va a `/admin`) / `onBuscar`
+opcional; `LinkManual`; `lib/navegacion.ts` → `SECCIONES_PLATAFORMA`; migas → `/admin` = "Clientes".
 
 ---
 

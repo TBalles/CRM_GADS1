@@ -203,7 +203,7 @@ src/
       layout.tsx               CrmRoot + AppFrame + guards: superadmin va a /admin; baja o suspensión = "Sin acceso"
       (crm2)/                  TODAS las pantallas (desde el Lote F no queda `(legacy)`); su layout no impone nada
       (crm2)/loading.tsx / error.tsx   Carga (esqueleto + "Cargando…") y error ("Reintentar") de respaldo de CRM 2.0
-      (crm2)/sin-permisos/       Destino cuando el rol no tiene ninguna sección (h1 con el texto de siempre, sin escena)
+      (crm2)/sin-permisos/       Destino cuando el rol no tiene ninguna sección (h1 + "Volver al inicio"; texto neutro si el rol sí tiene secciones)
       (crm2)/configuracion/      CRM 2.0 (Lote F): sub-navegación por `?s=empresa|etapas|tipos|origenes|motivos` (columna desde 1024,
                                    tabs debajo; cambia con history.pushState, sin ir al servidor), catálogos como tablas compactas
         page.tsx / loading.tsx   Server Component: organización, etapas, tipos, orígenes, motivos y el logo firmado (sin cambios)

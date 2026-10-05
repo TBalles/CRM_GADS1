@@ -6,7 +6,8 @@ import { moverIndice, pasoDeTecla } from "./teclado";
 import { LoadingStatus } from "./Feedback";
 import { FOCUS, TYPE, cn } from "./cx";
 
-const LG = "(min-width: 1024px)";
+/** El mismo corte que `lg:` de Tailwind (64rem): `aria-orientation` cambia justo cuando cambia la forma. */
+const LG = "(min-width: 64rem)";
 const suscribirLg = (cb: () => void) => {
   const mq = window.matchMedia(LG);
   mq.addEventListener("change", cb);
@@ -21,6 +22,10 @@ export type TabItem = {
   count?: number | string;
   /** Modo URL: el link de esta tab (armado con `urlConParams(ruta, params, { tab })`). */
   href?: string;
+  /** Un punto de acento junto al nombre (Configuración: "Datos de la empresa" con cambios sin guardar). `dotLabel` lo dice
+   *  para lectores de pantalla. */
+  dot?: boolean;
+  dotLabel?: string;
   disabled?: boolean;
 };
 
@@ -49,6 +54,7 @@ export function Tabs({
   value,
   onValueChange,
   navigate,
+  prefetch,
   vertical = false,
   className,
 }: {
@@ -58,6 +64,8 @@ export function Tabs({
   value: string;
   onValueChange?: (value: string) => void;
   navigate?: (href: string) => void;
+  /** `false` cuando `navigate` no va al servidor (Configuración: `history.pushState`): prefetchear los links sería en vano. */
+  prefetch?: boolean;
   vertical?: boolean;
   className?: string;
 }) {
@@ -151,6 +159,12 @@ export function Tabs({
         const contenido = (
           <>
             {t.label}
+            {t.dot && (
+              <>
+                <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-(--crm-accent)" />
+                {t.dotLabel && <span className="sr-only">{` (${t.dotLabel})`}</span>}
+              </>
+            )}
             {t.count !== undefined && <span className={cn(TYPE.mono, "text-[12px] text-(--crm-text-2)")}>{t.count}</span>}
           </>
         );
@@ -158,6 +172,7 @@ export function Tabs({
           <Link
             key={t.value}
             href={t.href}
+            prefetch={prefetch}
             scroll={false}
             onClick={(e) => {
               if (!navigate || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;

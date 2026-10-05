@@ -141,7 +141,7 @@ const PANTALLAS = [
     },
     viewport: true,
   },
-  { id: "sin-permisos", ir: (p) => ir(p, "/sin-permisos"), esperar: texto("Tu rol todavía no tiene secciones habilitadas") },
+  { id: "sin-permisos", ir: (p) => ir(p, "/sin-permisos"), esperar: texto(/Tu rol todavía no tiene secciones habilitadas|No tenés permisos para ver esta sección/) },
   {
     id: "menu-movil",
     ir: (p) => ir(p, "/dashboard"),

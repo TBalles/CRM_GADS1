@@ -115,7 +115,10 @@ export default function UsuariosView({
     filtros.refrescar();
   }
 
-  async function ejecutar(accion: () => Promise<Resultado>, exito: string) {
+    async function ejecutar(accion: () => Promise<Resultado>, exito: string) {
+    // Una acción por vez (Lote F). El clic es un evento discreto: React aplica `ocupado` antes del siguiente, así que
+    // un segundo clic (o el mismo ítem del menú, que además queda bloqueado) ya lo ve.
+    if (ocupado) return;
     setOcupado(true);
     let res: Resultado;
     try {
@@ -150,7 +153,11 @@ export default function UsuariosView({
         ? { label: "Dar de baja", icon: Power, variant: "danger", onSelect: () => setDandoDeBaja(u) }
         : { label: "Reactivar", icon: Power, onSelect: () => void ejecutar(() => cambiarActivo({ id: u.id, activo: true }), "Usuario reactivado.") },
     );
-    return foco.conFoco(items, u.id);
+    // Mientras corre una acción, el resto del menú queda bloqueado (aria-disabled: sigue enfocable).
+    return foco.conFoco(
+      items.map((i) => ({ ...i, disabled: ocupado })),
+      u.id,
+    );
   }
 
   function abrirNuevo(p: Panel) {

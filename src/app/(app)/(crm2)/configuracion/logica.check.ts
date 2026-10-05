@@ -3,7 +3,7 @@
  */
 import { strict as assert } from "node:assert";
 import test from "node:test";
-import { hrefSeccion, moverEnCatalogo, seccionDe } from "./logica.ts";
+import { hayCambios, hrefSeccion, moverEnCatalogo, seccionDe, valoresDe } from "./logica.ts";
 
 test("seccionDe: ?s= válido, y todo lo demás cae en Datos de la empresa", () => {
   assert.equal(seccionDe("etapas"), "etapas");
@@ -46,4 +46,26 @@ test("moverEnCatalogo: con huecos en el orden renumera 1..N (como el legacy)", (
   ];
   const r = moverEnCatalogo(l, "a", 1)!;
   assert.deepEqual(r.cambios.map((c) => [c.item.id, c.orden]), [["b", 1], ["a", 2], ["c", 3]]);
+});
+
+test("valoresDe / hayCambios: nulos como vacío, bordes ignorados, cualquier campo cuenta", () => {
+  const org = {
+    razon_social: null,
+    cuit: "30-00000000-0",
+    condicion_iva: "monotributo",
+    direccion: null,
+    telefono: null,
+    email: "a@b.com",
+    sitio_web: null,
+    presupuesto_validez_dias: 15,
+    presupuesto_condiciones: null,
+  };
+  const g = valoresDe(org);
+  assert.equal(g.razonSocial, "");
+  assert.equal(g.validez, "15");
+  assert.equal(hayCambios({ ...g }, g), false);
+  assert.equal(hayCambios({ ...g, email: " a@b.com " }, g), false);
+  assert.equal(hayCambios({ ...g, validez: "16" }, g), true);
+  assert.equal(hayCambios({ ...g, condicionIva: "" }, g), true);
+  assert.equal(hayCambios({ ...g, condiciones: "Contado" }, g), true);
 });

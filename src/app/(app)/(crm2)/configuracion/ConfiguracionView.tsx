@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { PageBar } from "@/components/crm/PageBar";
 import { TabPanel, Tabs } from "@/components/crm/Tabs";
@@ -22,7 +23,7 @@ const TABS_ID = "configuracion";
  *   (Next lo integra a su router: `useSearchParams` se entera y atrás/adelante funcionan). Ctrl/Cmd+clic abre otra
  *   pestaña como cualquier link.
  * - Todas las secciones quedan montadas y solo se esconde la inactiva (como antes): lo que quedó a medio escribir en
- *   "Datos de la empresa" no se pierde al mirar otra sección.
+ *   "Datos de la empresa" no se pierde al mirar otra sección; mientras haya cambios sin guardar, su tab lleva un punto.
  */
 export default function ConfiguracionView({
   organizacion,
@@ -43,10 +44,19 @@ export default function ConfiguracionView({
   iaActiva: boolean;
 }) {
   const seccion = seccionDe(useSearchParams().get("s"));
+  const [datosSucios, setDatosSucios] = useState(false);
 
   return (
     <div className={cn(UI_ROOT, "flex min-h-full flex-col bg-(--crm-canvas) px-4 xl:px-6")}>
-      <PageBar title="Configuración" count={`${organizacion.razon_social ?? organizacion.nombre} · IA: ${iaActiva ? "activa" : "desactivada"}`} />
+      <PageBar
+        title="Configuración"
+        count={
+          <>
+            {organizacion.razon_social ?? organizacion.nombre} ·{" "}
+            <span className="whitespace-nowrap">IA: {iaActiva ? "activa" : "desactivada"}</span>
+          </>
+        }
+      />
 
       <div className="flex min-w-0 flex-1 flex-col gap-4 lg:flex-row lg:items-start lg:gap-8">
         <Tabs
@@ -55,13 +65,20 @@ export default function ConfiguracionView({
           vertical
           value={seccion}
           navigate={(href) => window.history.pushState(null, "", href)}
-          items={SECCIONES.map((s) => ({ value: s.value, label: s.label, href: hrefSeccion(s.value) }))}
+          prefetch={false}
+          items={SECCIONES.map((s) => ({
+            value: s.value,
+            label: s.label,
+            href: hrefSeccion(s.value),
+            dot: s.value === "empresa" && datosSucios,
+            dotLabel: "cambios sin guardar",
+          }))}
           className="shrink-0 lg:sticky lg:top-3 lg:w-52"
         />
 
         <TabPanel tabsId={TABS_ID} value={seccion} className="min-w-0 flex-1">
           <div hidden={seccion !== "empresa"}>
-            <DatosEmpresa organizacion={organizacion} logoUrl={logoUrl} />
+            <DatosEmpresa organizacion={organizacion} logoUrl={logoUrl} onCambios={setDatosSucios} />
           </div>
           <div hidden={seccion !== "etapas"}>
             <EtapasTab etapas={etapas} />

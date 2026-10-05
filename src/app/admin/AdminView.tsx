@@ -16,7 +16,7 @@ import { useCrmToast } from "@/components/crm/Toast";
 import { SearchInput, Toolbar } from "@/components/crm/Toolbar";
 import { Tooltip } from "@/components/crm/Tooltip";
 import { CampoTexto, FormDrawer, useApertura } from "@/components/crm/cuenta/FormDrawer";
-import { TYPE, UI_ROOT, cn } from "@/components/crm/cx";
+import { DISABLED, FOCUS, TYPE, UI_ROOT, cn } from "@/components/crm/cx";
 import { sinTrabarse } from "@/lib/guardar";
 import { agregarAdministrador, cambiarEstadoCliente, crearCliente, reenviarInvitacionAdmin } from "./actions";
 
@@ -56,7 +56,10 @@ export default function AdminView({ clientes, miOrgId }: { clientes: Cliente[]; 
   }, [clientes, query]);
 
   /** Una acción de fila: si tira (red caída, Server Action abortada) también se libera y se avisa. */
-  async function ejecutar(accion: () => Promise<Resultado>, exito: string) {
+    async function ejecutar(accion: () => Promise<Resultado>, exito: string) {
+    // Una acción por vez (Lote F). El clic es un evento discreto: React aplica `ocupado` antes del siguiente, así que
+    // un segundo clic (o el mismo ítem del menú, que además queda bloqueado) ya lo ve.
+    if (ocupado) return;
     setOcupado(true);
     let res: Resultado;
     try {
@@ -75,14 +78,16 @@ export default function AdminView({ clientes, miOrgId }: { clientes: Cliente[]; 
     startTransition(() => router.refresh());
   }
 
+  const reenviar = (a: AdminFila) => void ejecutar(() => reenviarInvitacionAdmin({ id: a.id }), `Invitación reenviada a ${a.email}.`);
+
   function menuDe(c: Cliente): MenuItem[] {
     const items: MenuItem[] = [{ label: "Agregar administrador", icon: UserPlus, onSelect: () => editor.abrir({ tipo: "admin", cliente: c }) }];
-    // Antes era el botón "Pendiente" junto al administrador; ahora va con las demás acciones del cliente.
+    // También a la vista, como "Reenviar" junto a "Pendiente".
     for (const a of c.admins.filter((x) => x.activo && x.pendiente)) {
       items.push({
         label: `Reenviar invitación a ${a.email}`,
         icon: MailPlus,
-        onSelect: () => void ejecutar(() => reenviarInvitacionAdmin({ id: a.id }), `Invitación reenviada a ${a.email}.`),
+        onSelect: () => reenviar(a),
       });
     }
     items.push(
@@ -90,7 +95,8 @@ export default function AdminView({ clientes, miOrgId }: { clientes: Cliente[]; 
         ? { label: "Suspender", icon: Power, variant: "danger", onSelect: () => setSuspender(c) }
         : { label: "Reactivar", icon: Power, onSelect: () => void ejecutar(() => cambiarEstadoCliente({ id: c.id, activa: true }), "Cliente reactivado.") },
     );
-    return items;
+    // Mientras corre una acción, el resto queda bloqueado (aria-disabled: sigue enfocable).
+    return items.map((i) => ({ ...i, disabled: ocupado }));
   }
 
   const q = query.trim();
@@ -150,7 +156,9 @@ export default function AdminView({ clientes, miOrgId }: { clientes: Cliente[]; 
                   <EmptyState compact title={`Ningún cliente con «${q}»`} description="Probá por nombre o por el mail de su administrador." />
                 </TableMessage>
               ) : (
-                filtrados.map((c) => <Fila key={c.id} cliente={c} esMia={c.id === miOrgId} menu={menuDe(c)} />)
+                filtrados.map((c) => (
+                  <Fila key={c.id} cliente={c} esMia={c.id === miOrgId} menu={menuDe(c)} onReenviar={reenviar} ocupado={ocupado} />
+                ))
               )}
             </TBody>
           </DataTable>
@@ -190,8 +198,8 @@ export default function AdminView({ clientes, miOrgId }: { clientes: Cliente[]; 
   );
 }
 
-/** Un administrador: nombre · mail y, si corresponde, "Pendiente" (no activó su cuenta) o "De baja". */
-function Admin({ a }: { a: AdminFila }) {
+/** Un administrador: nombre · mail y, si corresponde, "Pendiente" (no activó su cuenta, con "Reenviar" al lado) o "De baja". */
+function Admin({ a, onReenviar, ocupado }: { a: AdminFila; onReenviar: (a: AdminFila) => void; ocupado: boolean }) {
   return (
     <li className="flex min-w-0 items-center gap-2">
       <ShieldCheck aria-hidden="true" strokeWidth={1.75} className="size-3.5 shrink-0 text-(--crm-accent-text)" />
@@ -205,11 +213,54 @@ function Admin({ a }: { a: AdminFila }) {
           De baja
         </StatusDot>
       ) : a.pendiente ? (
-        <StatusDot tone="warning" className="shrink-0">
-          Pendiente
-        </StatusDot>
+        <>
+          <StatusDot tone="warning" className="shrink-0">
+            Pendiente
+          </StatusDot>
+          {/* El "Reenviar" de antes, a la vista (también está en el ⋮ del cliente). */}
+          <button
+            type="button"
+            aria-label={`Reenviar invitación a ${a.email}`}
+            aria-disabled={ocupado || undefined}
+            onClick={() => !ocupado && onReenviar(a)}
+            className={cn(FOCUS, DISABLED, "shrink-0 cursor-pointer rounded-[2px] font-medium text-(--crm-accent-text) hover:underline")}
+          >
+            Reenviar
+          </button>
+        </>
       ) : null}
     </li>
+  );
+}
+
+/**
+ * Los administradores de un cliente: el primero y, si hay más, "+N" para ver el resto (así la fila mantiene los 36 px
+ * del resto de la tabla); sin ninguno, el aviso en peligro de siempre.
+ */
+function Admins({ admins, onReenviar, ocupado }: { admins: AdminFila[]; onReenviar: (a: AdminFila) => void; ocupado: boolean }) {
+  const [todos, setTodos] = React.useState(false);
+  if (!admins.length) return <p className="text-(--crm-danger)">Sin administrador: agregale uno.</p>;
+  const resto = admins.length - 1;
+  const visibles = todos ? admins : admins.slice(0, 1);
+  return (
+    <div className="flex min-w-0 items-start gap-2">
+      <ul className="flex min-w-0 flex-1 flex-col gap-0.5">
+        {visibles.map((a) => (
+          <Admin key={a.id} a={a} onReenviar={onReenviar} ocupado={ocupado} />
+        ))}
+      </ul>
+      {resto > 0 && (
+        <button
+          type="button"
+          aria-expanded={todos}
+          aria-label={todos ? "Ver solo el primer administrador" : `Ver ${resto} ${resto === 1 ? "administrador" : "administradores"} más`}
+          onClick={() => setTodos((t) => !t)}
+          className={cn(FOCUS, TYPE.meta, "h-5 shrink-0 cursor-pointer rounded-(--crm-radius-sm) border border-(--crm-border) px-1.5 text-(--crm-text-2) hover:bg-(--crm-hover) hover:text-(--crm-text)")}
+        >
+          {todos ? "Menos" : `+${resto}`}
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -218,17 +269,21 @@ function Admin({ a }: { a: AdminFila }) {
  * estado si está suspendido y los usuarios activos), sin perder ninguno. Un cliente suspendido lleva el nombre en
  * `--crm-text-2` además de "Suspendido" (antes se atenuaba la tarjeta entera, debajo de AA).
  */
-function Fila({ cliente: c, esMia, menu }: { cliente: Cliente; esMia: boolean; menu: MenuItem[] }) {
+function Fila({
+  cliente: c,
+  esMia,
+  menu,
+  onReenviar,
+  ocupado,
+}: {
+  cliente: Cliente;
+  esMia: boolean;
+  menu: MenuItem[];
+  onReenviar: (a: AdminFila) => void;
+  ocupado: boolean;
+}) {
   const usuarios = `${c.usuarios} ${c.usuarios === 1 ? "usuario activo" : "usuarios activos"}`;
-  const admins = c.admins.length ? (
-    <ul className="flex min-w-0 flex-col gap-0.5">
-      {c.admins.map((a) => (
-        <Admin key={a.id} a={a} />
-      ))}
-    </ul>
-  ) : (
-    <p className="text-(--crm-danger)">Sin administrador: agregale uno.</p>
-  );
+  const admins = <Admins admins={c.admins} onReenviar={onReenviar} ocupado={ocupado} />;
   return (
     <Tr className="h-auto">
       <Td className="whitespace-normal py-2 align-top">

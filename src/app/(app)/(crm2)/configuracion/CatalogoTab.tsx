@@ -31,23 +31,25 @@ const porOrden = (a: Item, b: Item) => a.orden - b.orden || a.nombre.localeCompa
  * para qué sirve la lista (la "bajada" de siempre) y la tabla. La comparten los tres catálogos y Etapas.
  */
 export function SeccionConfig({
+  id,
   titulo,
-  ariaLabel,
   count,
   accion,
   bajada,
   children,
 }: {
+  /** Prefijo de ids de la sección: el h2 (`<id>-titulo`) la nombra. */
+  id: string;
   titulo: string;
-  ariaLabel: string;
   count: string;
   accion: React.ReactNode;
   bajada: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <section aria-label={ariaLabel} className="flex min-w-0 max-w-5xl flex-col pb-6">
-      <SectionBar title={titulo} count={count} actions={accion} />
+    // 48rem: una tabla de cuatro o cinco columnas angostas no gana nada estirándose (separaba el nombre de su estado).
+    <section aria-labelledby={`${id}-titulo`} className="flex min-w-0 max-w-3xl flex-col pb-6">
+      <SectionBar id={`${id}-titulo`} title={titulo} count={count} actions={accion} />
       <p className={cn(TYPE.ui, "mb-3 max-w-prose text-(--crm-text-2)")}>{bajada}</p>
       {children}
     </section>
@@ -175,8 +177,8 @@ export default function CatalogoTab({
 
   return (
     <SeccionConfig
+      id={tabla}
       titulo={titulo}
-      ariaLabel={plural}
       count={`${lista.length} ${lista.length === 1 ? singular : plural} · ${activos} activos`}
       accion={<BotonNuevo texto={`Nuevo ${singular}`} onClick={nuevo} />}
       bajada={bajada}
@@ -225,7 +227,9 @@ export default function CatalogoTab({
                   )}
                 </Td>
                 <Td hideBelow="sm">
-                  <StatusDot tone={p.activo ? "success" : "neutral"}>{p.activo ? "Activo" : "Inactivo"}</StatusDot>
+                  {/* Solo se marca lo que se sale de lo normal: "Activo" en cada fila era ruido. El lector de pantalla
+                      sigue oyendo el estado de todas. */}
+                  {p.activo ? <span className="sr-only">Activo</span> : <StatusDot tone="neutral">Inactivo</StatusDot>}
                 </Td>
                 <Td className="overflow-visible px-2">
                   <Mover

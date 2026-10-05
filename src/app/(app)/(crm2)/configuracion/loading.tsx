@@ -3,7 +3,8 @@ import { TYPE, UI_ROOT, cn } from "@/components/crm/cx";
 
 /**
  * Carga de Configuración con la forma de la pantalla (MASTER.md §9.1): la barra con el h1 real, la sub-navegación (columna
- * desde 1024, fila debajo) y el formulario de "Datos de la empresa", que es la sección que abre. "Cargando la
+ * desde 1024, fila debajo) y un bloque neutro de contenido (barra de sección + renglones): no dibuja el formulario ni una
+ * tabla, porque un deep link (`?s=etapas`) abre una tabla y "Datos de la empresa" un formulario. "Cargando la
  * configuración…" (el texto de siempre) para lectores de pantalla, las guardas y el manual.
  */
 export default function CargandoConfiguracion() {
@@ -15,18 +16,21 @@ export default function CargandoConfiguracion() {
         <Skeleton className="w-48" />
       </div>
       <div className="flex flex-col gap-4 lg:flex-row lg:gap-8">
-        <div className="flex h-10 shrink-0 items-center gap-4 border-b border-(--crm-border) lg:h-auto lg:w-52 lg:flex-col lg:items-stretch lg:gap-3 lg:border-b-0 lg:px-3 lg:py-2">
+        <div className="flex h-10 shrink-0 items-center gap-4 border-b border-(--crm-border) lg:h-auto lg:w-52 lg:flex-col lg:items-stretch lg:gap-5 lg:border-b-0 lg:px-3 lg:py-2">
           {["w-32", "w-14", "w-28", "w-16", "w-32"].map((w, i) => (
             <Skeleton key={i} className={w} />
           ))}
         </div>
-        <div className="flex max-w-[40rem] flex-1 flex-col gap-5 pt-3">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <div key={i} className="flex flex-col gap-2">
-              <Skeleton className="w-24" />
-              <Skeleton className="h-8 w-full" />
-            </div>
-          ))}
+        <div className="flex max-w-3xl flex-1 flex-col gap-3">
+          <div className="flex h-10 items-center">
+            <Skeleton className="w-40" />
+          </div>
+          <Skeleton className="w-2/3" />
+          <div className="mt-2 flex flex-col gap-4">
+            {["w-full", "w-5/6", "w-full", "w-3/4", "w-5/6", "w-2/3"].map((w, i) => (
+              <Skeleton key={i} className={cn("h-4", w)} />
+            ))}
+          </div>
         </div>
       </div>
     </div>

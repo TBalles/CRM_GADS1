@@ -180,8 +180,8 @@ export default function EtapasTab({ etapas }: { etapas: Etapa[] }) {
 
   return (
     <SeccionConfig
+      id="etapas"
       titulo="Etapas"
-      ariaLabel="Etapas del embudo"
       count={`${lista.length} ${lista.length === 1 ? "etapa" : "etapas"}`}
       accion={<BotonNuevo texto="Nueva etapa" onClick={nueva} />}
       bajada={
@@ -232,10 +232,12 @@ export default function EtapasTab({ etapas }: { etapas: Etapa[] }) {
                   </Td>
                   <Td className="py-1">
                     {/* El cuadradito es el color de la etapa (como en el embudo); su nombre, para lectores de pantalla. */}
-                    <StatusDot color={e.color ?? undefined} className="max-w-full font-medium">
-                      {e.nombre}
+                    <span className="flex min-w-0 items-center gap-2 font-medium">
+                      {/* 12 px: el color es el dato que se configura acá (en el resto del CRM va el cuadradito de 8). */}
+                      <span aria-hidden="true" className="size-3 shrink-0 rounded-[2px]" style={{ backgroundColor: e.color ?? undefined }} />
+                      <span className="truncate">{e.nombre}</span>
                       {color && <span className="sr-only"> (color {color})</span>}
-                    </StatusDot>
+                    </span>
                     <span className={cn(TYPE.meta, "block text-(--crm-text-2) @[30rem]:hidden")}>{tipo.label}</span>
                   </Td>
                   <Td hideBelow="sm">

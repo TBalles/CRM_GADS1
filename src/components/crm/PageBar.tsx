@@ -81,9 +81,12 @@ export function SectionBar({
   count,
   actions,
   as: H = "h2",
+  id,
   className,
 }: {
   title: string;
+  /** id del título, para `aria-labelledby` de la sección que encabeza. */
+  id?: string;
   count?: React.ReactNode;
   actions?: React.ReactNode;
   as?: "h2" | "h3";
@@ -92,8 +95,14 @@ export function SectionBar({
   return (
     <div className={cn("flex h-10 shrink-0 items-center justify-between gap-3", className)}>
       <div className="flex min-w-0 items-baseline gap-2">
-        <H className="truncate text-[14px] font-semibold leading-5">{title}</H>
-        {count !== undefined && <span className={cn(TYPE.meta, TYPE.mono, "text-(--crm-text-2)")}>{count}</span>}
+        <H id={id} className="truncate text-[14px] font-semibold leading-5">
+          {title}
+        </H>
+        {/* Mono solo para una cifra suelta ("12"); una frase ("12 tipos de actividad · 10 activos") va en sans con
+            numerales tabulares, como el contador de la PageBar. */}
+        {count !== undefined && (
+          <span className={cn(TYPE.meta, typeof count === "number" ? TYPE.mono : "tabular-nums", "text-(--crm-text-2)")}>{count}</span>
+        )}
       </div>
       {actions && <div className="flex shrink-0 items-center gap-1">{actions}</div>}
     </div>

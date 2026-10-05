@@ -97,15 +97,17 @@ export function RailNav({
   const activa = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   // Lo que solo se ve con el rail expandido: en el cajón siempre; en el rail, desde 1280 y sin la preferencia.
   const expandido = modo === "cajon" ? "" : colapsado ? "hidden" : "hidden xl:block";
+  // La marca lleva al inicio de cada marco: la landing en el CRM; el panel en la plataforma (como el header de antes).
+  const marca = plataforma ? { href: "/admin", label: `${APP_NAME}: ir al panel de plataforma` } : { href: "/", label: `${APP_NAME}: ir a la página de inicio` };
 
   return (
     <>
       <div className="relative shrink-0">
         <div className={cn("flex h-12 items-center border-b border-(--crm-border) px-2", modo === "rail" && onToggle && !colapsado && "xl:pr-11", modo === "cajon" && "pr-11")}>
-          <Tooltip content={`${APP_NAME}: ir a la página de inicio`} side="right" disabled={!soloIconos}>
+          <Tooltip content={marca.label} side="right" disabled={!soloIconos}>
             <Link
-              href="/"
-              aria-label={`${APP_NAME}: ir a la página de inicio`}
+              href={marca.href}
+              aria-label={marca.label}
               className={cn(FOCUS, "flex h-10 min-w-0 flex-1 items-center rounded-(--crm-radius-sm)")}
             >
               <span className="flex w-9 shrink-0 justify-center text-(--crm-accent)">
