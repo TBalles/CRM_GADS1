@@ -345,7 +345,7 @@ no tienen `"use client"` ni hooks y se pueden usar desde server components (el l
 tooltips de recorte desde su página servidor); los demás son de cliente. §10.11 es el shell (Etapa 2, construido); §10.12 es la
 especificación de las composiciones, §10.13 cómo quedaron construidas en Empresas (Etapa 3) y §10.14 Contactos y Productos
 (Lote A), con lo que se generalizó para todas las listas. §10.15 es el selector de fecha (`DatePicker` / `DateTimePicker`).
-§10.16–§10.18 son Ventas, Alertas y Usuarios (Lote B); §10.19, Oportunidades (Lote C).
+§10.16–§10.18 son Ventas, Alertas y Usuarios (Lote B); §10.19, Oportunidades (Lote C); §10.20, el editor de presupuesto (Lote D).
 
 ### 10.1 Button, IconButton, FilterChip — `Button.tsx` (server-safe)
 - Variantes: `primary` (acento sólido; **una por pantalla**), `secondary` (panel + hairline; la normal), `ghost` (sin caja; acciones
@@ -753,8 +753,8 @@ la semana de lunes). Un solo componente; `DateTimePicker` = `DatePicker time`. C
 - **Dónde se usa:** `ActividadDrawer` ("Cuándo", `#ocurrido_en`, `time`, `max` = ahora; misma validación y payload); desde el
   Lote B, "Nueva venta" (`#fecha` y la entrega de cada línea, `#item-<key>-entrega`) y los filtros "Desde" / "Hasta" de Ventas
   (`FechaFiltro`, §10.16); desde el Lote C, Oportunidades: `#fecha_estimada_cierre` y `#licitacion_apertura` (drawer) y
-  `#fecha_cierre` (diálogo de cierre, `max` = hoy). Lo legacy que queda (`FiltrosUrl` de Embudo, el presupuesto) sigue con el
-  nativo hasta su slice. Muestras en `/crm-lab` (sección "Fechas").
+  `#fecha_cierre` (diálogo de cierre, `max` = hoy). Lo legacy que queda (`FiltrosUrl` de Embudo) sigue con el
+  nativo hasta su slice. El presupuesto (§10.20) no tiene fechas que se elijan: "Validez (días)" es un número. Muestras en `/crm-lab` (sección "Fechas").
 
 ### 10.16 Ventas (Lote B, construido)
 `src/app/(app)/(crm2)/ventas/`, movida con `git mv` desde `(legacy)`. Mismos datos, filtros, parámetros, permisos, validaciones y
@@ -908,9 +908,8 @@ formularios legacy), Invitar usuario, Cambiar rol, Rol, Oportunidad, Cierre, Rea
 
 ### 10.19 Oportunidades (Lote C, construido)
 `src/app/(app)/(crm2)/oportunidades/` (`git mv` de `page.tsx`, `datos.ts`, `OportunidadesView.tsx`, `OportunidadForm.tsx`, `loading.tsx` y
-`[id]/*`; `components/CierreModal.tsx` → `CierreDialog.tsx`). **El editor de presupuesto queda legacy** en
-`(legacy)/oportunidades/[id]/presupuesto/`: los dos route groups conviven bajo `/oportunidades/[id]` (solo `(crm2)` tiene `page` en
-`[id]`), así que el editor conserva su layout, sus overlays legacy, su impresión y su "Volver a la oportunidad". Mismos datos, filtros,
+`[id]/*`; `components/CierreModal.tsx` → `CierreDialog.tsx`). El editor de presupuesto quedó legacy en este lote
+(`(legacy)/oportunidades/[id]/presupuesto/`, conviviendo bajo `/oportunidades/[id]`) y se migró en el Lote D (§10.20). Mismos datos, filtros,
 parámetros, permisos, validaciones, mutaciones, avisos y nombres. Lógica pura nueva en `lib/oportunidades.ts` (+ `.check`):
 `ETIQUETA_CAMBIO`, `COPY_CAMBIO`, `etapaSugerida`, `textoCambioHecho` y `pasosEmbudo`.
 
@@ -1000,11 +999,8 @@ parámetros, permisos, validaciones, mutaciones, avisos y nombres. Lógica pura 
   de etapa que quede o, sin ninguna (un rol sin `oportunidades.reabrir`), al aviso de cerrada.
 - **Carga:** barra con el h1 real, el segmentado y la primaria solo con el permiso, toolbar y un bloque **neutro** de renglones (ni
   columnas ni tabla: `loading.tsx` no conoce `?vista=`, así un link a la lista no salta de columnas a tabla); la ficha con
-  `DetailSkeleton pasos` (recorrido + acciones, historial y riel); el editor de presupuesto (legacy) con un esqueleto neutro de
-  CRM 2.0 (`(legacy)/oportunidades/[id]/presupuesto/loading.tsx`, "Cargando…") en lugar del cargador de marca. Ojo: al entrar
-  desde la ficha (otro route group) Next muestra la PRIMERA carga del grupo nuevo, `(legacy)/loading.tsx`; por eso ese archivo
-  (ahora cliente) dibuja el esqueleto del presupuesto cuando la ruta es `/oportunidades/<id>/presupuesto` y el loader de marca
-  de siempre en el resto de las pantallas legacy.
+  `DetailSkeleton pasos` (recorrido + acciones, historial y riel); el editor de presupuesto, ver §10.20 (el caso especial que
+  `(legacy)/loading.tsx` tuvo en el Lote C para esa ruta se quitó al migrarla).
 - **Tablero, revisión:** "En el tablero: N · $X" cuenta lo que SE VE (una tarjeta cerrada desde su `⋮` deja de contar al
   instante, sin esperar el refresco) y la región "Columnas del embudo" entra en el orden de Tab solo cuando scrollea de costado
   (se mide en el navegador con `ResizeObserver`).
@@ -1015,6 +1011,67 @@ parámetros, permisos, validaciones, mutaciones, avisos y nombres. Lógica pura 
 onlyWhenTruncated` también con recorte de alto (`line-clamp`); `useFocoFilas` → `acciones` (qué items del `⋮` pueden sacar la fila)
 y cualquier elemento con `data-id` (filas y tarjetas); `DetailSkeleton` → `pasos` (y `tabs` opcional); `HistoriaCuenta` exporta
 `FilaHistoria`, `FilaActividad`, `CuandoHistoria` y `PROSA`.
+
+### 10.20 Presupuesto (Lote D, construido)
+`src/app/(app)/(crm2)/oportunidades/[id]/presupuesto/` (`git mv` de `page.tsx`, `PresupuestoView.tsx` y `loading.tsx` desde
+`(legacy)`). Decisión de producto: **la hoja imprimible no cambia; cambia solo la experiencia del editor.** Mismos datos, campos,
+validaciones y mensajes, numeración (`N° 000042` / «Borrador»), cuentas en centavos, regla de IVA, guardado (mismo insert con la foto
+del emisor), impresión (renueva el logo, nombre del PDF, «Envío de propuesta» una sola vez), "Usar como base de uno nuevo", permisos y
+avisos. No hay confirmaciones (el legacy no tenía: un emitido no se anula ni se borra).
+
+- **La hoja es papel** (`Hoja.tsx`): el componente legacy movido sin tocar (markup, clases de paleta de Tailwind, `rounded-lg`,
+  `.hoja-presupuesto`, `.sin-corte`, los `data-testid` `numero-presupuesto`, `subtotal`, `neto`, `iva` y `total`) y **fuera de
+  `UI_ROOT`**: hereda la fuente global como antes (en papel, Arial por `globals.css`). Es la única excepción a "Plex solo por tokens".
+  Prueba del Lote D: la misma oportunidad con 1, 6 y 26 líneas y un presupuesto guardado, antes (build de `013cde9`) y después, en la
+  misma ventana: la captura del `article` sin la escala de pantalla y a la misma fracción de píxel es idéntica por dentro (solo los
+  píxeles del borde, semitransparentes, mezclan con un fondo distinto) y `page.pdf()` da las mismas páginas (1, 1, 2) y el mismo texto.
+- **Vista dividida (≥ 1280):** `DetailHeader` (h1 = título exacto de la oportunidad, `CrumbLabel` como siempre; meta: "Volver a la
+  oportunidad" + la frase de estado de siempre, "Armá las líneas…" / "Estás viendo el presupuesto N° …, emitido el …") y, debajo,
+  dos columnas iguales con scroll propio: a la izquierda los avisos, el editor y "Presupuestos de esta oportunidad"; a la derecha la
+  hoja. Acciones: borrador → "Imprimir / Guardar PDF" (secundaria) + **"Guardar presupuesto"** (primaria; sin `oportunidades.editar`
+  la primaria es imprimir); emitido → "Volver al borrador" (ghost), "Usar como base de uno nuevo" (secundaria) e **"Imprimir /
+  Guardar PDF"** (primaria). Son tres como máximo: no hace falta `⋮`. `DetailHeader` ahora deja que sus acciones bajen de renglón
+  (`max-w-full flex-wrap`) en vez de empujar la página de costado; con acciones que entran no cambia nada.
+- **Hoja a escala** (`HojaEscalada`): se dibuja a su ancho natural (56rem, el máximo de siempre) y un `transform: scale()` la
+  achica para que entre entera en su columna (nunca la agranda: 0,63 a 1440, 0,54 a 1280, 0,88 a 1903, 1 a 1024). El marco toma el
+  alto ya escalado (medido con `ResizeObserver`; hasta medir, la hoja no se ve: sin salto). En `@media print` cada envoltorio vuelve
+  a bloque sin escala, alto, padding, fondo ni scroll (`print:` en las clases), así la hoja imprime como antes. Cada contenedor con
+  scroll tiene fondo opaco (`--crm-canvas`): Chrome solo dibuja el texto con suavizado LCD sobre una capa de scroll opaca, y sin eso
+  la hoja a escala 1 (1024) se veía con otro suavizado.
+- **Una columna (< 1280):** todo scrollea junto (sin scroll del documento ni de costado): editor, **hoja** y guardados, en el orden
+  de siempre (la columna izquierda es `display: contents` y cada bloque lleva `order`). La hoja también se escala a lo ancho (a 390,
+  0,4: se ve entera; las cifras están en el editor y el texto real en el PDF). No hay "Ver hoja" (el legacy no lo tenía).
+- **Grilla de líneas** (ARIA `table` "Líneas" con `columnheader`, `row` y `cell`; cabecera y filas con el MISMO template por ancho
+  de contenedor): ≥ 54rem una fila (Producto · Descripción* · Cantidad* · Precio unitario · Dto. % · Importe · acciones); 30–54rem
+  (la columna del editor a 1280 y 1440, 768) dos renglones bajo una cabecera de dos renglones (Producto · Descripción · acciones /
+  Cantidad · Precio · Dto. · Importe, que usa también la columna de las acciones); < 30rem (celular) un formulario corto por línea
+  con los labels a la vista y la cabecera solo para lectores. En la grilla los controles son los compactos de 28; en el celular, de
+  32 con texto de 16. Ids y nombres de siempre: `#linea-<key>-producto|descripcion|cantidad|precio|descuento` (E2E busca
+  `input[id$="-descripcion"]` y `-precio`), labels "Cantidad de la línea N"…, `importe-N`, "Subir / Bajar / Quitar la línea N"
+  (`IconButton sm` con `Tooltip`; ya sin `title=`). Precio con `MoneyInput`; cantidad y descuento con la máscara de siempre;
+  producto con el `Select` con buscador ("Texto libre" suelta el producto). Errores debajo de cada campo (`FieldError`,
+  `aria-invalid` + `aria-describedby`).
+- **Pie de la grilla:** "Agregar del catálogo" (`Select` con buscador, `#agregar-producto`) + "Agregar línea libre"
+  (`#agregar-linea`) a la izquierda y los **totales del borrador** a la derecha (Subtotal y Descuentos si corresponden, Neto gravado
+  e IVA 21 % si discrimina, Total: las mismas cuentas y condiciones que la hoja, sin `data-testid` para no duplicar los de la hoja).
+  Debajo, "Validez (días)" (`#validez`), "Condiciones" (`#condiciones`) y "Observaciones" (`#notas`) con `Field`, y la ayuda de siempre.
+- **Foco:** agregar (del catálogo o libre) → el primer campo de la línea nueva; quitar → el primer campo de la línea que ocupa su
+  lugar (o de la anterior; sin líneas, "Agregar línea libre"); mover → el mismo botón de la línea movida (en el borde, el otro:
+  "Subir" en la primera pasa a "Bajar"); guardar bien → "Imprimir / Guardar PDF"; "Volver al borrador" / "Usar como base" →
+  "Agregar del catálogo" (el botón apretado desaparece). Lógica pura en `logica.ts` (+ `.check`): `lineasIniciales`,
+  `aLinea`/`deLinea`, `lineaLibre`, `lineaDeProducto`, `cambioDeProducto`, `moverLinea`, `botonTrasMover`, `focoTrasQuitar`.
+- **Estado** en `usePresupuesto.ts` (el del legacy, misma conducta); el guardado corre con `sinTrabarse`: si la llamada TIRA,
+  "Guardando…" se apaga y el error va al banner.
+- **Guardados:** `SectionBar` "Presupuestos de esta oportunidad" + contador y `DataTable` del mismo nombre: Número (mono; "(en
+  pantalla)" y la fila `selected`) · Fecha (< 30rem, debajo del número) · Total (`$` gris + mono) · Historial ("Registrado" / "Sin
+  registrar"; < 60rem, debajo del número) · "Ver / reimprimir" (`sm`, con "el presupuesto N° …" para lectores). Vacío: "Todavía no
+  guardaste ninguno." + "Al guardar, el presupuesto recibe su número.".
+- **Avisos** (no se imprimen): "Tu encabezado está vacío." (con el link a Configuración), la migración 0012 sin aplicar (el texto de
+  `AvisoMigracion`) y el error del guardado, como `InlineBanner` arriba del editor.
+- **Carga:** `loading.tsx` con la forma de la pantalla (franja con h1 y dos acciones, grilla, campos y, desde 1280, la hoja); al
+  entrar desde la ficha (mismo route group) Next muestra esta carga. `(legacy)/loading.tsx` volvió a ser el cargador de marca de
+  siempre (sin el caso especial del Lote C).
+- **Se borró** (sin usuarios): `components/cliente.tsx` (`Dato`, `Seccion`) y `components/AvisoMigracion.tsx`.
 
 ---
 

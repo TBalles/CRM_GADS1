@@ -253,8 +253,11 @@ src/
         [id]/page.tsx             Ficha (Server Component; notFound si no existe o la RLS la esconde)
         [id]/OportunidadDetalle.tsx  Client: DetailHeader (Registrar actividad + "Presupuesto" + ⋮), recorrido por el embudo con las
                                    acciones de etapa, historial (FilaHistoria), auditoría, riel "Datos"; drawers Editar/Reasignar/Actividad
-      (legacy)/oportunidades/[id]/presupuesto/   Presupuesto imprimible (F6, sigue legacy): page.tsx (server: oportunidad, proveedor, logo
-                                   firmado, catálogo, anteriores) y PresupuestoView.tsx (client: editor de líneas, hoja, guardar, imprimir, actividad)
+        [id]/presupuesto/         CRM 2.0 (Lote D): presupuesto imprimible (F6). page.tsx (server: oportunidad, proveedor, logo firmado,
+                                   catálogo, anteriores); PresupuestoView.tsx (client: encabezado, vista dividida desde 1280 — editor en
+                                   grilla densa + totales + guardados | hoja escalada —, una columna debajo); Hoja.tsx (EL PAPEL, sin cambios
+                                   desde el legacy, fuera de UI_ROOT); usePresupuesto.ts (estado, guardar con sinTrabarse, imprimir y
+                                   actividad); logica.ts(+.check) (pura: líneas, mover, foco tras quitar/mover); loading.tsx
   components/
     ui/                        Primitivos del Sumar UI Kit — reusar, no reinventar
       UIComponents.tsx          cn, useModalAnimation, useAnchoredPortal, Card, Button, Input,
@@ -281,7 +284,6 @@ src/
     Paginacion.tsx              nav accesible con links ?page=N, selector de filas por página y "Mostrando 21-40 de 134"
     ConfirmModal.tsx            Alert dialog centrado (lo usa el logout)
     ParqueInstalado.tsx         Parque instalado de una empresa, agrupado por urgencia (server-safe)
-    AvisoMigracion.tsx          Aviso para administradores: "Se activa al aplicar la migración 0011"
     crm/                        CRM 2.0 (design-system/crm-2/MASTER.md §10): primitivos, shell y composiciones. Del Lote A:
       Lista.tsx                 useSeleccionUrl (master-detail por `?sel=`), useFocoFilas, ListFooter, PanelVistaPrevia
       seleccion.ts(+.check)     Lógica pura: ↑/↓ (vecinoSel), tab válida, fila que recibe el foco tras una acción
@@ -297,7 +299,6 @@ src/
     ResumenIA.tsx               useResumenIA: estado de "Resumir con IA" (F7; lo dibuja crm/cuenta); IaAviso.tsx: "Cómo usamos la IA"
     PaletaBusqueda.tsx          Búsqueda global Ctrl/Cmd+K (F5): diálogo combobox + listbox, foco atrapado
     BajaCliente.tsx             Baja lógica y reactivación de empresas y contactos, sin UI (la dibuja crm/cuenta/BajaDialog)
-    cliente.tsx                 Dato, Seccion (legacy: presupuesto)
     form.tsx                    <Campo>, <CampoTextarea>, <CampoSelect>, <CampoMoney>,
                                 <CampoGrupo>, <FormBanner>, <FormActions>
   lib/

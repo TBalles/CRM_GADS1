@@ -60,7 +60,9 @@ export function DetailHeader({
             <div className={cn(TYPE.table, "flex flex-wrap items-center gap-x-4 gap-y-1 text-(--crm-text-2)")}>{meta}</div>
           )}
         </div>
-        {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+        {/* `max-w-full` + `flex-wrap`: si las acciones no entran (celular, textos largos) bajan de renglón en vez de
+            empujar la página de costado. Cuando entran, no cambia nada. */}
+        {actions && <div className="flex max-w-full shrink-0 flex-wrap items-center gap-2">{actions}</div>}
       </div>
       {tabs && <div className="-mb-px mt-2">{tabs}</div>}
       {!tabs && <div className="h-3" />}
