@@ -1,6 +1,7 @@
 import * as React from "react";
+import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
-import { TYPE, cn } from "./cx";
+import { FOCUS, TYPE, cn } from "./cx";
 
 export type Stat = {
   label: string;
@@ -15,6 +16,11 @@ export type Stat = {
   text?: boolean;
   /** Pide atención (ícono + color de aviso; nunca solo el color). */
   warning?: boolean;
+  /**
+   * La cifra lleva a la lista que la explica (tableros). El link es la cifra; su nombre accesible es "cifra + etiqueta"
+   * ("11 Empresas"), el mismo que tenía la métrica del Inicio legacy.
+   */
+  href?: string;
 };
 
 /**
@@ -24,6 +30,7 @@ export type Stat = {
  * - `md` (ficha): UNA fila fina desde `sm` (N columnas iguales), cifra de 20 en mono (sans si es texto); de a dos en
  *   mobile. La cifra de 28 (`TYPE.kpi`) queda para tableros, no para la franja de una ficha.
  * - `sm` (vista previa): grilla de 2, cifra de 16.
+ * - `lg` (tableros: Inicio, Tablero comercial, Embudo): la misma fila que `md` con la cifra de 28 (`TYPE.kpi`).
  */
 export function StatStrip({
   items,
@@ -33,7 +40,7 @@ export function StatStrip({
   className,
 }: {
   items: Stat[];
-  size?: "sm" | "md";
+  size?: "sm" | "md" | "lg";
   label?: string;
   /** Id de una nota que explica de dónde salen las cifras (p. ej. "sin estimaciones"), sin ocupar lugar en pantalla. */
   describedBy?: string;
@@ -47,7 +54,7 @@ export function StatStrip({
       style={{ "--n": items.length } as React.CSSProperties}
       className={cn(
         "grid",
-        size === "md"
+        size !== "sm"
           ? // Una sola fila desde sm (N columnas iguales, divisores verticales); en mobile, de a dos.
             "grid-cols-2 gap-y-3 sm:grid-cols-[repeat(var(--n),minmax(0,1fr))] [&>div]:border-l [&>div]:border-(--crm-border) [&>div]:px-4 [&>div:first-child]:border-l-0 [&>div:first-child]:pl-0 max-sm:[&>div:nth-child(odd)]:border-l-0 max-sm:[&>div:nth-child(odd)]:pl-0"
           : "grid-cols-2 gap-x-4 gap-y-3",
@@ -62,7 +69,7 @@ export function StatStrip({
               "flex min-w-0 items-baseline gap-1 font-medium",
               it.text
                 ? "text-[14px] leading-6 tabular-nums"
-                : cn(TYPE.mono, size === "md" ? "text-[20px] leading-6" : "text-[16px] leading-6"),
+                : cn(TYPE.mono, size === "lg" ? "text-[28px] leading-9" : size === "md" ? "text-[20px] leading-6" : "text-[16px] leading-6"),
               it.warning && "text-(--crm-warning)",
             )}
           >
@@ -72,12 +79,22 @@ export function StatStrip({
             ) : (
               <>
                 {it.unit && it.unitPosition === "before" && <span className={cn(TYPE.unit, "text-[0.7em]")}>{it.unit}</span>}
-                <span className="min-w-0 break-words">{it.value}</span>
+                {it.href ? (
+                  <Link
+                    href={it.href}
+                    className={cn("min-w-0 break-words rounded-[2px] underline decoration-(--crm-border-strong) underline-offset-4 hover:decoration-(--crm-text)", FOCUS)}
+                  >
+                    {it.value}
+                    <span className="sr-only"> {it.label}</span>
+                  </Link>
+                ) : (
+                  <span className="min-w-0 break-words">{it.value}</span>
+                )}
                 {it.unit && it.unitPosition !== "before" && <span className={cn(TYPE.unit, "text-[0.7em]")}>{it.unit}</span>}
               </>
             )}
           </dd>
-          {it.detail && <dd className={cn(TYPE.meta, "truncate text-(--crm-text-2)")}>{it.detail}</dd>}
+          {it.detail && <dd className={cn(TYPE.meta, size === "lg" ? "break-words" : "truncate", "text-(--crm-text-2)")}>{it.detail}</dd>}
         </div>
       ))}
     </dl>

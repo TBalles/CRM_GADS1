@@ -201,9 +201,9 @@ src/
       sin-permisos/            Destino cuando el rol no tiene ninguna sección
       */loading.tsx            Loader de marca por módulo
       error.tsx                Aviso con "Reintentar" si la base no responde (las lecturas ya no se tragan el error)
-      dashboard/                KPIs + distribución del embudo + rankings
-        page.tsx                 Server Component: cuenta y agrega oportunidades por etapa/empresa
-        charts.tsx               MagnitudeBars / ShareBar en CSS puro (sin librería de charts)
+      (crm2)/dashboard/          CRM 2.0 (Lote E): Inicio. h1 "Inicio", franja de 4 cifras (StatStrip lg; Contactos sigue yendo a /empresas,
+                                   bug conocido sin corregir) y tablas con barra: por etapa, recambios (alertas.ver), empresas con más valor
+        page.tsx / loading.tsx   Server Component: mismas lecturas y cuentas que el legacy; carga con TableroSkeleton
       (crm2)/empresas/          CRM 2.0 (Etapa 3): lista + vista previa (master-detail, `?sel=`) y ficha con tabs (`?tab=`)
         page.tsx                 Server Component: searchParams → UNA página (.range) + catálogos; vista previa en <Suspense key={sel}>
         EmpresasList.tsx          Client: PageBar, toolbar (filtros por URL), DataTable, selección optimista ↑/↓/Esc, banda de pie; recibe el panel
@@ -219,10 +219,12 @@ src/
         VistaPrevia.tsx / AccionesVistaPrevia.tsx   Panel ≥1280 (leerCuenta360 por contacto_id) y su acción + ⋮
         acciones.tsx / datos.tsx  Acciones de contacto (ContactoDrawer, BajaDialog) y sus datos como DefinitionList
         [id]/page.tsx / [id]/ContactoDetalle.tsx   Ficha: DetailHeader + Tabs (Resumen, Actividad, Oportunidades, Ventas)
-      tablero-comercial/         Tablero del responsable (F5): pipeline por responsable, sin actividad, cierres del mes, motivos
-        page.tsx                 Server Component: `?dias=7|14|30` y `?mes=aaaa-mm`; lecturas con tope y aviso
-      embudo/                    Conversión del embudo (F5): entraron, avanzaron, mediana de días, tasa de éxito y ciclo
-        page.tsx / EmbudoFiltros.tsx   Server Component + filtros por URL (`?desde=&hasta=&origen=`)
+      (crm2)/tablero-comercial/  CRM 2.0 (Lote E): tablero del responsable (F5): franja de 5 cifras, pipeline por responsable, sin actividad,
+                                   cierres del mes y motivos, cada uno como tabla
+        page.tsx / loading.tsx   Server Component: `?dias=7|14|30` y `?mes=aaaa-mm`; lecturas con tope y aviso (cuentas en lib/tablero.ts)
+      (crm2)/embudo/             CRM 2.0 (Lote E): conversión del embudo (F5): franja de 3 cifras, tabla por etapa con la barra del embudo,
+                                   «Cómo se calcula» en <details>
+        page.tsx / EmbudoFiltros.tsx / loading.tsx   Server Component + toolbar CRM (FechaFiltro, Select) por URL (`?desde=&hasta=&origen=`)
       buscar/actions.ts          Server Action `buscarGlobal` de la búsqueda Ctrl+K (F5): con la sesión, la RLS manda
       (crm2)/productos/          CRM 2.0 (Lote A): catálogo con vida útil (sin ficha ni vista previa)
         page.tsx / ProductosList.tsx / ProductoForm.tsx   Lista densa + drawer de alta/edición (CRM 2.0)
@@ -280,14 +282,15 @@ src/
     Cancha.tsx                  MarcasCancha: la cancha en SVG sobre la superficie .cesped
     Equipamiento.tsx            Íconos del rubro (arco, red, pelota…) + IconoEquipo
     FiltrosUrl.tsx              useFiltrosUrl (filtros en la URL con router.replace + useTransition), CajaBusqueda (300 ms),
-                                FiltroSelect, FiltroFecha, BarraPendiente
+                                FiltroSelect, AnuncioResultados (FiltroFecha y BarraPendiente se borraron en el Lote E: sin usuarios)
     Paginacion.tsx              nav accesible con links ?page=N, selector de filas por página y "Mostrando 21-40 de 134"
     ConfirmModal.tsx            Alert dialog centrado (lo usa el logout)
     ParqueInstalado.tsx         Parque instalado de una empresa, agrupado por urgencia (server-safe)
     crm/                        CRM 2.0 (design-system/crm-2/MASTER.md §10): primitivos, shell y composiciones. Del Lote A:
       Lista.tsx                 useSeleccionUrl (master-detail por `?sel=`), useFocoFilas, ListFooter, PanelVistaPrevia
       seleccion.ts(+.check)     Lógica pura: ↑/↓ (vecinoSel), tab válida, fila que recibe el foco tras una acción
-      PreviewPanel.tsx / Skeletons.tsx / MoneyInput.tsx   Vista previa, cargas (lista y ficha), monto con máscara
+      PreviewPanel.tsx / Skeletons.tsx / MoneyInput.tsx   Vista previa, cargas (lista, ficha y tablero), monto con máscara
+      barra.ts(+.check)         Lote E: ancho de la barra de dato (anchoBarra) y % del total (porcentajeDe); DataTable → CellBar y TFoot
       Toolbar.tsx               SearchField / SearchInput, FechaFiltro, ToggleChip y "Más filtros" (MasFiltros: los filtros secundarios con poco ancho)
       FilaCompleta.tsx          Fila que ocupa las columnas VISIBLES (vacíos de toda lista y el detalle de Ventas)
       cuenta/SeccionesCuenta.tsx  Secciones de ficha 360 y vista previa compartidas por empresa y contacto

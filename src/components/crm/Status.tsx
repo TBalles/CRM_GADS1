@@ -43,22 +43,25 @@ const TINTE: Record<Tone, string> = {
 export function StatusDot({
   tone = "neutral",
   color,
+  wrap = false,
   children,
   className,
 }: {
   tone?: Tone;
   color?: string | null;
+  /** El texto baja de renglón en vez de recortarse (nombres de etapa en las tablas de los tableros, §10.21). */
+  wrap?: boolean;
   children: React.ReactNode;
   className?: string;
 }) {
   return (
-    <span className={cn("inline-flex min-w-0 items-center gap-1.5", className)}>
+    <span className={cn("inline-flex min-w-0 gap-1.5", wrap ? "items-start whitespace-normal" : "items-center", className)}>
       <span
         aria-hidden="true"
-        className={cn("size-2 shrink-0", color ? "rounded-[2px]" : cn("rounded-full", PUNTO[tone]))}
+        className={cn("size-2 shrink-0", wrap && "mt-[5px]", color ? "rounded-[2px]" : cn("rounded-full", PUNTO[tone]))}
         style={color ? { backgroundColor: color } : undefined}
       />
-      <span className="truncate">{children}</span>
+      <span className={wrap ? "min-w-0 break-words" : "truncate"}>{children}</span>
     </span>
   );
 }

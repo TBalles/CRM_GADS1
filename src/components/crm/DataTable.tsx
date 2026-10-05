@@ -1,5 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
+import { anchoBarra } from "./barra";
 import { FilaCompleta } from "./FilaCompleta";
 import { LoadingStatus, Skeleton } from "./Feedback";
 import { Avatar, StatusDot, type Tone } from "./Status";
@@ -92,6 +93,18 @@ export function Th({
 
 export function TBody({ children }: { children: React.ReactNode }) {
   return <tbody className="[&>tr:last-child>td]:border-b-0">{children}</tbody>;
+}
+
+/**
+ * Fila de totales (tableros, §10.21): la regla fuerte arriba, como el cierre de una columna en un libro mayor. Solo
+ * totales que ya existen en la pantalla (no se inventan sumas). Las celdas son `Td` comunes.
+ */
+export function TFoot({ children }: { children: React.ReactNode }) {
+  return (
+    <tfoot className="font-medium [&>tr>td]:border-b-0 [&>tr>td]:border-t [&>tr>td]:border-t-(--crm-border-strong)">
+      <tr className="h-9">{children}</tr>
+    </tfoot>
+  );
 }
 
 export function Tr({
@@ -193,6 +206,22 @@ export function CellNumber({
       {children}
       {unitPosition === "after" && u && " "}
       {unitPosition === "after" && u}
+    </span>
+  );
+}
+
+/**
+ * Barra de dato (tableros, §10.21): largo proporcional a `max` (`anchoBarra`), un solo tono, sin gradiente. Repite un
+ * número que está escrito en la misma fila: es decorativa (`aria-hidden`), nunca la única forma de leer el dato.
+ * Alineada a la izquierda sobre un eje hairline; `center` la centra sin eje (la forma de embudo de la conversión).
+ */
+export function CellBar({ value, max, center = false }: { value: number; max: number; center?: boolean }) {
+  return (
+    <span aria-hidden="true" className={cn("flex h-4 w-full items-center", !center && "border-l border-(--crm-border-strong)")}>
+      <span
+        className={cn("block h-2 bg-(--crm-accent)", center ? "mx-auto rounded-[2px]" : "rounded-r-[2px]")}
+        style={{ width: `${anchoBarra(value, max)}%` }}
+      />
     </span>
   );
 }

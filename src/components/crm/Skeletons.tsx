@@ -183,3 +183,72 @@ export function DetailSkeleton({ tabs, pasos }: { tabs?: string[]; pasos?: numbe
     </div>
   );
 }
+
+/**
+ * Tablero (Inicio, Tablero comercial, Embudo; MASTER.md §10.21–§10.23): barra con el h1 real, la toolbar si la pantalla
+ * filtra, la franja de cifras (`kpis`) y las secciones con su barra y su tabla, en la MISMA grilla que la pantalla
+ * (`secciones[i].className` = las clases de columna de esa sección; `rows` = filas de esqueleto).
+ */
+export function TableroSkeleton({
+  title,
+  label,
+  kpis,
+  toolbar = false,
+  secciones,
+  gridClassName,
+}: {
+  title: string;
+  label: `Cargando${string}`;
+  kpis: number;
+  toolbar?: boolean;
+  secciones: { className?: string; rows: number }[];
+  gridClassName?: string;
+}) {
+  return (
+    <div aria-busy="true" className={cn(UI_ROOT, "min-h-full bg-(--crm-canvas) px-4 pb-6 xl:px-6")}>
+      <LoadingStatus label={label} />
+      <div className="flex h-12 items-center">
+        <h1 className={TYPE.title}>{title}</h1>
+      </div>
+      {toolbar && (
+        <div className="flex min-h-10 flex-wrap items-center gap-2 py-1.5">
+          <Skeleton className="h-7 w-44" />
+          <Skeleton className="h-7 w-36" />
+          <Skeleton className="h-7 w-52" />
+        </div>
+      )}
+      <div className="flex flex-col gap-6 pt-2">
+        <div
+          style={{ "--n": kpis } as React.CSSProperties}
+          className="grid grid-cols-2 gap-y-3 sm:grid-cols-[repeat(var(--n),minmax(0,1fr))] [&>div]:border-l [&>div]:border-(--crm-border) [&>div]:px-4 [&>div:first-child]:border-l-0 [&>div:first-child]:pl-0 max-sm:[&>div:nth-child(odd)]:border-l-0 max-sm:[&>div:nth-child(odd)]:pl-0"
+        >
+          {Array.from({ length: kpis }, (_, i) => (
+            <div key={i} className="flex flex-col gap-2 py-0.5">
+              <Skeleton className="w-24" />
+              <Skeleton className="h-7 w-28" />
+            </div>
+          ))}
+        </div>
+        <div className={cn("grid items-start gap-6", gridClassName)}>
+          {secciones.map((sec, i) => (
+            <div key={i} className={cn("flex min-w-0 flex-col", sec.className)}>
+              <div className="flex h-10 items-center">
+                <Skeleton className="w-44" />
+              </div>
+              <div className="rounded-(--crm-radius) border border-(--crm-border) bg-(--crm-panel)">
+                <div className="h-8 border-b border-(--crm-border-strong)" />
+                {Array.from({ length: sec.rows }, (_, r) => (
+                  <div key={r} className="flex h-9 items-center gap-6 border-b border-(--crm-border) px-3 last:border-b-0">
+                    <Skeleton className={r % 2 ? "w-1/3" : "w-1/2"} />
+                    <Skeleton className="w-1/5" />
+                    <Skeleton className="ml-auto w-16" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

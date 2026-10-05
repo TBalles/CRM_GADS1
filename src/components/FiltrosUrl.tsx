@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Loader2, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/UIComponents";
 import { Select, type SelectOption } from "@/components/ui/Select";
-import { fechaParam, urlConParams } from "@/lib/paginacion";
+import { urlConParams } from "@/lib/paginacion";
 import { cn } from "@/lib/utils";
 
 /**
@@ -217,78 +217,6 @@ export function FiltroSelect({
         className="h-9"
       />
     </div>
-  );
-}
-
-/**
- * Línea fina sobre los resultados mientras el servidor recalcula. Reserva su
- * lugar siempre (no empuja la lista) y no atenúa el texto: el contraste de lo
- * que se está leyendo no baja. Quien la usa pone además `aria-busy` en la lista.
- */
-export function BarraPendiente({ pending }: { pending: boolean }) {
-  return (
-    <div aria-hidden="true" className="-mb-2 h-0.5 w-full overflow-hidden rounded-full">
-      <div className={cn("h-full w-full rounded-full bg-brand transition-opacity", pending ? "animate-pulse opacity-100 motion-reduce:animate-none" : "opacity-0")} />
-    </div>
-  );
-}
-
-/**
- * Un filtro de fecha atado a un parámetro de la URL. El campo guarda lo que la
- * persona tipea y solo escribe la URL cuando es una fecha real (año 1900 a
- * 2100): un `0002-01-15` a medio tipear no filtra nada. Igual que el buscador,
- * se rearma solo si la URL cambia por otro camino (atrás, "Limpiar filtros") y no
- * se pisa con su propia escritura.
- */
-export function FiltroFecha({
-  filtros,
-  param,
-  etiqueta,
-  min,
-  max,
-}: {
-  filtros: FiltrosUrl;
-  param: string;
-  etiqueta: string;
-  min?: string;
-  max?: string;
-}) {
-  const enUrl = filtros.valor(param);
-  const [texto, setTexto] = useState(enUrl);
-  const [enviado, setEnviado] = useState(enUrl);
-  const [urlPrevia, setUrlPrevia] = useState(enUrl);
-  if (enUrl !== urlPrevia) {
-    setUrlPrevia(enUrl);
-    if (enUrl !== enviado) {
-      setTexto(enUrl);
-      setEnviado(enUrl);
-    }
-  }
-
-  function alCambiar(e: React.ChangeEvent<HTMLInputElement>) {
-    const v = e.target.value;
-    setTexto(v);
-    // Vacío con `badInput` es una fecha a medio tipear, no un borrado.
-    if (v === "" && e.target.validity.badInput) return;
-    const limpio = v === "" ? "" : fechaParam(v);
-    if (v !== "" && limpio === "") return;
-    if (limpio === enviado) return;
-    setEnviado(limpio);
-    filtros.aplicar({ [param]: limpio || null });
-  }
-
-  return (
-    <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-      <span>{etiqueta}</span>
-      <Input
-        type="date"
-        value={texto}
-        min={min || undefined}
-        max={max || undefined}
-        onChange={alCambiar}
-        className="h-9 w-36 text-sm"
-      />
-    </label>
   );
 }
 
