@@ -76,15 +76,25 @@ export function ListFooter({ filtros, total, page, pageSize }: { filtros: Filtro
  */
 export function useFocoFilas(
   filas: readonly { id: string }[],
-  { tabla, buscador }: { tabla: React.RefObject<HTMLDivElement | null>; buscador: React.RefObject<HTMLDivElement | null> },
+  {
+    tabla,
+    buscador,
+    acciones = ACCIONES_DE_ESTADO,
+  }: {
+    tabla: React.RefObject<HTMLDivElement | null>;
+    buscador: React.RefObject<HTMLDivElement | null>;
+    /** Las acciones del `⋮` que pueden sacar la fila (por defecto "Dar de baja" y "Reactivar"; Oportunidades: cerrar, mover). */
+    acciones?: ReadonlySet<string>;
+  },
 ) {
   type Intencion = { id: string; antes: string[] };
   const intencion = React.useRef<Intencion | null>(null);
   const pendiente = React.useRef<Intencion | null>(null);
 
-  /** Foco al nombre de la fila (Enter ahí abre la ficha) o, si la fila no tiene link, a su `⋮`. */
+  /** Foco al nombre de la fila (Enter ahí abre la ficha) o, si la fila no tiene link, a su `⋮`. Una fila es una `tr` o una
+   *  tarjeta del tablero: cualquier elemento con `data-id` dentro de `tabla`. */
   const enfocarFila = React.useCallback((id: string) => {
-    const fila = `tr[data-id="${CSS.escape(id)}"]`;
+    const fila = `[data-id="${CSS.escape(id)}"]`;
     tabla.current?.querySelector<HTMLElement>(`${fila} [data-nombre], ${fila} [aria-haspopup="menu"]`)?.focus();
   }, [tabla]);
 
@@ -105,7 +115,7 @@ export function useFocoFilas(
       return items.map((it) => ({
         ...it,
         onSelect: () => {
-          intencion.current = ACCIONES_DE_ESTADO.has(it.label) ? { id, antes } : null;
+          intencion.current = acciones.has(it.label) ? { id, antes } : null;
           it.onSelect();
         },
       }));

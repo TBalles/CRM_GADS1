@@ -54,12 +54,12 @@ export function ListSkeleton({
       )}
       <div className="flex min-h-10 items-center gap-2 py-1.5">
         {toolbar ?? (
-          <>
-            <Skeleton className="h-7 w-64" />
-            {chips.map((w, i) => (
-              <Skeleton key={i} className={cn("h-7", w)} />
-            ))}
-          </>
+            <>
+                <Skeleton className="h-7 w-64" />
+                {chips.map((w, i) => (
+                  <Skeleton key={i} className={cn("h-7", w)} />
+                ))}
+            </>
         )}
       </div>
       <DataTable label={title} busy className="min-h-0">
@@ -77,9 +77,10 @@ export function ListSkeleton({
  * Ficha con la forma de la que viene (`DetailHeader` + Tabs + Resumen de §10.13): franja en panel con el h1, la fila de
  * metadatos y la acción primaria + `⋮` a la derecha, las tabs pegadas abajo; debajo, sin caja, la franja de cifras con
  * sus divisores, una sección con su barra y su tabla, y el riel "Datos" (término | valor con hairlines) desde 1280.
- * `tabs`: anchos de las tabs que vienen.
+ * `tabs`: anchos de las tabs que vienen. `pasos` (ficha de oportunidad, §10.19): en lugar de tabs, el recorrido por el
+ * embudo (N etapas + el cierre) con sus acciones, y el cuerpo es el historial (sin cifras ni tabla).
  */
-export function DetailSkeleton({ tabs }: { tabs: string[] }) {
+export function DetailSkeleton({ tabs, pasos }: { tabs?: string[]; pasos?: number }) {
   return (
     <div aria-busy="true" className={cn(UI_ROOT, "flex min-h-full flex-col bg-(--crm-canvas)")}>
       <LoadingStatus label="Cargando la ficha…" />
@@ -98,36 +99,59 @@ export function DetailSkeleton({ tabs }: { tabs: string[] }) {
             <Skeleton className="size-8" />
           </div>
         </div>
-        <div className="mt-2 flex h-10 items-center gap-6">
-          {tabs.map((w, i) => (
-            <Skeleton key={i} className={w} />
-          ))}
-        </div>
-      </div>
-      <div className="grid items-start gap-x-6 gap-y-5 px-4 py-4 xl:grid-cols-[minmax(0,1fr)_340px] xl:px-6">
-        <div className="flex min-w-0 flex-col gap-5">
-          <div className="grid grid-cols-2 gap-y-3 sm:grid-cols-5 [&>div]:border-l [&>div]:border-(--crm-border) [&>div]:px-4 [&>div:first-child]:border-l-0 [&>div:first-child]:pl-0">
-            {Array.from({ length: 5 }, (_, i) => (
-              <div key={i} className="flex flex-col gap-2">
-                <Skeleton className="w-20" />
-                <Skeleton className="h-5 w-24" />
-              </div>
+        {tabs && (
+          <div className="mt-2 flex h-10 items-center gap-6">
+            {tabs.map((w, i) => (
+              <Skeleton key={i} className={w} />
             ))}
           </div>
-          <div className="flex flex-col">
-            <div className="flex h-10 items-center">
-              <Skeleton className="w-40" />
-            </div>
-            <div className="rounded-(--crm-radius) border border-(--crm-border) bg-(--crm-panel)">
-              <div className="h-8 border-b border-(--crm-border-strong)" />
-              {Array.from({ length: 3 }, (_, i) => (
-                <div key={i} className="flex h-9 items-center justify-between border-b border-(--crm-border) px-3 last:border-b-0">
-                  <Skeleton className={i % 2 ? "w-1/3" : "w-1/2"} />
-                  <Skeleton className="w-20" />
+        )}
+        {pasos !== undefined && (
+          <div className="mt-2 flex flex-wrap items-end justify-between gap-x-6 gap-y-2 pb-3">
+            <div className="flex min-w-0 flex-1 basis-full gap-1 overflow-hidden xl:basis-0">
+              {Array.from({ length: pasos + 1 }, (_, i) => (
+                <div key={i} className="flex min-w-24 flex-1 basis-0 flex-col border-t-2 border-(--crm-border) pt-1.5">
+                  <Skeleton className="h-4 w-20" />
                 </div>
               ))}
             </div>
+            <div className="flex gap-2">
+              <Skeleton className="h-7 w-28" />
+              <Skeleton className="h-7 w-28" />
+              <Skeleton className="h-7 w-28" />
+            </div>
           </div>
+        )}
+        {!tabs && pasos === undefined && <div className="h-3" />}
+      </div>
+      <div className="grid items-start gap-x-6 gap-y-5 px-4 py-4 xl:grid-cols-[minmax(0,1fr)_340px] xl:px-6">
+        <div className="flex min-w-0 flex-col gap-5">
+          {pasos === undefined && (
+            <>
+              <div className="grid grid-cols-2 gap-y-3 sm:grid-cols-5 [&>div]:border-l [&>div]:border-(--crm-border) [&>div]:px-4 [&>div:first-child]:border-l-0 [&>div:first-child]:pl-0">
+                {Array.from({ length: 5 }, (_, i) => (
+                  <div key={i} className="flex flex-col gap-2">
+                    <Skeleton className="w-20" />
+                    <Skeleton className="h-5 w-24" />
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-col">
+                <div className="flex h-10 items-center">
+                  <Skeleton className="w-40" />
+                </div>
+                <div className="rounded-(--crm-radius) border border-(--crm-border) bg-(--crm-panel)">
+                  <div className="h-8 border-b border-(--crm-border-strong)" />
+                  {Array.from({ length: 3 }, (_, i) => (
+                    <div key={i} className="flex h-9 items-center justify-between border-b border-(--crm-border) px-3 last:border-b-0">
+                      <Skeleton className={i % 2 ? "w-1/3" : "w-1/2"} />
+                      <Skeleton className="w-20" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
           <div className="flex flex-col">
             <div className="flex h-10 items-center">
               <Skeleton className="w-36" />

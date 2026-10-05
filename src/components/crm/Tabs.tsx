@@ -205,6 +205,7 @@ export function SegmentedControl({
   onValueChange,
   size = "md",
   className,
+  labelClassName,
 }: {
   label: string;
   items: SegmentItem[];
@@ -212,6 +213,8 @@ export function SegmentedControl({
   onValueChange: (value: string) => void;
   size?: "sm" | "md";
   className?: string;
+  /** Para esconder el texto con poco ancho y dejar solo el ícono ("max-sm:sr-only"): el nombre accesible no cambia. */
+  labelClassName?: string;
 }) {
   const refs = React.useRef<(HTMLButtonElement | null)[]>([]);
   return (
@@ -252,7 +255,7 @@ export function SegmentedControl({
             )}
           >
             {Icon && <Icon aria-hidden="true" strokeWidth={1.75} className="size-4" />}
-            {it.label}
+            <span className={labelClassName}>{it.label}</span>
           </button>
         );
       })}

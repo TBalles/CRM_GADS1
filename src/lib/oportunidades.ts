@@ -87,6 +87,88 @@ export function accionesDisponibles(
   return permisos.puedeReabrir ? ["reabrir", "resultado"] : [];
 }
 
+/** Nombre de cada acción de cambio en menús y botones (contrato de E2E: "Cambiar etapa", "Marcar perdida"). */
+export const ETIQUETA_CAMBIO: Record<ModoCambio, string> = {
+  etapa: "Cambiar etapa",
+  ganada: "Marcar ganada",
+  perdida: "Marcar perdida",
+  reabrir: "Reabrir",
+  resultado: "Cambiar resultado",
+};
+
+/** Título (nombre accesible del diálogo: "Cambiar de etapa", "Marcar como perdida"), botón y bajada de cada acción. */
+export const COPY_CAMBIO: Record<ModoCambio, { titulo: string; confirmar: string; bajada: string }> = {
+  etapa: { titulo: "Cambiar de etapa", confirmar: "Mover", bajada: "Queda en el historial con tu usuario y la fecha." },
+  ganada: {
+    titulo: "Marcar como ganada",
+    confirmar: "Marcar ganada",
+    bajada: "La oportunidad se cierra con la fecha que indiques. Cualquier cambio posterior queda auditado.",
+  },
+  perdida: {
+    titulo: "Marcar como perdida",
+    confirmar: "Marcar perdida",
+    bajada: "Una oportunidad no se borra: se cierra con su motivo para aprender de la pérdida.",
+  },
+  reabrir: { titulo: "Reabrir oportunidad", confirmar: "Reabrir", bajada: "Vuelve al embudo y pierde su fecha de cierre. Contá por qué se reabre." },
+  resultado: {
+    titulo: "Cambiar resultado",
+    confirmar: "Cambiar resultado",
+    bajada: "Pasa de ganada a perdida (o al revés) sin reabrirla, con su propia fecha de cierre. Queda en el historial y en la auditoría.",
+  },
+};
+
+/** La etapa que el diálogo propone: al mover, la siguiente en el embudo (o la primera); al cerrar y reabrir, la primera. */
+export function etapaSugerida<T extends EtapaBasica>(destinos: readonly T[], modo: ModoCambio, ordenActual = 0): T | undefined {
+  return modo === "etapa" ? (destinos.find((e) => e.orden > ordenActual) ?? destinos[0]) : destinos[0];
+}
+
+/** El aviso de éxito de cada acción (E2E busca "pasó a «…»" y "quedó perdida"). */
+export function textoCambioHecho(modo: ModoCambio, titulo: string, nombreEtapa: string, aPerdida: boolean): string {
+  switch (modo) {
+    case "ganada":
+      return `«${titulo}» quedó ganada.`;
+    case "perdida":
+      return `«${titulo}» quedó perdida. El motivo queda registrado.`;
+    case "resultado":
+      return `«${titulo}» ahora figura como ${aPerdida ? "perdida" : "ganada"}.`;
+    case "reabrir":
+      return `«${titulo}» se reabrió en «${nombreEtapa}».`;
+    default:
+      return `«${titulo}» pasó a «${nombreEtapa}».`;
+  }
+}
+
+export type PasoEmbudo = { id: string; nombre: string; color: string | null; paso: "hecho" | "actual" | "pendiente" };
+
+/**
+ * El progreso de una oportunidad por el embudo (stepper de la ficha, solo lectura): las etapas abiertas en orden y, al
+ * final, el cierre. Abierta: las anteriores a la actual quedan hechas y el cierre pendiente. Cerrada: no se afirma por
+ * qué etapas pasó (eso está en el historial): las abiertas quedan sin marcar y el cierre es la etapa actual (con su
+ * nombre). Una etapa actual que ya no existe no marca nada.
+ */
+export function pasosEmbudo<T extends EtapaBasica & { color?: string | null }>(
+  etapas: readonly T[],
+  etapaActualId: string,
+  estado: string,
+): { abiertas: PasoEmbudo[]; cierre: PasoEmbudo } {
+  const abiertas = etapasAbiertas(etapas);
+  const actual = etapas.find((e) => e.id === etapaActualId);
+  const cerrada = estado !== "abierta";
+  const orden = !cerrada && actual?.tipo === "abierta" ? actual.orden : null;
+  return {
+    abiertas: abiertas.map((e) => ({
+      id: e.id,
+      nombre: e.nombre,
+      color: e.color ?? null,
+      paso: orden === null ? "pendiente" : e.id === etapaActualId ? "actual" : e.orden < orden ? "hecho" : "pendiente",
+    })),
+    cierre:
+      cerrada && actual
+        ? { id: actual.id, nombre: actual.nombre, color: actual.color ?? null, paso: "actual" }
+        : { id: "cierre", nombre: "Cierre", color: null, paso: "pendiente" },
+  };
+}
+
 /** Hoy en horario argentino (`aaaa-mm-dd`), igual que las fechas de las fichas. */
 export function hoyAR(ahora: Date = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Argentina/Buenos_Aires" }).format(ahora);

@@ -345,7 +345,7 @@ no tienen `"use client"` ni hooks y se pueden usar desde server components (el l
 tooltips de recorte desde su página servidor); los demás son de cliente. §10.11 es el shell (Etapa 2, construido); §10.12 es la
 especificación de las composiciones, §10.13 cómo quedaron construidas en Empresas (Etapa 3) y §10.14 Contactos y Productos
 (Lote A), con lo que se generalizó para todas las listas. §10.15 es el selector de fecha (`DatePicker` / `DateTimePicker`).
-§10.16–§10.18 son Ventas, Alertas y Usuarios (Lote B).
+§10.16–§10.18 son Ventas, Alertas y Usuarios (Lote B); §10.19, Oportunidades (Lote C).
 
 ### 10.1 Button, IconButton, FilterChip — `Button.tsx` (server-safe)
 - Variantes: `primary` (acento sólido; **una por pantalla**), `secondary` (panel + hairline; la normal), `ghost` (sin caja; acciones
@@ -404,6 +404,8 @@ especificación de las composiciones, §10.13 cómo quedaron construidas en Empr
   primario arriba). `onSubmit` envuelve cuerpo y footer en `<form>`. `busy` impide cerrar a mitad de una mutación.
   Secciones con `FormSection` (título 13/600 + divisor), **sin cajas**.
 - `Dialog`: solo confirmaciones y cierre de oportunidad, ≤ 440, título 16, acciones abajo a la derecha. `role="dialog"`.
+  Desde el Lote C: `onSubmit` (como el Drawer: cuerpo y acciones en un `<form noValidate>`, Enter envía) y nunca más alto que la
+  ventana (`max-h` de `100dvh − 32`; el cuerpo scrollea, las acciones quedan a la vista).
 - `ConfirmDialog`: `role="alertdialog"`, foco inicial en "Cancelar", espera `onConfirm` sin poder cerrarse. **Ojo:** "Marcar como
   perdida" y "Cambiar de etapa" hoy son `role="dialog"` para E2E: se migran con `Dialog`, no con `ConfirmDialog`.
 - `Drawer` y `Dialog` bloquean el scroll del documento mientras están abiertos (con contador: anidados no lo liberan antes).
@@ -746,9 +748,9 @@ la semana de lunes). Un solo componente; `DateTimePicker` = `DatePicker time`. C
   foco). Sin gradientes, sin sombras extra, sin `title=`.
 - **Dónde se usa:** `ActividadDrawer` ("Cuándo", `#ocurrido_en`, `time`, `max` = ahora; misma validación y payload); desde el
   Lote B, "Nueva venta" (`#fecha` y la entrega de cada línea, `#item-<key>-entrega`) y los filtros "Desde" / "Hasta" de Ventas
-  (`FechaFiltro`, §10.16). Las
-  pantallas legacy (`CierreModal`, `ActividadForm`, `FiltrosUrl`, `OportunidadForm`) siguen con el nativo hasta su
-  slice. Muestras en `/crm-lab` (sección "Fechas").
+  (`FechaFiltro`, §10.16); desde el Lote C, Oportunidades: `#fecha_estimada_cierre` y `#licitacion_apertura` (drawer) y
+  `#fecha_cierre` (diálogo de cierre, `max` = hoy). Lo legacy que queda (`FiltrosUrl` de Embudo, el presupuesto) sigue con el
+  nativo hasta su slice. Muestras en `/crm-lab` (sección "Fechas").
 
 ### 10.16 Ventas (Lote B, construido)
 `src/app/(app)/(crm2)/ventas/`, movida con `git mv` desde `(legacy)`. Mismos datos, filtros, parámetros, permisos, validaciones y
@@ -878,6 +880,93 @@ usuario, grupos de permisos, el tildado con dependencias y la validación del ro
 `SearchField` ahora lo usa) y `FechaFiltro` (filtro de fecha por URL); `FilaCompleta` (arriba); `PageBar`: si el contador no entra
 al lado del h1, baja a un segundo renglón (`min-h-12` + wrap) en vez de recortar el título (pasaba con Alertas en el celular);
 `ListSkeleton`: `toolbar` (fila propia), `tabs` y `footer`; `InlineBanner`: `role`.
+
+### 10.19 Oportunidades (Lote C, construido)
+`src/app/(app)/(crm2)/oportunidades/` (`git mv` de `page.tsx`, `datos.ts`, `OportunidadesView.tsx`, `OportunidadForm.tsx`, `loading.tsx` y
+`[id]/*`; `components/CierreModal.tsx` → `CierreDialog.tsx`). **El editor de presupuesto queda legacy** en
+`(legacy)/oportunidades/[id]/presupuesto/`: los dos route groups conviven bajo `/oportunidades/[id]` (solo `(crm2)` tiene `page` en
+`[id]`), así que el editor conserva su layout, sus overlays legacy, su impresión y su "Volver a la oportunidad". Mismos datos, filtros,
+parámetros, permisos, validaciones, mutaciones, avisos y nombres. Lógica pura nueva en `lib/oportunidades.ts` (+ `.check`):
+`ETIQUETA_CAMBIO`, `COPY_CAMBIO`, `etapaSugerida`, `textoCambioHecho` y `pasosEmbudo`.
+
+- **PageBar:** "Oportunidades" + el contador de siempre ("10 abiertas · 5 cerradas" / "N de T oportunidades" / "N oportunidades" si
+  un conteo falló) + el **segmentado "Vista"** (`radiogroup`: Tablero | Lista, `?vista=lista`; navega con historial y, al volver al
+  tablero, saca `estado` y una etapa de cierre, como antes; en el celular solo los íconos con `labelClassName`, el nombre accesible no
+  cambia) + "Nueva oportunidad" (`oportunidades.editar`; ícono en el celular). Sin la 0011 y con `configuracion.gestionar`, el aviso
+  de la migración (`InlineBanner`).
+- **Toolbar:** textbox **"Buscar oportunidad"** (`?q=`, 320 desde 52rem: el placeholder entra entero), chips `Menu` "Filtrar por
+  estado" (solo en la lista; "Abiertas" es el valor sin parámetro y el chip lo muestra), "Filtrar por etapa" (tablero: las abiertas;
+  lista: todas), "Filtrar por responsable" (solo con `clientes.ver_todos`; "Sin asignar" = `?responsable=sin`), "Filtrar por tipo"
+  y "Filtrar por origen"; "Limpiar filtros" conserva `vista` y `pageSize`. Con menos de 52rem, Responsable, Tipo y Origen van en
+  "Más filtros". En el tablero, a la derecha, lo que antes decía el encabezado "Embudo comercial": "En el tablero: N · $4,9 M".
+- **Tablero:** las columnas van **directo sobre el canvas, a todo el alto del área de trabajo** (sin card alrededor): UNA barra
+  horizontal (la región "Columnas del embudo", enfocable) y cada columna scrollea solo de alto. Columna: cabecera de 40 sobre la
+  regla fuerte (cuadradito de la etapa + nombre 600 + cantidad mono + valor de la etapa compacto a la derecha) y la zona de
+  tarjetas, que es también la de soltar (al pasar: `--crm-selected` + borde de acento de 2 px; vacía: "Nada en esta etapa" / "Nada
+  con ese filtro" / "Soltá acá"). Ancho 256–384 que reparte; en el celular 85 % con imán (`scroll-px`). Se fue el "01, 02…" de cada
+  etapa (decorativo: "una jugada que avanza").
+- **Tarjeta** (`article`, `data-id`): título = link a la ficha (13/500, hasta 2 renglones; `Tooltip onlyWhenTruncated` ahora mira
+  también el alto), `⋮` **"Acciones de <título>"**, cliente (12 secundario, "Sin empresa / contacto"), valor compacto (cifra mono,
+  "$" y "k/M" en gris), "Licitación" (`Tag`) y el responsable (Avatar; el nombre para lectores y en tooltip). Los mismos datos que la
+  tarjeta legacy. Se arrastra entera (HTML5 nativo, optimista, vuelve atrás y avisa si falla, como antes); mientras se guarda, el
+  `⋮` es un indicador "Guardando el cambio…". **Alternativa de teclado y táctil:** `⋮` → "Cambiar etapa" (el diálogo de la ficha).
+- **`⋮` de tarjeta y de fila:** Ver detalle, **Presupuesto** (un acceso más al mismo link, sin permiso extra, igual que el botón de
+  la ficha), Editar (`oportunidades.editar`) y las acciones de etapa de `accionesDisponibles` (Cambiar etapa, Marcar ganada, Marcar
+  perdida / Reabrir, Cambiar resultado). Foco después (`useFocoFilas` con `acciones = ACCIONES_QUE_MUEVEN`): en el tablero la
+  tarjeta se mueve al instante y el foco va a su título en la columna nueva (o, si se cerró, a la tarjeta siguiente); en la lista,
+  cuando vuelve el servidor, a la misma fila o a la siguiente.
+- **Lista:** `DataTable` (filas de 36; dos renglones cuando hay línea de apoyo) + banda de pie con "Mostrando N–M de T", paginación y
+  "Filas por página". Pie de la tabla (`tfoot` fijo abajo, regla fuerte arriba): "Valor de la página" con la suma bajo la columna
+  Valor y "N con valor · M sin responsable" (la fila de totales legacy; "En esta página" ya lo dice "Mostrando…").
+
+  | Contenedor | Columnas | Línea de apoyo bajo el título |
+  |---|---|---|
+  | ≥ 72rem (1440) | Oportunidad (+ "Licitación") · Empresa / Contacto · Producto (ícono de equipamiento + nombre) · Etapa · Estado · Responsable · Valor · `⋮` | "Cerrada el dd/mm/aaaa · motivo" (solo cerradas) |
+  | 60–72rem (1280) | todas menos Producto | producto · cierre |
+  | 45–60rem (1024) | Oportunidad · Empresa / Contacto · Etapa · Estado · Valor · `⋮` | producto · responsable · cierre |
+  | 30–45rem (768) | Oportunidad · Etapa · Valor · `⋮` | estado · cliente · producto · responsable · cierre |
+  | < 30rem (celular) | Oportunidad · `⋮` | valor · estado · etapa · cliente · producto · responsable · cierre (cada dato entero; baja de renglón) |
+
+  Vacíos: sin ninguna oportunidad, "El embudo está vacío" + "Nueva oportunidad" (sin toolbar); con filtros, "Ninguna oportunidad con
+  «…»" / "…con esos filtros" + "Limpiar filtros" dentro de la tabla; sin etapas abiertas, el aviso de Configuración.
+- **Ficha** (`[id]`, `CrumbLabel` = título): `DetailHeader` con h1 = título exacto y meta estado (punto + palabra) · etapa
+  (cuadradito) · "Licitación" · valor mono ("Sin valor estimado") · responsable · empresa (link, "De otra cartera" o "Sin acceso").
+  Acciones: **una primaria** "Registrar actividad" (`bitacora.escribir` + `bitacora.ver`; sin ellos, "Editar") + **"Presupuesto"**
+  (link secundario con ícono, a la vista: responde a "no encuentro dónde crear presupuestos") + `⋮` "Más acciones" (Reasignar con
+  `oportunidades.asignar`, Editar). Debajo, en la franja, el **recorrido por el embudo** (`ol` "Recorrido por el embudo", solo
+  lectura, `pasosEmbudo`): una etapa abierta por segmento con barra de 2 px arriba (hecha: fuerte; actual: acento +
+  `aria-current="step"`; pendiente: hairline) y al final "Cierre" (cerrada: la etapa de cierre con punto de éxito o pérdida y las
+  abiertas sin marcar: el recorrido real está en el historial). Los nombres bajan de renglón, no se recortan. Al lado, el grupo
+  **"Acciones de etapa"**: Cambiar etapa, Marcar ganada, Marcar perdida / Reabrir, Cambiar resultado (botones `sm` a la vista como
+  antes; E2E aprieta "Marcar perdida"). Con menos de 1280 el recorrido ocupa su renglón (scrollea de costado con la etapa actual a la
+  vista) y las acciones van debajo. El recorrido no es clickeable: abriría el diálogo con una etapa ya elegida, una conducta nueva.
+- **Cuerpo** (sin cajas, como la ficha de empresa): a la izquierda, el aviso de cerrada (`InlineBanner` éxito/peligro con
+  `role="status"`: "Perdida el dd/mm/aaaa." + motivo y quién puede reabrir), el de la apertura de una licitación, **Licitación**
+  (`SectionBar` + "Editar datos"/"Cargar datos" + `DefinitionList`), **Historial** (`SectionBar` con contador y "Registrar"; filas de
+  libro mayor `FilaActividad` y `FilaHistoria` de `HistoriaCuenta`: actividades y cambios de etapa con "De X → Y" y la observación) y
+  **Cambios después del cierre** (una fila por corrección: "Campo: antes → después"). A la derecha desde 1280 (debajo con menos), el
+  riel **"Datos"** (`RielDatos`): Contacto, Producto / servicio, Probabilidad, Fecha estimada de cierre, Fecha real de cierre, Origen,
+  Motivo de pérdida (si está perdida), Alta + Observaciones; lo que está en el header no se repite. La ficha legacy no listaba
+  presupuestos: no se agregó (la lista sigue en el editor).
+- **Diálogos y drawers:** `CierreDialog` (`Dialog` con `onSubmit`): "Cambiar de etapa", "Marcar como ganada", "Marcar como perdida",
+  "Reabrir oportunidad", "Cambiar resultado"; descripción = el título de la oportunidad; `#cambio_etapa` (o la etapa única de solo
+  lectura), `#motivo_perdida`, `#fecha_cierre` (`CampoFecha`, `max` = hoy) y `#cambio_observacion` (500); "Mover", "Marcar ganada",
+  "Marcar perdida", "Reabrir", "Cambiar resultado" → "Guardando…"; mismas validaciones (`validarCambio`), bloqueo de la licitación y
+  avisos ("«…» pasó a «…».", "…quedó perdida…"). `OportunidadForm` (`FormDrawer` de 480): "Nueva oportunidad" / "Editar
+  oportunidad", mismos ids y payload; el tipo es un segmentado "Tipo" (Directa / Licitación municipal) y la licitación una
+  `FormSection`. "Reasignar oportunidad" (`#responsable_id`, "Reasignar") y "Registrar actividad" (`ActividadDrawer`). Cada mutación
+  de la ficha hace `router.refresh()`; si el botón que abrió el diálogo desaparece (cerrar, reabrir), el foco va a la primera acción
+  de etapa que quede.
+- **Carga:** el tablero en esqueleto (barra con el h1 real, el segmentado y la primaria solo con el permiso, toolbar y columnas con
+  tarjetas; `loading.tsx` no conoce `?vista=`, así que la lista también arranca con esa forma) y la ficha con `DetailSkeleton pasos`
+  (recorrido + acciones, historial y riel).
+- **Se borró** (sin usuarios): `components/CierreModal.tsx` (ahora `CierreDialog`), `ActividadForm.tsx`, `ClienteCampos.tsx`,
+  `components/oportunidades.tsx` y la fila legacy de `ActividadesTimeline.tsx` (queda `ICONO_POR_CODIGO`).
+
+**Generalizado en el Lote C:** `Dialog` → `onSubmit` y alto máximo; `SegmentedControl` → `labelClassName`; `Tooltip
+onlyWhenTruncated` también con recorte de alto (`line-clamp`); `useFocoFilas` → `acciones` (qué items del `⋮` pueden sacar la fila)
+y cualquier elemento con `data-id` (filas y tarjetas); `DetailSkeleton` → `pasos` (y `tabs` opcional); `HistoriaCuenta` exporta
+`FilaHistoria`, `FilaActividad`, `CuandoHistoria` y `PROSA`.
 
 ---
 

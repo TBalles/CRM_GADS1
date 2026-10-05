@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { exigirPermiso } from "@/lib/sesion";
 import { ESTADOS_OPORTUNIDAD } from "@/lib/oportunidades";
 import { TIPOS_OPORTUNIDAD } from "@/lib/licitaciones";
-import { AvisoMigracion } from "@/components/AvisoMigracion";
 import {
   condicionIn,
   filtroOr,
@@ -113,12 +112,8 @@ export default async function OportunidadesPage({ searchParams }: { searchParams
   );
   const total = lista ? lista.total : (tablero?.count ?? filas.length);
 
-  // The header and toolbar live inside the view: the title shares a row with
-  // the search and the filters (DESIGN.md §4.4).
   return (
-    <div className="flex w-full flex-col gap-4">
-      <AvisoMigracion visible={!licitaciones.activas && sesion.puede("configuracion.gestionar")} que="el tipo «Licitación municipal» con sus datos" />
-      <OportunidadesView
+    <OportunidadesView
       vista={vista}
       etapas={opciones.etapas}
       oportunidades={filas}
@@ -148,7 +143,7 @@ export default async function OportunidadesPage({ searchParams }: { searchParams
       puedeVerTodos={puedeVerTodos}
       licitacionesActivas={licitaciones.activas}
       licitaciones={licitaciones.porOportunidad}
+      avisoMigracion={!licitaciones.activas && sesion.puede("configuracion.gestionar")}
     />
-    </div>
   );
 }

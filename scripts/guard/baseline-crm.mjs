@@ -114,7 +114,7 @@ const PANTALLAS = [
   { id: "empresa-nueva", ir: (p) => ir(p, "/empresas"), esperar: texto("Nueva empresa"), preparar: abrirDialogo("Nueva empresa"), viewport: true },
   { id: "contactos", ir: (p) => ir(p, "/contactos"), esperar: texto("Nuevo contacto") },
   { id: "contacto-ficha", ir: (p) => abrirFicha(p, "/contactos", /Gutiérrez/), esperar: fichaLista },
-  { id: "oportunidades-tablero", ir: (p) => ir(p, "/oportunidades"), esperar: texto("Embudo comercial") },
+  { id: "oportunidades-tablero", ir: (p) => ir(p, "/oportunidades"), esperar: texto("En el tablero") },
   { id: "oportunidades-lista", ir: (p) => ir(p, "/oportunidades?vista=lista"), esperar: texto("Mostrando") },
   { id: "oportunidad-detalle", ir: (p) => abrirOportunidad(p, /Dos arcos de fútbol 5/), esperar: texto("Cambiar etapa") },
   { id: "oportunidad-presupuesto", ir: (p) => abrirOportunidad(p, /Dos arcos de fútbol 5/, "/presupuesto"), esperar: texto("Agregar línea libre") },
@@ -155,7 +155,7 @@ const PANTALLAS = [
   },
   { id: "vendedor-dashboard", rol: "vendedor", ir: (p) => ir(p, "/dashboard"), esperar: texto("en juego") },
   { id: "vendedor-empresas", rol: "vendedor", ir: (p) => ir(p, "/empresas"), esperar: texto("Mostrando") },
-  { id: "vendedor-oportunidades", rol: "vendedor", ir: (p) => ir(p, "/oportunidades"), esperar: texto("Embudo comercial") },
+  { id: "vendedor-oportunidades", rol: "vendedor", ir: (p) => ir(p, "/oportunidades"), esperar: texto("En el tablero") },
 ];
 
 const SALTADAS = [

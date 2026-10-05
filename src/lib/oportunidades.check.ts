@@ -7,6 +7,11 @@ import test from "node:test";
 
 import {
   accionesDisponibles,
+  COPY_CAMBIO,
+  ETIQUETA_CAMBIO,
+  etapaSugerida,
+  pasosEmbudo,
+  textoCambioHecho,
   describirCambios,
   esFechaValida,
   estadoOportunidadInfo,
@@ -238,4 +243,33 @@ test("error de la 0011: segunda oportunidad abierta para el mismo equipo", () =>
     "Ya hay una oportunidad abierta para este equipo.",
   );
   assert.equal(mensajeErrorOportunidad({ code: "23505", message: "otra restriccion" }, "genérico"), "genérico");
+});
+
+test("cambio de etapa: la etapa propuesta y el aviso de cada acción", () => {
+  const abiertas = etapasParaModo(etapas, "etapa", "c");
+  assert.equal(etapaSugerida(abiertas, "etapa", 1)?.id, "n");
+  // Desde la última abierta no hay siguiente: propone la primera que quede.
+  assert.equal(etapaSugerida(etapasParaModo(etapas, "etapa", "n"), "etapa", 4)?.id, "c");
+  assert.equal(etapaSugerida(etapasParaModo(etapas, "ganada"), "ganada")?.id, "e");
+  assert.equal(etapaSugerida([], "perdida"), undefined);
+  assert.equal(textoCambioHecho("etapa", "Redes", "Negociación", false), "«Redes» pasó a «Negociación».");
+  assert.match(textoCambioHecho("perdida", "Redes", "Perdida", true), /quedó perdida/);
+  assert.equal(textoCambioHecho("resultado", "Redes", "Perdida", true), "«Redes» ahora figura como perdida.");
+  assert.equal(textoCambioHecho("reabrir", "Redes", "Consulta", false), "«Redes» se reabrió en «Consulta».");
+  assert.equal(COPY_CAMBIO.etapa.titulo, "Cambiar de etapa");
+  assert.equal(COPY_CAMBIO.perdida.titulo, "Marcar como perdida");
+  assert.equal(ETIQUETA_CAMBIO.perdida, "Marcar perdida");
+});
+
+test("stepper del embudo: hechas, actual y pendientes; cerrada no inventa el recorrido", () => {
+  const abierta = pasosEmbudo(etapas, "n", "abierta");
+  assert.deepEqual(abierta.abiertas.map((p) => [p.id, p.paso]), [["c", "hecho"], ["n", "actual"]]);
+  assert.deepEqual([abierta.cierre.nombre, abierta.cierre.paso], ["Cierre", "pendiente"]);
+  const primera = pasosEmbudo(etapas, "c", "abierta");
+  assert.deepEqual(primera.abiertas.map((p) => p.paso), ["actual", "pendiente"]);
+  const perdida = pasosEmbudo(etapas, "p", "perdida");
+  assert.deepEqual(perdida.abiertas.map((p) => p.paso), ["pendiente", "pendiente"]);
+  assert.deepEqual([perdida.cierre.nombre, perdida.cierre.paso], ["Perdida", "actual"]);
+  // Una etapa que ya no existe no marca nada (ni rompe).
+  assert.deepEqual(pasosEmbudo(etapas, "borrada", "abierta").abiertas.map((p) => p.paso), ["pendiente", "pendiente"]);
 });

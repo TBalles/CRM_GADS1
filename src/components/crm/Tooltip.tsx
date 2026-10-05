@@ -50,7 +50,7 @@ export function Tooltip({
           if (disabled) return;
           const el = objetivo();
           if (!el) return;
-          if (onlyWhenTruncated && el.scrollWidth <= el.clientWidth) return;
+          if (onlyWhenTruncated && el.scrollWidth <= el.clientWidth && el.scrollHeight <= el.clientHeight) return;
         }
         setAbierto(abrir);
       },

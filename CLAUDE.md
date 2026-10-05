@@ -45,7 +45,7 @@ Incluido:
 - **Alertas de recambio** en `/alertas`: equipos entregados que vencieron o vencen en los próximos
   60 días, con mensaje prearmado para enviar por mail o WhatsApp. Se registra cada envío.
 - **Actividades** (la antigua bitácora): "Registrar actividad" desde la ficha de la empresa o del
-  contacto (`src/components/ActividadForm.tsx`), con tipo de catálogo, fecha y hora (no futura),
+  contacto (`src/components/crm/cuenta/ActividadDrawer.tsx`), con tipo de catálogo, fecha y hora (no futura),
   descripción, resultado y oportunidad opcional; se listan en la línea de tiempo de la ficha.
 - **Oportunidades** (F2): alta y edición (título, empresa o contacto, producto, valor estimado,
   probabilidad, fecha estimada de cierre, origen, responsable, observaciones). Estado, fecha real de
@@ -243,15 +243,18 @@ src/
         page.tsx / UsuariosView.tsx   Lista de usuarios (filtros por URL) + roles (tabla y matriz de permisos); invitar / cambiar rol en drawers
         RolForm.tsx / actions.ts  Drawer de rol (permisos con dependencias) y Server Actions (clave de servicio)
         logica.ts(+.check)        Pura: estado del usuario, grupos de permisos, tildado con dependencias, validación del rol
-      oportunidades/             Tablero (kanban con drag & drop) y lista en una sola página, y el detalle
-        page.tsx                 Server Component: fetch de oportunidades + catálogos
+      (crm2)/oportunidades/      CRM 2.0 (Lote C): tablero (columnas a todo el alto, sin caja) y lista (DataTable) por `?vista=`, y la ficha
+        page.tsx                 Server Component: fetch de oportunidades + catálogos (tablero: abiertas hasta 500; lista: UNA página)
         datos.ts                 cargarOpciones(): etapas, clientes, productos, perfiles, orígenes, motivos
-        OportunidadesView.tsx     Client: conmutador Tablero|Lista (?vista=), filtros por URL, columnas por etapa abierta
-        OportunidadForm.tsx       Form de alta/edición (usado dentro del Drawer); tipo y datos de licitación (F4)
-        [id]/page.tsx             Detalle (Server Component; notFound si no existe o la RLS la esconde)
-        [id]/OportunidadDetalle.tsx  Client: datos, acciones (incluye "Presupuesto"), línea de tiempo, auditoría, Reasignar
-        [id]/presupuesto/         Presupuesto imprimible (F6): page.tsx (server: oportunidad, proveedor, logo firmado, catálogo, anteriores)
-                                   y PresupuestoView.tsx (client: editor de líneas, hoja `.hoja-presupuesto`, guardar, imprimir, actividad)
+        OportunidadesView.tsx     Client: PageBar + segmentado Tablero|Lista, toolbar (filtros por URL, "Más filtros"), tarjetas `article`
+                                   con ⋮ (Ver detalle, Presupuesto, Editar, acciones de etapa), arrastre HTML5 optimista, lista con pie de totales
+        OportunidadForm.tsx       Drawer "Nueva/Editar oportunidad" (mismos ids; CampoFecha, MoneyInput); tipo y datos de licitación (F4)
+        CierreDialog.tsx          Dialog CRM "Cambiar de etapa" / "Marcar como ganada/perdida" / Reabrir / Cambiar resultado, por `cambiar_etapa`
+        [id]/page.tsx             Ficha (Server Component; notFound si no existe o la RLS la esconde)
+        [id]/OportunidadDetalle.tsx  Client: DetailHeader (Registrar actividad + "Presupuesto" + ⋮), recorrido por el embudo con las
+                                   acciones de etapa, historial (FilaHistoria), auditoría, riel "Datos"; drawers Editar/Reasignar/Actividad
+      (legacy)/oportunidades/[id]/presupuesto/   Presupuesto imprimible (F6, sigue legacy): page.tsx (server: oportunidad, proveedor, logo
+                                   firmado, catálogo, anteriores) y PresupuestoView.tsx (client: editor de líneas, hoja, guardar, imprimir, actividad)
   components/
     ui/                        Primitivos del Sumar UI Kit — reusar, no reinventar
       UIComponents.tsx          cn, useModalAnimation, useAnchoredPortal, Card, Button, Input,
@@ -277,8 +280,6 @@ src/
                                 FiltroSelect, FiltroFecha, BarraPendiente
     Paginacion.tsx              nav accesible con links ?page=N, selector de filas por página y "Mostrando 21-40 de 134"
     ConfirmModal.tsx            Alert dialog centrado (lo usa el logout)
-    CierreModal.tsx             Cambiar etapa / Marcar ganada / Marcar perdida / Reabrir / Cambiar resultado, por `cambiar_etapa`
-    oportunidades.tsx           EtapaBadge, EstadoOportunidadPill, TipoOportunidadBadge (server-safe)
     ParqueInstalado.tsx         Parque instalado de una empresa, agrupado por urgencia (server-safe)
     AvisoMigracion.tsx          Aviso para administradores: "Se activa al aplicar la migración 0011"
     crm/                        CRM 2.0 (design-system/crm-2/MASTER.md §10): primitivos, shell y composiciones. Del Lote A:
@@ -288,16 +289,15 @@ src/
       Toolbar.tsx               SearchField / SearchInput, FechaFiltro, ToggleChip y "Más filtros" (MasFiltros: los filtros secundarios con poco ancho)
       FilaCompleta.tsx          Fila que ocupa las columnas VISIBLES (vacíos de toda lista y el detalle de Ventas)
       cuenta/SeccionesCuenta.tsx  Secciones de ficha 360 y vista previa compartidas por empresa y contacto
+      cuenta/HistoriaCuenta.tsx   Historia de la cuenta; exporta FilaHistoria / FilaActividad (también la usa la ficha de oportunidad)
     Drawer.tsx                   Panel lateral derecho para los formularios de alta/edición
     RowActions.tsx               Menú "⋮" portaled que usan las filas de cada lista
     ThemeToggle.tsx              Toggle de modo oscuro (localStorage + prefers-color-scheme)
-    ActividadForm.tsx           Alta de actividad legacy (detalle de oportunidad)
-    ActividadesTimeline.tsx     Línea de tiempo de actividades, la más reciente arriba
+    ActividadesTimeline.tsx     ICONO_POR_CODIGO: ícono de cada tipo de actividad (las filas las dibuja crm/cuenta/HistoriaCuenta)
     ResumenIA.tsx               useResumenIA: estado de "Resumir con IA" (F7; lo dibuja crm/cuenta); IaAviso.tsx: "Cómo usamos la IA"
     PaletaBusqueda.tsx          Búsqueda global Ctrl/Cmd+K (F5): diálogo combobox + listbox, foco atrapado
     BajaCliente.tsx             Baja lógica y reactivación de empresas y contactos, sin UI (la dibuja crm/cuenta/BajaDialog)
-    ClienteCampos.tsx           CampoResponsable (solo lectura sin clientes.asignar) y CampoOrigen
-    cliente.tsx                 Dato, Seccion (legacy: detalle de oportunidad y presupuesto)
+    cliente.tsx                 Dato, Seccion (legacy: presupuesto)
     form.tsx                    <Campo>, <CampoTextarea>, <CampoSelect>, <CampoMoney>,
                                 <CampoGrupo>, <FormBanner>, <FormActions>
   lib/

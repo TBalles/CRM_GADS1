@@ -21,6 +21,7 @@ export function Dialog({
   footer,
   role = "dialog",
   busy = false,
+  onSubmit,
 }: {
   open: boolean;
   onClose: () => void;
@@ -30,6 +31,8 @@ export function Dialog({
   footer?: React.ReactNode;
   role?: "dialog" | "alertdialog";
   busy?: boolean;
+  /** Con `onSubmit`, cuerpo y acciones van dentro de un `<form noValidate>` (Enter envía), como en el Drawer. */
+  onSubmit?: (e: React.FormEvent<HTMLFormElement>) => void;
 }) {
   const { montada, cerrando } = usePresence(open, 160); // = --crm-dur: el desmontaje espera la animación de salida
   const panel = React.useRef<HTMLDivElement>(null);
@@ -43,6 +46,23 @@ export function Dialog({
   useScrollLock(open);
 
   if (!montada) return null;
+
+  const contenido = (
+    <>
+      <div className="flex min-h-0 flex-col gap-1.5 overflow-y-auto px-5 pb-4 pt-5">
+        <h2 id={titleId} className={TYPE.section}>
+          {title}
+        </h2>
+        {description && (
+          <p id={descId} className="text-[14px] leading-5 text-(--crm-text-2)">
+            {description}
+          </p>
+        )}
+        {children}
+      </div>
+      {footer && <div className="flex shrink-0 flex-col-reverse gap-2 px-5 pb-5 sm:flex-row sm:justify-end">{footer}</div>}
+    </>
+  );
 
   return (
     <CrmPortal>
@@ -64,22 +84,19 @@ export function Dialog({
           aria-busy={busy || undefined}
           tabIndex={-1}
           className={cn(
-            "flex w-full max-w-[440px] flex-col rounded-(--crm-radius) border border-(--crm-border) bg-(--crm-panel) shadow-(--crm-shadow-float) outline-none",
+            // Nunca más alto que la ventana: el cuerpo scrollea y las acciones quedan a la vista.
+            "flex max-h-[calc(100dvh-2rem)] w-full max-w-[440px] flex-col rounded-(--crm-radius) border border-(--crm-border) bg-(--crm-panel) shadow-(--crm-shadow-float) outline-none",
             !cerrando && "animate-[crm-pop_var(--crm-dur)_var(--crm-ease)] motion-reduce:animate-none",
           )}
         >
-          <div className="flex flex-col gap-1.5 px-5 pb-4 pt-5">
-            <h2 id={titleId} className={TYPE.section}>
-              {title}
-            </h2>
-            {description && (
-              <p id={descId} className="text-[14px] leading-5 text-(--crm-text-2)">
-                {description}
-              </p>
-            )}
-            {children}
-          </div>
-          {footer && <div className="flex flex-col-reverse gap-2 px-5 pb-5 sm:flex-row sm:justify-end">{footer}</div>}
+          {onSubmit ? (
+            // noValidate: se valida a mano (mensajes por campo con role="alert"), como el Drawer.
+            <form noValidate onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
+              {contenido}
+            </form>
+          ) : (
+            contenido
+          )}
         </div>
       </div>
     </CrmPortal>

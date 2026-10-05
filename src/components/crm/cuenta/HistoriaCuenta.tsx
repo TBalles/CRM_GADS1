@@ -264,8 +264,9 @@ const LINK = cn("rounded-[2px] font-medium text-(--crm-text) underline-offset-2 
  * Una fila de la historia. Angosta (o `compacta`): ícono + título + una línea de meta (cuándo · quién · dato) + cuerpo.
  * Desde 48rem de contenedor es una fila de libro mayor: la fecha en su columna (mono), el hecho al medio y quién a la
  * derecha; así la tab de Actividad usa el ancho en vez de dejar media pantalla vacía. `compacta` omite el cuerpo.
+ * La usa también la historia de la oportunidad (va dentro de un `ol` con `@container` y la regla de arriba).
  */
-function Fila({
+export function FilaHistoria({
   icono,
   peligro,
   titulo,
@@ -342,7 +343,7 @@ function Fila({
   );
 }
 
-function Cuando({ iso, fecha }: { iso: string; fecha?: string }) {
+export function CuandoHistoria({ iso, fecha }: { iso: string; fecha?: string }) {
   return (
     <time dateTime={iso} className={TYPE.mono}>
       {fecha ? formatFecha(fecha) : formatMomento(iso)}
@@ -350,51 +351,76 @@ function Cuando({ iso, fecha }: { iso: string; fecha?: string }) {
   );
 }
 
-const PROSA = cn(TYPE.table, "mt-1 max-w-prose whitespace-pre-line break-words text-(--crm-text-2) leading-[1.55]");
+/** Texto largo de una fila (detalle de una actividad, observación de un cambio de etapa). */
+export const PROSA = cn(TYPE.table, "mt-1 max-w-prose whitespace-pre-line break-words text-(--crm-text-2) leading-[1.55]");
+
+/** Una actividad como fila de la historia (fichas de empresa y contacto, y la historia de la oportunidad). */
+export function FilaActividad({
+  actividad: a,
+  tipo,
+  autor,
+  contacto,
+  oportunidad,
+  compacta,
+}: {
+  actividad: Actividad;
+  tipo?: Tipo;
+  autor?: string | null;
+  contacto?: string | null;
+  oportunidad?: string | null;
+  compacta?: boolean;
+}) {
+  const Icono = (tipo?.codigo && ICONO_POR_CODIGO[tipo.codigo]) || CircleDot;
+  return (
+    <FilaHistoria
+      compacta={compacta}
+      icono={<Icono strokeWidth={1.75} />}
+      peligro={tipo?.codigo === "queja"}
+      titulo={a.titulo}
+      extra={<Tag>{tipo?.nombre ?? "Actividad"}</Tag>}
+      cuando={<CuandoHistoria iso={a.ocurrido_en} />}
+      quien={[
+        autor && (
+          <>
+            <span className="sr-only">Registró </span>
+            {autor}
+          </>
+        ),
+        contacto && `con ${contacto}`,
+        !compacta && oportunidad && (
+          <>
+            <span className="sr-only">Oportunidad: </span>
+            {oportunidad}
+          </>
+        ),
+      ]}
+      cuerpo={
+        <>
+          {a.detalle && <p className={PROSA}>{a.detalle}</p>}
+          {a.resultado && (
+            <p className={cn(TYPE.table, "mt-1")}>
+              <span className="font-medium">Resultado: </span>
+              {a.resultado}
+            </p>
+          )}
+        </>
+      }
+    />
+  );
+}
 
 function FilaEvento({ evento: e, mapas: m, compacta }: { evento: Evento360; mapas: Mapas; compacta?: boolean }) {
   if (e.tipo === "actividad") {
     const a = m.actividad.get(e.refId);
     if (!a) return null;
-    const tipo = m.tipo.get(a.tipo_actividad_id);
-    const Icono = (tipo?.codigo && ICONO_POR_CODIGO[tipo.codigo]) || CircleDot;
-    const autor = a.autor_id ? m.autor.get(a.autor_id) : null;
-    const contacto = a.contacto_id ? m.contacto.get(a.contacto_id) : null;
-    const oportunidad = a.oportunidad_id ? m.oportunidad.get(a.oportunidad_id)?.titulo : null;
     return (
-      <Fila
+      <FilaActividad
+        actividad={a}
+        tipo={m.tipo.get(a.tipo_actividad_id)}
+        autor={a.autor_id ? m.autor.get(a.autor_id) : null}
+        contacto={a.contacto_id ? m.contacto.get(a.contacto_id) : null}
+        oportunidad={a.oportunidad_id ? m.oportunidad.get(a.oportunidad_id)?.titulo : null}
         compacta={compacta}
-        icono={<Icono strokeWidth={1.75} />}
-        peligro={tipo?.codigo === "queja"}
-        titulo={a.titulo}
-        extra={<Tag>{tipo?.nombre ?? "Actividad"}</Tag>}
-        cuando={<Cuando iso={a.ocurrido_en} />}
-        quien={[
-          autor && (
-            <>
-              <span className="sr-only">Registró </span>
-              {autor}
-            </>
-          ),
-          contacto && `con ${contacto}`,
-          !compacta && oportunidad && (
-            <>
-              <span className="sr-only">Oportunidad: </span>
-              {oportunidad}
-            </>
-          ),
-        ]}
-        cuerpo={
-          <>
-            {a.detalle && <p className={PROSA}>{a.detalle}</p>}
-            {a.resultado && (
-              <p className={cn(TYPE.table, "mt-1")}>
-                <span className="font-medium">Resultado: </span>
-                {a.resultado}
-              </p>
-            )}
-          </>
-        }
       />
     );
   }
@@ -403,7 +429,7 @@ function FilaEvento({ evento: e, mapas: m, compacta }: { evento: Evento360; mapa
     const o = m.oportunidad.get(e.refId);
     if (!o) return null;
     return (
-      <Fila
+      <FilaHistoria
         compacta={compacta}
         icono={<Handshake strokeWidth={1.75} />}
         titulo={
@@ -414,7 +440,7 @@ function FilaEvento({ evento: e, mapas: m, compacta }: { evento: Evento360; mapa
             </Link>
           </>
         }
-        cuando={<Cuando iso={e.cuando} />}
+        cuando={<CuandoHistoria iso={e.cuando} />}
         dato={o.monto ? <span className={cn(TYPE.mono, "text-(--crm-text)")}>{formatMoney(Number(o.monto))}</span> : null}
       />
     );
@@ -429,7 +455,7 @@ function FilaEvento({ evento: e, mapas: m, compacta }: { evento: Evento360; mapa
     const Icono = e.resultado === "ganada" ? CircleCheck : e.resultado === "perdida" ? CircleX : e.titulo === "Reapertura" ? RotateCcw : ArrowRightLeft;
     const autor = c.usuario_id ? m.autor.get(c.usuario_id) : null;
     return (
-      <Fila
+      <FilaHistoria
         compacta={compacta}
         icono={<Icono strokeWidth={1.75} />}
         peligro={e.resultado === "perdida"}
@@ -453,7 +479,7 @@ function FilaEvento({ evento: e, mapas: m, compacta }: { evento: Evento360; mapa
             <StatusDot tone="danger">Perdida</StatusDot>
           ) : undefined
         }
-        cuando={<Cuando iso={e.cuando} />}
+        cuando={<CuandoHistoria iso={e.cuando} />}
         quien={[autor]}
         dato={compacta && hacia ? <span>{desde ? `De ${desde} a ${hacia}` : `En ${hacia}`}</span> : null}
         cuerpo={
@@ -476,12 +502,12 @@ function FilaEvento({ evento: e, mapas: m, compacta }: { evento: Evento360; mapa
       .join(", ");
     const mas = v.items.length - 3;
     return (
-      <Fila
+      <FilaHistoria
         compacta={compacta}
         icono={primero ? <IconoEquipoSimple nombre={primero.producto?.nombre} categoria={primero.producto?.categoria} className="size-4" /> : <ArrowRightLeft strokeWidth={1.75} />}
         titulo={`Compra${v.comprobante ? ` · ${v.comprobante}` : ""}`}
         extra={<Tag>Venta</Tag>}
-        cuando={<Cuando iso={e.cuando} fecha={v.fecha} />}
+        cuando={<CuandoHistoria iso={e.cuando} fecha={v.fecha} />}
         dato={v.total > 0 ? <span className={cn(TYPE.mono, "text-(--crm-text)")}>{formatMoney(v.total)}</span> : null}
         cuerpo={
           resumen ? (
@@ -499,12 +525,12 @@ function FilaEvento({ evento: e, mapas: m, compacta }: { evento: Evento360; mapa
   if (!av) return null;
   const autor = av.enviado_por ? m.autor.get(av.enviado_por) : null;
   return (
-    <Fila
+    <FilaHistoria
       compacta={compacta}
       icono={<BellRing strokeWidth={1.75} />}
       titulo="Aviso de recambio"
       extra={<Tag>{av.canal === "email" ? "Mail" : "WhatsApp"}</Tag>}
-      cuando={<Cuando iso={e.cuando} />}
+      cuando={<CuandoHistoria iso={e.cuando} />}
       quien={[autor]}
       cuerpo={
         <p className={cn(TYPE.table, "mt-1 break-words text-(--crm-text-2)")}>
